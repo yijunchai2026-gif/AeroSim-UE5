@@ -25,7 +25,7 @@ python3 Scripts/phase0_preflight.py --ue-editor "$UE_EDITOR" && \
 
 - Apple M3 Pro 与 Metal SM6 适合作为当前开发基线。
 - 审查基线约 53 GB；本次检查约 56 GiB 可用，低于 Phase 0 的 100 GiB Cook/Package 门槛。
-- 本次检查无法通过 `/usr/bin/xcrun --find metallib` 定位 `metallib`。
+- Metal Toolchain 17F109 已通过 Xcode 下载并安装，`/usr/bin/xcrun --find metallib` 已能定位 `metallib`。
 - `Scripts/phase0_preflight.py` 从 UnrealEditor 路径反向定位同一 `Engine/Build/Build.version`，只接受 `MajorVersion=5`、`MinorVersion=8`，并要求同一 Engine 根下存在非 symlink 的 `Build/BatchFiles/RunUAT.sh`；同时使用固定、只读检查验证磁盘空间、Xcode developer directory、macOS SDK 和 `metallib`。
 - Preflight 不调用 UE、不写文件、不使用 shell，也不接受任意命令字符串。任一检查失败即返回非零，后续 Cook/Package 必须停止。
 - `AeroSim.Target.cs` 是纯声明，不执行磁盘检查，也不启动进程；普通 Game 编译不受打包预检误伤。
@@ -40,4 +40,4 @@ python3 Scripts/phase0_preflight.py --ue-editor "$UE_EDITOR" && \
 
 ## 无 UE 环境说明
 
-当前机器没有可用 UE5.8，且 preflight 会因 UE Editor、空间和 `metallib` 条件失败。因此这里只能声明静态验证结果，不能声明编译、Automation、Cook 或 Package 通过。
+当前机器没有可用 UE5.8，且 preflight 会因 UE Editor 和磁盘空间条件失败；`metallib` 已恢复可用。因此这里只能声明静态验证结果，不能声明编译、Automation、Cook 或 Package 通过。

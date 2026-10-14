@@ -46,7 +46,7 @@
 
 ## 当前诚实状态
 
-本次执行环境没有可用 UE5.8；磁盘约 56 GiB，低于 100 GiB；`metallib` 无法定位。故 preflight 应失败并阻断 Cook/Package。只有静态验证脚本可预期通过。
+本次执行环境没有可用 UE5.8；磁盘约 56 GiB，低于 100 GiB。Metal Toolchain 17F109 已安装且 `metallib` 可定位。preflight 仍应因 UE Editor 和磁盘空间失败并阻断 Cook/Package；只有静态验证脚本可预期通过。
 
 UE5.8 到位后仍须编译 AeroSimEditor Mac Development，并运行：
 
