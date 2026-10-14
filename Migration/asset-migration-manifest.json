@@ -1,0 +1,238 @@
+{
+  "schema": "aerosim.ue5.asset-migration-manifest/v1",
+  "phase": "Phase 0",
+  "generatedAt": "2026-10-15T06:03:00+08:00",
+  "sourceRepository": "/private/tmp/aime-agent-shared-dir/4e3f96ddfdaf/AeroSim-runtime-work",
+  "targetRepository": "/private/tmp/aime-agent-shared-dir/4e3f96ddfdaf/AeroSim-UE5",
+  "hashAlgorithm": "SHA-256",
+  "selectionPolicy": {
+    "scope": "最小可追溯源资产；不复制 Unity .meta、Library、Build 或临时证据",
+    "heroCliff": "选择最终 P11 HeroCliff FBX；文件内含 HC_LOD0/1/2/3，HC_LOD0 为 92,160 triangles。复制七张实际烘焙贴图和上游生产记录；不复制 74,757,872-byte .blend。",
+    "coastReusable": "仅保留 Poly Haven Cliff Side 的最小 BaseColor 参考纹理和来源说明；其他 detail maps 未进入 Phase 0。",
+    "aircraft": "旧仓无正式无人机 FBX/GLB；仅迁移 manifest、未交付占位合同和 shell albedo 参考，全部标记 PLACEHOLDER_REFERENCE_ONLY。"
+  },
+  "lfs": {
+    "thresholdBytes": 52428800,
+    "required": false,
+    "filesOverThreshold": []
+  },
+  "migrationProfiles": {
+    "unityMeshToUE5": {
+      "sourceBasis": "Unity: X right, Y up, Z forward; meters",
+      "targetBasis": "UE5: X forward, Y right, Z up; centimeters",
+      "positionMapping": "UE_cm = (100 * Unity_z, 100 * Unity_x, 100 * Unity_y)",
+      "importGuidance": "优先让 UE FBX importer 读取文件轴/单位并启用 Convert Scene / Convert Scene Unit；不要在已转换网格上再次手工旋转或放大。导入后用朝向标记与 1 m 标尺验证。",
+      "materialGuidance": "BaseColor=sRGB；Normal/AO/Roughness/Height/Curvature/Mask=Linear。Blender/OpenGL tangent normal 通常需在 UE 勾选 Flip Green Channel；以凹凸方向实测确认。UE Roughness 直接使用，AO 接 Ambient Occlusion；Height、Curvature、Wetness/Cavity 为可选材质输入。"
+    },
+    "textureReferenceOnly": {
+      "sourceBasis": "2D texture; no spatial transform",
+      "targetBasis": "UE5 texture",
+      "positionMapping": "N/A",
+      "importGuidance": "BaseColor 使用 sRGB；不得据此推断真实模型尺寸或 UV。",
+      "materialGuidance": "仅为 albedo/reference；无配套法线、粗糙度或已认证无缝边界时，不声明完整 PBR 材质。"
+    },
+    "documentationOnly": {
+      "sourceBasis": "N/A",
+      "targetBasis": "N/A",
+      "positionMapping": "N/A",
+      "importGuidance": "不导入 Content Browser；用于审计、验收与后续接入。",
+      "materialGuidance": "N/A"
+    }
+  },
+  "assets": [
+    {
+      "id": "p11.hero-cliff.fbx",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/Models/HeroCliff_P11.fbx",
+      "targetPath": "SourceAssets/HeroCliffP11/Models/HeroCliff_P11.fbx",
+      "sha256": "a1f9615b0346e14d2e6852bc245c247adea5f6d1150dea9350e5c6b5c15aa6da",
+      "sizeBytes": 5494780,
+      "type": "FBX_STATIC_MESH_LOD_SET",
+      "migrationProfile": "unityMeshToUE5",
+      "sourceAndAuthorization": "AeroSim-runtime-work 内部生成资产；上游 manifest 记录 Blender 3.4.1、seed 110412 与确定性生成信息；未发现单独许可证文件。",
+      "status": "GENERATED_NOT_REVIEWED",
+      "notes": "包含 HC_LOD0/1/2/3；LOD0=92,160 triangles。不是 ProductionReady，仍需 UE5 人工视觉、碰撞、LOD popping 与性能验收。"
+    },
+    {
+      "id": "p11.hero-cliff.texture.ao",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/Textures/T_HeroCliff_P11_AO.png",
+      "targetPath": "SourceAssets/HeroCliffP11/Textures/T_HeroCliff_P11_AO.png",
+      "sha256": "5daabc007fb022774f2279c4a15418597f34d8c73ada0a57bb9f5a6163bde4ef",
+      "sizeBytes": 735980,
+      "type": "PNG_AO_LINEAR",
+      "migrationProfile": "unityMeshToUE5",
+      "sourceAndAuthorization": "AeroSim-runtime-work 中由 P11 高模到 LOD0 的 Blender Cycles selected-to-active bake；内部生成，未发现单独许可证文件。",
+      "status": "GENERATED_NOT_REVIEWED"
+    },
+    {
+      "id": "p11.hero-cliff.texture.basecolor",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/Textures/T_HeroCliff_P11_BaseColor.png",
+      "targetPath": "SourceAssets/HeroCliffP11/Textures/T_HeroCliff_P11_BaseColor.png",
+      "sha256": "4db15a0e07d182af3c254bf637b08b876a2b869a4ee61c1761d53a3163cff9cc",
+      "sizeBytes": 5230416,
+      "type": "PNG_BASE_COLOR_SRGB",
+      "migrationProfile": "unityMeshToUE5",
+      "sourceAndAuthorization": "AeroSim-runtime-work 中由 P11 程序化高模几何着色投射烘焙；内部生成，未发现单独许可证文件。",
+      "status": "GENERATED_NOT_REVIEWED"
+    },
+    {
+      "id": "p11.hero-cliff.texture.curvature",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/Textures/T_HeroCliff_P11_Curvature.png",
+      "targetPath": "SourceAssets/HeroCliffP11/Textures/T_HeroCliff_P11_Curvature.png",
+      "sha256": "3d75a57ca6c41897cb2c84eff989bebf261db66eb541dbd81ae5a7dcd1bc8809",
+      "sizeBytes": 369610,
+      "type": "PNG_CURVATURE_LINEAR",
+      "migrationProfile": "unityMeshToUE5",
+      "sourceAndAuthorization": "AeroSim-runtime-work P11 几何投射烘焙；内部生成，未发现单独许可证文件。",
+      "status": "GENERATED_NOT_REVIEWED"
+    },
+    {
+      "id": "p11.hero-cliff.texture.height",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/Textures/T_HeroCliff_P11_Height.png",
+      "targetPath": "SourceAssets/HeroCliffP11/Textures/T_HeroCliff_P11_Height.png",
+      "sha256": "e40140979ee1be9ccf06ea61aec4a53e533820acebcf5c86bbf4ddc8c8eec98d",
+      "sizeBytes": 424373,
+      "type": "PNG_HEIGHT_16BIT_LINEAR",
+      "migrationProfile": "unityMeshToUE5",
+      "sourceAndAuthorization": "AeroSim-runtime-work P11 几何投射烘焙；内部生成，未发现单独许可证文件。",
+      "status": "GENERATED_NOT_REVIEWED"
+    },
+    {
+      "id": "p11.hero-cliff.texture.normal",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/Textures/T_HeroCliff_P11_Normal.png",
+      "targetPath": "SourceAssets/HeroCliffP11/Textures/T_HeroCliff_P11_Normal.png",
+      "sha256": "128157d59617289b78d995b689572a5b7268db12be7d6bb78b95361dc0e68dc5",
+      "sizeBytes": 1825778,
+      "type": "PNG_TANGENT_NORMAL_LINEAR",
+      "migrationProfile": "unityMeshToUE5",
+      "sourceAndAuthorization": "AeroSim-runtime-work 中由 P11 高模到 LOD0 的 Blender Cycles NORMAL bake；内部生成，未发现单独许可证文件。",
+      "status": "GENERATED_NOT_REVIEWED",
+      "notes": "按 Blender/OpenGL 法线处理候选；UE5 中检查并通常翻转绿色通道。"
+    },
+    {
+      "id": "p11.hero-cliff.texture.roughness",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/Textures/T_HeroCliff_P11_Roughness.png",
+      "targetPath": "SourceAssets/HeroCliffP11/Textures/T_HeroCliff_P11_Roughness.png",
+      "sha256": "c9ba3fafc82162b760ca146fa1bc781cfdc500d87cdf13fb5baad7c61e549a96",
+      "sizeBytes": 2905225,
+      "type": "PNG_ROUGHNESS_LINEAR",
+      "migrationProfile": "unityMeshToUE5",
+      "sourceAndAuthorization": "AeroSim-runtime-work P11 几何投射烘焙；内部生成，未发现单独许可证文件。",
+      "status": "GENERATED_NOT_REVIEWED"
+    },
+    {
+      "id": "p11.hero-cliff.texture.wetness-cavity",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/Textures/T_HeroCliff_P11_WetnessCavityMask.png",
+      "targetPath": "SourceAssets/HeroCliffP11/Textures/T_HeroCliff_P11_WetnessCavityMask.png",
+      "sha256": "8f0c36559863473f1dba602a59ee1ce30d2cd6cc0052d4fedaeafa6ef9e93ccb",
+      "sizeBytes": 4373541,
+      "type": "PNG_PACKED_MASK_LINEAR",
+      "migrationProfile": "unityMeshToUE5",
+      "sourceAndAuthorization": "AeroSim-runtime-work P11 几何投射烘焙；内部生成，未发现单独许可证文件。",
+      "status": "GENERATED_NOT_REVIEWED",
+      "notes": "R=低位湿润，G=高模 pointiness/cavity，B=geometry breakup。"
+    },
+    {
+      "id": "p11.hero-cliff.upstream-readme",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/README.md",
+      "targetPath": "SourceAssets/HeroCliffP11/Documentation/UPSTREAM_README.md",
+      "sha256": "d17373ccc08187a837d5127a2ce9df7a80d607228b61a2a0c59730cee9820ebc",
+      "sizeBytes": 2192,
+      "type": "MARKDOWN_PROVENANCE",
+      "migrationProfile": "documentationOnly",
+      "sourceAndAuthorization": "随 AeroSim-runtime-work 资产提供的上游说明。",
+      "status": "SOURCE_DOCUMENT"
+    },
+    {
+      "id": "p11.hero-cliff.production-manifest",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/Reports/hero-cliff-production-manifest.json",
+      "targetPath": "SourceAssets/HeroCliffP11/Documentation/hero-cliff-production-manifest.json",
+      "sha256": "f3b896a63ef6d707695ad09c59b60e78ecda720fa3304f9bfb0873ca5073bcc0",
+      "sizeBytes": 7180,
+      "type": "JSON_PROVENANCE_MANIFEST",
+      "migrationProfile": "documentationOnly",
+      "sourceAndAuthorization": "随 AeroSim-runtime-work 资产提供的生产与校验记录。",
+      "status": "SOURCE_DOCUMENT"
+    },
+    {
+      "id": "coast.cliff-side.basecolor-reference",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/Textures/Detail/T_HeroCliff_P11_DetailBaseColor.jpg",
+      "targetPath": "SourceAssets/CoastReusable/CliffSideCC0/T_HeroCliff_P11_DetailBaseColor.jpg",
+      "sha256": "bc6f92d72eb6383ecc3a1094ed9f5b37efb36ccf83cf29699bb5990e6775afee",
+      "sizeBytes": 3387348,
+      "type": "JPEG_BASE_COLOR_REFERENCE_SRGB",
+      "migrationProfile": "textureReferenceOnly",
+      "sourceAndAuthorization": "Poly Haven ‘Cliff Side’, https://polyhaven.com/a/cliff_side；上游 SOURCE.md 声明 CC0，物理宽度 1.8 m。",
+      "status": "REFERENCE_SOURCE_ONLY",
+      "notes": "Phase 0 最小海岸可复用参考；未复制其 Normal/Roughness/Height，不能声称为完整 PBR set。"
+    },
+    {
+      "id": "coast.cliff-side.source-note",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/Textures/Detail/SOURCE.md",
+      "targetPath": "SourceAssets/CoastReusable/CliffSideCC0/SOURCE.md",
+      "sha256": "b06449ea9568472c5516f8bba4f4ab3a45b9ef8f0e9dbd0c5b6a010ddeb275c8",
+      "sizeBytes": 335,
+      "type": "MARKDOWN_LICENSE_PROVENANCE",
+      "migrationProfile": "documentationOnly",
+      "sourceAndAuthorization": "上游来源与 CC0 声明记录。",
+      "status": "SOURCE_DOCUMENT"
+    },
+    {
+      "id": "aircraft.reference.manifest",
+      "sourcePath": "AeroSim/Assets/AeroSim/Resources/AircraftAssets/asset-manifest-v1.json",
+      "targetPath": "SourceAssets/AircraftReference/aircraft-asset-manifest-v1.json",
+      "sha256": "ea9842e4e5df54e91050b616a83a9ac4f88b31e514488dc4c3837d9986bcb254",
+      "sizeBytes": 14096,
+      "type": "JSON_AIRCRAFT_CONTRACT_REFERENCE",
+      "migrationProfile": "documentationOnly",
+      "sourceAndAuthorization": "AeroSim-runtime-work RD-02 formal asset gate contract；内容声明为 programmatic prototype / unverified。",
+      "status": "PLACEHOLDER_REFERENCE_ONLY",
+      "notes": "不是正式无人机模型 manifest；sourcePath/sourceSha256 为空的条目不得用于声称模型已交付。"
+    },
+    {
+      "id": "aircraft.mini4.intake-placeholder",
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/AircraftProduction/mini4/intake-manifest.placeholder.json",
+      "targetPath": "SourceAssets/AircraftReference/Mini4/intake-manifest.placeholder.json",
+      "sha256": "72990fb5c34ad91aaaa87d6739dbaaa9bd63a29cb72858b372b15e9ba76cf8fd",
+      "sizeBytes": 485,
+      "type": "JSON_INTAKE_PLACEHOLDER",
+      "migrationProfile": "documentationOnly",
+      "sourceAndAuthorization": "AeroSim-runtime-work 正式资产未来接入合同；明确 CONTENT_NOT_DELIVERED。",
+      "status": "PLACEHOLDER_REFERENCE_ONLY",
+      "notes": "不得提升为 DELIVERED、ProductionApproved 或 ProductionReady。"
+    },
+    {
+      "id": "aircraft.mini4.shell-reference",
+      "sourcePath": "AeroSim/Assets/AeroSim/Resources/Art/AircraftV3/mini-shell-v3.png",
+      "targetPath": "SourceAssets/AircraftReference/Mini4/mini-shell-v3.png",
+      "sha256": "65e221dbfc488b840c8ada7ac29675ecac8adcd47ef569ba4ad6fbc11ba69943",
+      "sizeBytes": 3263182,
+      "type": "PNG_SHELL_ALBEDO_REFERENCE_SRGB",
+      "migrationProfile": "textureReferenceOnly",
+      "sourceAndAuthorization": "AeroSim-runtime-work 中于 2026-10-05 通过内置 image generation 新生成，无图像参考；项目生成资产，未发现单独许可证文件。",
+      "status": "PLACEHOLDER_REFERENCE_ONLY",
+      "notes": "仅 1254×1254 shell albedo/material swatch；非无人机照片、非 UV atlas、非正式机型几何、非认证 PBR scan，无 normal/roughness。"
+    },
+    {
+      "id": "aircraft.mini4.shell-source-note",
+      "sourcePath": "AeroSim/Assets/AeroSim/Resources/Art/AircraftV3/MINI_PROMPT.md",
+      "targetPath": "SourceAssets/AircraftReference/Mini4/mini-shell-v3-SOURCE.md",
+      "sha256": "77fa05328f599182100655625f1e1a391a4c36e71aeebc351d416ea3ffc36640",
+      "sizeBytes": 2426,
+      "type": "MARKDOWN_GENERATION_PROVENANCE",
+      "migrationProfile": "documentationOnly",
+      "sourceAndAuthorization": "随 AeroSim-runtime-work shell reference 提供的生成提示词、日期与限制说明。",
+      "status": "PLACEHOLDER_REFERENCE_ONLY"
+    }
+  ],
+  "excluded": [
+    {
+      "sourcePath": "AeroSim/Assets/AeroSim/Art/CoastProduction/P11/HeroCliff/Models/HeroCliff_P11_Source.blend",
+      "sizeBytes": 74757872,
+      "reason": "Phase 0 不复制大体积 .blend；FBX 已包含最终 LOD0/1/2/3，且上游生产 manifest/README 已保留。若未来确需纳入，该文件超过 50 MiB，必须先配置 Git LFS。"
+    },
+    {
+      "pattern": "*.meta, AeroSim/Library/**, AeroSim/Builds/**, Temp/**, verification 临时证据",
+      "reason": "Unity 导入元数据、缓存、构建与临时证据不属于可迁移最小源资产。"
+    }
+  ]
+}

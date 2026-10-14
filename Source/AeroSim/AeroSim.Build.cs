@@ -1,0 +1,18 @@
+using UnrealBuildTool;
+
+public class AeroSim : ModuleRules
+{
+    public AeroSim(ReadOnlyTargetRules Target) : base(Target)
+    {
+        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+
+        PublicDependencyModuleNames.AddRange(new[]
+        {
+            "Core",
+            "CoreUObject",
+            "Engine",
+            "EnhancedInput",
+            "InputCore"
+        });
+    }
+}

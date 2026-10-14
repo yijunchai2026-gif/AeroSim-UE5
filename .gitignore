@@ -1,0 +1,27 @@
+# Unreal generated output
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+.vs/
+.vscode/
+.idea/
+*.VC.db
+*.VC.opendb
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
+*.xcuserstate
+*.xcuserdata/
+
+# Local tooling and OS files
+.DS_Store
+*.log
+*.tmp
+
+# Keep source-controlled build metadata
+!Source/**
+!Plugins/**/Source/**
+!Config/**
