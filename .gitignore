@@ -20,6 +20,9 @@ Saved/
 .DS_Store
 *.log
 *.tmp
+__pycache__/
+*.py[cod]
+.pytest_cache/
 
 # Keep source-controlled build metadata
 !Source/**
