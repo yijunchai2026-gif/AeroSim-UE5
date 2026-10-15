@@ -2,9 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Phase2Systems.h"
 #include "PacificCoastGraybox.generated.h"
 
 class UDirectionalLightComponent;
+class UExponentialHeightFogComponent;
+class UPostProcessComponent;
 class USceneComponent;
 class USkyLightComponent;
 class UStaticMesh;
@@ -16,6 +19,8 @@ struct AEROSIM_API FPacificCoastGrayboxContract final
 {
     static constexpr float WorldSizeCm = 100000.0F;
     static constexpr float WorldHalfExtentCm = WorldSizeCm * 0.5F;
+    static constexpr float CoreWidthCm = 30000.0F;
+    static constexpr float CoreLengthCm = 50000.0F;
     static constexpr float TakeoffPadRadiusCm = 1800.0F;
     static constexpr float RouteToleranceCm = 2500.0F;
     static constexpr float StandardReferenceHeightCm = 180.0F;
@@ -52,6 +57,14 @@ public:
     int32 GetGeneratedGateCount() const { return GeneratedGateCount; }
     int32 GetGeneratedRouteArrowCount() const { return GeneratedRouteArrowCount; }
     int32 GetGeneratedScaleReferenceCount() const { return GeneratedScaleReferenceCount; }
+    int32 GetGeneratedHeroZoneCount() const { return GeneratedHeroZoneCount; }
+    int32 GetRainStreakCount() const { return RainStreaks.Num(); }
+    bool IsRainCurtainVisible() const;
+    float GetAppliedFogDensity() const;
+    const FEnvironmentState& GetAppliedEnvironmentState() const { return AppliedEnvironmentState; }
+
+    UFUNCTION(BlueprintCallable, Category = "Environment")
+    void ApplyEnvironmentState(const FEnvironmentState& State);
 
 private:
     UStaticMeshComponent* AddBox(
@@ -75,8 +88,23 @@ private:
     UPROPERTY(VisibleAnywhere, Category = "Graybox")
     TObjectPtr<UDirectionalLightComponent> KeyLight;
 
-    UPROPERTY(VisibleAnywhere, Category = "Graybox")
+    UPROPERTY(VisibleAnywhere, Category = "Environment")
     TObjectPtr<USkyLightComponent> FillLight;
+
+    UPROPERTY(VisibleAnywhere, Category = "Environment")
+    TObjectPtr<UExponentialHeightFogComponent> WeatherFog;
+
+    UPROPERTY(VisibleAnywhere, Category = "Environment")
+    TObjectPtr<UPostProcessComponent> WeatherPostProcess;
+
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UStaticMeshComponent>> RainStreaks;
+
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UStaticMeshComponent>> WetHighlightPrimitives;
+
+    UPROPERTY(VisibleInstanceOnly, Category = "Environment")
+    FEnvironmentState AppliedEnvironmentState;
 
     UPROPERTY(Transient)
     TArray<TObjectPtr<UStaticMeshComponent>> ColoredPrimitives;
@@ -86,4 +114,5 @@ private:
     int32 GeneratedGateCount = 0;
     int32 GeneratedRouteArrowCount = 0;
     int32 GeneratedScaleReferenceCount = 0;
+    int32 GeneratedHeroZoneCount = 0;
 };

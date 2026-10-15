@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "GenericPlatform/GenericPlatformInputDeviceMapper.h"
+#include "Phase2Systems.h"
 #include "FlightPawn.generated.h"
 
 class UCameraComponent;
@@ -27,8 +28,11 @@ enum class EFlightPhase : uint8
 UENUM(BlueprintType)
 enum class EFlightCameraMode : uint8
 {
+    /** Phase 1 name retained as a serialized/API alias for the Phase 2 nose camera. */
     FPV,
-    Chase
+    /** Phase 1 chase mode becomes the near follow preset. */
+    Chase,
+    FarFollow
 };
 
 /** Device-independent, normalized semantic controls consumed by the simulation. */
@@ -159,6 +163,15 @@ public:
     EFlightCameraMode GetCameraMode() const { return CameraMode; }
     bool IsAircraftShellVisible() const;
     FFlightHudData GetHudData() const;
+    float GetVerticalFov() const { return FovTransaction.GetEffectiveVerticalFov(); }
+    float GetHorizontalFov(float AspectRatio) const { return FVerticalFovTransaction::VerticalToHorizontal(GetVerticalFov(), AspectRatio); }
+    const FVerticalFovTransaction& GetFovTransaction() const { return FovTransaction; }
+    const FDeterministicFlightTrace& GetFlightTrace() const { return FlightTrace; }
+    FFlightResultMetrics GetResultMetrics() const { return FlightTrace.BuildResult(); }
+    float GetResumeCountdownSeconds() const { return ResumeCountdownSeconds; }
+    bool IsResumeCountdownActive() const { return ResumeCountdownSeconds > 0.0F; }
+    USpringArmComponent* GetFollowSpringArm() const { return SpringArm; }
+    UCameraComponent* GetFlightCamera() const { return Camera; }
 
     UInputMappingContext* GetFlightMappingContext() const { return InputSuite.MappingContext; }
     UInputAction* GetPitchAction() const { return InputSuite.PitchAction; }
@@ -182,8 +195,23 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Camera")
     void CycleCamera();
 
+    UFUNCTION(BlueprintCallable, Category = "Camera")
+    bool PreviewVerticalFov(float VerticalDegrees);
+
+    UFUNCTION(BlueprintCallable, Category = "Camera")
+    bool ApplyVerticalFov();
+
+    UFUNCTION(BlueprintCallable, Category = "Camera")
+    void CancelVerticalFov();
+
+    UFUNCTION(BlueprintCallable, Category = "Camera")
+    bool UndoVerticalFov();
+
     UFUNCTION(BlueprintCallable, Category = "Flight")
     void ResetFlight();
+
+    /** Deterministic fixed view used only by command-line visual review capture. */
+    void ConfigureReviewView(const FTransform& PawnTransform, EFlightCameraMode Mode);
 
     /** Testable semantic injection; values are clamped and ignored while paused. */
     void SetSemanticInput(const FFlightControlInput& NewInput);
@@ -192,6 +220,9 @@ private:
     bool ValidateConfiguredInputSuite() const;
     void ApplyMappingContext() const;
     void ApplyCameraMode();
+    void ApplyFov();
+    void AdvanceResumeCountdown(float DeltaSeconds);
+    void RecordTrace(float DeltaSeconds);
     void HandlePitch(const FInputActionValue& Value);
     void HandleRoll(const FInputActionValue& Value);
     void HandleYaw(const FInputActionValue& Value);
@@ -203,6 +234,8 @@ private:
     void HandleCamera(const FInputActionValue& Value);
     void HandlePause(const FInputActionValue& Value);
     void HandleReset(const FInputActionValue& Value);
+    void HandleMissionAdvance();
+    void HandleWeatherCycle();
     void HandleApplicationDeactivated();
     void HandleInputDeviceConnectionChanged(EInputDeviceConnectionState ConnectionState, FPlatformUserId PlatformUserId, FInputDeviceId InputDeviceId);
 
@@ -240,5 +273,16 @@ private:
     UPROPERTY(VisibleInstanceOnly, Category = "Camera")
     EFlightCameraMode CameraMode = EFlightCameraMode::Chase;
 
+    UPROPERTY(VisibleInstanceOnly, Category = "Camera")
+    FVerticalFovTransaction FovTransaction;
+
+    UPROPERTY(VisibleInstanceOnly, Category = "Replay")
+    FDeterministicFlightTrace FlightTrace;
+
+    UPROPERTY(VisibleInstanceOnly, Category = "Input")
+    float ResumeCountdownSeconds = 0.0F;
+
+    float FlightElapsedSeconds = 0.0F;
+    float TraceAccumulatorSeconds = 0.0F;
     FTransform InitialTransform = FTransform::Identity;
 };

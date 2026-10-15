@@ -95,3 +95,15 @@ Command 白名单初期覆盖 inspect、list assets、spawn draft、modify draft
 ## 12. 关键 ADR
 
 Phase 0 至少形成：UE 版本与升级策略、模块/插件边界、渲染与 RHI、飞行步长与回放、World Partition/HLOD、UI 技术、资产导入/LFS、保存格式、MCP 传输与认证、目标平台构建链。ADR 必须写选项、证据、决定、后果和回退，不用“行业最佳实践”代替实测。
+
+
+## Phase 2 runtime additions
+
+Phase 2 keeps `FFlightInputSuite` and `FFlightModel` as the Phase 1 compatibility boundary, then adds pure/testable value contracts in `Phase2Systems`:
+
+- `FMissionFlow` owns Hangar/Preflight/Flight/Result/Replay transition validity;
+- `FVerticalFovTransaction` owns vFOV Preview/Apply/Cancel/Undo and aspect-derived hFOV;
+- `FEnvironmentState` is versioned and owns weather/time/seed truth;
+- `FDeterministicFlightTrace` owns fixed-rate recording, replay interpolation and result metrics.
+
+`AAeroSimGameMode` owns mission and environment state. `APacificCoastGraybox` is a pure C++ presentation consumer; `AFlightPawn` consumes camera/FOV/input/trace contracts; `AFlightHUD` is a read-only Canvas projection. Review command-line parameters select fixed view/weather only and expose no general command execution or MCP write surface.

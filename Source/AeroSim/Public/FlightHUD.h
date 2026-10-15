@@ -12,4 +12,5 @@ class AEROSIM_API AFlightHUD final : public AHUD
 
 public:
     virtual void DrawHUD() override;
+    static FVector2D CalculateSafeMargin(float ViewportWidth, float ViewportHeight);
 };

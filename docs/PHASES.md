@@ -76,3 +76,8 @@
 - MCP 顺序：P4 只读，P5 受控 Transform，P6 完整事务编辑，P7 才开放受控 AI 建议。
 - 验证事实：没有 UE、SDK、设备、资产或用户签字，就写 Blocked/Not Run。
 - 每个阶段新增高成本能力必须有 Low/Off 路径和回退方案。
+
+
+## 当前阶段事实（Phase 2）
+
+Phase 2 已实现 Pacific Coast 程序化 vertical slice、三 Hero Zone、五态任务流程、三相机/vFOV 事务、版本化环境状态、暂停恢复回中、Result/Replay 和 `AeroSim.Phase2` Automation。合同与验证见仓库根目录 `PHASE2.md` 及 `docs/PHASE2_VALIDATION.md`。Phase 3+ 能力不得据此视为已完成。

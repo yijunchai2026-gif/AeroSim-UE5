@@ -1,6 +1,7 @@
 #include "FlightPawn.h"
 
 #include "AeroSimRuntimeContract.h"
+#include "AeroSimGameMode.h"
 #include "Camera/CameraComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
@@ -177,6 +178,7 @@ void FFlightModel::Reset()
 AFlightPawn::AFlightPawn()
 {
     PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bTickEvenWhenPaused = true;
 
     Body = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Body"));
     SetRootComponent(Body);
@@ -219,6 +221,10 @@ AFlightPawn::AFlightPawn()
     SpringArm->SetupAttachment(Body);
     SpringArm->bUsePawnControlRotation = false;
     SpringArm->bDoCollisionTest = true;
+    SpringArm->ProbeSize = 28.0F;
+    SpringArm->ProbeChannel = ECC_Camera;
+    SpringArm->bEnableCameraLag = true;
+    SpringArm->CameraLagSpeed = 12.0F;
 
     Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
     Camera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
@@ -355,6 +361,8 @@ void AFlightPawn::BeginPlay()
     Super::BeginPlay();
     InitialTransform = GetActorTransform();
     FlightModel.Reset();
+    FlightTrace.Reset();
+    FlightTrace.Record(0.0F, FlightModel.Position, FlightModel.Rotation);
     ValidateConfiguredInputSuite();
 
     UStaticMeshComponent* ShellParts[] = { Fuselage, LeftWing, RightWing, Tail };
@@ -386,11 +394,14 @@ void AFlightPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AFlightPawn::Tick(const float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    AdvanceResumeCountdown(DeltaSeconds);
     FlightModel.Advance(ControlInput, DeltaSeconds);
+    RecordTrace(DeltaSeconds);
+    ApplyFov();
     SetActorLocationAndRotation(
         InitialTransform.TransformPosition(FlightModel.Position),
         InitialTransform.TransformRotation(FlightModel.Rotation.Quaternion()),
-        false, nullptr, ETeleportType::None);
+        true, nullptr, ETeleportType::None);
 }
 
 void AFlightPawn::PawnClientRestart()
@@ -439,11 +450,13 @@ void AFlightPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
     EnhancedInput->BindAction(InputSuite.CameraAction, ETriggerEvent::Started, this, &AFlightPawn::HandleCamera);
     EnhancedInput->BindAction(InputSuite.PauseAction, ETriggerEvent::Started, this, &AFlightPawn::HandlePause);
     EnhancedInput->BindAction(InputSuite.ResetAction, ETriggerEvent::Started, this, &AFlightPawn::HandleReset);
+    PlayerInputComponent->BindKey(EKeys::M, IE_Pressed, this, &AFlightPawn::HandleMissionAdvance);
+    PlayerInputComponent->BindKey(EKeys::T, IE_Pressed, this, &AFlightPawn::HandleWeatherCycle);
 }
 
 void AFlightPawn::SetSemanticInput(const FFlightControlInput& NewInput)
 {
-    if (FlightModel.Phase == EFlightPhase::Paused)
+    if (FlightModel.Phase == EFlightPhase::Paused || IsResumeCountdownActive())
     {
         NeutralizeInput();
         return;
@@ -464,6 +477,7 @@ void AFlightPawn::SetSafePaused(const bool bPaused)
     APlayerController* PlayerController = Cast<APlayerController>(GetController());
     if (bPaused)
     {
+        ResumeCountdownSeconds = 0.0F;
         FlightModel.Pause();
         if (PlayerController != nullptr)
         {
@@ -476,15 +490,36 @@ void AFlightPawn::SetSafePaused(const bool bPaused)
         {
             PlayerController->SetPause(false);
         }
+        if (FlightModel.Phase == EFlightPhase::Paused)
+        {
+            ResumeCountdownSeconds = 3.0F;
+        }
+    }
+}
+
+void AFlightPawn::AdvanceResumeCountdown(const float DeltaSeconds)
+{
+    if (ResumeCountdownSeconds <= 0.0F)
+    {
+        return;
+    }
+    NeutralizeInput();
+    ResumeCountdownSeconds = FMath::Max(0.0F, ResumeCountdownSeconds - DeltaSeconds);
+    if (ResumeCountdownSeconds <= 0.0F)
+    {
         FlightModel.Resume();
     }
 }
 
 void AFlightPawn::CycleCamera()
 {
-    CameraMode = CameraMode == EFlightCameraMode::Chase
-        ? EFlightCameraMode::FPV
-        : EFlightCameraMode::Chase;
+    switch (CameraMode)
+    {
+    case EFlightCameraMode::Chase: CameraMode = EFlightCameraMode::FPV; break;
+    case EFlightCameraMode::FPV: CameraMode = EFlightCameraMode::FarFollow; break;
+    case EFlightCameraMode::FarFollow: CameraMode = EFlightCameraMode::Chase; break;
+    default: CameraMode = EFlightCameraMode::Chase; break;
+    }
     ApplyCameraMode();
 }
 
@@ -494,23 +529,78 @@ void AFlightPawn::ApplyCameraMode()
     {
         return;
     }
-    const bool bShellVisible = CameraMode == EFlightCameraMode::Chase;
+    const bool bShellVisible = CameraMode != EFlightCameraMode::FPV;
     Fuselage->SetVisibility(bShellVisible, true);
     LeftWing->SetVisibility(bShellVisible, true);
     RightWing->SetVisibility(bShellVisible, true);
     Tail->SetVisibility(bShellVisible, true);
 
+    SpringArm->bDoCollisionTest = CameraMode != EFlightCameraMode::FPV;
     if (CameraMode == EFlightCameraMode::FPV)
     {
         SpringArm->TargetArmLength = 0.0F;
         SpringArm->SetRelativeLocation(FVector(170.0, 0.0, 65.0));
+        SpringArm->SetRelativeRotation(FRotator::ZeroRotator);
+    }
+    else if (CameraMode == EFlightCameraMode::FarFollow)
+    {
+        SpringArm->TargetArmLength = 1850.0F;
+        SpringArm->SetRelativeLocation(FVector(-80.0, 0.0, 360.0));
+        SpringArm->SetRelativeRotation(FRotator(-16.0F, 0.0F, 0.0F));
     }
     else
     {
-        SpringArm->TargetArmLength = 1050.0F;
+        SpringArm->TargetArmLength = 900.0F;
         SpringArm->SetRelativeLocation(FVector(-40.0, 0.0, 240.0));
         SpringArm->SetRelativeRotation(FRotator(-12.0F, 0.0F, 0.0F));
     }
+    ApplyFov();
+}
+
+void AFlightPawn::ApplyFov()
+{
+    if (Camera == nullptr)
+    {
+        return;
+    }
+    int32 Width = 16;
+    int32 Height = 9;
+    if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+    {
+        PlayerController->GetViewportSize(Width, Height);
+    }
+    const float AspectRatio = Height > 0 ? static_cast<float>(Width) / static_cast<float>(Height) : 16.0F / 9.0F;
+    Camera->SetFieldOfView(GetHorizontalFov(AspectRatio));
+}
+
+bool AFlightPawn::PreviewVerticalFov(const float VerticalDegrees)
+{
+    const bool bAccepted = FovTransaction.Preview(VerticalDegrees);
+    if (bAccepted)
+    {
+        ApplyFov();
+    }
+    return bAccepted;
+}
+
+bool AFlightPawn::ApplyVerticalFov()
+{
+    const bool bApplied = FovTransaction.Apply();
+    ApplyFov();
+    return bApplied;
+}
+
+void AFlightPawn::CancelVerticalFov()
+{
+    FovTransaction.Cancel();
+    ApplyFov();
+}
+
+bool AFlightPawn::UndoVerticalFov()
+{
+    const bool bUndone = FovTransaction.Undo();
+    ApplyFov();
+    return bUndone;
 }
 
 bool AFlightPawn::IsAircraftShellVisible() const
@@ -521,15 +611,45 @@ bool AFlightPawn::IsAircraftShellVisible() const
         && Tail != nullptr && Tail->IsVisible();
 }
 
+void AFlightPawn::ConfigureReviewView(const FTransform& PawnTransform, const EFlightCameraMode Mode)
+{
+    InitialTransform = PawnTransform;
+    FlightModel.Reset();
+    CameraMode = Mode;
+    ApplyCameraMode();
+    SetActorTransform(PawnTransform, false, nullptr, ETeleportType::ResetPhysics);
+}
+
 void AFlightPawn::ResetFlight()
 {
     NeutralizeInput();
+    ResumeCountdownSeconds = 0.0F;
+    FlightElapsedSeconds = 0.0F;
+    TraceAccumulatorSeconds = 0.0F;
+    FlightTrace.Reset();
     FlightModel.Reset();
+    FlightTrace.Record(0.0F, FlightModel.Position, FlightModel.Rotation);
     if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
     {
         PlayerController->SetPause(false);
     }
     SetActorTransform(InitialTransform, false, nullptr, ETeleportType::ResetPhysics);
+}
+
+void AFlightPawn::RecordTrace(const float DeltaSeconds)
+{
+    if (FlightModel.Phase == EFlightPhase::Paused || DeltaSeconds <= 0.0F)
+    {
+        return;
+    }
+    FlightElapsedSeconds += DeltaSeconds;
+    TraceAccumulatorSeconds += DeltaSeconds;
+    while (TraceAccumulatorSeconds + KINDA_SMALL_NUMBER >= FDeterministicFlightTrace::SampleIntervalSeconds)
+    {
+        TraceAccumulatorSeconds -= FDeterministicFlightTrace::SampleIntervalSeconds;
+        const float SampleTime = FlightElapsedSeconds - TraceAccumulatorSeconds;
+        FlightTrace.Record(SampleTime, FlightModel.Position, FlightModel.Rotation);
+    }
 }
 
 FFlightHudData AFlightPawn::GetHudData() const
@@ -618,6 +738,26 @@ void AFlightPawn::HandleReset(const FInputActionValue& Value)
     if (Value.Get<bool>())
     {
         ResetFlight();
+    }
+}
+
+void AFlightPawn::HandleMissionAdvance()
+{
+    if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
+    {
+        GameMode->AdvanceMission();
+    }
+}
+
+void AFlightPawn::HandleWeatherCycle()
+{
+    if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
+    {
+        const EAeroSimWeather Current = GameMode->GetEnvironmentState().Weather;
+        const EAeroSimWeather Next = Current == EAeroSimWeather::Clear
+            ? EAeroSimWeather::Overcast
+            : (Current == EAeroSimWeather::Overcast ? EAeroSimWeather::Rain : EAeroSimWeather::Clear);
+        GameMode->SetWeather(Next);
     }
 }
 

@@ -4,7 +4,7 @@
 
 ## 1. 当前工作边界
 
-- Phase 1 已获授权实现最小飞行闭环；当前事实见 `PHASE1.md`。Phase 2+ 环境视觉、正式资产、天气和 MCP 仍不在范围内。
+- Phase 2 已实现 Pacific Coast 程序化 vertical slice；当前事实见 `PHASE2.md` 与 `docs/PHASE2_VALIDATION.md`。正式 DJI 资产、复杂空气动力学、MCP 写权限、多人/XR 仍不在范围内。
 - 不创建提交，不 push，不合并，不改远端、分支保护或仓库可见性。
 - 没有 UE Editor/命令行工具时只能做静态审查；所有引擎编译、Cook、运行、截图和性能结果必须记为 `BLOCKED_NO_UE` 或 `NOT_RUN`，绝不能写成 PASS。
 
@@ -26,11 +26,11 @@ Phase 0 冻结具体 UE 5.x 版本、工具链和插件清单。在冻结前只�
 
 | 路径 | 责任 |
 |---|---|
-| `Source/` | C++ 模块、公共接口与测试；当前禁改 |
-| `Plugins/` | 项目插件和可隔离能力；当前禁改 |
-| `Config/` | 平台、输入、渲染和打包配置；当前禁改 |
-| `SourceAssets/` | DCC 源、参考、来源与哈希；当前禁改 |
-| `Content/` | UE 资产与关卡；创建前须冻结命名、挂载点和迁移规则 |
+| `Source/` | C++ 模块、公共接口与测试；按当前阶段合同修改 |
+| `Plugins/` | 项目插件和可隔离能力；Phase 2 未扩展 |
+| `Config/` | 平台、输入、渲染和打包配置；禁止保留自动写入凭据 |
+| `SourceAssets/` | DCC 源、参考、来源与哈希；正式资产仍不在 Phase 2 |
+| `Content/` | UE 资产与关卡；Phase 2 禁止新增项目二进制 uasset |
 | `docs/` | 产品、架构、阶段、验收与迁移的事实源 |
 | `Saved/`、`Intermediate/`、`DerivedDataCache/`、`Binaries/` | 本地产物，不作为交付证据源，不提交 |
 

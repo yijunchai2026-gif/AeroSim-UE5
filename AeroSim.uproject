@@ -2,7 +2,7 @@
   "FileVersion": 3,
   "EngineAssociation": "5.8",
   "Category": "Simulation",
-  "Description": "AeroSim Phase 1 deterministic flight loop",
+  "Description": "AeroSim Phase 2 Pacific Coast vertical slice",
   "Modules": [
     {
       "Name": "AeroSim",
