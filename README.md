@@ -8,7 +8,7 @@ AeroSim 的 Phase 0 冻结引擎版本为 **Unreal Engine 5.8**。升级或降�
 
 ```bash
 python3 Scripts/phase0_static_validate.py
-python3 Scripts/phase0_preflight.py --ue-editor "/Applications/Epic Games/UE_5.8/Engine/Binaries/Mac/UnrealEditor.app/Contents/MacOS/UnrealEditor"
+python3 Scripts/phase0_preflight.py --ue-editor "/Users/Shared/Epic Games/UE_5.8/Engine/Binaries/Mac/UnrealEditor"
 ```
 
 只有两个脚本都返回 `0`，才能继续显式调用 UE Build/Cook/Package。调用链必须使用成功依赖，例如：
@@ -24,7 +24,7 @@ python3 Scripts/phase0_preflight.py --ue-editor "$UE_EDITOR" && \
 ## macOS 基线与阻断条件
 
 - Apple M3 Pro 与 Metal SM6 适合作为当前开发基线。
-- 审查基线约 53 GB；本次检查约 56 GiB 可用，低于 Phase 0 的 100 GiB Cook/Package 门槛。
+- 当前机器安装 UE 5.8.3；2026-10-16 preflight 检查时约 120.8 GiB 可用，达到 Phase 0 的 100 GiB Cook/Package 门槛。
 - Metal Toolchain 17F109 已通过 Xcode 下载并安装，`/usr/bin/xcrun --find metallib` 已能定位 `metallib`。
 - `Scripts/phase0_preflight.py` 从 UnrealEditor 路径反向定位同一 `Engine/Build/Build.version`，只接受 `MajorVersion=5`、`MinorVersion=8`，并要求同一 Engine 根下存在非 symlink 的 `Build/BatchFiles/RunUAT.sh`；同时使用固定、只读检查验证磁盘空间、Xcode developer directory、macOS SDK 和 `metallib`。
 - Preflight 不调用 UE、不写文件、不使用 shell，也不接受任意命令字符串。任一检查失败即返回非零，后续 Cook/Package 必须停止。
@@ -38,6 +38,6 @@ python3 Scripts/phase0_preflight.py --ue-editor "$UE_EDITOR" && \
 
 三种评审相机默认启用 `bLockToReviewTransform` 并强制使用固定评审变换。捕获前必须调用 `CanGenerateFormalEvidence()`；它会以小容差校验当前 Location、Rotation 和 Camera FOV。显式关闭锁定或任一状态漂移都会 fail closed，相关画面不得作为正式 Evidence。
 
-## 无 UE 环境说明
+## 当前验证状态
 
-当前机器没有可用 UE5.8，且 preflight 会因 UE Editor 和磁盘空间条件失败；`metallib` 已恢复可用。因此这里只能声明静态验证结果，不能声明编译、Automation、Cook 或 Package 通过。
+2026-10-16 已通过静态验证、环境 preflight、AeroSimEditor Mac Development 编译、`AeroSim.Phase0.Editor.Heartbeat`、`AeroSim.Phase0.Runtime.Smoke`、Mac Development Cook/Stage/Package/Archive 和打包应用 NullRHI 启动冒烟。Cook 必须传入 `-AdditionalCookerOptions='-SkipZenStore'`，避免本机 Zen Store 为生成的远程地址执行无效连接。正式渲染、性能和人工 G0–G4 仍不在本次自动化 PASS 范围内。

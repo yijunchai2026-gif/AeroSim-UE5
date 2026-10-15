@@ -98,3 +98,11 @@ Phase 0 的产物是可信基线，不是可运行游戏。验收人按职责泳
 可标记 **Phase 0 Planning Ready** 的条件：A、C–I 全部 PASS，B 已 PASS 或明确为 `BLOCKED_NO_UE`，且没有被伪装成运行通过。只有 B 全部 PASS、最小工程 spike 可复跑，才可批准进入 Phase 1 实现与验收。
 
 签出记录应包含日期、责任泳道、状态、证据链接、未决项、解除条件和下一次复核点；不填写不存在的人员姓名。
+
+### 2026-10-16 工具链签出
+
+- **责任泳道：** RD-01、QA-01、QA-05
+- **状态：** PASS（macOS Phase 0 工具链与最小工程 spike）
+- **证据：** UE 5.8.3 preflight 全项通过；AeroSimEditor Mac Development 编译通过；`AeroSim.Phase0.Editor.Heartbeat` 与 `AeroSim.Phase0.Runtime.Smoke` 均为 Success；Mac Development Cook/Stage/Package/Archive 退出码为 0；打包应用 NullRHI 启动并正常退出。
+- **边界：** 未覆盖 Windows、iPadOS/iOS 签名和真机，也不构成人工视觉 G0–G4 或 Shipping 性能 PASS。
+- **已知约束：** 本机 Cook 使用 `-AdditionalCookerOptions='-SkipZenStore'`，避免生成的远程 Zen Store 地址导致连接停滞。
