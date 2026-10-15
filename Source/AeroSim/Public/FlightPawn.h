@@ -2,17 +2,113 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "GenericPlatform/GenericPlatformInputDeviceMapper.h"
 #include "FlightPawn.generated.h"
 
 class UCameraComponent;
-class UFloatingPawnMovement;
 class UInputAction;
 class UInputMappingContext;
 class USpringArmComponent;
 class UStaticMeshComponent;
 struct FInputActionValue;
 
-/** Mapping context and actions form one atomic override unit. */
+enum class EInputDeviceConnectionState : uint8;
+
+UENUM(BlueprintType)
+enum class EFlightPhase : uint8
+{
+    Grounded,
+    Takeoff,
+    Flight,
+    Landing,
+    Paused
+};
+
+UENUM(BlueprintType)
+enum class EFlightCameraMode : uint8
+{
+    FPV,
+    Chase
+};
+
+/** Device-independent, normalized semantic controls consumed by the simulation. */
+USTRUCT(BlueprintType)
+struct AEROSIM_API FFlightControlInput
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category = "Flight")
+    float Pitch = 0.0F;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Flight")
+    float Roll = 0.0F;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Flight")
+    float Yaw = 0.0F;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Flight")
+    float Throttle = 0.0F;
+
+    void Clamp();
+    void Neutralize();
+    bool IsNeutral() const;
+};
+
+/** Pure, deterministic Phase 1 motion/state model. Position is relative to the reset point in cm. */
+USTRUCT(BlueprintType)
+struct AEROSIM_API FFlightModel
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category = "Flight")
+    EFlightPhase Phase = EFlightPhase::Grounded;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Flight")
+    FVector Position = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Flight")
+    FVector Velocity = FVector::ZeroVector;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Flight")
+    FRotator Rotation = FRotator::ZeroRotator;
+
+    void Advance(const FFlightControlInput& Input, float DeltaSeconds);
+    void Pause();
+    void Resume();
+    void Reset();
+
+private:
+    EFlightPhase ResumePhase = EFlightPhase::Grounded;
+};
+
+USTRUCT(BlueprintType)
+struct AEROSIM_API FFlightHudData
+{
+    GENERATED_BODY()
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    EFlightPhase Phase = EFlightPhase::Grounded;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    EFlightCameraMode CameraMode = EFlightCameraMode::Chase;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    float AltitudeMeters = 0.0F;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    float SpeedMetersPerSecond = 0.0F;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    float Throttle = 0.0F;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    bool bInputNeutral = true;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    FString BuildId;
+};
+
+/** Mapping context and semantic actions form one atomic override unit. */
 USTRUCT(BlueprintType)
 struct AEROSIM_API FFlightInputSuite
 {
@@ -22,13 +118,22 @@ struct AEROSIM_API FFlightInputSuite
     TObjectPtr<UInputMappingContext> MappingContext;
 
     UPROPERTY(EditAnywhere, Category = "Input")
-    TObjectPtr<UInputAction> MoveAction;
+    TObjectPtr<UInputAction> PitchAction;
 
     UPROPERTY(EditAnywhere, Category = "Input")
-    TObjectPtr<UInputAction> LookAction;
+    TObjectPtr<UInputAction> RollAction;
+
+    UPROPERTY(EditAnywhere, Category = "Input")
+    TObjectPtr<UInputAction> YawAction;
 
     UPROPERTY(EditAnywhere, Category = "Input")
     TObjectPtr<UInputAction> ThrottleAction;
+
+    UPROPERTY(EditAnywhere, Category = "Input")
+    TObjectPtr<UInputAction> CameraAction;
+
+    UPROPERTY(EditAnywhere, Category = "Input")
+    TObjectPtr<UInputAction> PauseAction;
 
     UPROPERTY(EditAnywhere, Category = "Input")
     TObjectPtr<UInputAction> ResetAction;
@@ -43,32 +148,78 @@ public:
     AFlightPawn();
 
     virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+    virtual void Tick(float DeltaSeconds) override;
     virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
     virtual void PawnClientRestart() override;
 
     const FFlightInputSuite& GetInputSuite() const { return InputSuite; }
+    const FFlightControlInput& GetControlInput() const { return ControlInput; }
+    const FFlightModel& GetFlightModel() const { return FlightModel; }
+    EFlightCameraMode GetCameraMode() const { return CameraMode; }
+    bool IsAircraftShellVisible() const;
+    FFlightHudData GetHudData() const;
+
     UInputMappingContext* GetFlightMappingContext() const { return InputSuite.MappingContext; }
-    UInputAction* GetMoveAction() const { return InputSuite.MoveAction; }
-    UInputAction* GetLookAction() const { return InputSuite.LookAction; }
+    UInputAction* GetPitchAction() const { return InputSuite.PitchAction; }
+    UInputAction* GetRollAction() const { return InputSuite.RollAction; }
+    UInputAction* GetYawAction() const { return InputSuite.YawAction; }
     UInputAction* GetThrottleAction() const { return InputSuite.ThrottleAction; }
+    UInputAction* GetCameraAction() const { return InputSuite.CameraAction; }
+    UInputAction* GetPauseAction() const { return InputSuite.PauseAction; }
     UInputAction* GetResetAction() const { return InputSuite.ResetAction; }
 
     /** Fail-closed validation used before mapping application and action binding. */
     bool IsInputSuiteValid(const FFlightInputSuite& Candidate, bool bLogErrors = true) const;
 
+    /** Explicit safety boundary used by pause, focus loss, disconnect and tests. */
+    UFUNCTION(BlueprintCallable, Category = "Input")
+    void NeutralizeInput();
+
+    UFUNCTION(BlueprintCallable, Category = "Flight")
+    void SetSafePaused(bool bPaused);
+
+    UFUNCTION(BlueprintCallable, Category = "Camera")
+    void CycleCamera();
+
+    UFUNCTION(BlueprintCallable, Category = "Flight")
+    void ResetFlight();
+
+    /** Testable semantic injection; values are clamped and ignored while paused. */
+    void SetSemanticInput(const FFlightControlInput& NewInput);
+
 private:
     bool ValidateConfiguredInputSuite() const;
     void ApplyMappingContext() const;
-    void HandleMove(const FInputActionValue& Value);
-    void HandleLook(const FInputActionValue& Value);
+    void ApplyCameraMode();
+    void HandlePitch(const FInputActionValue& Value);
+    void HandleRoll(const FInputActionValue& Value);
+    void HandleYaw(const FInputActionValue& Value);
     void HandleThrottle(const FInputActionValue& Value);
+    void HandlePitchReleased(const FInputActionValue& Value);
+    void HandleRollReleased(const FInputActionValue& Value);
+    void HandleYawReleased(const FInputActionValue& Value);
+    void HandleThrottleReleased(const FInputActionValue& Value);
+    void HandleCamera(const FInputActionValue& Value);
+    void HandlePause(const FInputActionValue& Value);
     void HandleReset(const FInputActionValue& Value);
+    void HandleApplicationDeactivated();
+    void HandleInputDeviceConnectionChanged(EInputDeviceConnectionState ConnectionState, FPlatformUserId PlatformUserId, FInputDeviceId InputDeviceId);
 
     UPROPERTY(VisibleAnywhere, Category = "Flight")
     TObjectPtr<UStaticMeshComponent> Body;
 
     UPROPERTY(VisibleAnywhere, Category = "Flight")
-    TObjectPtr<UFloatingPawnMovement> Movement;
+    TObjectPtr<UStaticMeshComponent> Fuselage;
+
+    UPROPERTY(VisibleAnywhere, Category = "Flight")
+    TObjectPtr<UStaticMeshComponent> LeftWing;
+
+    UPROPERTY(VisibleAnywhere, Category = "Flight")
+    TObjectPtr<UStaticMeshComponent> RightWing;
+
+    UPROPERTY(VisibleAnywhere, Category = "Flight")
+    TObjectPtr<UStaticMeshComponent> Tail;
 
     UPROPERTY(VisibleAnywhere, Category = "Camera")
     TObjectPtr<USpringArmComponent> SpringArm;
@@ -79,6 +230,15 @@ private:
     /** Override the complete suite. Partial or mismatched overrides are rejected and never applied. */
     UPROPERTY(EditDefaultsOnly, Category = "Input", meta = (ShowOnlyInnerProperties))
     FFlightInputSuite InputSuite;
+
+    UPROPERTY(VisibleInstanceOnly, Category = "Flight")
+    FFlightControlInput ControlInput;
+
+    UPROPERTY(VisibleInstanceOnly, Category = "Flight")
+    FFlightModel FlightModel;
+
+    UPROPERTY(VisibleInstanceOnly, Category = "Camera")
+    EFlightCameraMode CameraMode = EFlightCameraMode::Chase;
 
     FTransform InitialTransform = FTransform::Identity;
 };

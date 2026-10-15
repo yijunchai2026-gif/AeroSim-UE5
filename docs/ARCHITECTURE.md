@@ -46,7 +46,7 @@ Schema 必须带版本和迁移器。未知枚举、丢失 ID、哈希不符或�
 
 ## 5. 飞行与输入
 
-设备事件先映射为规范化动作，再经过 dead zone、曲线、仲裁和安全门进入 Simulation。暂停、失焦、断连和 UI 独占会生成显式 `NeutralizeInput`，不能只依赖下一帧设备值。固定步长/物理策略、重放确定性和网络需求在 Phase 1 spike 后由 ADR 决定；没有证据前不宣称确定性回放。
+设备事件先映射为规范化动作，再经过 dead zone、曲线、仲裁和安全门进入 Simulation。暂停、失焦、断连和 UI 独占会生成显式 `NeutralizeInput`，不能只依赖下一帧设备值。Phase 1 采用限制单步最大值的确定性轻量值类型运动模型，覆盖 Grounded/Takeoff/Flight/Landing/Paused；它用于功能闭环和 Automation，不宣称复杂空气动力学、跨平台位级确定性或正式回放能力。
 
 ## 6. 相机和 FOV
 

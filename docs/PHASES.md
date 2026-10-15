@@ -18,6 +18,8 @@
 
 退出：Windows Development 编译、Cook、Package 与启动通过；输入失焦/暂停/断连清零；灰盒 G0/G1 成立；缺 UE 时全部保持阻塞。
 
+**当前实现状态（2026-10-16）：**七动作语义输入、fail-closed Input Suite、飞行状态机、Safe Pause、FPV/Chase、可见 Canvas HUD、纯 C++ 1 km × 1 km Pacific Coast 灰盒和五门返航路线合同已落地。UE 5.8 Mac Development、Phase 1/Phase 0 Automation、Cook/Stage/Package/Archive 和打包应用 NullRHI 冒烟通过，因此本轮 Mac 自动化工程退出门为 PASS；Windows Development 仍未运行，真实画面的人工 G0/G1 保持 PENDING。实现与边界见 `../PHASE1.md`。
+
 ## Phase 2 — 飞行、相机与 HUD vertical slice
 
 **目标：**形成第一条用户可完成的端到端飞行链。

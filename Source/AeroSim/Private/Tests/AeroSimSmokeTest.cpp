@@ -10,6 +10,37 @@
 #include "Misc/AutomationTest.h"
 #include "ReviewCameras.h"
 
+namespace
+{
+FFlightInputSuite MakeCompleteSuite()
+{
+    FFlightInputSuite Suite;
+    Suite.MappingContext = NewObject<UInputMappingContext>();
+    Suite.PitchAction = NewObject<UInputAction>();
+    Suite.RollAction = NewObject<UInputAction>();
+    Suite.YawAction = NewObject<UInputAction>();
+    Suite.ThrottleAction = NewObject<UInputAction>();
+    Suite.CameraAction = NewObject<UInputAction>();
+    Suite.PauseAction = NewObject<UInputAction>();
+    Suite.ResetAction = NewObject<UInputAction>();
+    Suite.PitchAction->ValueType = EInputActionValueType::Axis1D;
+    Suite.RollAction->ValueType = EInputActionValueType::Axis1D;
+    Suite.YawAction->ValueType = EInputActionValueType::Axis1D;
+    Suite.ThrottleAction->ValueType = EInputActionValueType::Axis1D;
+    Suite.CameraAction->ValueType = EInputActionValueType::Boolean;
+    Suite.PauseAction->ValueType = EInputActionValueType::Boolean;
+    Suite.ResetAction->ValueType = EInputActionValueType::Boolean;
+    Suite.MappingContext->MapKey(Suite.PitchAction, EKeys::W);
+    Suite.MappingContext->MapKey(Suite.RollAction, EKeys::A);
+    Suite.MappingContext->MapKey(Suite.YawAction, EKeys::Q);
+    Suite.MappingContext->MapKey(Suite.ThrottleAction, EKeys::SpaceBar);
+    Suite.MappingContext->MapKey(Suite.CameraAction, EKeys::C);
+    Suite.MappingContext->MapKey(Suite.PauseAction, EKeys::P);
+    Suite.MappingContext->MapKey(Suite.ResetAction, EKeys::R);
+    return Suite;
+}
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
     FAeroSimRuntimeSmokeTest,
     "AeroSim.Phase0.Runtime.Smoke",
@@ -17,6 +48,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FAeroSimRuntimeSmokeTest::RunTest(const FString& Parameters)
 {
+    static_cast<void>(Parameters);
     const AAeroSimGameMode* GameMode = GetDefault<AAeroSimGameMode>();
     TestNotNull(TEXT("GameMode CDO exists"), GameMode);
     TestTrue(TEXT("FlightPawn is the default pawn"),
@@ -27,27 +59,17 @@ bool FAeroSimRuntimeSmokeTest::RunTest(const FString& Parameters)
     if (FlightPawn != nullptr)
     {
         TestNotNull(TEXT("Native mapping context exists"), FlightPawn->GetFlightMappingContext());
-        TestNotNull(TEXT("Native move action exists"), FlightPawn->GetMoveAction());
-        TestNotNull(TEXT("Native look action exists"), FlightPawn->GetLookAction());
+        TestNotNull(TEXT("Native pitch action exists"), FlightPawn->GetPitchAction());
+        TestNotNull(TEXT("Native roll action exists"), FlightPawn->GetRollAction());
+        TestNotNull(TEXT("Native yaw action exists"), FlightPawn->GetYawAction());
         TestNotNull(TEXT("Native throttle action exists"), FlightPawn->GetThrottleAction());
+        TestNotNull(TEXT("Native camera action exists"), FlightPawn->GetCameraAction());
+        TestNotNull(TEXT("Native pause action exists"), FlightPawn->GetPauseAction());
         TestNotNull(TEXT("Native reset action exists"), FlightPawn->GetResetAction());
         TestTrue(TEXT("Native input suite is atomically consistent"),
             FlightPawn->IsInputSuiteValid(FlightPawn->GetInputSuite(), false));
 
-        FFlightInputSuite CustomSuite;
-        CustomSuite.MappingContext = NewObject<UInputMappingContext>();
-        CustomSuite.MoveAction = NewObject<UInputAction>();
-        CustomSuite.MoveAction->ValueType = EInputActionValueType::Axis2D;
-        CustomSuite.LookAction = NewObject<UInputAction>();
-        CustomSuite.LookAction->ValueType = EInputActionValueType::Axis2D;
-        CustomSuite.ThrottleAction = NewObject<UInputAction>();
-        CustomSuite.ThrottleAction->ValueType = EInputActionValueType::Axis1D;
-        CustomSuite.ResetAction = NewObject<UInputAction>();
-        CustomSuite.ResetAction->ValueType = EInputActionValueType::Boolean;
-        CustomSuite.MappingContext->MapKey(CustomSuite.MoveAction, EKeys::W);
-        CustomSuite.MappingContext->MapKey(CustomSuite.LookAction, EKeys::Mouse2D);
-        CustomSuite.MappingContext->MapKey(CustomSuite.ThrottleAction, EKeys::SpaceBar);
-        CustomSuite.MappingContext->MapKey(CustomSuite.ResetAction, EKeys::R);
+        FFlightInputSuite CustomSuite = MakeCompleteSuite();
         TestTrue(TEXT("Complete custom suite is accepted"), FlightPawn->IsInputSuiteValid(CustomSuite, false));
 
         UInputAction* ForeignAction = NewObject<UInputAction>();
@@ -56,8 +78,9 @@ bool FAeroSimRuntimeSmokeTest::RunTest(const FString& Parameters)
         TestFalse(TEXT("Context containing a foreign action is rejected"),
             FlightPawn->IsInputSuiteValid(CustomSuite, false));
 
+        CustomSuite = MakeCompleteSuite();
         CustomSuite.MappingContext = NewObject<UInputMappingContext>();
-        CustomSuite.MappingContext->MapKey(CustomSuite.MoveAction, EKeys::W);
+        CustomSuite.MappingContext->MapKey(CustomSuite.PitchAction, EKeys::W);
         TestFalse(TEXT("Partial context/action override is rejected"),
             FlightPawn->IsInputSuiteValid(CustomSuite, false));
     }

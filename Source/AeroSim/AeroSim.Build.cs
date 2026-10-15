@@ -10,6 +10,7 @@ public class AeroSim : ModuleRules
         {
             "Core",
             "CoreUObject",
+            "ApplicationCore",
             "Engine",
             "EnhancedInput",
             "InputCore"

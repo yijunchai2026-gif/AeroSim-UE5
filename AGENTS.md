@@ -4,9 +4,9 @@
 
 ## 1. 当前工作边界
 
-- 当前只允许维护文档、`AGENTS.md` 与 `README.md`。未获用户新授权，不修改 `Source/`、`Plugins/`、`Config/`、`.uproject` 或 `SourceAssets/`。
+- Phase 1 已获授权实现最小飞行闭环；当前事实见 `PHASE1.md`。Phase 2+ 环境视觉、正式资产、天气和 MCP 仍不在范围内。
 - 不创建提交，不 push，不合并，不改远端、分支保护或仓库可见性。
-- Phase 0 通过前不开始量产实现；没有 UE Editor/命令行工具时，只能做静态审查，所有引擎编译、Cook、运行、截图和性能结果必须记为 `BLOCKED_NO_UE` 或 `NOT_RUN`，绝不能写成 PASS。
+- 没有 UE Editor/命令行工具时只能做静态审查；所有引擎编译、Cook、运行、截图和性能结果必须记为 `BLOCKED_NO_UE` 或 `NOT_RUN`，绝不能写成 PASS。
 
 ## 2. UE5 技术基线
 

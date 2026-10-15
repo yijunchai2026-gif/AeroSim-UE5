@@ -2,7 +2,7 @@
   "FileVersion": 3,
   "EngineAssociation": "5.8",
   "Category": "Simulation",
-  "Description": "AeroSim Phase 0 C++ project skeleton",
+  "Description": "AeroSim Phase 1 deterministic flight loop",
   "Modules": [
     {
       "Name": "AeroSim",

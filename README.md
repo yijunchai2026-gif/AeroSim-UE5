@@ -1,43 +1,38 @@
-# AeroSim Phase 0
+# AeroSim Phase 1
 
-AeroSim 的 Phase 0 冻结引擎版本为 **Unreal Engine 5.8**。升级或降级引擎必须单独评审，不能静默改写 `EngineAssociation`。
+AeroSim 当前冻结 **Unreal Engine 5.8**，并在 Phase 0 工程骨架上实现 Phase 1 最小飞行闭环。升级或降级引擎必须单独评审，不能静默改写 `EngineAssociation`。
 
-## 验证顺序
+## Phase 1 运行时闭环
+
+- `AFlightPawn` 的 `FFlightInputSuite` 以一个原子单元声明 Pitch、Roll、Yaw、Throttle、Camera、Pause、Reset 七个设备无关语义动作。默认 C++ Mapping Context 同时提供键鼠和手柄映射；引用缺失、ValueType 不符、Context 缺动作或混入外来动作都会 fail closed。
+- `FFlightModel` 是不依赖 World 的确定性轻量模型，状态为 Grounded、Takeoff、Flight、Landing、Paused。它提供起飞、惯性趋近、姿态控制、降落与重置，不模拟复杂空气动力学。
+- Pause、应用失焦、输入设备断连都会同步执行 `NeutralizeInput`；恢复前再次保持中和，避免旧轴值继续驱动飞机。
+- Camera 在 FPV 与 Chase 间切换；`FFlightHudData` 提供状态、相机、相对高度、速度、油门、输入中和状态和 Build ID。`AFlightHUD` 用左上角半透明 Canvas 面板显示关键飞行数据，不遮挡中心视界。
+- `APacificCoastGraybox` 仅用 C++ 和 Engine BasicShapes 生成 1 km × 1 km 训练场：起飞坪、陆地/海面分区、海岸线、林缘和五个路线门；没有项目二进制 uasset。
+- Runtime contract 为 `aerosim.runtime.phase1/v1`，Build ID 为 `AeroSim-Phase1-20261016`，项目版本为 `0.1.0-phase1`。
+
+详细实现边界与验证记录见 [`PHASE1.md`](PHASE1.md)。
+
+## 验证命令
 
 在仓库根目录执行：
 
 ```bash
 python3 Scripts/phase0_static_validate.py
+python3 -m unittest discover -s Scripts/tests -v
 python3 Scripts/phase0_preflight.py --ue-editor "/Users/Shared/Epic Games/UE_5.8/Engine/Binaries/Mac/UnrealEditor"
+
+"/Users/Shared/Epic Games/UE_5.8/Engine/Build/BatchFiles/Mac/Build.sh" \
+  AeroSimEditor Mac Development "$PWD/AeroSim.uproject" -WaitMutex
+
+"/Users/Shared/Epic Games/UE_5.8/Engine/Binaries/Mac/UnrealEditor" \
+  "$PWD/AeroSim.uproject" -unattended -nop4 -nosplash -NullRHI -NoSound \
+  -ExecCmds="Automation RunTests AeroSim.Phase1;Quit" \
+  -TestExit="Automation Test Queue Empty" -log
 ```
 
-只有两个脚本都返回 `0`，才能继续显式调用 UE Build/Cook/Package。调用链必须使用成功依赖，例如：
+如后续需要 Cook，必须给 `BuildCookRun` 传入 `-AdditionalCookerOptions='-SkipZenStore'`。
 
-```bash
-python3 Scripts/phase0_static_validate.py && \
-python3 Scripts/phase0_preflight.py --ue-editor "$UE_EDITOR" && \
-"$RUN_UAT" BuildCookRun -project="$PWD/AeroSim.uproject" -platform=Mac -build -cook -stage -pak -package
-```
+## 当前边界
 
-`UE_EDITOR` 只能是 UnrealEditor 可执行文件路径；`RUN_UAT` 只能是同一 UE5.8 安装中的 `Engine/Build/BatchFiles/RunUAT.sh`。不得把未经校验的文本作为命令传入脚本。
-
-## macOS 基线与阻断条件
-
-- Apple M3 Pro 与 Metal SM6 适合作为当前开发基线。
-- 当前机器安装 UE 5.8.3；2026-10-16 preflight 检查时约 120.8 GiB 可用，达到 Phase 0 的 100 GiB Cook/Package 门槛。
-- Metal Toolchain 17F109 已通过 Xcode 下载并安装，`/usr/bin/xcrun --find metallib` 已能定位 `metallib`。
-- `Scripts/phase0_preflight.py` 从 UnrealEditor 路径反向定位同一 `Engine/Build/Build.version`，只接受 `MajorVersion=5`、`MinorVersion=8`，并要求同一 Engine 根下存在非 symlink 的 `Build/BatchFiles/RunUAT.sh`；同时使用固定、只读检查验证磁盘空间、Xcode developer directory、macOS SDK 和 `metallib`。
-- Preflight 不调用 UE、不写文件、不使用 shell，也不接受任意命令字符串。任一检查失败即返回非零，后续 Cook/Package 必须停止。
-- `AeroSim.Target.cs` 是纯声明，不执行磁盘检查，也不启动进程；普通 Game 编译不受打包预检误伤。
-
-## 原生输入基线
-
-`AFlightPawn` 在 C++ 中提供原子 `FFlightInputSuite`，默认套件无需 Blueprint 或 Input DataAsset 即可使用。MappingContext 与 Move、Look、Throttle、Reset Actions 只能整套覆盖；应用和绑定前会验证引用完整、ValueType 正确，并确认 Context mappings 恰好引用当前四个 Actions。部分覆盖、外来 Action 或不一致 Context 会记录 error/ensure 并 fail closed。
-
-## Evidence 相机合同
-
-三种评审相机默认启用 `bLockToReviewTransform` 并强制使用固定评审变换。捕获前必须调用 `CanGenerateFormalEvidence()`；它会以小容差校验当前 Location、Rotation 和 Camera FOV。显式关闭锁定或任一状态漂移都会 fail closed，相关画面不得作为正式 Evidence。
-
-## 当前验证状态
-
-2026-10-16 已通过静态验证、环境 preflight、AeroSimEditor Mac Development 编译、`AeroSim.Phase0.Editor.Heartbeat`、`AeroSim.Phase0.Runtime.Smoke`、Mac Development Cook/Stage/Package/Archive 和打包应用 NullRHI 启动冒烟。Cook 必须传入 `-AdditionalCookerOptions='-SkipZenStore'`，避免本机 Zen Store 为生成的远程地址执行无效连接。正式渲染、性能和人工 G0–G4 仍不在本次自动化 PASS 范围内。
+Phase 1 不包含 Phase 2+ 环境视觉、正式资产、天气、MCP、复杂空气动力学或项目二进制 uasset。当前相机没有 Phase 2 的完整 FOV 设置链；HUD 是最小 Canvas 表现而非正式 UI。Mac 自动化工程退出门已通过；Windows Development 和真实画面下的人工灰盒 G0/G1 仍需在对应环境验证。
