@@ -35,7 +35,7 @@ def main() -> int:
         if path.is_file() and path.suffix.lower() in {".h", ".cpp", ".ini"}
     )
     tokens = (
-        "aerosim.runtime.phase2/v1",
+        "aerosim.runtime.phase3/v1",
         "EAeroSimMissionState",
         "Hangar",
         "Preflight",

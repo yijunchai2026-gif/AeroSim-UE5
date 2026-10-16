@@ -4,8 +4,10 @@
 #include "GameFramework/Pawn.h"
 #include "GenericPlatform/GenericPlatformInputDeviceMapper.h"
 #include "Phase2Systems.h"
+#include "Phase3Aircraft.h"
 #include "FlightPawn.generated.h"
 
+class UBoxComponent;
 class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
@@ -32,7 +34,9 @@ enum class EFlightCameraMode : uint8
     FPV,
     /** Phase 1 chase mode becomes the near follow preset. */
     Chase,
-    FarFollow
+    FarFollow,
+    /** Stabilized payload view with independent clamped pitch/yaw. */
+    Gimbal
 };
 
 /** Device-independent, normalized semantic controls consumed by the simulation. */
@@ -109,6 +113,18 @@ struct AEROSIM_API FFlightHudData
     bool bInputNeutral = true;
 
     UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    FString AircraftName;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    FString AssetStatus;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    float GimbalPitchDegrees = 0.0F;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    float GimbalYawDegrees = 0.0F;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
     FString BuildId;
 };
 
@@ -162,7 +178,12 @@ public:
     const FFlightModel& GetFlightModel() const { return FlightModel; }
     EFlightCameraMode GetCameraMode() const { return CameraMode; }
     bool IsAircraftShellVisible() const;
+    bool IsLodProxyVisible() const;
     FFlightHudData GetHudData() const;
+    const FAircraftDefinition& GetAircraftDefinition() const { return AircraftDefinition; }
+    const FGimbalController& GetGimbalController() const { return GimbalController; }
+    int32 GetDetailedVisualPartCount() const { return DetailedVisualParts.Num(); }
+    int32 GetMaterialSlotCount() const { return AircraftDefinition.MaterialSlots.Num(); }
     float GetVerticalFov() const { return FovTransaction.GetEffectiveVerticalFov(); }
     float GetHorizontalFov(float AspectRatio) const { return FVerticalFovTransaction::VerticalToHorizontal(GetVerticalFov(), AspectRatio); }
     const FVerticalFovTransaction& GetFovTransaction() const { return FovTransaction; }
@@ -194,6 +215,12 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Camera")
     void CycleCamera();
+
+    UFUNCTION(BlueprintCallable, Category = "Camera")
+    void SetGimbalTarget(float PitchDegrees, float YawDegrees);
+
+    UFUNCTION(BlueprintCallable, Category = "Camera")
+    void SetUseLodProxy(bool bUseProxy);
 
     UFUNCTION(BlueprintCallable, Category = "Camera")
     bool PreviewVerticalFov(float VerticalDegrees);
@@ -236,23 +263,51 @@ private:
     void HandleReset(const FInputActionValue& Value);
     void HandleMissionAdvance();
     void HandleWeatherCycle();
+    void HandleGimbalPitchUp();
+    void HandleGimbalPitchDown();
+    void HandleGimbalYawLeft();
+    void HandleGimbalYawRight();
     void HandleApplicationDeactivated();
     void HandleInputDeviceConnectionChanged(EInputDeviceConnectionState ConnectionState, FPlatformUserId PlatformUserId, FInputDeviceId InputDeviceId);
 
     UPROPERTY(VisibleAnywhere, Category = "Flight")
-    TObjectPtr<UStaticMeshComponent> Body;
+    TObjectPtr<UBoxComponent> Body;
 
-    UPROPERTY(VisibleAnywhere, Category = "Flight")
+    UPROPERTY(VisibleAnywhere, Category = "Aircraft")
     TObjectPtr<UStaticMeshComponent> Fuselage;
 
-    UPROPERTY(VisibleAnywhere, Category = "Flight")
-    TObjectPtr<UStaticMeshComponent> LeftWing;
+    UPROPERTY(VisibleAnywhere, Category = "Aircraft")
+    TArray<TObjectPtr<UStaticMeshComponent>> ShellPanels;
 
-    UPROPERTY(VisibleAnywhere, Category = "Flight")
-    TObjectPtr<UStaticMeshComponent> RightWing;
+    UPROPERTY(VisibleAnywhere, Category = "Aircraft")
+    TArray<TObjectPtr<UStaticMeshComponent>> Arms;
 
-    UPROPERTY(VisibleAnywhere, Category = "Flight")
-    TObjectPtr<UStaticMeshComponent> Tail;
+    UPROPERTY(VisibleAnywhere, Category = "Aircraft")
+    TArray<TObjectPtr<UStaticMeshComponent>> Motors;
+
+    UPROPERTY(VisibleAnywhere, Category = "Aircraft")
+    TArray<TObjectPtr<UStaticMeshComponent>> Propellers;
+
+    UPROPERTY(VisibleAnywhere, Category = "Aircraft")
+    TArray<TObjectPtr<UStaticMeshComponent>> LandingSupports;
+
+    UPROPERTY(VisibleAnywhere, Category = "Aircraft")
+    TObjectPtr<UStaticMeshComponent> GimbalMount;
+
+    UPROPERTY(VisibleAnywhere, Category = "Aircraft")
+    TObjectPtr<UStaticMeshComponent> GimbalCamera;
+
+    UPROPERTY(VisibleAnywhere, Category = "Aircraft")
+    TObjectPtr<UStaticMeshComponent> CameraLens;
+
+    UPROPERTY(VisibleAnywhere, Category = "Aircraft")
+    TArray<TObjectPtr<UStaticMeshComponent>> NavigationLights;
+
+    UPROPERTY(VisibleAnywhere, Category = "Aircraft")
+    TObjectPtr<UStaticMeshComponent> LodProxy;
+
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UStaticMeshComponent>> DetailedVisualParts;
 
     UPROPERTY(VisibleAnywhere, Category = "Camera")
     TObjectPtr<USpringArmComponent> SpringArm;
@@ -275,6 +330,15 @@ private:
 
     UPROPERTY(VisibleInstanceOnly, Category = "Camera")
     FVerticalFovTransaction FovTransaction;
+
+    UPROPERTY(VisibleInstanceOnly, Category = "Aircraft")
+    FAircraftDefinition AircraftDefinition;
+
+    UPROPERTY(VisibleInstanceOnly, Category = "Camera")
+    FGimbalController GimbalController;
+
+    UPROPERTY(VisibleInstanceOnly, Category = "Aircraft")
+    bool bUseLodProxy = false;
 
     UPROPERTY(VisibleInstanceOnly, Category = "Replay")
     FDeterministicFlightTrace FlightTrace;

@@ -2,7 +2,7 @@
   "FileVersion": 3,
   "EngineAssociation": "5.8",
   "Category": "Simulation",
-  "Description": "AeroSim Phase 2 Pacific Coast vertical slice",
+  "Description": "AeroSim Phase 3 Generic Golden Aircraft and camera quality",
   "Modules": [
     {
       "Name": "AeroSim",

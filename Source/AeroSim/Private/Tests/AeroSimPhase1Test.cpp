@@ -100,6 +100,9 @@ bool FAeroSimPhase1CameraResetHudTest::RunTest(const FString& Parameters)
         TestEqual(TEXT("Camera cycles to FPV"), Pawn->GetCameraMode(), EFlightCameraMode::FPV);
         TestFalse(TEXT("FPV hides aircraft shell"), Pawn->IsAircraftShellVisible());
         Pawn->CycleCamera();
+        TestEqual(TEXT("Camera cycles to gimbal"), Pawn->GetCameraMode(), EFlightCameraMode::Gimbal);
+        TestFalse(TEXT("Gimbal hides aircraft shell"), Pawn->IsAircraftShellVisible());
+        Pawn->CycleCamera();
         TestEqual(TEXT("Camera cycles to far follow"), Pawn->GetCameraMode(), EFlightCameraMode::FarFollow);
         TestTrue(TEXT("Far follow shows aircraft shell"), Pawn->IsAircraftShellVisible());
         Pawn->CycleCamera();

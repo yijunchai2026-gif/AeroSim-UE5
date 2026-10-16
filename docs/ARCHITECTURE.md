@@ -107,3 +107,16 @@ Phase 2 keeps `FFlightInputSuite` and `FFlightModel` as the Phase 1 compatibilit
 - `FDeterministicFlightTrace` owns fixed-rate recording, replay interpolation and result metrics.
 
 `AAeroSimGameMode` owns mission and environment state. `APacificCoastGraybox` is a pure C++ presentation consumer; `AFlightPawn` consumes camera/FOV/input/trace contracts; `AFlightHUD` is a read-only Canvas projection. Review command-line parameters select fixed view/weather only and expose no general command execution or MCP write surface.
+
+
+## Phase 3 runtime additions
+
+Phase 3 adds `Phase3Aircraft` as the Aircraft/Camera contract owner without introducing binary project assets:
+
+- `FAircraftDefinition` owns stable identity, variants, provenance/authorization, status, dimensions/center/support, LOD, material slots, quality gates and the replaceable formal-asset path;
+- `CanEnterFormalTask` fails closed unless a hashed replacement package is `USER_CONFIRMED` with no blocking gates;
+- `FGimbalController` owns clamped pitch/yaw, frame-rate-independent smoothing and roll-free stabilized rotation;
+- `AFlightPawn` presents the replaceable Generic Golden Aircraft assembly and consumes the existing Phase 2 vFOV transaction;
+- `FPhase3EvidenceCameraContract` freezes six review presets. Collection never signs G0–G3 or user approval.
+
+The migrated aircraft references remain placeholder/reference-only. Runtime and HUD expose `BLOCKED_ASSET`; no code path promotes the generic proxy to a named production aircraft.

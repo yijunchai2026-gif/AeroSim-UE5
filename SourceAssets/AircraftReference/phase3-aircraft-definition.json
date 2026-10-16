@@ -1,0 +1,56 @@
+{
+  "schema": "aerosim.aircraft-definition/phase3-v1",
+  "runtimeContract": "aerosim.runtime.phase3/v1",
+  "definition": {
+    "runtimeId": "generic-golden-camera-quad",
+    "catalogId": "aerosim.generic.consumer-quad",
+    "displayName": "AeroSim Generic Golden Aircraft",
+    "assetVersion": "programmatic-1.0.0",
+    "variant": {
+      "variantId": "graphite-silver",
+      "displayName": "Graphite Silver / Generic",
+      "replaceableBy": "PrimaryDataAsset or approved static-mesh package"
+    },
+    "identity": {
+      "brand": "AeroSim",
+      "namedProductionModel": null,
+      "disclosure": "GENERIC PROXY / BLOCKED_ASSET. Original programmatic consumer-camera-quadcopter proxy; not a formal DJI asset.",
+      "trademarkTextures": false
+    },
+    "source": {
+      "uri": "engine://BasicShapes + Source/AeroSim/Private/Phase3Aircraft.cpp",
+      "format": "pure C++ Engine shapes",
+      "sha256": null,
+      "authorization": "AeroSim original programmatic implementation; no third-party aircraft geometry or trademark texture."
+    },
+    "status": {
+      "engineering": "BLOCKED_ASSET",
+      "formalContent": "CONTENT_NOT_DELIVERED",
+      "userConfirmation": "NOT_REQUESTED_NO_FORMAL_ASSET",
+      "allowedUse": ["development", "automation", "isolated review", "generic system path"],
+      "forbiddenUse": ["named-model claim", "formal mission", "release candidate", "user-confirmed claim"]
+    },
+    "dimensionsCm": {"length": 51, "width": 47, "height": 13, "centerOfMass": [-1, 0, 1.5], "supportPlaneZ": -6},
+    "assembly": ["fuselage", "four arms", "four motors", "four propellers", "four landing supports", "gimbal mount", "gimbal camera", "lens", "four navigation lights"],
+    "materialSlots": [
+      {"id": "Shell", "purpose": "matte structural polymer", "required": true},
+      {"id": "Metal", "purpose": "motor and gimbal metal", "required": true},
+      {"id": "Lens", "purpose": "camera optical glass", "required": true},
+      {"id": "Propeller", "purpose": "rotor blades", "required": true},
+      {"id": "NavigationEmission", "purpose": "front/rear navigation lights", "required": true}
+    ],
+    "lod": [
+      {"name": "LOD0_PROGRAMMATIC_DETAIL", "screenSize": 0.35, "triangleBudget": 24000, "proxy": false},
+      {"name": "LOD1_PROXY", "screenSize": 0.08, "triangleBudget": 6000, "proxy": true}
+    ],
+    "qualityGates": {
+      "passed": ["GENERIC_IDENTITY", "SCALE", "SUPPORT", "MATERIAL_SLOTS", "LOD_PROXY", "CAMERA_VISIBILITY"],
+      "blocked": ["FORMAL_SOURCE_MODEL", "PRODUCTION_GEOMETRY", "SOURCE_HASH", "PRODUCTION_READY", "USER_CONFIRMED"]
+    },
+    "replacementContract": {
+      "visualSource": "ReplaceableStaticMeshPackage",
+      "required": ["stable runtimeId", "asset version", "source hash", "authorization", "approved geometry", "LOD set", "collision", "sockets", "material slots", "user confirmation reference"],
+      "failClosed": true
+    }
+  }
+}

@@ -4,7 +4,7 @@
 
 ## 1. 当前工作边界
 
-- Phase 2 已实现 Pacific Coast 程序化 vertical slice；当前事实见 `PHASE2.md` 与 `docs/PHASE2_VALIDATION.md`。正式 DJI 资产、复杂空气动力学、MCP 写权限、多人/XR 仍不在范围内。
+- Phase 3 已实现 Generic Golden Aircraft 与相机质量合同；当前事实见 `PHASE3.md` 与 `docs/PHASE3_VALIDATION.md`。正式 DJI 资产仍为 `BLOCKED_ASSET`，复杂空气动力学、Phase 4 任务内容、MCP 写权限、多人/XR 仍不在范围内。
 - 不创建提交，不 push，不合并，不改远端、分支保护或仓库可见性。
 - 没有 UE Editor/命令行工具时只能做静态审查；所有引擎编译、Cook、运行、截图和性能结果必须记为 `BLOCKED_NO_UE` 或 `NOT_RUN`，绝不能写成 PASS。
 

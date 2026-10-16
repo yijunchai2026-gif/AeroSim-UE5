@@ -27,7 +27,7 @@ bool FAeroSimPhase2WorkflowTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Flight to Result"), Flow.Advance());
     TestTrue(TEXT("Result to Replay"), Flow.Advance());
     TestEqual(TEXT("Replay state"), Flow.State, EAeroSimMissionState::Replay);
-    TestTrue(TEXT("Runtime contract is phase2/v1"), FAeroSimRuntimeContract::IsValid());
+    TestTrue(TEXT("Runtime contract is current and valid"), FAeroSimRuntimeContract::IsValid());
     return true;
 }
 
@@ -77,7 +77,10 @@ bool FAeroSimPhase2FollowCollisionTest::RunTest(const FString& Parameters)
         TestEqual(TEXT("Second mode is nose"), Pawn->GetCameraMode(), EFlightCameraMode::FPV);
         TestFalse(TEXT("Nose has no trailing arm collision"), Pawn->GetFollowSpringArm()->bDoCollisionTest);
         Pawn->CycleCamera();
-        TestEqual(TEXT("Third mode is far follow"), Pawn->GetCameraMode(), EFlightCameraMode::FarFollow);
+        TestEqual(TEXT("Third mode is gimbal"), Pawn->GetCameraMode(), EFlightCameraMode::Gimbal);
+        TestFalse(TEXT("Gimbal has no trailing arm collision"), Pawn->GetFollowSpringArm()->bDoCollisionTest);
+        Pawn->CycleCamera();
+        TestEqual(TEXT("Fourth mode is far follow"), Pawn->GetCameraMode(), EFlightCameraMode::FarFollow);
         TestTrue(TEXT("Far follow collision enabled"), Pawn->GetFollowSpringArm()->bDoCollisionTest);
     }
     if (World != nullptr) World->DestroyWorld(false);

@@ -78,6 +78,6 @@
 - 每个阶段新增高成本能力必须有 Low/Off 路径和回退方案。
 
 
-## 当前阶段事实（Phase 2）
+## 当前阶段事实（Phase 3）
 
-Phase 2 已实现 Pacific Coast 程序化 vertical slice、三 Hero Zone、五态任务流程、三相机/vFOV 事务、版本化环境状态、暂停恢复回中、Result/Replay 和 `AeroSim.Phase2` Automation。合同与验证见仓库根目录 `PHASE2.md` 及 `docs/PHASE2_VALIDATION.md`。Phase 3+ 能力不得据此视为已完成。
+Phase 3 已实现版本化 AircraftDefinition/AssetStatus、可替换 Generic Golden Aircraft 程序化代理、FPV/云台/近远跟随相机、云台限位平滑与固定证据相机合同；Runtime 为 `aerosim.runtime.phase3/v1`。旧仓无正式无人机 FBX/GLB，故正式机型工程门保持 `BLOCKED_ASSET`，程序化代理不得越门。合同与验证见仓库根目录 `PHASE3.md` 及 `docs/PHASE3_VALIDATION.md`；Phase 4+ 能力不得据此视为已完成。

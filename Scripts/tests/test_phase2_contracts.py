@@ -22,7 +22,7 @@ class Phase2ContractsTest(unittest.TestCase):
     def test_phase2_contract_and_automation_names(self) -> None:
         contract = (ROOT / "Source/AeroSim/Public/AeroSimRuntimeContract.h").read_text(encoding="utf-8")
         tests = (ROOT / "Source/AeroSim/Private/Tests/AeroSimPhase2Test.cpp").read_text(encoding="utf-8")
-        self.assertIn("aerosim.runtime.phase2/v1", contract)
+        self.assertIn("aerosim.runtime.phase3/v1", contract)
         names = {
             line.split('"')[1]
             for line in tests.splitlines()

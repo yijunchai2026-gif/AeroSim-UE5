@@ -3,6 +3,7 @@
 #include "AeroSimRuntimeContract.h"
 #include "AeroSimGameMode.h"
 #include "Camera/CameraComponent.h"
+#include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/LocalPlayer.h"
@@ -180,42 +181,108 @@ AFlightPawn::AFlightPawn()
     PrimaryActorTick.bCanEverTick = true;
     PrimaryActorTick.bTickEvenWhenPaused = true;
 
-    Body = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Body"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CylinderFinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereFinder(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+
+    Body = CreateDefaultSubobject<UBoxComponent>(TEXT("AircraftCollisionRoot"));
     SetRootComponent(Body);
+    Body->SetBoxExtent(FVector(16.0F, 14.0F, 5.0F));
     Body->SetCollisionProfileName(UCollisionProfile::Pawn_ProfileName);
 
-    static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
+    auto ConfigurePart = [this](UStaticMeshComponent* Part, UStaticMesh* Mesh, const FVector& Location, const FVector& Scale, const FRotator& Rotation = FRotator::ZeroRotator)
+    {
+        Part->SetupAttachment(Body);
+        Part->SetStaticMesh(Mesh);
+        Part->SetRelativeLocation(Location);
+        Part->SetRelativeScale3D(Scale);
+        Part->SetRelativeRotation(Rotation);
+        Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        Part->SetCastShadow(true);
+        DetailedVisualParts.Add(Part);
+    };
 
-    Fuselage = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Fuselage"));
-    Fuselage->SetupAttachment(Body);
-    Fuselage->SetStaticMesh(CubeFinder.Object);
-    Fuselage->SetRelativeScale3D(FVector(3.2F, 0.8F, 0.55F));
-    Fuselage->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    Fuselage->SetCastShadow(true);
+    // Layered ellipsoids give the generic airframe a compact, molded consumer-drone silhouette.
+    Fuselage = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Shell_Fuselage"));
+    ConfigurePart(Fuselage, SphereFinder.Object, FVector(-0.8F, 0.0F, 1.5F), FVector(0.27F, 0.135F, 0.060F), FRotator(0.0F, 0.0F, -3.0F));
 
-    LeftWing = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LeftWing"));
-    LeftWing->SetupAttachment(Body);
-    LeftWing->SetStaticMesh(CubeFinder.Object);
-    LeftWing->SetRelativeLocation(FVector(-10.0F, -115.0F, 0.0F));
-    LeftWing->SetRelativeScale3D(FVector(0.45F, 1.6F, 0.10F));
-    LeftWing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    LeftWing->SetCastShadow(true);
+    UStaticMeshComponent* UpperCanopy = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Shell_UpperCanopy"));
+    ConfigurePart(UpperCanopy, SphereFinder.Object, FVector(-1.5F, 0.0F, 4.0F), FVector(0.19F, 0.105F, 0.035F), FRotator(0.0F, 0.0F, -4.0F));
+    ShellPanels.Add(UpperCanopy);
+    UStaticMeshComponent* NoseFairing = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Shell_NoseFairing"));
+    ConfigurePart(NoseFairing, SphereFinder.Object, FVector(11.0F, 0.0F, 0.8F), FVector(0.105F, 0.100F, 0.052F), FRotator(0.0F, 0.0F, -7.0F));
+    ShellPanels.Add(NoseFairing);
+    UStaticMeshComponent* BellyFairing = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Shell_BellyFairing"));
+    ConfigurePart(BellyFairing, SphereFinder.Object, FVector(-1.5F, 0.0F, -1.2F), FVector(0.17F, 0.105F, 0.028F));
+    ShellPanels.Add(BellyFairing);
 
-    RightWing = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RightWing"));
-    RightWing->SetupAttachment(Body);
-    RightWing->SetStaticMesh(CubeFinder.Object);
-    RightWing->SetRelativeLocation(FVector(-10.0F, 115.0F, 0.0F));
-    RightWing->SetRelativeScale3D(FVector(0.45F, 1.6F, 0.10F));
-    RightWing->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    RightWing->SetCastShadow(true);
+    const FVector RotorLocations[] = {
+        FVector(16.0F, -14.5F, 3.8F), FVector(16.0F, 14.5F, 3.8F),
+        FVector(-15.0F, -14.0F, 3.2F), FVector(-15.0F, 14.0F, 3.2F)
+    };
+    const TCHAR* ArmNames[] = { TEXT("Arm_FL"), TEXT("Arm_FR"), TEXT("Arm_RL"), TEXT("Arm_RR") };
+    const TCHAR* MotorNames[] = { TEXT("Motor_FL"), TEXT("Motor_FR"), TEXT("Motor_RL"), TEXT("Motor_RR") };
+    const TCHAR* PropNames[] = { TEXT("Propeller_FL"), TEXT("Propeller_FR"), TEXT("Propeller_RL"), TEXT("Propeller_RR") };
+    const TCHAR* PropCrossNames[] = { TEXT("PropellerCross_FL"), TEXT("PropellerCross_FR"), TEXT("PropellerCross_RL"), TEXT("PropellerCross_RR") };
+    for (int32 Index = 0; Index < 4; ++Index)
+    {
+        UStaticMeshComponent* Arm = CreateDefaultSubobject<UStaticMeshComponent>(FName(ArmNames[Index]));
+        const FVector ArmCenter = RotorLocations[Index] * 0.53F + FVector(0.0F, 0.0F, -0.3F);
+        const float ArmYaw = FMath::RadiansToDegrees(FMath::Atan2(RotorLocations[Index].Y, RotorLocations[Index].X));
+        ConfigurePart(Arm, CylinderFinder.Object, ArmCenter, FVector(0.021F, 0.021F, 0.145F), FRotator(90.0F, ArmYaw, 0.0F));
+        Arms.Add(Arm);
 
-    Tail = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Tail"));
-    Tail->SetupAttachment(Body);
-    Tail->SetStaticMesh(CubeFinder.Object);
-    Tail->SetRelativeLocation(FVector(-130.0F, 0.0F, 55.0F));
-    Tail->SetRelativeScale3D(FVector(0.35F, 0.12F, 0.75F));
-    Tail->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    Tail->SetCastShadow(true);
+        UStaticMeshComponent* Motor = CreateDefaultSubobject<UStaticMeshComponent>(FName(MotorNames[Index]));
+        ConfigurePart(Motor, CylinderFinder.Object, RotorLocations[Index], FVector(0.038F, 0.038F, 0.030F));
+        Motors.Add(Motor);
+
+        const float BladeYaw = Index % 2 == 0 ? 18.0F : -18.0F;
+        UStaticMeshComponent* Propeller = CreateDefaultSubobject<UStaticMeshComponent>(FName(PropNames[Index]));
+        ConfigurePart(Propeller, CubeFinder.Object, RotorLocations[Index] + FVector(0.0F, 0.0F, 3.15F), FVector(0.115F, 0.009F, 0.0025F), FRotator(0.0F, BladeYaw, 0.0F));
+        Propellers.Add(Propeller);
+        UStaticMeshComponent* PropellerCross = CreateDefaultSubobject<UStaticMeshComponent>(FName(PropCrossNames[Index]));
+        ConfigurePart(PropellerCross, CubeFinder.Object, RotorLocations[Index] + FVector(0.0F, 0.0F, 3.05F), FVector(0.115F, 0.009F, 0.0025F), FRotator(0.0F, BladeYaw + 90.0F, 0.0F));
+        Propellers.Add(PropellerCross);
+    }
+
+    const FVector SupportLocations[] = {
+        FVector(7.0F, -7.5F, -4.0F), FVector(7.0F, 7.5F, -4.0F),
+        FVector(-7.0F, -7.5F, -4.0F), FVector(-7.0F, 7.5F, -4.0F)
+    };
+    const TCHAR* SupportNames[] = { TEXT("Support_FL"), TEXT("Support_FR"), TEXT("Support_RL"), TEXT("Support_RR") };
+    for (int32 Index = 0; Index < 4; ++Index)
+    {
+        UStaticMeshComponent* Support = CreateDefaultSubobject<UStaticMeshComponent>(FName(SupportNames[Index]));
+        const float SupportRoll = SupportLocations[Index].Y < 0.0F ? -8.0F : 8.0F;
+        ConfigurePart(Support, CylinderFinder.Object, SupportLocations[Index], FVector(0.014F, 0.014F, 0.036F), FRotator(0.0F, 0.0F, SupportRoll));
+        LandingSupports.Add(Support);
+    }
+
+    GimbalMount = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Metal_GimbalMount"));
+    ConfigurePart(GimbalMount, CylinderFinder.Object, FVector(9.0F, 0.0F, -3.0F), FVector(0.030F, 0.030F, 0.020F));
+    GimbalCamera = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Metal_GimbalCamera"));
+    ConfigurePart(GimbalCamera, SphereFinder.Object, FVector(11.0F, 0.0F, -4.7F), FVector(0.054F, 0.048F, 0.048F));
+    CameraLens = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Lens_Gimbal"));
+    ConfigurePart(CameraLens, CylinderFinder.Object, FVector(15.8F, 0.0F, -4.7F), FVector(0.025F, 0.025F, 0.012F), FRotator(0.0F, 90.0F, 0.0F));
+
+    const FVector LightLocations[] = { FVector(13.8F, -8.8F, 4.2F), FVector(13.8F, 8.8F, 4.2F), FVector(-12.8F, -8.4F, 3.7F), FVector(-12.8F, 8.4F, 3.7F) };
+    const TCHAR* LightNames[] = { TEXT("NavigationGreen_FL"), TEXT("NavigationGreen_FR"), TEXT("NavigationRed_RL"), TEXT("NavigationRed_RR") };
+    for (int32 Index = 0; Index < 4; ++Index)
+    {
+        UStaticMeshComponent* Light = CreateDefaultSubobject<UStaticMeshComponent>(FName(LightNames[Index]));
+        ConfigurePart(Light, SphereFinder.Object, LightLocations[Index], FVector(0.012F));
+        NavigationLights.Add(Light);
+    }
+
+    LodProxy = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LOD1_Proxy"));
+    LodProxy->SetupAttachment(Body);
+    LodProxy->SetStaticMesh(CubeFinder.Object);
+    LodProxy->SetRelativeLocation(FVector(0.0F, 0.0F, 1.0F));
+    LodProxy->SetRelativeScale3D(FVector(0.32F, 0.27F, 0.065F));
+    LodProxy->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    LodProxy->SetVisibility(false, true);
+
+    AircraftDefinition = FAircraftDefinition::MakeGenericGolden();
 
     SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
     SpringArm->SetupAttachment(Body);
@@ -365,16 +432,33 @@ void AFlightPawn::BeginPlay()
     FlightTrace.Record(0.0F, FlightModel.Position, FlightModel.Rotation);
     ValidateConfiguredInputSuite();
 
-    UStaticMeshComponent* ShellParts[] = { Fuselage, LeftWing, RightWing, Tail };
-    for (UStaticMeshComponent* ShellPart : ShellParts)
+    auto ApplyProceduralMaterial = [this](UStaticMeshComponent* Part, const FLinearColor& Color, const float Metallic, const float Roughness)
     {
-        if (ShellPart != nullptr && ShellPart->GetMaterial(0) != nullptr)
+        if (Part == nullptr || Part->GetMaterial(0) == nullptr)
         {
-            UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(ShellPart->GetMaterial(0), this);
-            Material->SetVectorParameterValue(TEXT("Color"), FLinearColor(1.0F, 0.12F, 0.02F));
-            ShellPart->SetMaterial(0, Material);
+            return;
         }
+        UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(Part->GetMaterial(0), this);
+        Material->SetVectorParameterValue(TEXT("Color"), Color);
+        Material->SetVectorParameterValue(TEXT("BaseColor"), Color);
+        Material->SetScalarParameterValue(TEXT("Metallic"), Metallic);
+        Material->SetScalarParameterValue(TEXT("Roughness"), Roughness);
+        Part->SetMaterial(0, Material);
+    };
+    ApplyProceduralMaterial(Fuselage, FLinearColor(0.34F, 0.39F, 0.43F), 0.05F, 0.58F);
+    for (UStaticMeshComponent* Panel : ShellPanels) ApplyProceduralMaterial(Panel, FLinearColor(0.46F, 0.51F, 0.54F), 0.04F, 0.52F);
+    for (UStaticMeshComponent* Arm : Arms) ApplyProceduralMaterial(Arm, FLinearColor(0.24F, 0.28F, 0.31F), 0.08F, 0.52F);
+    for (UStaticMeshComponent* Motor : Motors) ApplyProceduralMaterial(Motor, FLinearColor(0.08F, 0.10F, 0.12F), 0.72F, 0.28F);
+    for (UStaticMeshComponent* Propeller : Propellers) ApplyProceduralMaterial(Propeller, FLinearColor(0.025F, 0.03F, 0.035F), 0.15F, 0.36F);
+    for (UStaticMeshComponent* Support : LandingSupports) ApplyProceduralMaterial(Support, FLinearColor(0.12F, 0.14F, 0.15F), 0.18F, 0.48F);
+    ApplyProceduralMaterial(GimbalMount, FLinearColor(0.08F, 0.09F, 0.10F), 0.76F, 0.24F);
+    ApplyProceduralMaterial(GimbalCamera, FLinearColor(0.12F, 0.13F, 0.14F), 0.46F, 0.34F);
+    ApplyProceduralMaterial(CameraLens, FLinearColor(0.005F, 0.025F, 0.055F), 0.35F, 0.08F);
+    for (int32 Index = 0; Index < NavigationLights.Num(); ++Index)
+    {
+        ApplyProceduralMaterial(NavigationLights[Index], Index < 2 ? FLinearColor(0.02F, 1.0F, 0.12F) : FLinearColor(1.0F, 0.025F, 0.01F), 0.0F, 0.16F);
     }
+    ApplyProceduralMaterial(LodProxy, FLinearColor(0.20F, 0.24F, 0.27F), 0.06F, 0.62F);
     ApplyCameraMode();
 
     FCoreDelegates::ApplicationWillDeactivateDelegate.AddUObject(this, &AFlightPawn::HandleApplicationDeactivated);
@@ -396,6 +480,26 @@ void AFlightPawn::Tick(const float DeltaSeconds)
     Super::Tick(DeltaSeconds);
     AdvanceResumeCountdown(DeltaSeconds);
     FlightModel.Advance(ControlInput, DeltaSeconds);
+    GimbalController.Advance(DeltaSeconds);
+    if (GimbalCamera != nullptr)
+    {
+        GimbalCamera->SetRelativeRotation(GimbalController.GetStabilizedRelativeRotation());
+    }
+    if (CameraMode == EFlightCameraMode::Gimbal && SpringArm != nullptr)
+    {
+        SpringArm->SetWorldRotation(FRotator(
+            GimbalController.PitchDegrees,
+            GetActorRotation().Yaw + GimbalController.YawDegrees,
+            0.0F));
+    }
+    for (int32 Index = 0; Index < Propellers.Num(); ++Index)
+    {
+        if (Propellers[Index] != nullptr)
+        {
+            const int32 RotorIndex = Index / 2;
+            Propellers[Index]->AddLocalRotation(FRotator(0.0F, (RotorIndex % 2 == 0 ? 1.0F : -1.0F) * 1080.0F * DeltaSeconds, 0.0F));
+        }
+    }
     RecordTrace(DeltaSeconds);
     ApplyFov();
     SetActorLocationAndRotation(
@@ -452,6 +556,10 @@ void AFlightPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
     EnhancedInput->BindAction(InputSuite.ResetAction, ETriggerEvent::Started, this, &AFlightPawn::HandleReset);
     PlayerInputComponent->BindKey(EKeys::M, IE_Pressed, this, &AFlightPawn::HandleMissionAdvance);
     PlayerInputComponent->BindKey(EKeys::T, IE_Pressed, this, &AFlightPawn::HandleWeatherCycle);
+    PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &AFlightPawn::HandleGimbalPitchUp);
+    PlayerInputComponent->BindKey(EKeys::Down, IE_Pressed, this, &AFlightPawn::HandleGimbalPitchDown);
+    PlayerInputComponent->BindKey(EKeys::Left, IE_Pressed, this, &AFlightPawn::HandleGimbalYawLeft);
+    PlayerInputComponent->BindKey(EKeys::Right, IE_Pressed, this, &AFlightPawn::HandleGimbalYawRight);
 }
 
 void AFlightPawn::SetSemanticInput(const FFlightControlInput& NewInput)
@@ -516,10 +624,22 @@ void AFlightPawn::CycleCamera()
     switch (CameraMode)
     {
     case EFlightCameraMode::Chase: CameraMode = EFlightCameraMode::FPV; break;
-    case EFlightCameraMode::FPV: CameraMode = EFlightCameraMode::FarFollow; break;
+    case EFlightCameraMode::FPV: CameraMode = EFlightCameraMode::Gimbal; break;
+    case EFlightCameraMode::Gimbal: CameraMode = EFlightCameraMode::FarFollow; break;
     case EFlightCameraMode::FarFollow: CameraMode = EFlightCameraMode::Chase; break;
     default: CameraMode = EFlightCameraMode::Chase; break;
     }
+    ApplyCameraMode();
+}
+
+void AFlightPawn::SetGimbalTarget(const float PitchDegrees, const float YawDegrees)
+{
+    GimbalController.SetTarget(PitchDegrees, YawDegrees);
+}
+
+void AFlightPawn::SetUseLodProxy(const bool bUseProxy)
+{
+    bUseLodProxy = bUseProxy;
     ApplyCameraMode();
 }
 
@@ -529,30 +649,45 @@ void AFlightPawn::ApplyCameraMode()
     {
         return;
     }
-    const bool bShellVisible = CameraMode != EFlightCameraMode::FPV;
-    Fuselage->SetVisibility(bShellVisible, true);
-    LeftWing->SetVisibility(bShellVisible, true);
-    RightWing->SetVisibility(bShellVisible, true);
-    Tail->SetVisibility(bShellVisible, true);
+    const bool bFirstPerson = CameraMode == EFlightCameraMode::FPV || CameraMode == EFlightCameraMode::Gimbal;
+    const bool bDetailedVisible = !bFirstPerson && !bUseLodProxy;
+    for (UStaticMeshComponent* Part : DetailedVisualParts)
+    {
+        if (Part != nullptr)
+        {
+            Part->SetVisibility(bDetailedVisible, true);
+        }
+    }
+    if (LodProxy != nullptr)
+    {
+        LodProxy->SetVisibility(!bFirstPerson && bUseLodProxy, true);
+    }
 
-    SpringArm->bDoCollisionTest = CameraMode != EFlightCameraMode::FPV;
+    SpringArm->bDoCollisionTest = !bFirstPerson;
+    SpringArm->SetUsingAbsoluteRotation(CameraMode == EFlightCameraMode::Gimbal);
     if (CameraMode == EFlightCameraMode::FPV)
     {
         SpringArm->TargetArmLength = 0.0F;
-        SpringArm->SetRelativeLocation(FVector(170.0, 0.0, 65.0));
-        SpringArm->SetRelativeRotation(FRotator::ZeroRotator);
+        SpringArm->SetRelativeLocation(FVector(15.8F, 0.0F, -4.4F));
+        SpringArm->SetRelativeRotation(FRotator(-6.0F, 0.0F, 0.0F));
+    }
+    else if (CameraMode == EFlightCameraMode::Gimbal)
+    {
+        SpringArm->TargetArmLength = 0.0F;
+        SpringArm->SetRelativeLocation(FVector(15.8F, 0.0F, -4.4F));
+        SpringArm->SetWorldRotation(FRotator(GimbalController.PitchDegrees, GetActorRotation().Yaw + GimbalController.YawDegrees, 0.0F));
     }
     else if (CameraMode == EFlightCameraMode::FarFollow)
     {
-        SpringArm->TargetArmLength = 1850.0F;
-        SpringArm->SetRelativeLocation(FVector(-80.0, 0.0, 360.0));
-        SpringArm->SetRelativeRotation(FRotator(-16.0F, 0.0F, 0.0F));
+        SpringArm->TargetArmLength = 1450.0F;
+        SpringArm->SetRelativeLocation(FVector(-40.0F, 0.0F, 80.0F));
+        SpringArm->SetRelativeRotation(FRotator(-4.0F, 0.0F, 0.0F));
     }
     else
     {
-        SpringArm->TargetArmLength = 900.0F;
-        SpringArm->SetRelativeLocation(FVector(-40.0, 0.0, 240.0));
-        SpringArm->SetRelativeRotation(FRotator(-12.0F, 0.0F, 0.0F));
+        SpringArm->TargetArmLength = 650.0F;
+        SpringArm->SetRelativeLocation(FVector(-24.0F, 0.0F, 35.0F));
+        SpringArm->SetRelativeRotation(FRotator(-3.0F, 0.0F, 0.0F));
     }
     ApplyFov();
 }
@@ -605,10 +740,23 @@ bool AFlightPawn::UndoVerticalFov()
 
 bool AFlightPawn::IsAircraftShellVisible() const
 {
-    return Fuselage != nullptr && Fuselage->IsVisible()
-        && LeftWing != nullptr && LeftWing->IsVisible()
-        && RightWing != nullptr && RightWing->IsVisible()
-        && Tail != nullptr && Tail->IsVisible();
+    if (DetailedVisualParts.IsEmpty())
+    {
+        return false;
+    }
+    for (const UStaticMeshComponent* Part : DetailedVisualParts)
+    {
+        if (Part == nullptr || !Part->IsVisible())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool AFlightPawn::IsLodProxyVisible() const
+{
+    return LodProxy != nullptr && LodProxy->IsVisible();
 }
 
 void AFlightPawn::ConfigureReviewView(const FTransform& PawnTransform, const EFlightCameraMode Mode)
@@ -661,6 +809,10 @@ FFlightHudData AFlightPawn::GetHudData() const
     Data.SpeedMetersPerSecond = FlightModel.Velocity.Size() / AeroSimFlight::CentimetersPerMeter;
     Data.Throttle = ControlInput.Throttle;
     Data.bInputNeutral = ControlInput.IsNeutral();
+    Data.AircraftName = AircraftDefinition.DisplayName;
+    Data.AssetStatus = TEXT("BLOCKED_ASSET / GENERIC PROXY");
+    Data.GimbalPitchDegrees = GimbalController.PitchDegrees;
+    Data.GimbalYawDegrees = GimbalController.YawDegrees;
     Data.BuildId = FAeroSimRuntimeContract::BuildId;
     return Data;
 }
@@ -759,6 +911,26 @@ void AFlightPawn::HandleWeatherCycle()
             : (Current == EAeroSimWeather::Overcast ? EAeroSimWeather::Rain : EAeroSimWeather::Clear);
         GameMode->SetWeather(Next);
     }
+}
+
+void AFlightPawn::HandleGimbalPitchUp()
+{
+    GimbalController.AddTargetInput(5.0F, 0.0F);
+}
+
+void AFlightPawn::HandleGimbalPitchDown()
+{
+    GimbalController.AddTargetInput(-5.0F, 0.0F);
+}
+
+void AFlightPawn::HandleGimbalYawLeft()
+{
+    GimbalController.AddTargetInput(0.0F, -5.0F);
+}
+
+void AFlightPawn::HandleGimbalYawRight()
+{
+    GimbalController.AddTargetInput(0.0F, 5.0F);
 }
 
 void AFlightPawn::HandleApplicationDeactivated()

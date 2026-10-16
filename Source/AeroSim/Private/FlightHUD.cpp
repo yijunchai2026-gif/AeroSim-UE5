@@ -25,7 +25,8 @@ const TCHAR* CameraModeText(const EFlightCameraMode Mode)
 {
     switch (Mode)
     {
-    case EFlightCameraMode::FPV: return TEXT("NOSE");
+    case EFlightCameraMode::FPV: return TEXT("FPV / NOSE");
+    case EFlightCameraMode::Gimbal: return TEXT("GIMBAL");
     case EFlightCameraMode::Chase: return TEXT("NEAR FOLLOW");
     case EFlightCameraMode::FarFollow: return TEXT("FAR FOLLOW");
     default: return TEXT("UNKNOWN");
@@ -102,15 +103,19 @@ void AFlightHUD::DrawHUD()
     const FVector2D SafeMargin = CalculateSafeMargin(Canvas->ClipX, Canvas->ClipY);
     const float SafeX = SafeMargin.X;
     const float SafeY = SafeMargin.Y;
-    constexpr float PanelWidth = 430.0F;
-    constexpr float PanelHeight = 132.0F;
-    DrawRect(FLinearColor(0.0F, 0.015F, 0.025F, 0.68F), SafeX, SafeY, PanelWidth, PanelHeight);
+    constexpr float PanelWidth = 520.0F;
+    constexpr float PanelHeight = 172.0F;
+    DrawRect(FLinearColor(0.0F, 0.015F, 0.025F, 0.72F), SafeX, SafeY, PanelWidth, PanelHeight);
 
     FString Status = FString::Printf(
-        TEXT("%s  |  %s  |  vFOV %.1f\nALT %6.1f m   SPD %5.1f m/s   THR %+4.2f\n%s 16:30  SEED %d\n[M] NEXT   [T] WEATHER   [C] CAMERA   [P] PAUSE"),
+        TEXT("%s  |  %s  |  vFOV %.1f\n%s\n%s  |  GIMBAL P%+.1f Y%+.1f\nALT %6.1f m   SPD %5.1f m/s   THR %+4.2f\n%s 16:30  SEED %d\n[M] NEXT [T] WEATHER [C] CAMERA [ARROWS] GIMBAL [P] PAUSE"),
         FlightPhaseText(Data.Phase),
         CameraModeText(Data.CameraMode),
         Pawn->GetVerticalFov(),
+        *Data.AircraftName,
+        *Data.AssetStatus,
+        Data.GimbalPitchDegrees,
+        Data.GimbalYawDegrees,
         Data.AltitudeMeters,
         Data.SpeedMetersPerSecond,
         Data.Throttle,
@@ -122,7 +127,7 @@ void AFlightHUD::DrawHUD()
     const float WorkflowX = (Canvas->ClipX - WorkflowWidth) * 0.5F;
     DrawRect(FLinearColor(0.04F, 0.14F, 0.19F, 0.82F), WorkflowX, SafeY, WorkflowWidth, 34.0F);
     DrawText(
-        FString::Printf(TEXT("PHASE 2  /  %s"), MissionStateText(MissionState)),
+        FString::Printf(TEXT("PHASE 3  /  %s"), MissionStateText(MissionState)),
         FLinearColor(0.90F, 0.96F, 1.0F),
         WorkflowX + 18.0F,
         SafeY + 8.0F,
