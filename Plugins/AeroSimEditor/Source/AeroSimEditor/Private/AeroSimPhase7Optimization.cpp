@@ -2,8 +2,8 @@
 
 namespace
 {
-const FString SandboxMap = TEXT("/Game/AeroSim/Sandbox/Maps/AI_Review_Sandbox");
-const FString SandboxLayer = TEXT("AeroSim_AI_Draft");
+const FString OptimizationSandboxMap = TEXT("/Game/AeroSim/Sandbox/Maps/AI_Review_Sandbox");
+const FString OptimizationSandboxLayer = TEXT("AeroSim_AI_Draft");
 
 FPhase7OptimizationSuggestion MakeSuggestion(EPhase7OptimizationKind Kind, const TCHAR* Id, const TCHAR* Summary, const TCHAR* Rationale, const TCHAR* Gate, bool bPatch)
 {
@@ -21,7 +21,7 @@ FPhase7OptimizationSuggestion MakeSuggestion(EPhase7OptimizationKind Kind, const
 bool FPhase7OptimizationAdvisor::ValidateRequest(const FPhase7OptimizationRequest& Request, FString& OutError)
 {
     if (Request.RequestId.IsEmpty() || Request.RequestId.Len() > 64) { OutError = TEXT("INVALID_REQUEST_ID"); return false; }
-    if (Request.MapId != SandboxMap || Request.DataLayerId != SandboxLayer) { OutError = TEXT("SANDBOX_ONLY"); return false; }
+    if (Request.MapId != OptimizationSandboxMap || Request.DataLayerId != OptimizationSandboxLayer) { OutError = TEXT("SANDBOX_ONLY"); return false; }
     if (Request.QualityProfileId != TEXT("mac-development-high-v1")
         && Request.QualityProfileId != TEXT("windows-1440p-high-candidate-v1")
         && Request.QualityProfileId != TEXT("ipad-device-candidate-v1"))

@@ -139,8 +139,13 @@ FPhase7GateResult FPhase7PerformanceGate::Evaluate(const FPhase7PerformanceBudge
 
 bool FPhase7Settings::IsValid() const
 {
+    const bool bSupportedResolution = (ResolutionWidth == 1280 && ResolutionHeight == 720)
+        || (ResolutionWidth == 1440 && ResolutionHeight == 900)
+        || (ResolutionWidth == 1920 && ResolutionHeight == 1080);
+    const bool bSupportedWindowMode = static_cast<uint8>(WindowMode) <= static_cast<uint8>(EPhase7WindowMode::Fullscreen);
     return Version == CurrentVersion && FMath::IsFinite(VerticalFov) && VerticalFov >= 35.0F && VerticalFov <= 100.0F
-        && FMath::IsFinite(MasterVolume) && MasterVolume >= 0.0F && MasterVolume <= 1.0F;
+        && FMath::IsFinite(MasterVolume) && MasterVolume >= 0.0F && MasterVolume <= 1.0F
+        && bSupportedResolution && bSupportedWindowMode;
 }
 
 bool FPhase7SettingsTransaction::Begin(const FPhase7Settings& Candidate)
@@ -186,6 +191,9 @@ FString FPhase7SaveCodec::Encode(const FPhase7Settings& Settings)
     Root->SetNumberField(TEXT("quality_tier"), static_cast<uint8>(Settings.QualityTier));
     Root->SetNumberField(TEXT("master_volume"), Settings.MasterVolume);
     Root->SetBoolField(TEXT("telemetry_enabled"), Settings.bTelemetryEnabled);
+    Root->SetNumberField(TEXT("resolution_width"), Settings.ResolutionWidth);
+    Root->SetNumberField(TEXT("resolution_height"), Settings.ResolutionHeight);
+    Root->SetNumberField(TEXT("window_mode"), static_cast<uint8>(Settings.WindowMode));
     FString Output;
     FJsonSerializer::Serialize(Root, TJsonWriterFactory<>::Create(&Output));
     return Output;
@@ -214,6 +222,14 @@ bool FPhase7SaveCodec::DecodeAndMigrate(const FString& Json, FPhase7Settings& Ou
         if (!Root->TryGetNumberField(TEXT("master_volume"), Number)) { OutError = TEXT("MISSING_MASTER_VOLUME"); return false; }
         Candidate.MasterVolume = static_cast<float>(Number);
         if (!Root->TryGetBoolField(TEXT("telemetry_enabled"), Candidate.bTelemetryEnabled)) { OutError = TEXT("MISSING_TELEMETRY_CONSENT"); return false; }
+        // Display fields were added compatibly to schema v2; older v2 saves receive safe defaults.
+        if (Root->TryGetNumberField(TEXT("resolution_width"), Number)) Candidate.ResolutionWidth = FMath::RoundToInt(Number);
+        if (Root->TryGetNumberField(TEXT("resolution_height"), Number)) Candidate.ResolutionHeight = FMath::RoundToInt(Number);
+        if (Root->TryGetNumberField(TEXT("window_mode"), Number))
+        {
+            if (Number < 0.0 || Number > 2.0) { OutError = TEXT("INVALID_WINDOW_MODE"); return false; }
+            Candidate.WindowMode = static_cast<EPhase7WindowMode>(FMath::RoundToInt(Number));
+        }
     }
     else
     {

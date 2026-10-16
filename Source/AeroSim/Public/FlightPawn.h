@@ -239,6 +239,7 @@ public:
 
     /** Deterministic fixed view used only by command-line visual review capture. */
     void ConfigureReviewView(const FTransform& PawnTransform, EFlightCameraMode Mode);
+    void ConfigureReviewFlightState(float AltitudeCm, float SpeedCmPerSecond);
 
     /** Testable semantic injection; values are clamped and ignored while paused. */
     void SetSemanticInput(const FFlightControlInput& NewInput);
@@ -263,6 +264,12 @@ private:
     void HandleReset(const FInputActionValue& Value);
     void HandleMissionAdvance();
     void HandleReturnToHome();
+    void HandleSettingsToggle();
+    void HandleUiUp();
+    void HandleUiDown();
+    void HandleUiLeft();
+    void HandleUiRight();
+    void HandleUiActivate();
     void HandleWeatherCycle();
     void HandleGimbalPitchUp();
     void HandleGimbalPitchDown();

@@ -59,6 +59,17 @@ const TCHAR* WeatherText(const EAeroSimWeather Weather)
     default: return TEXT("UNKNOWN");
     }
 }
+
+const TCHAR* WindowModeText(const EPhase7WindowMode Mode)
+{
+    switch (Mode)
+    {
+    case EPhase7WindowMode::Windowed: return TEXT("WINDOWED");
+    case EPhase7WindowMode::Borderless: return TEXT("BORDERLESS");
+    case EPhase7WindowMode::Fullscreen: return TEXT("FULLSCREEN");
+    default: return TEXT("UNKNOWN");
+    }
+}
 }
 
 FVector2D AFlightHUD::CalculateSafeMargin(const float ViewportWidth, const float ViewportHeight)
@@ -98,10 +109,32 @@ void AFlightHUD::DrawHUD()
     const float RightWidth = 390.0F;
     const float Right = Canvas->ClipX - Margin.X - RightWidth;
 
+    if (GameMode != nullptr && GameMode->IsDisplaySettingsOpen())
+    {
+        const FProductDisplaySettings& Display = GameMode->GetDisplaySettings();
+        const FPhase7Settings& Visible = Display.GetVisible();
+        const float PanelWidth = FMath::Min(520.0F, Canvas->ClipX * 0.43F);
+        const float PanelLeft = Canvas->ClipX - Margin.X - PanelWidth;
+        DrawRect(FLinearColor(0.015F, 0.035F, 0.05F, 0.97F), PanelLeft, Top, PanelWidth, Canvas->ClipY - Margin.Y * 2.0F);
+        DrawText(TEXT("DISPLAY SETTINGS\nSAFE PAUSE / INPUT NEUTRAL"), FLinearColor(0.29F, 0.84F, 1.0F), PanelLeft + 24.0F, Top + 22.0F, GEngine->GetMediumFont(), 1.0F, false);
+        DrawText(FString::Printf(TEXT("%s  RESOLUTION     <  %d x %d  >\n%s  WINDOW MODE    <  %s  >\n\n%s  PREVIEW\n%s  APPLY + SAVE\n%s  CANCEL\n%s  ROLLBACK"),
+            Display.FocusedRow == 0 ? TEXT(">") : TEXT(" "), Visible.ResolutionWidth, Visible.ResolutionHeight,
+            Display.FocusedRow == 1 ? TEXT(">") : TEXT(" "), WindowModeText(Visible.WindowMode),
+            Display.FocusedRow == 2 ? TEXT(">") : TEXT(" "), Display.FocusedRow == 3 ? TEXT(">") : TEXT(" "),
+            Display.FocusedRow == 4 ? TEXT(">") : TEXT(" "), Display.FocusedRow == 5 ? TEXT(">") : TEXT(" ")),
+            FLinearColor::White, PanelLeft + 28.0F, Top + 110.0F, GEngine->GetMediumFont(), 1.0F, false);
+        DrawRect(FLinearColor(0.04F, 0.15F, 0.19F, 0.94F), PanelLeft + 20.0F, Top + 390.0F, PanelWidth - 40.0F, 72.0F);
+        DrawText(Display.Status, FLinearColor(0.95F, 0.82F, 0.35F), PanelLeft + 32.0F, Top + 414.0F, GEngine->GetSmallFont(), 1.0F, false);
+        DrawText(TEXT("UP/DOWN Navigate   LEFT/RIGHT Change\nENTER/SPACE Select   ESC/F10 Cancel & close\nPreview never saves. Apply uses settings v2 crash-safe save."),
+            FLinearColor(0.82F, 0.9F, 0.94F), PanelLeft + 24.0F, Top + 490.0F, GEngine->GetSmallFont(), 1.0F, false);
+        DrawText(TEXT("FLIGHT VIEW KEPT CLEAR"), FLinearColor(0.29F, 0.84F, 1.0F), Margin.X, Canvas->ClipY - Margin.Y - 28.0F, GEngine->GetSmallFont(), 1.0F, false);
+        return;
+    }
+
     // Objective and telemetry stay on the perimeter; the central flight corridor is always unobstructed.
     DrawRect(FLinearColor(0.01F, 0.035F, 0.055F, 0.88F), Left, Top, 500.0F, 170.0F);
     DrawText(
-        FString::Printf(TEXT("PHASE 4 / %s\n%s\n%s\n%s  |  %s  |  vFOV %.0f\nALT %.1f m  SPD %.1f m/s  THR %+.2f\n%s 16:30 / SEED %d"),
+        FString::Printf(TEXT("AEROSIM / %s\n%s\n%s\n%s  |  %s  |  vFOV %.0f\nALT %.1f m  SPD %.1f m/s  THR %+.2f\n%s 16:30 / SEED %d"),
             MissionStageText(Mission.Stage), *Mission.GetObjectiveText(), *Mission.GetProgressText(),
             FlightPhaseText(Data.Phase), CameraModeText(Data.CameraMode), Pawn->GetVerticalFov(),
             Data.AltitudeMeters, Data.SpeedMetersPerSecond, Data.Throttle, WeatherText(Environment.Weather), Environment.Seed),
@@ -114,17 +147,18 @@ void AFlightHUD::DrawHUD()
 
     if (Mission.Stage == EPhase4MissionStage::Hangar)
     {
-        DrawRect(FLinearColor(0.04F, 0.11F, 0.15F, 0.93F), Right, Top + 132.0F, RightWidth, 166.0F);
-        DrawText(TEXT("PACIFIC COAST INSPECTION\nTASK phase4-v1 / 60-90 s\n5 ordered checkpoints\nSafety volume + recoverable coaching\n\n[CONFIRM / M] PREFLIGHT"),
+        DrawRect(FLinearColor(0.04F, 0.11F, 0.15F, 0.96F), Right, Top + 132.0F, RightWidth, 280.0F);
+        DrawText(TEXT("01  HANGAR / AIRCRAFT BAY\n\nAEROSIM GENERIC\nGOLDEN TRAINING QUADCOPTER\nPROTOTYPE / UNVERIFIED\n\nPACIFIC COAST INSPECTION\n60-90 s / 5 ordered checkpoints\nCLEAR 16:30 / HIGH\n\n[ ENTER / SPACE ]  CONTINUE TO PREFLIGHT\nESC / F10  DISPLAY SETTINGS\n\nM  debug shortcut only"),
             FLinearColor(0.94F, 0.98F, 1.0F), Right + 14.0F, Top + 146.0F, GEngine->GetSmallFont(), 1.0F, false);
     }
     else if (Mission.Stage == EPhase4MissionStage::Preflight)
     {
-        DrawRect(FLinearColor(0.04F, 0.11F, 0.15F, 0.93F), Right, Top + 132.0F, RightWidth, 178.0F);
+        DrawRect(FLinearColor(0.04F, 0.11F, 0.15F, 0.96F), Right, Top + 132.0F, RightWidth, 292.0F);
         DrawText(
-            FString::Printf(TEXT("PREFLIGHT CHECKLIST\n[%s] INPUT CENTERED\n[%s] CAMERA / vFOV\n[%s] ENVIRONMENT\n[%s] QUALITY\n\n[CONFIRM / M] START"),
-                Mission.Preflight.bInputCentered ? TEXT("OK") : TEXT("--"), Mission.Preflight.bCameraChecked ? TEXT("OK") : TEXT("--"),
-                Mission.Preflight.bEnvironmentChecked ? TEXT("OK") : TEXT("--"), Mission.Preflight.bQualityChecked ? TEXT("OK") : TEXT("--")),
+            FString::Printf(TEXT("02  PREFLIGHT / READY TO FLY\n\n[%s] INPUT CENTERED\n[%s] CAMERA  %s / vFOV %.0f\n[%s] ENVIRONMENT  %s 16:30\n[%s] DISPLAY  %d x %d / %s\n\n[ ENTER / SPACE ]  ARM & START\nNEXT: HOLD LEFT SHIFT TO TAKE OFF\nW/S Pitch  A/D Roll  Q/E Yaw\nShift/Ctrl Throttle  C Camera  H RTH\nESC/F10 Settings  R Reset"),
+                Mission.Preflight.bInputCentered ? TEXT("OK") : TEXT("READY"), Mission.Preflight.bCameraChecked ? TEXT("OK") : TEXT("READY"), CameraModeText(Data.CameraMode), Pawn->GetVerticalFov(),
+                Mission.Preflight.bEnvironmentChecked ? TEXT("OK") : TEXT("READY"), WeatherText(Environment.Weather), Mission.Preflight.bQualityChecked ? TEXT("OK") : TEXT("READY"),
+                GameMode->GetAppliedSettings().ResolutionWidth, GameMode->GetAppliedSettings().ResolutionHeight, WindowModeText(GameMode->GetAppliedSettings().WindowMode)),
             FLinearColor::White, Right + 14.0F, Top + 146.0F, GEngine->GetSmallFont(), 1.0F, false);
     }
 
@@ -143,13 +177,22 @@ void AFlightHUD::DrawHUD()
                 Mission.Stage == EPhase4MissionStage::Replay ? TEXT("PLAYBACK TRIANGLE / REPLAY") : TEXT("RESULT CARD"),
                 Mission.Score.Total, Mission.Score.Safety, Mission.Score.Precision, Mission.Score.Efficiency,
                 Mission.Score.Smoothness, static_cast<unsigned long long>(Mission.Score.ReplayDigest),
-                Mission.Stage == EPhase4MissionStage::Replay ? TEXT("ALIGNED WITH RESULT") : TEXT("[CONFIRM / M] OPEN REPLAY")),
+                Mission.Stage == EPhase4MissionStage::Replay ? TEXT("ALIGNED WITH RESULT") : TEXT("[ ENTER / SPACE ] OPEN REPLAY")),
             FLinearColor(0.94F, 1.0F, 0.96F), Right + 14.0F, Top + 146.0F, GEngine->GetSmallFont(), 1.0F, false);
     }
 
     const float HintWidth = FMath::Min(720.0F, Canvas->ClipX - Margin.X * 2.0F);
     DrawRect(FLinearColor(0.0F, 0.02F, 0.03F, 0.84F), Margin.X, Canvas->ClipY - Margin.Y - 52.0F, HintWidth, 52.0F);
-    DrawText(FString::Printf(TEXT("TIP / %s   |   [H / DPAD DOWN] RTH   [P] PAUSE + SETTINGS   [C] CAMERA"), *Mission.GetProgressiveHint()),
+    FString NextAction = Mission.GetProgressiveHint();
+    if (Mission.Stage == EPhase4MissionStage::Takeoff && Data.Phase == EFlightPhase::Grounded)
+    {
+        NextAction = TEXT("NEXT ACTION: HOLD LEFT SHIFT TO RAISE THROTTLE AND TAKE OFF");
+    }
+    else if (Mission.Stage == EPhase4MissionStage::Inspection)
+    {
+        NextAction = FString::Printf(TEXT("NEXT ACTION: %s"), *Mission.GetProgressiveHint());
+    }
+    DrawText(FString::Printf(TEXT("%s   |   H RTH   ESC/F10 SETTINGS   C CAMERA   R RESET"), *NextAction),
         FLinearColor::White, Margin.X + 12.0F, Canvas->ClipY - Margin.Y - 37.0F, GEngine->GetSmallFont(), 1.0F, false);
 
     if (Pawn->IsResumeCountdownActive())

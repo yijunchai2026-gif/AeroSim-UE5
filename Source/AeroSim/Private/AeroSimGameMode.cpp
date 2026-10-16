@@ -4,10 +4,13 @@
 #include "FlightPawn.h"
 #include "PacificCoastGraybox.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/GameUserSettings.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "HAL/PlatformMisc.h"
 #include "Misc/CommandLine.h"
+#include "Misc/FileHelper.h"
 #include "Misc/Parse.h"
+#include "Misc/Paths.h"
 #include "TimerManager.h"
 #include "UnrealClient.h"
 
@@ -21,6 +24,7 @@ void AAeroSimGameMode::StartPlay()
 {
     Super::StartPlay();
     Phase4Mission.Reset();
+    LoadProductSettings();
 
     FString WeatherName;
     if (FParse::Value(FCommandLine::Get(), TEXT("AeroSimWeather="), WeatherName))
@@ -132,6 +136,33 @@ void AAeroSimGameMode::StartPlay()
             }
         }
 
+        FString ProductUxView;
+        if (FParse::Value(FCommandLine::Get(), TEXT("AeroSimProductUxView="), ProductUxView))
+        {
+            if (ProductUxView.Equals(TEXT("Hangar"), ESearchCase::IgnoreCase))
+            {
+                Phase4Mission.ConfigureEvidenceState(EPhase4MissionStage::Hangar);
+            }
+            else if (ProductUxView.Equals(TEXT("Preflight"), ESearchCase::IgnoreCase))
+            {
+                Phase4Mission.ConfigureEvidenceState(EPhase4MissionStage::Preflight);
+            }
+            else if (ProductUxView.Equals(TEXT("Flight"), ESearchCase::IgnoreCase))
+            {
+                Phase4Mission.ConfigureEvidenceState(EPhase4MissionStage::Inspection);
+                if (AFlightPawn* Pawn = Cast<AFlightPawn>(World->GetFirstPlayerController() != nullptr ? World->GetFirstPlayerController()->GetPawn() : nullptr))
+                {
+                    Pawn->ConfigureReviewFlightState(1800.0F, 900.0F);
+                }
+            }
+            else if (ProductUxView.Equals(TEXT("DisplaySettings"), ESearchCase::IgnoreCase))
+            {
+                DisplaySettings.Open(AppliedSettings);
+                if (AFlightPawn* Pawn = Cast<AFlightPawn>(World->GetFirstPlayerController() != nullptr ? World->GetFirstPlayerController()->GetPawn() : nullptr)) Pawn->SetSafePaused(true);
+            }
+            bEvidenceStateLocked = true;
+        }
+
         FString ScreenshotPath;
         if (FParse::Value(FCommandLine::Get(), TEXT("AeroSimScreenshot="), ScreenshotPath))
         {
@@ -214,5 +245,125 @@ void AAeroSimGameMode::SetWeather(const EAeroSimWeather Weather)
     if (Graybox != nullptr)
     {
         Graybox->ApplyEnvironmentState(EnvironmentState);
+    }
+}
+
+EAeroSimProductSurface AAeroSimGameMode::GetProductSurface() const
+{
+    if (DisplaySettings.bOpen) return EAeroSimProductSurface::DisplaySettings;
+    if (Phase4Mission.Stage == EPhase4MissionStage::Hangar) return EAeroSimProductSurface::Hangar;
+    if (Phase4Mission.Stage == EPhase4MissionStage::Preflight) return EAeroSimProductSurface::Preflight;
+    return EAeroSimProductSurface::Flight;
+}
+
+void AAeroSimGameMode::ApplyDisplayConfiguration(const FPhase7Settings& Settings, const bool bSaveEngineSettings)
+{
+    if (!Settings.IsValid() || GEngine == nullptr || GEngine->GetGameUserSettings() == nullptr) return;
+    UGameUserSettings* UserSettings = GEngine->GetGameUserSettings();
+    EWindowMode::Type Mode = EWindowMode::Windowed;
+    if (Settings.WindowMode == EPhase7WindowMode::Borderless) Mode = EWindowMode::WindowedFullscreen;
+    else if (Settings.WindowMode == EPhase7WindowMode::Fullscreen) Mode = EWindowMode::Fullscreen;
+    UserSettings->SetScreenResolution(FIntPoint(Settings.ResolutionWidth, Settings.ResolutionHeight));
+    UserSettings->SetFullscreenMode(Mode);
+    UserSettings->ApplyResolutionSettings(false);
+    if (bSaveEngineSettings)
+    {
+        UserSettings->ConfirmVideoMode();
+        UserSettings->SaveSettings();
+    }
+}
+
+bool AAeroSimGameMode::SaveProductSettings()
+{
+    const FString Path = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Config/AeroSim/settings-v2.json"));
+    IPlatformFile& Files = FPlatformFileManager::Get().GetPlatformFile();
+    Files.CreateDirectoryTree(*FPaths::GetPath(Path));
+    FString Error;
+    return FPhase7SaveCodec::WriteCrashSafe(Path, FPhase7SaveCodec::Encode(AppliedSettings), Error);
+}
+
+void AAeroSimGameMode::LoadProductSettings()
+{
+    const FString Path = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Config/AeroSim/settings-v2.json"));
+    FString Payload;
+    FString Error;
+    FPhase7Settings Loaded;
+    bool bLoaded = FFileHelper::LoadFileToString(Payload, *Path) && FPhase7SaveCodec::DecodeAndMigrate(Payload, Loaded, Error);
+    if (!bLoaded)
+    {
+        Payload.Reset();
+        bLoaded = FFileHelper::LoadFileToString(Payload, *(Path + TEXT(".bak"))) && FPhase7SaveCodec::DecodeAndMigrate(Payload, Loaded, Error);
+    }
+    AppliedSettings = bLoaded ? Loaded : FPhase7Settings();
+    ApplyDisplayConfiguration(AppliedSettings, false);
+}
+
+void AAeroSimGameMode::ToggleDisplaySettings()
+{
+    if (DisplaySettings.bOpen)
+    {
+        CancelDisplaySettings();
+        return;
+    }
+    if (!DisplaySettings.Open(AppliedSettings)) return;
+    if (AFlightPawn* Pawn = GetWorld() != nullptr && GetWorld()->GetFirstPlayerController() != nullptr ? Cast<AFlightPawn>(GetWorld()->GetFirstPlayerController()->GetPawn()) : nullptr)
+    {
+        Pawn->SetSafePaused(true);
+    }
+}
+
+void AAeroSimGameMode::NavigateDisplaySettings(const int32 Delta)
+{
+    if (DisplaySettings.bOpen) DisplaySettings.MoveFocus(Delta);
+}
+
+void AAeroSimGameMode::ChangeDisplaySetting(const int32 Delta)
+{
+    if (DisplaySettings.bOpen) DisplaySettings.ChangeFocusedValue(Delta);
+}
+
+void AAeroSimGameMode::ActivateDisplaySetting()
+{
+    if (!DisplaySettings.bOpen) return;
+    switch (DisplaySettings.FocusedRow)
+    {
+    case 0:
+    case 1: DisplaySettings.ChangeFocusedValue(1); break;
+    case 2:
+        if (DisplaySettings.BeginPreview()) ApplyDisplayConfiguration(DisplaySettings.Transaction.Preview, false);
+        break;
+    case 3:
+        if (DisplaySettings.Apply())
+        {
+            AppliedSettings = DisplaySettings.Transaction.Applied;
+            ApplyDisplayConfiguration(AppliedSettings, true);
+            DisplaySettings.Status = SaveProductSettings() ? TEXT("APPLIED + CRASH-SAFE SAVED") : TEXT("APPLIED / SAVE FAILED");
+        }
+        break;
+    case 4: CancelDisplaySettings(); break;
+    case 5:
+        if (DisplaySettings.Rollback())
+        {
+            AppliedSettings = DisplaySettings.Transaction.Applied;
+            ApplyDisplayConfiguration(AppliedSettings, true);
+            SaveProductSettings();
+        }
+        break;
+    default: break;
+    }
+}
+
+void AAeroSimGameMode::CancelDisplaySettings()
+{
+    if (!DisplaySettings.bOpen) return;
+    const FPhase7Settings Restore = DisplaySettings.Transaction.bPreviewActive && DisplaySettings.Transaction.Opening.IsValid()
+        ? DisplaySettings.Transaction.Opening
+        : AppliedSettings;
+    DisplaySettings.Cancel();
+    ApplyDisplayConfiguration(Restore, false);
+    DisplaySettings.bOpen = false;
+    if (AFlightPawn* Pawn = GetWorld() != nullptr && GetWorld()->GetFirstPlayerController() != nullptr ? Cast<AFlightPawn>(GetWorld()->GetFirstPlayerController()->GetPawn()) : nullptr)
+    {
+        Pawn->SetSafePaused(false);
     }
 }

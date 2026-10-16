@@ -365,8 +365,8 @@ FString FPhase4MissionSession::GetProgressText() const
 FString FPhase4MissionSession::GetProgressiveHint() const
 {
     if (IsRecovering()) return Feedback.RecoveryAction;
-    if (Stage == EPhase4MissionStage::Hangar) return TEXT("[CONFIRM] Open Preflight");
-    if (Stage == EPhase4MissionStage::Preflight) return Preflight.IsComplete() ? TEXT("[CONFIRM] Start mission") : TEXT("Center controls to finish checks");
+    if (Stage == EPhase4MissionStage::Hangar) return TEXT("[ENTER / SPACE] Open Preflight");
+    if (Stage == EPhase4MissionStage::Preflight) return Preflight.IsComplete() ? TEXT("[ENTER / SPACE] Start mission") : TEXT("Center controls to finish checks");
     if (Stage == EPhase4MissionStage::Inspection && ElapsedSeconds < 18.0F) return TEXT("Number + shape identify the next gate; color is secondary.");
     if (Stage == EPhase4MissionStage::Inspection && ElapsedSeconds < 35.0F) return TEXT("Use RTH only after all five checkpoints.");
     return Feedback.RecoveryAction;

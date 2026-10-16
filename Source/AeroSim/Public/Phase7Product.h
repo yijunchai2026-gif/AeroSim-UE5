@@ -84,6 +84,14 @@ struct AEROSIM_API FPhase7PerformanceGate final
     static FPhase7GateResult Evaluate(const FPhase7PerformanceBudget& Budget, const FPhase7PerformanceEvidence& Evidence);
 };
 
+UENUM(BlueprintType)
+enum class EPhase7WindowMode : uint8
+{
+    Windowed,
+    Borderless,
+    Fullscreen
+};
+
 USTRUCT(BlueprintType)
 struct AEROSIM_API FPhase7Settings
 {
@@ -96,6 +104,9 @@ struct AEROSIM_API FPhase7Settings
     EPhase7QualityTier QualityTier = EPhase7QualityTier::DesktopHigh;
     float MasterVolume = 1.0F;
     bool bTelemetryEnabled = false;
+    int32 ResolutionWidth = 1440;
+    int32 ResolutionHeight = 900;
+    EPhase7WindowMode WindowMode = EPhase7WindowMode::Windowed;
 
     bool IsValid() const;
 };

@@ -94,3 +94,34 @@ Visual Lab 展示 Scene、Build、RHI、Quality、Weather、Time、Seed、Camera
 - 同一 Shipping/等价构建的截图、视频、日志、性能和 manifest 完整；
 - Windows 参考构建通过，macOS 差异有结论；移动未实测则明确不在该 Candidate 声明中；
 - 最终用户验收仍由用户完成，团队不能代签。
+
+
+## 11. 第一批 P0 产品迁移（Unity PRD → UE5）
+
+本批把旧 Unity PRD 的用户 Happy Path 转成可直接操作的 UE5 产品流程，而不是继续要求用户知道调试键：
+
+`01 HANGAR → 02 PREFLIGHT → TAKEOFF → FLIGHT → RESULT → REPLAY`
+
+- **唯一可见主动作**：Hangar、Preflight 和 Result 均使用 `Enter / Space`；`M` 仅保留为调试兼容键，并明确标注，不再承担产品引导。
+- **Hangar**：显示 Aircraft Bay、任务、天气/质量、机型身份和真实资产状态。当前训练机持续显示 `AEROSIM GENERIC · PROTOTYPE / UNVERIFIED`，不将程序化代理写成正式 DJI 资产。
+- **Preflight**：同屏显示输入回中、Camera/vFOV、Environment 和 Display；主按钮写明 `ARM & START`，下一动作明确为 `HOLD LEFT SHIFT TO TAKE OFF`。
+- **Flight HUD**：下一动作、阶段、目标、进度、相机、vFOV、高度、速度和输入入口位于外围；中心飞行走廊保持无遮挡。完整键鼠主路径为：`W/S Pitch`、`A/D Roll`、`Q/E Yaw`、`Left Shift/Left Ctrl Throttle`、`C Camera`、`H RTH`、`R Reset`、`Esc/F10/P Settings`。
+- **输入/暂停状态**：Display Settings 打开时安全暂停并清零四轴，面板明确显示 `SAFE PAUSE / INPUT NEUTRAL`；关闭后沿用三秒回中恢复合同。失焦和设备断开仍保持既有安全暂停，不回退 Phase 5/6 边界。
+
+### 11.1 Display Settings
+
+Display Settings 可由 `Esc`、`F10` 或既有 `P` 打开，右侧停靠，不覆盖中心视野；`↑/↓` 导航，`←/→` 改值，`Enter/Space` 执行，`Esc/F10` 取消并关闭。
+
+最低 P0 选项：
+
+- Resolution：`1280×720`、`1440×900`、`1920×1080`；
+- Window Mode：`Windowed`、`Borderless`、`Fullscreen`；
+- Transaction：`Preview`（仅当前窗口、不保存）、`Apply + Save`、`Cancel`、`Rollback`。
+
+设置继续使用 `aerosim.settings/v2`，兼容新增 `resolution_width`、`resolution_height`、`window_mode`。Apply 同时确认 UE GameUserSettings，并通过 `.tmp + flush + .bak + replace` 保存 JSON；启动时 final 失败会尝试 backup。旧 v1 迁移与缺显示字段的旧 v2 文件保持可读，未来版本/非法枚举/不支持分辨率 fail closed。
+
+### 11.2 产品合同与真实性边界
+
+Runtime 主身份保持 `aerosim.runtime.phase7/v1`，新增兼容产品交互合同 `aerosim.product-ux/v1`，不改写既有 Phase 7、Phase 6 ScenePatch 或 Phase 5 安全合同。完整映射见 [Unity PRD → UE5 产品迁移矩阵](UNITY_TO_UE5_MIGRATION_MATRIX.md)。
+
+本批截图和 Automation 只能证明 Mac Development 下的产品流程、显示事务、输入提示和程序化原型表现；正式机型仍为 `BLOCKED_ASSET`，用户外观确认仍为 `BLOCKED_USER_CONFIRMATION`，Windows 与 iPadOS 仍为 `NOT_RUN`，不得从 Mac 结果外推。
