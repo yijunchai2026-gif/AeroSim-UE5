@@ -4,7 +4,7 @@
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "AeroSimEditorMcp.generated.h"
 
-/** Fixed limits for the in-process, read-only Editor MCP protocol. */
+/** Fixed limits for the in-process Editor MCP protocol. */
 USTRUCT(BlueprintType)
 struct AEROSIMEDITOR_API FAeroSimEditorMcpLimits
 {
@@ -44,10 +44,11 @@ struct AEROSIMEDITOR_API FAeroSimEditorMcpAuditEntry
 };
 
 /**
- * In-process Phase 5 Editor MCP dispatcher.
+ * In-process Phase 6 Editor MCP dispatcher.
  *
- * There is deliberately no socket/server, filesystem, shell, Python, console command,
- * process launch, arbitrary reflection, arbitrary UObject invocation, or mutation API.
+ * Writes are only available through the finite sandbox transaction API. There is deliberately
+ * no socket/server, filesystem, shell, Python, console command, process launch, arbitrary
+ * reflection, arbitrary UObject invocation, arbitrary asset write, or production promotion.
  * The caller supplies JSON and receives JSON on the Editor game thread.
  */
 UCLASS()

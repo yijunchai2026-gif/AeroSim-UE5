@@ -1,6 +1,8 @@
 #include "AeroSimEditorMcp.h"
 
 #include "AeroSimEditorInspection.h"
+#include "AeroSimPhase6Transaction.h"
+#include "AeroSimSha256.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Components/ActorComponent.h"
 #include "Components/SceneComponent.h"
@@ -23,22 +25,34 @@ namespace AeroSimEditorMcp
 const TCHAR* RequestSchema = TEXT("aerosim.editor.mcp.request/v1");
 const TCHAR* ResponseSchema = TEXT("aerosim.editor.mcp.response/v1");
 const TCHAR* CapabilitySchema = TEXT("aerosim.editor.mcp.capabilities/v1");
-const TCHAR* Runtime = TEXT("aerosim.runtime.phase5/v1");
+const TCHAR* Runtime = TEXT("aerosim.runtime.phase6/v1");
 
 FCriticalSection AuditMutex;
 TArray<FAeroSimEditorMcpAuditEntry> AuditEntries; // append-only for this Editor process lifetime
+FAeroSimPhase6TransactionStore TransactionStore;
+TMap<FString, FString> IdempotentRequestDigests;
+TMap<FString, FString> IdempotentResponses;
+
+FString Sha256(const FString& Value);
 
 const TArray<FString> ReadOperations = {
     TEXT("capabilities"), TEXT("heartbeat"), TEXT("inspect_project"), TEXT("inspect_world"),
     TEXT("list_actors"), TEXT("inspect_actor"), TEXT("inspect_component"),
     TEXT("inspect_asset_metadata"), TEXT("inspect_data_layers"), TEXT("inspect_world_partition"),
-    TEXT("validate_scene"), TEXT("capture_request"), TEXT("inspect_audit")
+    TEXT("validate_scene"), TEXT("capture_request"), TEXT("inspect_audit"),
+    TEXT("transaction_inspect"), TEXT("transaction_audit")
+};
+
+const TArray<FString> TransactionOperations = {
+    TEXT("transaction_dry_run"), TEXT("transaction_snapshot"), TEXT("transaction_apply"),
+    TEXT("transaction_validate"), TEXT("transaction_evidence"), TEXT("transaction_commit"),
+    TEXT("transaction_rollback"), TEXT("transaction_undo"), TEXT("transaction_redo")
 };
 
 const TArray<FString> DeniedSurfaces = {
     TEXT("shell"), TEXT("python"), TEXT("console"), TEXT("process"), TEXT("network"),
     TEXT("arbitrary_file"), TEXT("arbitrary_reflection"), TEXT("arbitrary_uobject"),
-    TEXT("spawn"), TEXT("delete"), TEXT("transform"), TEXT("save"), TEXT("import"), TEXT("promote")
+    TEXT("production_map"), TEXT("production_asset"), TEXT("arbitrary_asset"), TEXT("promote")
 };
 
 const TArray<FString> FixedCameras = {
@@ -144,7 +158,7 @@ bool MutationLike(const FString& Operation)
     static const TArray<FString> Tokens = {
         TEXT("apply"), TEXT("update"), TEXT("create"), TEXT("spawn"), TEXT("delete"), TEXT("remove"),
         TEXT("modify"), TEXT("write"), TEXT("save"), TEXT("import"), TEXT("promote"),
-        TEXT("transform"), TEXT("execute"), TEXT("shell"), TEXT("python"), TEXT("console"), TEXT("network")
+        TEXT("execute"), TEXT("shell"), TEXT("python"), TEXT("console"), TEXT("network"), TEXT("import"), TEXT("promote")
     };
     for (const FString& Token : Tokens)
     {
@@ -184,7 +198,7 @@ void AppendAudit(const FString& RequestId, const FString& Operation, const FStri
     Entry.RequestId = RequestId.Left(64);
     Entry.Operation = Operation.Left(64);
     Entry.ResultCode = Code.Left(64);
-    Entry.RequestDigest = FMD5::HashAnsiString(*RequestJson);
+    Entry.RequestDigest = Sha256(RequestJson);
     Entry.DurationMs = FMath::Max(0, FMath::RoundToInt((FPlatformTime::Seconds() - Started) * 1000.0));
     FScopeLock Lock(&AuditMutex);
     AuditEntries.Add(MoveTemp(Entry));
@@ -201,10 +215,16 @@ TSharedRef<FJsonObject> Capabilities()
     Data->SetStringField(TEXT("schema"), CapabilitySchema);
     Data->SetNumberField(TEXT("version"), 1);
     Data->SetStringField(TEXT("runtime_contract"), Runtime);
-    Data->SetBoolField(TEXT("read_only"), true);
+    Data->SetBoolField(TEXT("read_only"), false);
+    Data->SetBoolField(TEXT("writes_sandbox_only"), true);
     Data->SetArrayField(TEXT("operations"), Strings(ReadOperations));
+    Data->SetArrayField(TEXT("transaction_operations"), Strings(TransactionOperations));
     Data->SetArrayField(TEXT("denied_surfaces"), Strings(DeniedSurfaces));
     Data->SetArrayField(TEXT("asset_path_allowlist"), Strings({ TEXT("/Game/") }));
+    Data->SetArrayField(TEXT("write_map_allowlist"), Strings({ TEXT("/Game/AeroSim/Sandbox/Maps/AI_Review_Sandbox") }));
+    Data->SetArrayField(TEXT("write_data_layer_allowlist"), Strings({ TEXT("AeroSim_AI_Draft") }));
+    Data->SetArrayField(TEXT("approved_spawn_ids"), Strings({ TEXT("primitive.cube"), TEXT("primitive.sphere"), TEXT("primitive.cylinder"), TEXT("prefab.review-marker"), TEXT("prefab.route-gate") }));
+    Data->SetArrayField(TEXT("finite_actions"), Strings({ TEXT("spawn_approved"), TEXT("set_transform"), TEXT("set_material_scalar"), TEXT("add_tag"), TEXT("remove_tag"), TEXT("delete_draft") }));
     TSharedRef<FJsonObject> Limits = Object();
     Limits->SetNumberField(TEXT("max_request_bytes"), FAeroSimEditorMcpLimits::MaximumRequestBytes);
     Limits->SetNumberField(TEXT("max_response_bytes"), FAeroSimEditorMcpLimits::MaximumResponseBytes);
@@ -227,6 +247,91 @@ TSharedRef<FJsonObject> ActorJson(const AActor& Actor)
     Item->SetBoolField(TEXT("hidden_editor"), Actor.IsHiddenEd());
     Item->SetNumberField(TEXT("component_count"), Actor.GetComponents().Num());
     return Item;
+}
+
+FString Sha256(const FString& Value)
+{
+    return AeroSimSha256(Value);
+}
+
+FVector JsonVector(const TSharedPtr<FJsonObject>& Value, const FVector& Default)
+{
+    if (!Value.IsValid()) { return Default; }
+    double X = Default.X;
+    double Y = Default.Y;
+    double Z = Default.Z;
+    Value->TryGetNumberField(TEXT("x"), X);
+    Value->TryGetNumberField(TEXT("y"), Y);
+    Value->TryGetNumberField(TEXT("z"), Z);
+    return FVector(X, Y, Z);
+}
+
+FPhase6Result ParsePatch(const TSharedPtr<FJsonObject>& Params, FPhase6Patch& OutPatch)
+{
+    const TSharedPtr<FJsonObject>* PatchPointer = nullptr;
+    if (!Params.IsValid() || !Params->TryGetObjectField(TEXT("patch"), PatchPointer) || PatchPointer == nullptr || !PatchPointer->IsValid())
+    {
+        return { false, TEXT("INVALID_PATCH"), TEXT("params.patch must be an object"), TEXT("{}") };
+    }
+    const TSharedPtr<FJsonObject> Patch = *PatchPointer;
+    Patch->TryGetStringField(TEXT("schema"), OutPatch.Schema);
+    double Revision = 0.0;
+    Patch->TryGetNumberField(TEXT("base_revision"), Revision);
+    OutPatch.BaseRevision = FMath::RoundToInt64(Revision);
+    Patch->TryGetStringField(TEXT("base_hash"), OutPatch.BaseHash);
+    const TArray<TSharedPtr<FJsonValue>>* Actions = nullptr;
+    if (!Patch->TryGetArrayField(TEXT("actions"), Actions) || Actions == nullptr)
+    {
+        return { false, TEXT("INVALID_PATCH"), TEXT("patch.actions must be an array"), TEXT("{}") };
+    }
+    for (const TSharedPtr<FJsonValue>& ActionValue : *Actions)
+    {
+        const TSharedPtr<FJsonObject> ActionObject = ActionValue.IsValid() ? ActionValue->AsObject() : nullptr;
+        if (!ActionObject.IsValid())
+        {
+            return { false, TEXT("INVALID_PATCH"), TEXT("each action must be an object"), TEXT("{}") };
+        }
+        FString Type;
+        FPhase6Action Action;
+        ActionObject->TryGetStringField(TEXT("type"), Type);
+        ActionObject->TryGetStringField(TEXT("actor_id"), Action.ActorId);
+        ActionObject->TryGetStringField(TEXT("asset_id"), Action.AssetId);
+        ActionObject->TryGetStringField(TEXT("parameter_id"), Action.ParameterId);
+        ActionObject->TryGetStringField(TEXT("tag"), Action.Tag);
+        ActionObject->TryGetNumberField(TEXT("value"), Action.ScalarValue);
+        ActionObject->TryGetBoolField(TEXT("snap"), Action.bSnap);
+        if (Type == TEXT("spawn_approved")) { Action.Type = EPhase6ActionType::SpawnApproved; }
+        else if (Type == TEXT("set_transform")) { Action.Type = EPhase6ActionType::SetTransform; }
+        else if (Type == TEXT("set_material_scalar")) { Action.Type = EPhase6ActionType::SetMaterialScalar; }
+        else if (Type == TEXT("add_tag")) { Action.Type = EPhase6ActionType::AddTag; }
+        else if (Type == TEXT("remove_tag")) { Action.Type = EPhase6ActionType::RemoveTag; }
+        else if (Type == TEXT("delete_draft")) { Action.Type = EPhase6ActionType::DeleteDraft; }
+        else { return { false, TEXT("ACTION_NOT_ALLOWED"), TEXT("action type is outside the finite command set"), TEXT("{}") }; }
+
+        const TSharedPtr<FJsonObject>* TransformPointer = nullptr;
+        if (ActionObject->TryGetObjectField(TEXT("transform"), TransformPointer) && TransformPointer != nullptr && TransformPointer->IsValid())
+        {
+            const TSharedPtr<FJsonObject>* Location = nullptr;
+            const TSharedPtr<FJsonObject>* RotationValue = nullptr;
+            const TSharedPtr<FJsonObject>* Scale = nullptr;
+            (*TransformPointer)->TryGetObjectField(TEXT("location_cm"), Location);
+            (*TransformPointer)->TryGetObjectField(TEXT("rotation_deg"), RotationValue);
+            (*TransformPointer)->TryGetObjectField(TEXT("scale"), Scale);
+            const FVector LocationVector = JsonVector(Location != nullptr ? *Location : nullptr, FVector::ZeroVector);
+            const FVector RotationVector = JsonVector(RotationValue != nullptr ? *RotationValue : nullptr, FVector::ZeroVector);
+            const FVector ScaleVector = JsonVector(Scale != nullptr ? *Scale : nullptr, FVector::OneVector);
+            Action.Transform = FTransform(FRotator(RotationVector.X, RotationVector.Y, RotationVector.Z), LocationVector, ScaleVector);
+        }
+        OutPatch.Actions.Add(MoveTemp(Action));
+    }
+    return { true, TEXT("OK"), TEXT(""), TEXT("{}") };
+}
+
+TSharedRef<FJsonObject> ParseResultData(const FPhase6Result& Result)
+{
+    TSharedPtr<FJsonObject> Parsed;
+    const TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Result.Data);
+    return FJsonSerializer::Deserialize(Reader, Parsed) && Parsed.IsValid() ? Parsed.ToSharedRef() : Object();
 }
 }
 
@@ -287,6 +392,22 @@ FString UAeroSimEditorMcp::ExecuteRequest(const FString& RequestJson)
         return Finish(ErrorJson(RequestId, TEXT("INVALID_OPERATION"), TEXT("operation is required and limited to 64 characters.")), TEXT("INVALID_OPERATION"));
     }
 
+    const FString RequestDigest = Sha256(RequestJson);
+    if (TransactionOperations.Contains(Operation))
+    {
+        if (const FString* ExistingDigest = IdempotentRequestDigests.Find(RequestId))
+        {
+            if (*ExistingDigest != RequestDigest)
+            {
+                return Finish(ErrorJson(RequestId, TEXT("REQUEST_ID_REUSE"), TEXT("request_id was already used with a different SHA256 digest.")), TEXT("REQUEST_ID_REUSE"));
+            }
+            if (const FString* ExistingResponse = IdempotentResponses.Find(RequestId))
+            {
+                return *ExistingResponse;
+            }
+        }
+    }
+
     const TSharedPtr<FJsonObject>* ParamsPointer = nullptr;
     TSharedPtr<FJsonObject> Params = Object();
     if (Request->TryGetObjectField(TEXT("params"), ParamsPointer) && ParamsPointer != nullptr && ParamsPointer->IsValid())
@@ -298,11 +419,11 @@ FString UAeroSimEditorMcp::ExecuteRequest(const FString& RequestJson)
     const int32 TimeoutMs = FMath::Clamp(FMath::RoundToInt(TimeoutValue), 1, FAeroSimEditorMcpLimits::MaximumTimeoutMs);
     const double Deadline = Started + (static_cast<double>(TimeoutMs) / 1000.0);
 
-    if (MutationLike(Operation))
+    if (MutationLike(Operation) && !TransactionOperations.Contains(Operation))
     {
-        return Finish(ErrorJson(RequestId, TEXT("READ_ONLY_DENIED"), TEXT("Phase 5 Editor MCP is observation-only; every mutation is denied.")), TEXT("READ_ONLY_DENIED"));
+        return Finish(ErrorJson(RequestId, TEXT("READ_ONLY_DENIED"), TEXT("Mutation is only available through the finite Phase 6 transaction operations.")), TEXT("READ_ONLY_DENIED"));
     }
-    if (!ReadOperations.Contains(Operation))
+    if (!ReadOperations.Contains(Operation) && !TransactionOperations.Contains(Operation))
     {
         return Finish(ErrorJson(RequestId, TEXT("OPERATION_NOT_SUPPORTED"), TEXT("Operation is not in capability discovery.")), TEXT("OPERATION_NOT_SUPPORTED"));
     }
@@ -345,12 +466,71 @@ FString UAeroSimEditorMcp::ExecuteRequest(const FString& RequestJson)
             Item->SetStringField(TEXT("request_id"), Entry.RequestId);
             Item->SetStringField(TEXT("operation"), Entry.Operation);
             Item->SetStringField(TEXT("result_code"), Entry.ResultCode);
-            Item->SetStringField(TEXT("request_digest_md5"), Entry.RequestDigest);
+            Item->SetStringField(TEXT("request_digest_sha256"), Entry.RequestDigest);
             Item->SetNumberField(TEXT("duration_ms"), Entry.DurationMs);
             Items.Add(MakeShared<FJsonValueObject>(Item));
         }
         Data->SetArrayField(TEXT("items"), Items);
         Data->SetBoolField(TEXT("external_write"), false);
+    }
+    else if (Operation == TEXT("transaction_inspect"))
+    {
+        const FPhase6InspectResult Inspection = TransactionStore.Inspect();
+        Data->SetNumberField(TEXT("revision"), static_cast<double>(Inspection.Revision));
+        Data->SetStringField(TEXT("draft_hash"), Inspection.DraftHash);
+        Data->SetStringField(TEXT("map_id"), Inspection.MapId);
+        Data->SetStringField(TEXT("data_layer_id"), Inspection.DataLayerId);
+        Data->SetNumberField(TEXT("actor_count"), Inspection.ActorCount);
+        Data->SetStringField(TEXT("status"), TEXT("DRAFT_NOT_USER_CONFIRMED"));
+    }
+    else if (Operation == TEXT("transaction_audit"))
+    {
+        TSharedPtr<FJsonObject> AuditData;
+        const TSharedRef<TJsonReader<>> AuditReader = TJsonReaderFactory<>::Create(TransactionStore.InspectAudit());
+        if (FJsonSerializer::Deserialize(AuditReader, AuditData) && AuditData.IsValid())
+        {
+            Data = AuditData.ToSharedRef();
+        }
+    }
+    else if (TransactionOperations.Contains(Operation))
+    {
+        FString TransactionId;
+        Params->TryGetStringField(TEXT("transaction_id"), TransactionId);
+        FPhase6Result TransactionResult;
+        if (Operation == TEXT("transaction_dry_run"))
+        {
+            FPhase6Patch Patch;
+            TransactionResult = ParsePatch(Params, Patch);
+            if (TransactionResult.bOk)
+            {
+                TransactionResult = TransactionStore.DryRun(TransactionId, Patch);
+            }
+        }
+        else if (Operation == TEXT("transaction_snapshot")) { TransactionResult = TransactionStore.Snapshot(TransactionId); }
+        else if (Operation == TEXT("transaction_apply")) { TransactionResult = TransactionStore.Apply(TransactionId); }
+        else if (Operation == TEXT("transaction_validate")) { TransactionResult = TransactionStore.Validate(TransactionId); }
+        else if (Operation == TEXT("transaction_commit")) { TransactionResult = TransactionStore.Commit(TransactionId); }
+        else if (Operation == TEXT("transaction_undo")) { TransactionResult = TransactionStore.Undo(TransactionId); }
+        else if (Operation == TEXT("transaction_redo")) { TransactionResult = TransactionStore.Redo(TransactionId); }
+        else if (Operation == TEXT("transaction_rollback"))
+        {
+            FString Reason = TEXT("caller-requested");
+            Params->TryGetStringField(TEXT("reason"), Reason);
+            TransactionResult = TransactionStore.Rollback(TransactionId, Reason.Left(128));
+        }
+        else if (Operation == TEXT("transaction_evidence"))
+        {
+            FString Moment;
+            FString CameraId;
+            Params->TryGetStringField(TEXT("moment"), Moment);
+            Params->TryGetStringField(TEXT("camera_id"), CameraId);
+            TransactionResult = TransactionStore.Evidence(TransactionId, Moment, CameraId);
+        }
+        if (!TransactionResult.bOk)
+        {
+            return Finish(ErrorJson(RequestId, *TransactionResult.Code, TransactionResult.Message), TransactionResult.Code);
+        }
+        Data = ParseResultData(TransactionResult);
     }
     else
     {
@@ -561,7 +741,18 @@ FString UAeroSimEditorMcp::ExecuteRequest(const FString& RequestJson)
     }
     TSharedRef<FJsonObject> Root = Envelope(RequestId, true);
     Root->SetObjectField(TEXT("data"), Data);
-    return Finish(AeroSimEditorMcp::Serialize(Root), TEXT("OK"));
+    const FString CompletedResponse = Finish(AeroSimEditorMcp::Serialize(Root), TEXT("OK"));
+    if (TransactionOperations.Contains(Operation))
+    {
+        if (IdempotentResponses.Num() >= 512)
+        {
+            IdempotentRequestDigests.Reset();
+            IdempotentResponses.Reset();
+        }
+        IdempotentRequestDigests.Add(RequestId, RequestDigest);
+        IdempotentResponses.Add(RequestId, CompletedResponse);
+    }
+    return CompletedResponse;
 }
 
 TArray<FAeroSimEditorMcpAuditEntry> UAeroSimEditorMcp::InspectAudit(const int32 Offset, const int32 Limit)

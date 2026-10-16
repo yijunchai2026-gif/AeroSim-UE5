@@ -18,8 +18,8 @@ bool FPhase5McpProtocolTest::RunTest(const FString& Parameters)
     const FString Response = UAeroSimEditorMcp::ExecuteRequest(Request(TEXT("cap-1"), TEXT("capabilities")));
     TestTrue(TEXT("Response schema is versioned"), Response.Contains(TEXT("aerosim.editor.mcp.response/v1")));
     TestTrue(TEXT("Request id is correlated"), Response.Contains(TEXT("request_id")) && Response.Contains(TEXT("cap-1")));
-    TestTrue(TEXT("Read-only capability is explicit"), Response.Contains(TEXT("read_only")) && Response.Contains(TEXT("true")));
-    TestTrue(TEXT("All required read tools are discoverable"), Response.Contains(TEXT("inspect_world")) && Response.Contains(TEXT("inspect_asset_metadata")) && Response.Contains(TEXT("capture_request")));
+    TestTrue(TEXT("Phase 6 sandbox write boundary is explicit"), Response.Contains(TEXT("writes_sandbox_only")) && Response.Contains(TEXT("true")));
+    TestTrue(TEXT("Phase 5 read tools remain discoverable"), Response.Contains(TEXT("inspect_world")) && Response.Contains(TEXT("inspect_asset_metadata")) && Response.Contains(TEXT("capture_request")));
     TestTrue(TEXT("Dangerous surfaces are explicitly denied"), Response.Contains(TEXT("shell")) && Response.Contains(TEXT("python")) && Response.Contains(TEXT("arbitrary_uobject")));
     return true;
 }

@@ -16,6 +16,7 @@ class Phase5ContractsTest(unittest.TestCase):
 
     def test_runtime_and_editor_separation(self) -> None:
         runtime = (ROOT / "Source/AeroSim/Public/AeroSimRuntimeContract.h").read_text(encoding="utf-8")
+        self.assertIn("aerosim.runtime.phase6/v1", runtime)
         self.assertIn("aerosim.runtime.phase5/v1", runtime)
         self.assertNotIn("AeroSimEditor", (ROOT / "Source/AeroSim/AeroSim.Build.cs").read_text(encoding="utf-8"))
         descriptor = json.loads((ROOT / "Plugins/AeroSimEditor/AeroSimEditor.uplugin").read_text(encoding="utf-8"))

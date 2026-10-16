@@ -120,3 +120,17 @@ Phase 3 adds `Phase3Aircraft` as the Aircraft/Camera contract owner without intr
 - `FPhase3EvidenceCameraContract` freezes six review presets. Collection never signs G0–G3 or user approval.
 
 The migrated aircraft references remain placeholder/reference-only. Runtime and HUD expose `BLOCKED_ASSET`; no code path promotes the generic proxy to a named production aircraft.
+
+## Phase 6 Editor transaction additions
+
+Phase 6 keeps the Phase 5 request/response envelope and read-inspection compatibility, then adds an Editor-only `FAeroSimPhase6TransactionStore` behind the same command dispatcher:
+
+- `ScenePatch v1` is a finite DTO command list; it has no reflected property/function/class names or executable payload;
+- canonical Sandbox draft state is guarded by optimistic revision + SHA256 and one writer transaction lock;
+- the mandatory lifecycle is inspect → dry-run → snapshot → apply → ordered G0–G4 validate → fixed-camera before/after evidence → pending-review commit or complete rollback;
+- Map, Data Layer, draft actor IDs, spawn IDs, material parameters, tags, transforms and quotas are compile-time bounded;
+- timeout, idle expiry, validation failure and explicit rollback restore the complete opening state and verify its hash;
+- Undo/Redo operates only on committed Sandbox draft history; `commit` cannot promote or touch production;
+- transaction audit is append-only and SHA256 hash-chained; request idempotency is bound to the request SHA256.
+
+The Runtime identity advances to `aerosim.runtime.phase6/v1`, but all editing implementation remains in the `AeroSimEditor` module (`Type=Editor`, target allowlist Editor) and is absent from the packaged Runtime. Phase 7 AI optimization surfaces are intentionally not present.

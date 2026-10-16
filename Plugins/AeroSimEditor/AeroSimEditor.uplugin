@@ -1,9 +1,9 @@
 {
   "FileVersion": 3,
-  "Version": 5,
-  "VersionName": "0.5.0",
+  "Version": 6,
+  "VersionName": "0.6.0",
   "FriendlyName": "AeroSim Editor",
-  "Description": "Editor-only, in-process, allowlisted read-only inspection and evidence request protocol.",
+  "Description": "Editor-only, in-process, allowlisted Phase 6 transaction and evidence protocol.",
   "Category": "AeroSim",
   "CanContainContent": false,
   "EnabledByDefault": false,

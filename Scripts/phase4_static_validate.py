@@ -72,7 +72,7 @@ def main() -> int:
         require(token in source, f"missing Phase 4 token: {token}")
 
     runtime = (ROOT / "Source/AeroSim/Public/AeroSimRuntimeContract.h").read_text(encoding="utf-8")
-    require('Phase = TEXT("Phase4")' in runtime or 'Phase = TEXT("Phase5")' in runtime, "runtime phase regressed below Phase4")
+    require(any(f'Phase = TEXT("Phase{phase}")' in runtime for phase in (4, 5, 6)), "runtime phase regressed below Phase4")
     require('ContractVersion = 1' in runtime, "runtime version is not v1")
 
     hud = (ROOT / "Source/AeroSim/Private/FlightHUD.cpp").read_text(encoding="utf-8")
