@@ -20,6 +20,7 @@ AAeroSimGameMode::AAeroSimGameMode()
 void AAeroSimGameMode::StartPlay()
 {
     Super::StartPlay();
+    Phase4Mission.Reset();
 
     FString WeatherName;
     if (FParse::Value(FCommandLine::Get(), TEXT("AeroSimWeather="), WeatherName))
@@ -106,6 +107,31 @@ void AAeroSimGameMode::StartPlay()
             }
         }
 
+        FString Phase4View;
+        if (FParse::Value(FCommandLine::Get(), TEXT("AeroSimPhase4View="), Phase4View))
+        {
+            EPhase4MissionStage EvidenceStage = EPhase4MissionStage::Hangar;
+            if (Phase4View.Equals(TEXT("Preflight"), ESearchCase::IgnoreCase)) EvidenceStage = EPhase4MissionStage::Preflight;
+            else if (Phase4View.Equals(TEXT("FlightHint"), ESearchCase::IgnoreCase)) EvidenceStage = EPhase4MissionStage::Inspection;
+            else if (Phase4View.Equals(TEXT("BoundaryRecovery"), ESearchCase::IgnoreCase)) EvidenceStage = EPhase4MissionStage::ReturnToHome;
+            else if (Phase4View.Equals(TEXT("Result"), ESearchCase::IgnoreCase)) EvidenceStage = EPhase4MissionStage::Result;
+            else if (Phase4View.Equals(TEXT("Replay"), ESearchCase::IgnoreCase)) EvidenceStage = EPhase4MissionStage::Replay;
+            Phase4Mission.ConfigureEvidenceState(EvidenceStage);
+            bEvidenceStateLocked = true;
+
+            APlayerController* Controller = World->GetFirstPlayerController();
+            AFlightPawn* Pawn = Controller != nullptr ? Cast<AFlightPawn>(Controller->GetPawn()) : nullptr;
+            if (Pawn != nullptr)
+            {
+                const bool bFlightView = EvidenceStage == EPhase4MissionStage::Inspection || EvidenceStage == EPhase4MissionStage::ReturnToHome;
+                const FTransform EvidenceTransform(
+                    FRotator(0.0F, bFlightView ? 22.0F : 28.0F, 0.0F),
+                    bFlightView ? FVector(3500.0F, -2100.0F, 850.0F) : FVector(-5100.0F, -4900.0F, 60.0F));
+                Pawn->ConfigureReviewView(EvidenceTransform, bFlightView ? EFlightCameraMode::FPV : EFlightCameraMode::Chase);
+                if (!bFlightView && Pawn->GetFollowSpringArm() != nullptr) Pawn->GetFollowSpringArm()->TargetArmLength = 115.0F;
+            }
+        }
+
         FString ScreenshotPath;
         if (FParse::Value(FCommandLine::Get(), TEXT("AeroSimScreenshot="), ScreenshotPath))
         {
@@ -134,7 +160,52 @@ void AAeroSimGameMode::StartPlay()
 
 bool AAeroSimGameMode::AdvanceMission()
 {
-    return MissionFlow.Advance();
+    AFlightPawn* Pawn = GetWorld() != nullptr ? Cast<AFlightPawn>(GetWorld()->GetFirstPlayerController() != nullptr ? GetWorld()->GetFirstPlayerController()->GetPawn() : nullptr) : nullptr;
+    if (Phase4Mission.Stage == EPhase4MissionStage::Hangar)
+    {
+        Phase4Mission.EnterPreflight();
+        return MissionFlow.Transition(EAeroSimMissionState::Preflight);
+    }
+    if (Phase4Mission.Stage == EPhase4MissionStage::Preflight)
+    {
+        Phase4Mission.SetPreflightComplete(Pawn == nullptr || Pawn->GetControlInput().IsNeutral());
+        if (!Phase4Mission.BeginMission()) return false;
+        return MissionFlow.Transition(EAeroSimMissionState::Flight);
+    }
+    if (Phase4Mission.Stage == EPhase4MissionStage::Result)
+    {
+        if (!Phase4Mission.OpenReplay()) return false;
+        return MissionFlow.Transition(EAeroSimMissionState::Replay);
+    }
+    return false;
+}
+
+void AAeroSimGameMode::ObserveMission(
+    const float DeltaSeconds,
+    const EFlightPhase FlightPhase,
+    const FVector& Position,
+    const FVector& Velocity,
+    const FRotator& Rotation,
+    const bool bCollision)
+{
+    if (bEvidenceStateLocked)
+    {
+        return;
+    }
+    if (bCollision)
+    {
+        Phase4Mission.ReportCollision(Position);
+    }
+    Phase4Mission.Observe(DeltaSeconds, FlightPhase, Position, Velocity, Rotation);
+    if (Phase4Mission.Stage == EPhase4MissionStage::Result && MissionFlow.State == EAeroSimMissionState::Flight)
+    {
+        MissionFlow.Transition(EAeroSimMissionState::Result);
+    }
+}
+
+void AAeroSimGameMode::RequestReturnToHome()
+{
+    Phase4Mission.RequestReturnToHome();
 }
 
 void AAeroSimGameMode::SetWeather(const EAeroSimWeather Weather)

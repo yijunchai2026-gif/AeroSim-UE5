@@ -262,6 +262,7 @@ private:
     void HandlePause(const FInputActionValue& Value);
     void HandleReset(const FInputActionValue& Value);
     void HandleMissionAdvance();
+    void HandleReturnToHome();
     void HandleWeatherCycle();
     void HandleGimbalPitchUp();
     void HandleGimbalPitchDown();

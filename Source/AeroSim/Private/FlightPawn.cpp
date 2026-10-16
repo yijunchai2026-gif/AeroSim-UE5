@@ -502,10 +502,19 @@ void AFlightPawn::Tick(const float DeltaSeconds)
     }
     RecordTrace(DeltaSeconds);
     ApplyFov();
+    FHitResult MovementHit;
     SetActorLocationAndRotation(
         InitialTransform.TransformPosition(FlightModel.Position),
         InitialTransform.TransformRotation(FlightModel.Rotation.Quaternion()),
-        true, nullptr, ETeleportType::None);
+        true, &MovementHit, ETeleportType::None);
+    if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
+    {
+        GameMode->ObserveMission(DeltaSeconds, FlightModel.Phase, FlightModel.Position, FlightModel.Velocity, FlightModel.Rotation, MovementHit.bBlockingHit);
+        if (MovementHit.bBlockingHit)
+        {
+            NeutralizeInput();
+        }
+    }
 }
 
 void AFlightPawn::PawnClientRestart()
@@ -555,6 +564,8 @@ void AFlightPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
     EnhancedInput->BindAction(InputSuite.PauseAction, ETriggerEvent::Started, this, &AFlightPawn::HandlePause);
     EnhancedInput->BindAction(InputSuite.ResetAction, ETriggerEvent::Started, this, &AFlightPawn::HandleReset);
     PlayerInputComponent->BindKey(EKeys::M, IE_Pressed, this, &AFlightPawn::HandleMissionAdvance);
+    PlayerInputComponent->BindKey(EKeys::H, IE_Pressed, this, &AFlightPawn::HandleReturnToHome);
+    PlayerInputComponent->BindKey(EKeys::Gamepad_DPad_Down, IE_Pressed, this, &AFlightPawn::HandleReturnToHome);
     PlayerInputComponent->BindKey(EKeys::T, IE_Pressed, this, &AFlightPawn::HandleWeatherCycle);
     PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &AFlightPawn::HandleGimbalPitchUp);
     PlayerInputComponent->BindKey(EKeys::Down, IE_Pressed, this, &AFlightPawn::HandleGimbalPitchDown);
@@ -898,6 +909,14 @@ void AFlightPawn::HandleMissionAdvance()
     if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
     {
         GameMode->AdvanceMission();
+    }
+}
+
+void AFlightPawn::HandleReturnToHome()
+{
+    if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
+    {
+        GameMode->RequestReturnToHome();
     }
 }
 
