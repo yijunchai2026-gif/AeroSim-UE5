@@ -23,7 +23,9 @@ bool FAeroSimEditorHeartbeatTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Inspection runs in editor"), Inspection.bIsEditor);
     TestTrue(TEXT("Inspection has a project name"), !Inspection.ProjectName.IsEmpty());
     TestTrue(TEXT("Inspection has an engine version"), !Inspection.EngineVersion.IsEmpty());
-    TestEqual(TEXT("Only two read-only operations are advertised"), Inspection.AllowedOperations.Num(), 2);
+    TestEqual(TEXT("Phase 5 read-only operations are advertised"), Inspection.AllowedOperations.Num(), 13);
+    TestTrue(TEXT("Heartbeat remains reused"), Inspection.AllowedOperations.Contains(TEXT("heartbeat")));
+    TestTrue(TEXT("Mutation is not advertised"), !Inspection.AllowedOperations.Contains(TEXT("apply_transform")));
     return true;
 }
 

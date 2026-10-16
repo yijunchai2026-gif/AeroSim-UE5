@@ -1,9 +1,9 @@
 {
   "FileVersion": 3,
-  "Version": 1,
-  "VersionName": "0.1.0",
+  "Version": 5,
+  "VersionName": "0.5.0",
   "FriendlyName": "AeroSim Editor",
-  "Description": "Editor-only, read-only heartbeat and project inspection interfaces.",
+  "Description": "Editor-only, in-process, allowlisted read-only inspection and evidence request protocol.",
   "Category": "AeroSim",
   "CanContainContent": false,
   "EnabledByDefault": false,

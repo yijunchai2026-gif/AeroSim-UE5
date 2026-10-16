@@ -35,7 +35,18 @@ FAeroSimProjectInspection UAeroSimEditorInspection::InspectProject()
     Result.bIsEditor = GIsEditor;
     Result.AllowedOperations = {
         TEXT("heartbeat"),
-        TEXT("inspect_project_metadata")
+        TEXT("capabilities"),
+        TEXT("inspect_project"),
+        TEXT("inspect_world"),
+        TEXT("list_actors"),
+        TEXT("inspect_actor"),
+        TEXT("inspect_component"),
+        TEXT("inspect_asset_metadata"),
+        TEXT("inspect_data_layers"),
+        TEXT("inspect_world_partition"),
+        TEXT("validate_scene"),
+        TEXT("capture_request"),
+        TEXT("inspect_audit")
     };
     return Result;
 }

@@ -15,6 +15,8 @@ public class AeroSimEditor : ModuleRules
 
         PrivateDependencyModuleNames.AddRange(new[]
         {
+            "AssetRegistry",
+            "Json",
             "Projects",
             "UnrealEd"
         });

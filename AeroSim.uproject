@@ -2,7 +2,7 @@
   "FileVersion": 3,
   "EngineAssociation": "5.8",
   "Category": "Simulation",
-  "Description": "AeroSim Phase 4 Pacific Coast inspection training loop",
+  "Description": "AeroSim Phase 5 Pacific Coast inspection training loop with Editor-only read protocol",
   "Modules": [
     {
       "Name": "AeroSim",
@@ -17,8 +17,8 @@
     { "Name": "Water", "Enabled": true },
     { "Name": "Landmass", "Enabled": true },
     { "Name": "AndroidFileServer", "Enabled": false },
-    { "Name": "EditorScriptingUtilities", "Enabled": true, "TargetAllowList": [ "Editor" ] },
-    { "Name": "PythonScriptPlugin", "Enabled": true, "TargetAllowList": [ "Editor" ] },
+    { "Name": "EditorScriptingUtilities", "Enabled": false, "TargetAllowList": [ "Editor" ] },
+    { "Name": "PythonScriptPlugin", "Enabled": false, "TargetAllowList": [ "Editor" ] },
     { "Name": "AeroSimEditor", "Enabled": true, "TargetAllowList": [ "Editor" ] }
   ]
 }
