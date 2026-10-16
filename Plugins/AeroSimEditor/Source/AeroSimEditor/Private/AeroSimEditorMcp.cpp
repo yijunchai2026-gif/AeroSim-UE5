@@ -2,6 +2,7 @@
 
 #include "AeroSimEditorInspection.h"
 #include "AeroSimPhase6Transaction.h"
+#include "AeroSimPhase7Optimization.h"
 #include "AeroSimSha256.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Components/ActorComponent.h"
@@ -25,7 +26,7 @@ namespace AeroSimEditorMcp
 const TCHAR* RequestSchema = TEXT("aerosim.editor.mcp.request/v1");
 const TCHAR* ResponseSchema = TEXT("aerosim.editor.mcp.response/v1");
 const TCHAR* CapabilitySchema = TEXT("aerosim.editor.mcp.capabilities/v1");
-const TCHAR* Runtime = TEXT("aerosim.runtime.phase6/v1");
+const TCHAR* Runtime = TEXT("aerosim.runtime.phase7/v1");
 
 FCriticalSection AuditMutex;
 TArray<FAeroSimEditorMcpAuditEntry> AuditEntries; // append-only for this Editor process lifetime
@@ -39,7 +40,7 @@ const TArray<FString> ReadOperations = {
     TEXT("capabilities"), TEXT("heartbeat"), TEXT("inspect_project"), TEXT("inspect_world"),
     TEXT("list_actors"), TEXT("inspect_actor"), TEXT("inspect_component"),
     TEXT("inspect_asset_metadata"), TEXT("inspect_data_layers"), TEXT("inspect_world_partition"),
-    TEXT("validate_scene"), TEXT("capture_request"), TEXT("inspect_audit"),
+    TEXT("validate_scene"), TEXT("capture_request"), TEXT("inspect_audit"), TEXT("suggest_optimization"),
     TEXT("transaction_inspect"), TEXT("transaction_audit")
 };
 
@@ -233,6 +234,9 @@ TSharedRef<FJsonObject> Capabilities()
     Data->SetObjectField(TEXT("limits"), Limits);
     Data->SetStringField(TEXT("transport"), TEXT("in_process_only"));
     Data->SetStringField(TEXT("audit"), TEXT("append-only memory; no external sensitive writes"));
+    Data->SetStringField(TEXT("optimization_status"), TEXT("DRAFT_NOT_USER_CONFIRMED"));
+    Data->SetBoolField(TEXT("optimization_advisory_only"), true);
+    Data->SetBoolField(TEXT("optimization_requires_phase6_transaction"), true);
     return Data;
 }
 
@@ -531,6 +535,47 @@ FString UAeroSimEditorMcp::ExecuteRequest(const FString& RequestJson)
             return Finish(ErrorJson(RequestId, *TransactionResult.Code, TransactionResult.Message), TransactionResult.Code);
         }
         Data = ParseResultData(TransactionResult);
+    }
+    else if (Operation == TEXT("suggest_optimization"))
+    {
+        FPhase7OptimizationRequest SuggestionRequest;
+        SuggestionRequest.RequestId = RequestId;
+        Params->TryGetStringField(TEXT("map_id"), SuggestionRequest.MapId);
+        Params->TryGetStringField(TEXT("data_layer_id"), SuggestionRequest.DataLayerId);
+        Params->TryGetStringField(TEXT("quality_profile_id"), SuggestionRequest.QualityProfileId);
+        double MaximumSuggestions = 8.0;
+        Params->TryGetNumberField(TEXT("maximum_suggestions"), MaximumSuggestions);
+        SuggestionRequest.MaximumSuggestions = FMath::RoundToInt(MaximumSuggestions);
+        FString Kind;
+        Params->TryGetStringField(TEXT("kind"), Kind);
+        if (Kind == TEXT("layout")) { SuggestionRequest.Kind = EPhase7OptimizationKind::Layout; }
+        else if (Kind == TEXT("lighting")) { SuggestionRequest.Kind = EPhase7OptimizationKind::Lighting; }
+        else if (Kind == TEXT("lod")) { SuggestionRequest.Kind = EPhase7OptimizationKind::Lod; }
+        else if (Kind == TEXT("performance")) { SuggestionRequest.Kind = EPhase7OptimizationKind::Performance; }
+        else { return Finish(ErrorJson(RequestId, TEXT("KIND_NOT_ALLOWED"), TEXT("kind must be layout, lighting, lod, or performance.")), TEXT("KIND_NOT_ALLOWED")); }
+        FString SuggestionError;
+        const TArray<FPhase7OptimizationSuggestion> Suggestions = FPhase7OptimizationAdvisor::Suggest(SuggestionRequest, SuggestionError);
+        if (!SuggestionError.IsEmpty())
+        {
+            return Finish(ErrorJson(RequestId, *SuggestionError, TEXT("Optimization request failed closed.")), SuggestionError);
+        }
+        TArray<TSharedPtr<FJsonValue>> Items;
+        for (const FPhase7OptimizationSuggestion& Suggestion : Suggestions)
+        {
+            TSharedRef<FJsonObject> Item = Object();
+            Item->SetStringField(TEXT("suggestion_id"), Suggestion.SuggestionId);
+            Item->SetStringField(TEXT("summary"), Suggestion.Summary);
+            Item->SetStringField(TEXT("rationale"), Suggestion.Rationale);
+            Item->SetStringField(TEXT("status"), Suggestion.Status);
+            Item->SetStringField(TEXT("required_gate"), Suggestion.RequiredGate);
+            Item->SetBoolField(TEXT("can_convert_to_scene_patch"), Suggestion.bCanConvertToScenePatch);
+            Item->SetBoolField(TEXT("applied"), Suggestion.bApplied);
+            Items.Add(MakeShared<FJsonValueObject>(Item));
+        }
+        Data->SetArrayField(TEXT("items"), Items);
+        Data->SetBoolField(TEXT("requires_human_review"), true);
+        Data->SetBoolField(TEXT("requires_phase6_transaction_for_write"), true);
+        Data->SetStringField(TEXT("status"), TEXT("DRAFT_NOT_USER_CONFIRMED"));
     }
     else
     {

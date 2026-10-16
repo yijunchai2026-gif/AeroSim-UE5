@@ -53,9 +53,10 @@ def main() -> int:
         require(entry is None or entry.get("Enabled") is False, f"{dangerous} must not be enabled")
 
     runtime = (ROOT / "Source/AeroSim/Public/AeroSimRuntimeContract.h").read_text(encoding="utf-8")
-    require('Phase = TEXT("Phase6")' in runtime, "current runtime phase must advance compatibly to Phase6")
-    require('Contract = TEXT("aerosim.runtime.phase6/v1")' in runtime, "current runtime contract must advance to phase6/v1")
-    require('PreviousContract = TEXT("aerosim.runtime.phase5/v1")' in runtime, "phase5 compatibility lineage must be retained")
+    require('Phase = TEXT("Phase7")' in runtime, "current runtime phase must advance compatibly to Phase7")
+    require('Contract = TEXT("aerosim.runtime.phase7/v1")' in runtime, "current runtime contract must advance to phase7/v1")
+    require('PreviousContract = TEXT("aerosim.runtime.phase6/v1")' in runtime, "phase6 compatibility lineage must be retained")
+    require('LegacyContractPhase5 = TEXT("aerosim.runtime.phase5/v1")' in runtime, "phase5 compatibility lineage must be retained")
     require("AeroSimEditor" not in (ROOT / "Source/AeroSim/AeroSim.Build.cs").read_text(encoding="utf-8"), "runtime must not depend on Editor MCP")
 
     prohibited_calls = (

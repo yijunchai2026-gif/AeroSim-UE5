@@ -2,7 +2,7 @@
   "FileVersion": 3,
   "EngineAssociation": "5.8",
   "Category": "Simulation",
-  "Description": "AeroSim Phase 6 Pacific Coast candidate with Editor-only controlled AI scene transactions",
+  "Description": "AeroSim Phase 7 Mac candidate with fail-closed product, performance and controlled optimization contracts",
   "Modules": [
     {
       "Name": "AeroSim",

@@ -1,8 +1,8 @@
-# Editor MCP Protocol v1 — Phase 6 扩展
+# Editor MCP Protocol v1 — Phase 6 事务 / Phase 7 建议扩展
 
 ## Envelope 与传输
 
-请求/响应继续使用 Phase 5 冻结的 `aerosim.editor.mcp.request/v1` 与 `aerosim.editor.mcp.response/v1`。调用仅允许 Editor game thread 内同步执行；无端口、HTTP、stdio server、远程 listener 或 network client。Runtime 合同为 `aerosim.runtime.phase6/v1`。
+请求/响应继续使用 Phase 5 冻结的 `aerosim.editor.mcp.request/v1` 与 `aerosim.editor.mcp.response/v1`。调用仅允许 Editor game thread 内同步执行；无端口、HTTP、stdio server、远程 listener 或 network client。Runtime 合同为 `aerosim.runtime.phase7/v1`。
 
 事务写请求使用 1–64 字符 `request_id`。相同 ID 与相同请求 SHA256 返回首次响应；相同 ID 携带不同内容返回 `REQUEST_ID_REUSE`。
 
@@ -58,3 +58,9 @@ Phase 5 的 `capabilities`、heartbeat、project/world/actor/component/asset met
 提交状态固定为 `PENDING_REVIEW_SANDBOX`，并明确 `production_touched=false`。常见错误：`PATCH_SCHEMA_UNSUPPORTED`、`REVISION_CONFLICT`、`HASH_CONFLICT`、`REQUEST_ID_REUSE`、`TRANSACTION_LOCKED`、`TRANSACTION_EXPIRED`、`TIMEOUT`、`TARGET_NOT_ALLOWED`、`ASSET_NOT_ALLOWED`、`ACTION_NOT_ALLOWED`、`*_QUOTA_EXCEEDED`、`VALIDATION_FAILED_ROLLED_BACK`、`ROLLBACK_TRUST_FAILURE`。
 
 固定 Evidence Camera 沿用 Phase 5 六个 ID。结构化 evidence 返回 `EDITOR_CAPTURE_REQUIRED`，不会伪造 PNG。
+
+## Phase 7 只读优化建议
+
+`suggest_optimization` 接受固定 `kind=layout|lighting|lod|performance`、Sandbox Map/Data Layer、版本化 quality profile 和最多 8 条建议。响应固定包含 `DRAFT_NOT_USER_CONFIRMED`、`requires_human_review=true`、`applied=false`。
+
+本操作不读取外部模型、不联网、不执行任意脚本，也不修改 World。布局建议只有在人工转换为既有有限 ScenePatch 后才能进入 Phase 6 事务；光照、LOD、性能只返回建议。任何 production map、未知质量档或超配额请求 fail closed。

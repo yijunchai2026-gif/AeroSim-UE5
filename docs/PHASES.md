@@ -83,3 +83,9 @@
 Phase 6 已实现 Editor-only 受控 Sandbox ScenePatch 事务（Gizmo/Snap、Undo/Redo、SHA256 snapshot/evidence/manifest、乐观并发、幂等 request、单写锁、timeout/idle expiry、配额、G0→G4、完整 rollback 与 append-only hash-chain audit），Runtime 为 `aerosim.runtime.phase6/v1`。Mac UE 5.8 Development 编译、Phase 0–6 Automation、Cook/Package SkipZenStore 与 packaged NullRHI smoke 已通过；Editor transaction 模块未进入 Runtime 包。
 
 这不等于 Phase 6 产品退出门已关闭：正式机型仍为 `BLOCKED_ASSET`，用户外观确认为 `BLOCKED_USER_CONFIRMATION`，Windows 非 Development 冻结硬件 120 秒预热、30 分钟固定回放、三次冷启动、性能/长稳及人工正常视角 G0–G4 为 `BLOCKED_WINDOWS_CANDIDATE / NOT_RUN`。结构化 evidence manifest 不代替截图或人工签字；Phase 7 AI 优化能力未实现。合同与验证见 `../PHASE6.md`、`PHASE6_THREAT_MODEL.md` 与 `PHASE6_VALIDATION.md`。
+
+## 当前阶段事实（Phase 7）
+
+Phase 7 实现 Runtime `aerosim.runtime.phase7/v1`、Mac/Windows/iPad 候选质量档、CPU/GPU/frame/memory/draw/streaming fail-closed 预算合同、确定性 30 分钟 replay digest 与 wall-clock packaged harness、settings v2 迁移/持久化/回滚、crash-safe save、日志脱敏、release manifest/SHA256，以及 Editor-only 的布局/光照/LOD/性能只读建议。建议固定 `DRAFT_NOT_USER_CONFIRMED`、`applied=false`；Phase 6 Sandbox、事务、G0→G4、rollback、审计与禁止 production promotion 的边界不变。
+
+实际 Mac 编译、Automation、Cook/Package、NullRHI、Metal 与长稳结果见 `PHASE7_VALIDATION.md`，未执行项不得外推。Windows 与 iPadOS 仍为 `NOT_RUN`；正式资产、用户外观确认和非 Development 目标硬件真实性能分别保持 `BLOCKED_ASSET / BLOCKED_USER_CONFIRMATION / BLOCKED_TARGET_HARDWARE_EVIDENCE`。

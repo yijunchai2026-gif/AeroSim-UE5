@@ -36,7 +36,7 @@ def main() -> int:
     dispatcher = (plugin_root / "Source/AeroSimEditor/Private/AeroSimEditorMcp.cpp").read_text(encoding="utf-8")
 
     for token in (
-        "aerosim.runtime.phase6/v1", "aerosim.scene-patch/v1", "aerosim.snapshot-manifest/v1",
+        "aerosim.runtime.phase7/v1", "aerosim.scene-patch/v1", "aerosim.snapshot-manifest/v1",
         "PENDING_REVIEW_SANDBOX", "DRAFT_NOT_USER_CONFIRMED", "base_revision", "base_hash",
         "snapshot_sha256", "manifest_sha256", "draft_hash", "SHA256", "REQUEST_ID_REUSE",
         "TRANSACTION_LOCKED", "TIMEOUT", "IdleExpirySeconds", "REVISION_CONFLICT", "HASH_CONFLICT",
@@ -63,8 +63,8 @@ def main() -> int:
         require(entry is None or entry.get("Enabled") is False, f"{dangerous} must remain disabled")
 
     runtime = (ROOT / "Source/AeroSim/Public/AeroSimRuntimeContract.h").read_text(encoding="utf-8")
-    require('Phase = TEXT("Phase6")' in runtime, "runtime phase must be Phase6")
-    require('Contract = TEXT("aerosim.runtime.phase6/v1")' in runtime, "runtime contract must be phase6/v1")
+    require('Phase = TEXT("Phase7")' in runtime, "runtime phase must advance to Phase7 without changing the Phase6 Editor boundary")
+    require('Contract = TEXT("aerosim.runtime.phase7/v1")' in runtime, "runtime contract must be phase7/v1")
     require("AeroSimEditor" not in (ROOT / "Source/AeroSim/AeroSim.Build.cs").read_text(encoding="utf-8"), "runtime must not depend on Editor transaction module")
 
     prohibited_calls = (

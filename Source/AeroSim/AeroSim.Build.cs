@@ -13,7 +13,8 @@ public class AeroSim : ModuleRules
             "ApplicationCore",
             "Engine",
             "EnhancedInput",
-            "InputCore"
+            "InputCore",
+            "Json"
         });
     }
 }

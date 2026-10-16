@@ -134,3 +134,14 @@ Phase 6 keeps the Phase 5 request/response envelope and read-inspection compatib
 - transaction audit is append-only and SHA256 hash-chained; request idempotency is bound to the request SHA256.
 
 The Runtime identity advances to `aerosim.runtime.phase6/v1`, but all editing implementation remains in the `AeroSimEditor` module (`Type=Editor`, target allowlist Editor) and is absent from the packaged Runtime. Phase 7 AI optimization surfaces are intentionally not present.
+
+## Phase 7 productization and controlled optimization additions
+
+Phase 7 advances Runtime identity to `aerosim.runtime.phase7/v1` and adds pure Runtime contracts in `Phase7Product`:
+
+- versioned platform performance budgets and a fail-closed evidence gate; budgets are never treated as measurements;
+- settings schema v2, v1 migration, preview/apply/cancel/rollback, and temp+flush+backup+replace crash-safe persistence;
+- bounded log redaction and a fixed-seed 60 Hz deterministic replay digest used by wall-clock packaged soak;
+- Mac/Windows/iPad quality profiles with explicit HLOD/streaming and Nanite Low/Off fallback.
+
+The Editor-only module adds `FPhase7OptimizationAdvisor` and the read operation `suggest_optimization`. Layout, lighting, LOD and performance outputs are finite deterministic recommendations, always `DRAFT_NOT_USER_CONFIRMED` and `applied=false`. It has no world mutation API. A human may translate only supported layout output into the existing Phase 6 ScenePatch lifecycle; lighting/LOD/performance remain advisory until separately allowlisted actions, rollback and platform evidence exist. Phase 6 quotas, sandbox boundary, transaction ordering, G0→G4, audit and production-promotion denial remain unchanged.
