@@ -1,0 +1,25 @@
+{
+  "zip_url": "https://ambientcg.com/get?file=Bark014_2K-JPG.zip",
+  "zip_bytes": 29750598,
+  "zip_md5": "138701bcde7adc052b629f1f5732875b",
+  "zip_sha256": "2ae21b265b55512521b0c1f161ebaa5bbc9867d8e47327974027d38fb711d7eb",
+  "zip_members": [
+    "Bark014.png",
+    "Bark014_2K-JPG.blend",
+    "Bark014_2K-JPG.mtlx",
+    "Bark014_2K-JPG.tres",
+    "Bark014_2K-JPG.usdc",
+    "Bark014_2K-JPG_AmbientOcclusion.jpg",
+    "Bark014_2K-JPG_Color.jpg",
+    "Bark014_2K-JPG_Displacement.jpg",
+    "Bark014_2K-JPG_NormalDX.jpg",
+    "Bark014_2K-JPG_NormalGL.jpg",
+    "Bark014_2K-JPG_Roughness.jpg"
+  ],
+  "members": {
+    "Color": "bf9a043aa46155c8cdbf2f539386b77a7af3f91ac0e57b4896eae349f6092140",
+    "NormalDX": "75b2b052ab7b328b557afe90f075a035fd290e6c9e0affe62d8f35abe9a31c59",
+    "Roughness": "397cfd3e56b427f1176be6eac3db9ee412cc32c1afeba5a0b3441bd30c31e3f2",
+    "Displacement": "6b0894a76653f1dea0cd933e60b54387f78b274b78dcd4c2ed5d289774cbe8ba"
+  }
+}

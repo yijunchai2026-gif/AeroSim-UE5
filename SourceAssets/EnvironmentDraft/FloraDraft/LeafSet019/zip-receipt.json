@@ -1,0 +1,26 @@
+{
+  "zip_url": "https://ambientcg.com/get?file=LeafSet019_2K-JPG.zip",
+  "zip_bytes": 16532794,
+  "zip_md5": "08a3c304fc5366045db3c99b261d7fa7",
+  "zip_sha256": "3b2b26b9120fa29b495714f6f496ac6c51066cf0bd4bd453dd2bf587987480b5",
+  "zip_members": [
+    "LeafSet019.png",
+    "LeafSet019_2K-JPG.blend",
+    "LeafSet019_2K-JPG.mtlx",
+    "LeafSet019_2K-JPG.tres",
+    "LeafSet019_2K-JPG.usdc",
+    "LeafSet019_2K-JPG_Color.jpg",
+    "LeafSet019_2K-JPG_Displacement.jpg",
+    "LeafSet019_2K-JPG_NormalDX.jpg",
+    "LeafSet019_2K-JPG_NormalGL.jpg",
+    "LeafSet019_2K-JPG_Opacity.jpg",
+    "LeafSet019_2K-JPG_Roughness.jpg"
+  ],
+  "members": {
+    "Color": "fb710279acab55ffc135014857ca24369e63c6224871608def297bd93c392fad",
+    "NormalDX": "466c30575dc48ff74dfd2aa08df39c88cd497b97f28d124ffb023883210f18fe",
+    "Roughness": "a008faecd8f0810b3581efa8f99b074bf89c9be540eb6ddab5cc1ece90b43528",
+    "Opacity": "1ced7951d7efae9894855f4d551c125ffcf469d14838ed0f31790992b9843f7f",
+    "Displacement": "67b82dc31b919a425a6638c1579a7f1b7730da17810c4ab4fdf7f4d2ddcfcdbd"
+  }
+}

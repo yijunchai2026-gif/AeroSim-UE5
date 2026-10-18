@@ -2,9 +2,9 @@
   "schema": "aerosim.flora-source/v1",
   "state": "DRAFT_NOT_USER_CONFIRMED",
   "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
-  "acquired_utc": "2026-10-18T09:38:42.687158+00:00",
+  "acquired_utc": "2026-10-18T18:56:13.386295+00:00",
   "license": "CC0-1.0",
-  "license_source": "https://polyhaven.com/license",
+  "license_source": "https://polyhaven.com/license; https://docs.ambientcg.com/license/",
   "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
   "providers": [
     {
@@ -34,7 +34,7 @@
         2150.0000953674316
       ],
       "provider_polycount": null,
-      "info_sha256": "0ea1218991ea171348077f176abb98c4df65a8e5695f02dce92bcb52bba0c45d",
+      "info_sha256": "4013d0190cb70363060f40275d20c1ec09b9eedec0dcec8aafad4aed2d17e0af",
       "files_sha256": "480d9cba41be4712bb690c8fe414c51287cb20b788ebdf4ea32f1c727a1b309a"
     },
     {
@@ -49,7 +49,7 @@
         2000
       ],
       "provider_polycount": null,
-      "info_sha256": "971288222609b41c981b6956453ebcf62979ceb93ad207673e993cd61727b687",
+      "info_sha256": "6589f4e4e49533bbcb81d5610a4971a3d2b85d562fd8fadd38f2ec44dbec59a0",
       "files_sha256": "da22d84f5c1f4a19ab0a547466ed23b7bfae98fb17dcddfb39e6a97639394acf"
     },
     {
@@ -94,7 +94,7 @@
         2000
       ],
       "provider_polycount": null,
-      "info_sha256": "28caea584dab804ab2b7e0e34f22f6674d04562000ee08bec19981863e4e605b",
+      "info_sha256": "8170e6e84eca1564e36f955333f4c4cb52ba8bbfa95d3b6b12768396fb1826b9",
       "files_sha256": "8284eac8569196fa54a27b19890f9d51b205feb4ae1977229ba3040b0b664c05"
     },
     {
@@ -111,7 +111,7 @@
         19267.957717180252
       ],
       "provider_polycount": 7853731,
-      "info_sha256": "b1ddccd7bbe3ab1b80f50f74532f9286d009a73cb89ee8ec42cf764b21d2dca2",
+      "info_sha256": "556c8428e0a5559be29d3f75b63e1705ce68ce5ad1e7be750b382eb41b299f20",
       "files_sha256": "b72c1e9efce10799ffa9502ce06409745d1deba9d091630412a69891e370ce0c"
     },
     {
@@ -128,7 +128,7 @@
         17577.758572995663
       ],
       "provider_polycount": 17427094,
-      "info_sha256": "7c871acb7c638947b16fa4f645f70693e1b3db2ccfa4254fbc47aa62298b4fdd",
+      "info_sha256": "a3c81aa69ff30194a93db67d5fa17f63598d331cbb3a4afdeaec0dcded593420",
       "files_sha256": "6dc7a454e1047014ba5dc0cc3fe62a0f5ade64c25051f46b9789136dc46b0551"
     },
     {
@@ -162,8 +162,23 @@
         2339.1980212181807
       ],
       "provider_polycount": 841648,
-      "info_sha256": "ec5161cc99d73ab963a10e79c2b2af94060ecc31b58f5534fe00ad8c79cda5dc",
+      "info_sha256": "3d334f899e3d618496777e9cf09a23d2bff51e3311e23bde6776bd2f8aefd28d",
       "files_sha256": "a7141bfcec3a9fa1c89d3687e214509c23393e1026b30f0b257713d74c2a43cb"
+    },
+    {
+      "asset": "metasequoia_bark",
+      "page": "https://polyhaven.com/a/metasequoia_bark",
+      "authors": {
+        "Charlotte Baglioni": "All"
+      },
+      "provider_type": "texture",
+      "physical_dimensions_mm": [
+        1939.9999380111694,
+        1939.9999380111694
+      ],
+      "provider_polycount": null,
+      "info_sha256": "12c782eddfb999d3f384ae4ede4c32447c234abea510ba62abe92e8d248519c5",
+      "files_sha256": "4a24886bd6e0a50a720a3ce2fab90d42d878864ddcd6cdcd4358a8bb392aa554"
     },
     {
       "asset": "fern_02",
@@ -179,7 +194,7 @@
         427.6947118341923
       ],
       "provider_polycount": 6232,
-      "info_sha256": "7f1d9cfc1cbe88de8c15aa7c7b3580906b3c12a3145ac2f95be51cdaa2bb1b12",
+      "info_sha256": "ef5ff1a17524260f6fa6414b62925dca778ed45708076cb53731531fd41f6c85",
       "files_sha256": "a3e43a1dad9a175defdc5816daed6ab1192d4dcd4c8f8a5becd44e63616ba0b3"
     },
     {
@@ -195,7 +210,7 @@
         280.6698549538851
       ],
       "provider_polycount": 47813,
-      "info_sha256": "93ec99022c8ff8f8302dec0dffd79db6db262b1bdedde76ae24f48aa6e0ca853",
+      "info_sha256": "0a243ef4303a8a7a65c7e325664173350a053b1a71cfa6f723e6b5be99c56d37",
       "files_sha256": "982d40288050ce2d06fdbe3518d444ef177a7d6defd3362aa8dec109c9a8f79a"
     },
     {
@@ -212,7 +227,7 @@
         543.936595087871
       ],
       "provider_polycount": 76521,
-      "info_sha256": "1a1427b5688d3909f8f348510b4df9d1ca52fa63742eefaa315edae60b748f79",
+      "info_sha256": "b1a3d913f753a14843ec981ef1144fefa097e231070b671d7fcb92eb4a2de7fa",
       "files_sha256": "69e7d02fd3b6e672011f6e3bc21e468804140092208e6423afcac9ec5f0dd165"
     },
     {
@@ -228,8 +243,108 @@
         340.9853130578995
       ],
       "provider_polycount": 16803,
-      "info_sha256": "1b95c83afc6aaaed849360e4d0a8f3cf382519141bc4e29d330c361ce4c731c1",
+      "info_sha256": "d907473ba0790af70e9287676f430027d0a25b2ec3465c9c83b16ae2f39646d4",
       "files_sha256": "a73992e1dcaa1151693e137b5c530ef109ebc7b2d8ed694595dd3987b28330e7"
+    },
+    {
+      "asset": "Bark014",
+      "provider": "ambientCG",
+      "page": "https://ambientcg.com/view?id=Bark014",
+      "authors": {
+        "ambientCG (Lennart Demes)": "All"
+      },
+      "license_source": "https://docs.ambientcg.com/license/",
+      "creation_method": "PBRPhotogrammetry",
+      "physical_dimensions_cm": [
+        120,
+        120
+      ],
+      "zip_url": "https://ambientcg.com/get?file=Bark014_2K-JPG.zip",
+      "zip_bytes": 29750598,
+      "zip_md5": "138701bcde7adc052b629f1f5732875b",
+      "zip_sha256": "2ae21b265b55512521b0c1f161ebaa5bbc9867d8e47327974027d38fb711d7eb",
+      "api_sha256": "77f72f0aadcc7bb519652bcec9c69ef601ba4e65f8945943b51c9731ca156a8d",
+      "integrity_note": "ambientCG publishes no per-file MD5; declared zip size verified, zip and member MD5/SHA256 recorded locally"
+    },
+    {
+      "asset": "LeafSet024",
+      "provider": "ambientCG",
+      "page": "https://ambientcg.com/view?id=LeafSet024",
+      "authors": {
+        "ambientCG (Lennart Demes)": "All"
+      },
+      "license_source": "https://docs.ambientcg.com/license/",
+      "creation_method": "PBRPhotogrammetry",
+      "physical_dimensions_cm": [
+        40,
+        40
+      ],
+      "zip_url": "https://ambientcg.com/get?file=LeafSet024_2K-JPG.zip",
+      "zip_bytes": 15211530,
+      "zip_md5": "6082df50f82d3e178e3ff9457c711429",
+      "zip_sha256": "5e750c97b02717b94284128704039563acdd40e3b01a2b4a852c08eff61f5621",
+      "api_sha256": "77f72f0aadcc7bb519652bcec9c69ef601ba4e65f8945943b51c9731ca156a8d",
+      "integrity_note": "ambientCG publishes no per-file MD5; declared zip size verified, zip and member MD5/SHA256 recorded locally"
+    },
+    {
+      "asset": "LeafSet005",
+      "provider": "ambientCG",
+      "page": "https://ambientcg.com/view?id=LeafSet005",
+      "authors": {
+        "ambientCG (Lennart Demes)": "All"
+      },
+      "license_source": "https://docs.ambientcg.com/license/",
+      "creation_method": "PBRApproximated",
+      "physical_dimensions_cm": [
+        0,
+        0
+      ],
+      "zip_url": "https://ambientcg.com/get?file=LeafSet005_2K-JPG.zip",
+      "zip_bytes": 8811451,
+      "zip_md5": "6a5458d6746538cacfaeac852d6c722f",
+      "zip_sha256": "05397b40a77d16b63689940158b1ce1058cdc4ba36a63bb5890a670c9685ff5c",
+      "api_sha256": "77f72f0aadcc7bb519652bcec9c69ef601ba4e65f8945943b51c9731ca156a8d",
+      "integrity_note": "ambientCG publishes no per-file MD5; declared zip size verified, zip and member MD5/SHA256 recorded locally"
+    },
+    {
+      "asset": "LeafSet019",
+      "provider": "ambientCG",
+      "page": "https://ambientcg.com/view?id=LeafSet019",
+      "authors": {
+        "ambientCG (Lennart Demes)": "All"
+      },
+      "license_source": "https://docs.ambientcg.com/license/",
+      "creation_method": "PBRApproximated",
+      "physical_dimensions_cm": [
+        0,
+        0
+      ],
+      "zip_url": "https://ambientcg.com/get?file=LeafSet019_2K-JPG.zip",
+      "zip_bytes": 16532794,
+      "zip_md5": "08a3c304fc5366045db3c99b261d7fa7",
+      "zip_sha256": "3b2b26b9120fa29b495714f6f496ac6c51066cf0bd4bd453dd2bf587987480b5",
+      "api_sha256": "77f72f0aadcc7bb519652bcec9c69ef601ba4e65f8945943b51c9731ca156a8d",
+      "integrity_note": "ambientCG publishes no per-file MD5; declared zip size verified, zip and member MD5/SHA256 recorded locally"
+    },
+    {
+      "asset": "PineNeedles001",
+      "provider": "ambientCG",
+      "page": "https://ambientcg.com/view?id=PineNeedles001",
+      "authors": {
+        "ambientCG (Lennart Demes)": "All"
+      },
+      "license_source": "https://docs.ambientcg.com/license/",
+      "creation_method": "PBRApproximated",
+      "physical_dimensions_cm": [
+        0,
+        0
+      ],
+      "zip_url": "https://ambientcg.com/get?file=PineNeedles001_2K-JPG.zip",
+      "zip_bytes": 13677344,
+      "zip_md5": "a42959ce24392b1fdc4b4814d0ed475d",
+      "zip_sha256": "5d473887e07c8e9a25b4780843d737ccaebd6989e23c8438939a3dc774b06c6d",
+      "api_sha256": "77f72f0aadcc7bb519652bcec9c69ef601ba4e65f8945943b51c9731ca156a8d",
+      "integrity_note": "ambientCG publishes no per-file MD5; declared zip size verified, zip and member MD5/SHA256 recorded locally"
     }
   ],
   "meshes": [
@@ -383,8 +498,9 @@
       ]
     }
   ],
-  "total_bytes": 89658860,
-  "file_count": 67,
+  "total_bytes": 150709564,
+  "file_count": 95,
+  "download_bytes": 183283841,
   "limits": "Published CC0 scans of non-Californian species used as visual proxies (no Monterey pine, Douglas-fir or coast live oak identity claimed). Model scene dimensions cover all variants laid out side by side, not one plant. No engine import, material, placement or visual acceptance is claimed. Spec: docs/designs/flora-asset-spec.md.",
   "sources": [
     {
@@ -1118,6 +1234,79 @@
       "color_space": "linear"
     },
     {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/metasequoia_bark/metasequoia_bark_diff_2k.jpg",
+      "asset": "metasequoia_bark",
+      "provider_key": "Diffuse",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/metasequoia_bark/metasequoia_bark_diff_2k.jpg",
+      "bytes": 3320249,
+      "publisher_md5": "9bfd27d222c7600e1509d4f0207cfaad",
+      "publisher_md5_verified": true,
+      "sha256": "e9c79aad6365591488fa231894d90af936df8be570eb8d1e03faf818c4c3cb2f",
+      "license": "CC0-1.0",
+      "role": "R2: coast redwood proxy bark: deep vertical fibrous furrows (dawn redwood, same subfamily)",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/metasequoia_bark/metasequoia_bark_nor_dx_2k.jpg",
+      "asset": "metasequoia_bark",
+      "provider_key": "nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/metasequoia_bark/metasequoia_bark_nor_dx_2k.jpg",
+      "bytes": 4339113,
+      "publisher_md5": "7eb8eaf8ee1f11a25033f3fdaefa2dd2",
+      "publisher_md5_verified": true,
+      "sha256": "406be87a12c33436e48cc08cf5ffc774170bbffb642f0927c74ee84914357b79",
+      "license": "CC0-1.0",
+      "role": "R2: coast redwood proxy bark: deep vertical fibrous furrows (dawn redwood, same subfamily)",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/metasequoia_bark/metasequoia_bark_rough_2k.jpg",
+      "asset": "metasequoia_bark",
+      "provider_key": "Rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/metasequoia_bark/metasequoia_bark_rough_2k.jpg",
+      "bytes": 914787,
+      "publisher_md5": "4f5f1746abe81a097713ff56acf703d5",
+      "publisher_md5_verified": true,
+      "sha256": "c143118298128e69fbf0b2bf45b12208cc509d66abca56f91c9b171bc5d5a0ab",
+      "license": "CC0-1.0",
+      "role": "R2: coast redwood proxy bark: deep vertical fibrous furrows (dawn redwood, same subfamily)",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/metasequoia_bark/metasequoia_bark_disp_2k.jpg",
+      "asset": "metasequoia_bark",
+      "provider_key": "Displacement",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/metasequoia_bark/metasequoia_bark_disp_2k.jpg",
+      "bytes": 1067115,
+      "publisher_md5": "31d72af45fc8961946b601e143bd669d",
+      "publisher_md5_verified": true,
+      "sha256": "61f013342fa7ac6d13690d1d73c64638f06c11f0e026e2d641a592eb7bd9ee0d",
+      "license": "CC0-1.0",
+      "role": "R2: coast redwood proxy bark: deep vertical fibrous furrows (dawn redwood, same subfamily)",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
       "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/fern_02.gltf",
       "asset": "fern_02",
       "provider_key": "gltf",
@@ -1570,6 +1759,691 @@
       ],
       "color_space": "linear",
       "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/Bark014/Bark014_2K-JPG_Color.jpg",
+      "asset": "Bark014",
+      "provider": "ambientCG",
+      "provider_key": "Color",
+      "url": "https://ambientcg.com/get?file=Bark014_2K-JPG.zip",
+      "zip_member": "Bark014_2K-JPG_Color.jpg",
+      "zip_md5": "138701bcde7adc052b629f1f5732875b",
+      "zip_sha256": "2ae21b265b55512521b0c1f161ebaa5bbc9867d8e47327974027d38fb711d7eb",
+      "zip_bytes": 29750598,
+      "bytes": 6447627,
+      "md5": "237aa34b963042a0844a1161e0a10faf",
+      "sha256": "bf9a043aa46155c8cdbf2f539386b77a7af3f91ac0e57b4896eae349f6092140",
+      "license": "CC0-1.0",
+      "role": "R2: Douglas-fir bark (ambientCG tags it fir): deep vertical furrows, 1.2 m tile, photogrammetry",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/Bark014/Bark014_2K-JPG_NormalDX.jpg",
+      "asset": "Bark014",
+      "provider": "ambientCG",
+      "provider_key": "NormalDX",
+      "url": "https://ambientcg.com/get?file=Bark014_2K-JPG.zip",
+      "zip_member": "Bark014_2K-JPG_NormalDX.jpg",
+      "zip_md5": "138701bcde7adc052b629f1f5732875b",
+      "zip_sha256": "2ae21b265b55512521b0c1f161ebaa5bbc9867d8e47327974027d38fb711d7eb",
+      "zip_bytes": 29750598,
+      "bytes": 7241503,
+      "md5": "715d0e276d3e89aa3b727dd741fc3fa1",
+      "sha256": "75b2b052ab7b328b557afe90f075a035fd290e6c9e0affe62d8f35abe9a31c59",
+      "license": "CC0-1.0",
+      "role": "R2: Douglas-fir bark (ambientCG tags it fir): deep vertical furrows, 1.2 m tile, photogrammetry",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/Bark014/Bark014_2K-JPG_Roughness.jpg",
+      "asset": "Bark014",
+      "provider": "ambientCG",
+      "provider_key": "Roughness",
+      "url": "https://ambientcg.com/get?file=Bark014_2K-JPG.zip",
+      "zip_member": "Bark014_2K-JPG_Roughness.jpg",
+      "zip_md5": "138701bcde7adc052b629f1f5732875b",
+      "zip_sha256": "2ae21b265b55512521b0c1f161ebaa5bbc9867d8e47327974027d38fb711d7eb",
+      "zip_bytes": 29750598,
+      "bytes": 3138819,
+      "md5": "24d1fd734ae2176db342b8338cc33d13",
+      "sha256": "397cfd3e56b427f1176be6eac3db9ee412cc32c1afeba5a0b3441bd30c31e3f2",
+      "license": "CC0-1.0",
+      "role": "R2: Douglas-fir bark (ambientCG tags it fir): deep vertical furrows, 1.2 m tile, photogrammetry",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/Bark014/Bark014_2K-JPG_Displacement.jpg",
+      "asset": "Bark014",
+      "provider": "ambientCG",
+      "provider_key": "Displacement",
+      "url": "https://ambientcg.com/get?file=Bark014_2K-JPG.zip",
+      "zip_member": "Bark014_2K-JPG_Displacement.jpg",
+      "zip_md5": "138701bcde7adc052b629f1f5732875b",
+      "zip_sha256": "2ae21b265b55512521b0c1f161ebaa5bbc9867d8e47327974027d38fb711d7eb",
+      "zip_bytes": 29750598,
+      "bytes": 1230337,
+      "md5": "7b9461fc4e76d85ab9f068ef60be5ccb",
+      "sha256": "6b0894a76653f1dea0cd933e60b54387f78b274b78dcd4c2ed5d289774cbe8ba",
+      "license": "CC0-1.0",
+      "role": "R2: Douglas-fir bark (ambientCG tags it fir): deep vertical furrows, 1.2 m tile, photogrammetry",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet024/LeafSet024_2K-JPG_Color.jpg",
+      "asset": "LeafSet024",
+      "provider": "ambientCG",
+      "provider_key": "Color",
+      "url": "https://ambientcg.com/get?file=LeafSet024_2K-JPG.zip",
+      "zip_member": "LeafSet024_2K-JPG_Color.jpg",
+      "zip_md5": "6082df50f82d3e178e3ff9457c711429",
+      "zip_sha256": "5e750c97b02717b94284128704039563acdd40e3b01a2b4a852c08eff61f5621",
+      "zip_bytes": 15211530,
+      "bytes": 3616155,
+      "md5": "399cca8adb7b42ad791bcd5049a22f66",
+      "sha256": "da791cef092ad05f1409e41b5cfd83fc7cfc068ffc656ef775f1b94e2d9f166d",
+      "license": "CC0-1.0",
+      "role": "R2: small oval leaf atlas (9 leaves, 40 cm atlas) - closest CC0 proxy for coast live oak leaves",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet024/LeafSet024_2K-JPG_NormalDX.jpg",
+      "asset": "LeafSet024",
+      "provider": "ambientCG",
+      "provider_key": "NormalDX",
+      "url": "https://ambientcg.com/get?file=LeafSet024_2K-JPG.zip",
+      "zip_member": "LeafSet024_2K-JPG_NormalDX.jpg",
+      "zip_md5": "6082df50f82d3e178e3ff9457c711429",
+      "zip_sha256": "5e750c97b02717b94284128704039563acdd40e3b01a2b4a852c08eff61f5621",
+      "zip_bytes": 15211530,
+      "bytes": 3984713,
+      "md5": "a0fbae1f813497346ada42c1878d66b0",
+      "sha256": "d90668f91e8b521b49978e7301f01f5deae0226de704d11747a3eaa423d56680",
+      "license": "CC0-1.0",
+      "role": "R2: small oval leaf atlas (9 leaves, 40 cm atlas) - closest CC0 proxy for coast live oak leaves",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet024/LeafSet024_2K-JPG_Roughness.jpg",
+      "asset": "LeafSet024",
+      "provider": "ambientCG",
+      "provider_key": "Roughness",
+      "url": "https://ambientcg.com/get?file=LeafSet024_2K-JPG.zip",
+      "zip_member": "LeafSet024_2K-JPG_Roughness.jpg",
+      "zip_md5": "6082df50f82d3e178e3ff9457c711429",
+      "zip_sha256": "5e750c97b02717b94284128704039563acdd40e3b01a2b4a852c08eff61f5621",
+      "zip_bytes": 15211530,
+      "bytes": 1365762,
+      "md5": "84816e05aa42036c9720a6aec874bf9f",
+      "sha256": "b7352826886f45cc50e9823bf9c81effd58aa4dea06bd0f86d7e509876879062",
+      "license": "CC0-1.0",
+      "role": "R2: small oval leaf atlas (9 leaves, 40 cm atlas) - closest CC0 proxy for coast live oak leaves",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet024/LeafSet024_2K-JPG_Opacity.jpg",
+      "asset": "LeafSet024",
+      "provider": "ambientCG",
+      "provider_key": "Opacity",
+      "url": "https://ambientcg.com/get?file=LeafSet024_2K-JPG.zip",
+      "zip_member": "LeafSet024_2K-JPG_Opacity.jpg",
+      "zip_md5": "6082df50f82d3e178e3ff9457c711429",
+      "zip_sha256": "5e750c97b02717b94284128704039563acdd40e3b01a2b4a852c08eff61f5621",
+      "zip_bytes": 15211530,
+      "bytes": 193355,
+      "md5": "10c6c2f3b4217dec77cc694796f84957",
+      "sha256": "9b473ec80076da82e1969e3bb898f5fb18643c8c2f9afcddae6f4750b9f098b7",
+      "license": "CC0-1.0",
+      "role": "R2: small oval leaf atlas (9 leaves, 40 cm atlas) - closest CC0 proxy for coast live oak leaves",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet024/LeafSet024_2K-JPG_Displacement.jpg",
+      "asset": "LeafSet024",
+      "provider": "ambientCG",
+      "provider_key": "Displacement",
+      "url": "https://ambientcg.com/get?file=LeafSet024_2K-JPG.zip",
+      "zip_member": "LeafSet024_2K-JPG_Displacement.jpg",
+      "zip_md5": "6082df50f82d3e178e3ff9457c711429",
+      "zip_sha256": "5e750c97b02717b94284128704039563acdd40e3b01a2b4a852c08eff61f5621",
+      "zip_bytes": 15211530,
+      "bytes": 756989,
+      "md5": "5050becb6c85593b210ba8275fec0619",
+      "sha256": "29a35bc1e3df5da8589c75cb256aad39d7c6ab5c07fee58c9161496ffc1bd7e7",
+      "license": "CC0-1.0",
+      "role": "R2: small oval leaf atlas (9 leaves, 40 cm atlas) - closest CC0 proxy for coast live oak leaves",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet005/LeafSet005_2K-JPG_Color.jpg",
+      "asset": "LeafSet005",
+      "provider": "ambientCG",
+      "provider_key": "Color",
+      "url": "https://ambientcg.com/get?file=LeafSet005_2K-JPG.zip",
+      "zip_member": "LeafSet005_2K-JPG_Color.jpg",
+      "zip_md5": "6a5458d6746538cacfaeac852d6c722f",
+      "zip_sha256": "05397b40a77d16b63689940158b1ce1058cdc4ba36a63bb5890a670c9685ff5c",
+      "zip_bytes": 8811451,
+      "bytes": 1493215,
+      "md5": "64d25df8f560467ac9148534b2fa20b8",
+      "sha256": "26d0ea93a7c4dd78e949407267ff1689508af3de71972af8e80eb7fea3e8cd6e",
+      "license": "CC0-1.0",
+      "role": "R2: small serrated leaves on a twig - twig-card source for oak/chaparral sprigs",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        1024
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet005/LeafSet005_2K-JPG_NormalDX.jpg",
+      "asset": "LeafSet005",
+      "provider": "ambientCG",
+      "provider_key": "NormalDX",
+      "url": "https://ambientcg.com/get?file=LeafSet005_2K-JPG.zip",
+      "zip_member": "LeafSet005_2K-JPG_NormalDX.jpg",
+      "zip_md5": "6a5458d6746538cacfaeac852d6c722f",
+      "zip_sha256": "05397b40a77d16b63689940158b1ce1058cdc4ba36a63bb5890a670c9685ff5c",
+      "zip_bytes": 8811451,
+      "bytes": 2447465,
+      "md5": "87ddce9b5434156e3641a08399b08371",
+      "sha256": "1a09f8f50dafc52f52ccae13b3021ed970d4425576ef8fa1355b1cf604a612ca",
+      "license": "CC0-1.0",
+      "role": "R2: small serrated leaves on a twig - twig-card source for oak/chaparral sprigs",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        1024
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet005/LeafSet005_2K-JPG_Roughness.jpg",
+      "asset": "LeafSet005",
+      "provider": "ambientCG",
+      "provider_key": "Roughness",
+      "url": "https://ambientcg.com/get?file=LeafSet005_2K-JPG.zip",
+      "zip_member": "LeafSet005_2K-JPG_Roughness.jpg",
+      "zip_md5": "6a5458d6746538cacfaeac852d6c722f",
+      "zip_sha256": "05397b40a77d16b63689940158b1ce1058cdc4ba36a63bb5890a670c9685ff5c",
+      "zip_bytes": 8811451,
+      "bytes": 721924,
+      "md5": "f32d5a51fa00e067cbe671a1c81dff16",
+      "sha256": "9384e291b2cc635f68c0cdf6ded43ee84d4ae35ab61d8ea28ba30ec1f11ae80c",
+      "license": "CC0-1.0",
+      "role": "R2: small serrated leaves on a twig - twig-card source for oak/chaparral sprigs",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        1024
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet005/LeafSet005_2K-JPG_Opacity.jpg",
+      "asset": "LeafSet005",
+      "provider": "ambientCG",
+      "provider_key": "Opacity",
+      "url": "https://ambientcg.com/get?file=LeafSet005_2K-JPG.zip",
+      "zip_member": "LeafSet005_2K-JPG_Opacity.jpg",
+      "zip_md5": "6a5458d6746538cacfaeac852d6c722f",
+      "zip_sha256": "05397b40a77d16b63689940158b1ce1058cdc4ba36a63bb5890a670c9685ff5c",
+      "zip_bytes": 8811451,
+      "bytes": 130083,
+      "md5": "db45e254386c89db1b3579a2c46585c9",
+      "sha256": "cf4d9d456a97c2a4b8d1b1562ac24082d70107f26536d9e6d0a05fd0bf0235b3",
+      "license": "CC0-1.0",
+      "role": "R2: small serrated leaves on a twig - twig-card source for oak/chaparral sprigs",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        1024
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet005/LeafSet005_2K-JPG_Displacement.jpg",
+      "asset": "LeafSet005",
+      "provider": "ambientCG",
+      "provider_key": "Displacement",
+      "url": "https://ambientcg.com/get?file=LeafSet005_2K-JPG.zip",
+      "zip_member": "LeafSet005_2K-JPG_Displacement.jpg",
+      "zip_md5": "6a5458d6746538cacfaeac852d6c722f",
+      "zip_sha256": "05397b40a77d16b63689940158b1ce1058cdc4ba36a63bb5890a670c9685ff5c",
+      "zip_bytes": 8811451,
+      "bytes": 358586,
+      "md5": "dcceb6b1ad66f0e5a14facb5861ea88e",
+      "sha256": "54b97f643e9e76ad777b144ee1b321778760a81995dd25ca6dadf035c8a73d7c",
+      "license": "CC0-1.0",
+      "role": "R2: small serrated leaves on a twig - twig-card source for oak/chaparral sprigs",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        1024
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet019/LeafSet019_2K-JPG_Color.jpg",
+      "asset": "LeafSet019",
+      "provider": "ambientCG",
+      "provider_key": "Color",
+      "url": "https://ambientcg.com/get?file=LeafSet019_2K-JPG.zip",
+      "zip_member": "LeafSet019_2K-JPG_Color.jpg",
+      "zip_md5": "08a3c304fc5366045db3c99b261d7fa7",
+      "zip_sha256": "3b2b26b9120fa29b495714f6f496ac6c51066cf0bd4bd453dd2bf587987480b5",
+      "zip_bytes": 16532794,
+      "bytes": 2169615,
+      "md5": "3b4d029dac4b12b8dc4379a485fea92f",
+      "sha256": "fb710279acab55ffc135014857ca24369e63c6224871608def297bd93c392fad",
+      "license": "CC0-1.0",
+      "role": "R2: three dense conifer needle sprays (opacity) - high-coverage crown / sapling cards",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet019/LeafSet019_2K-JPG_NormalDX.jpg",
+      "asset": "LeafSet019",
+      "provider": "ambientCG",
+      "provider_key": "NormalDX",
+      "url": "https://ambientcg.com/get?file=LeafSet019_2K-JPG.zip",
+      "zip_member": "LeafSet019_2K-JPG_NormalDX.jpg",
+      "zip_md5": "08a3c304fc5366045db3c99b261d7fa7",
+      "zip_sha256": "3b2b26b9120fa29b495714f6f496ac6c51066cf0bd4bd453dd2bf587987480b5",
+      "zip_bytes": 16532794,
+      "bytes": 4719944,
+      "md5": "70339665703fbdbdb321e1c00569000f",
+      "sha256": "466c30575dc48ff74dfd2aa08df39c88cd497b97f28d124ffb023883210f18fe",
+      "license": "CC0-1.0",
+      "role": "R2: three dense conifer needle sprays (opacity) - high-coverage crown / sapling cards",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet019/LeafSet019_2K-JPG_Roughness.jpg",
+      "asset": "LeafSet019",
+      "provider": "ambientCG",
+      "provider_key": "Roughness",
+      "url": "https://ambientcg.com/get?file=LeafSet019_2K-JPG.zip",
+      "zip_member": "LeafSet019_2K-JPG_Roughness.jpg",
+      "zip_md5": "08a3c304fc5366045db3c99b261d7fa7",
+      "zip_sha256": "3b2b26b9120fa29b495714f6f496ac6c51066cf0bd4bd453dd2bf587987480b5",
+      "zip_bytes": 16532794,
+      "bytes": 1572704,
+      "md5": "f2b0231c3d5f3788a4fe5ff23b168989",
+      "sha256": "a008faecd8f0810b3581efa8f99b074bf89c9be540eb6ddab5cc1ece90b43528",
+      "license": "CC0-1.0",
+      "role": "R2: three dense conifer needle sprays (opacity) - high-coverage crown / sapling cards",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet019/LeafSet019_2K-JPG_Opacity.jpg",
+      "asset": "LeafSet019",
+      "provider": "ambientCG",
+      "provider_key": "Opacity",
+      "url": "https://ambientcg.com/get?file=LeafSet019_2K-JPG.zip",
+      "zip_member": "LeafSet019_2K-JPG_Opacity.jpg",
+      "zip_md5": "08a3c304fc5366045db3c99b261d7fa7",
+      "zip_sha256": "3b2b26b9120fa29b495714f6f496ac6c51066cf0bd4bd453dd2bf587987480b5",
+      "zip_bytes": 16532794,
+      "bytes": 1166841,
+      "md5": "4d54cb5e162cdc160661f97b5a8ae6a6",
+      "sha256": "1ced7951d7efae9894855f4d551c125ffcf469d14838ed0f31790992b9843f7f",
+      "license": "CC0-1.0",
+      "role": "R2: three dense conifer needle sprays (opacity) - high-coverage crown / sapling cards",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet019/LeafSet019_2K-JPG_Displacement.jpg",
+      "asset": "LeafSet019",
+      "provider": "ambientCG",
+      "provider_key": "Displacement",
+      "url": "https://ambientcg.com/get?file=LeafSet019_2K-JPG.zip",
+      "zip_member": "LeafSet019_2K-JPG_Displacement.jpg",
+      "zip_md5": "08a3c304fc5366045db3c99b261d7fa7",
+      "zip_sha256": "3b2b26b9120fa29b495714f6f496ac6c51066cf0bd4bd453dd2bf587987480b5",
+      "zip_bytes": 16532794,
+      "bytes": 825061,
+      "md5": "baf2f0cda14c9852eb80f485bafebb04",
+      "sha256": "67b82dc31b919a425a6638c1579a7f1b7730da17810c4ab4fdf7f4d2ddcfcdbd",
+      "license": "CC0-1.0",
+      "role": "R2: three dense conifer needle sprays (opacity) - high-coverage crown / sapling cards",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/PineNeedles001/PineNeedles001_2K-JPG_Color.jpg",
+      "asset": "PineNeedles001",
+      "provider": "ambientCG",
+      "provider_key": "Color",
+      "url": "https://ambientcg.com/get?file=PineNeedles001_2K-JPG.zip",
+      "zip_member": "PineNeedles001_2K-JPG_Color.jpg",
+      "zip_md5": "a42959ce24392b1fdc4b4814d0ed475d",
+      "zip_sha256": "5d473887e07c8e9a25b4780843d737ccaebd6989e23c8438939a3dc774b06c6d",
+      "zip_bytes": 13677344,
+      "bytes": 983644,
+      "md5": "cfe18afd97a83a487bdcde7a3e2f3c5c",
+      "sha256": "0da838fd09d9c50ee1222d9e33e8b45a96a3cecc63268176273f050f7f612963",
+      "license": "CC0-1.0",
+      "role": "R2: loose fallen pine needles atlas with opacity - litter decal / scatter cards",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/PineNeedles001/PineNeedles001_2K-JPG_NormalDX.jpg",
+      "asset": "PineNeedles001",
+      "provider": "ambientCG",
+      "provider_key": "NormalDX",
+      "url": "https://ambientcg.com/get?file=PineNeedles001_2K-JPG.zip",
+      "zip_member": "PineNeedles001_2K-JPG_NormalDX.jpg",
+      "zip_md5": "a42959ce24392b1fdc4b4814d0ed475d",
+      "zip_sha256": "5d473887e07c8e9a25b4780843d737ccaebd6989e23c8438939a3dc774b06c6d",
+      "zip_bytes": 13677344,
+      "bytes": 4650922,
+      "md5": "1b974be14e777c0f41178054ceeee890",
+      "sha256": "f5760d265204d42b85c3f3a1ddb71de7ed461294c4c0924e148af266a2939b20",
+      "license": "CC0-1.0",
+      "role": "R2: loose fallen pine needles atlas with opacity - litter decal / scatter cards",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/PineNeedles001/PineNeedles001_2K-JPG_Roughness.jpg",
+      "asset": "PineNeedles001",
+      "provider": "ambientCG",
+      "provider_key": "Roughness",
+      "url": "https://ambientcg.com/get?file=PineNeedles001_2K-JPG.zip",
+      "zip_member": "PineNeedles001_2K-JPG_Roughness.jpg",
+      "zip_md5": "a42959ce24392b1fdc4b4814d0ed475d",
+      "zip_sha256": "5d473887e07c8e9a25b4780843d737ccaebd6989e23c8438939a3dc774b06c6d",
+      "zip_bytes": 13677344,
+      "bytes": 1413856,
+      "md5": "60470b1b8f5be2e80ebc44232139e1cb",
+      "sha256": "545e6b69f34badfc0551b4234826b5dd25f0612ac8b7686e7228e30804794184",
+      "license": "CC0-1.0",
+      "role": "R2: loose fallen pine needles atlas with opacity - litter decal / scatter cards",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/PineNeedles001/PineNeedles001_2K-JPG_Opacity.jpg",
+      "asset": "PineNeedles001",
+      "provider": "ambientCG",
+      "provider_key": "Opacity",
+      "url": "https://ambientcg.com/get?file=PineNeedles001_2K-JPG.zip",
+      "zip_member": "PineNeedles001_2K-JPG_Opacity.jpg",
+      "zip_md5": "a42959ce24392b1fdc4b4814d0ed475d",
+      "zip_sha256": "5d473887e07c8e9a25b4780843d737ccaebd6989e23c8438939a3dc774b06c6d",
+      "zip_bytes": 13677344,
+      "bytes": 315989,
+      "md5": "efa549f5125b9598559619e92b9d9cd6",
+      "sha256": "bb73577c4b649dea1ad529623b0c0d0708e101accfc72950eacee568203bf52e",
+      "license": "CC0-1.0",
+      "role": "R2: loose fallen pine needles atlas with opacity - litter decal / scatter cards",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/PineNeedles001/PineNeedles001_2K-JPG_Displacement.jpg",
+      "asset": "PineNeedles001",
+      "provider": "ambientCG",
+      "provider_key": "Displacement",
+      "url": "https://ambientcg.com/get?file=PineNeedles001_2K-JPG.zip",
+      "zip_member": "PineNeedles001_2K-JPG_Displacement.jpg",
+      "zip_md5": "a42959ce24392b1fdc4b4814d0ed475d",
+      "zip_sha256": "5d473887e07c8e9a25b4780843d737ccaebd6989e23c8438939a3dc774b06c6d",
+      "zip_bytes": 13677344,
+      "bytes": 464331,
+      "md5": "55c0d46946dc3439d69fa56e35c0d7a1",
+      "sha256": "1a1b2cb4fa8d3ca6c4385d1953321cf2047b9ef39d2ff38962efdc03639b2517",
+      "license": "CC0-1.0",
+      "role": "R2: loose fallen pine needles atlas with opacity - litter decal / scatter cards",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
     }
-  ]
+  ],
+  "derived": {
+    "state": "PROJECT_DERIVED_FROM_CC0_DRAFT",
+    "seed": 20261018,
+    "items": [
+      {
+        "name": "T_PineClumpCards",
+        "sources": [
+          "SourceAssets/EnvironmentDraft/FloraDraft/pine_tree_01/pine_tree_01_twig_alpha_2k.jpg",
+          "SourceAssets/EnvironmentDraft/FloraDraft/pine_tree_01/pine_tree_01_twig_diff_2k.jpg",
+          "SourceAssets/EnvironmentDraft/FloraDraft/pine_tree_01/pine_tree_01_twig_nor_dx_2k.jpg",
+          "SourceAssets/EnvironmentDraft/FloraDraft/pine_tree_01/pine_tree_01_twig_rough_2k.jpg"
+        ],
+        "algorithm": "8-connected alpha>40 islands of the two real needle sprigs (fixed bboxes, size-checked), 2px dilation; seeded (20261018) compositing of 24-28 scaled/rotated sprigs per 1024 cell, DirectX normal XY rotated with each sprig, alpha-over, 32px alpha fade at every cell border, nearest-colour padding where alpha<0.02",
+        "cells": {
+          "A_radial_clump": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "B_tip_fan": [
+            0.5,
+            0,
+            1,
+            0.5
+          ],
+          "C_branch_spray": [
+            0,
+            0.5,
+            0.5,
+            1
+          ],
+          "D_sapling_whorls": [
+            0.5,
+            0.5,
+            1,
+            1
+          ]
+        },
+        "alpha_coverage_fraction_gt_0.35": {
+          "A_radial_clump": 0.361,
+          "B_tip_fan": 0.311,
+          "C_branch_spray": 0.253,
+          "D_sapling_whorls": 0.259
+        },
+        "suggested_cell_world_size_cm": 80,
+        "files": [
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_PineClumpCards_BaseColor.png",
+            "bytes": 4813076,
+            "md5": "38768669f0080f1afca5f396ff19febf",
+            "sha256": "da35bf9b19942d353b0e49c9f75c340bd2c1b778f7382d124a1e23e474a172f9",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_PineClumpCards_Alpha.png",
+            "bytes": 737891,
+            "md5": "1b20cd7200704e7a92c4a403ac27d89a",
+            "sha256": "ca4c0cd1ce2f8339a08f7c57bf713c00cb86baa7472fce5edf9e8dc5cc1cf017",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_PineClumpCards_Normal.png",
+            "bytes": 4015920,
+            "md5": "719980833d561a193ba5e3acedf3c26e",
+            "sha256": "49ff5f5e83dcc1cfbd355eefefdc9f042bd37b92614d8d629c6d5f8969419b00",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_PineClumpCards_Roughness.png",
+            "bytes": 1308665,
+            "md5": "17c05f7a095ab0bc7c688cb2a33710ea",
+            "sha256": "5b034de787d8353b3b0af7aff6246c996a462d3d9146fe29bf44f4e275290c83",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          }
+        ]
+      },
+      {
+        "name": "T_TrunkBaseLitter",
+        "sources": [
+          "SourceAssets/EnvironmentDraft/FloraDraft/forest_leaves_04/forest_leaves_04_diff_2k.jpg",
+          "SourceAssets/EnvironmentDraft/FloraDraft/forest_leaves_04/forest_leaves_04_nor_dx_2k.jpg",
+          "SourceAssets/EnvironmentDraft/FloraDraft/forest_leaves_04/forest_leaves_04_rough_2k.jpg",
+          "SourceAssets/EnvironmentDraft/FloraDraft/forest_leaves_04/forest_leaves_04_disp_2k.jpg"
+        ],
+        "algorithm": "Full 1.5 m forest_leaves_04 tile Lanczos 2048->1024; alpha = radial falloff (0.92 radius, 0.30 soft band) perturbed by seeded gaussian noise, modulated by displacement so raised needles/cones survive the edge; zero outside unit circle",
+        "world_size_cm": 150,
+        "files": [
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_TrunkBaseLitter_BaseColor.png",
+            "bytes": 3001852,
+            "md5": "f1355d6f1f6164f2ee9b6d3e15da6418",
+            "sha256": "de6a0f5e78349121aaeb484564c97d2f3d8bfdb1ece156d0a866f88c625844d0",
+            "license": "CC0-1.0",
+            "pixels": [
+              1024,
+              1024
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_TrunkBaseLitter_Alpha.png",
+            "bytes": 261656,
+            "md5": "e6452662e095cf41598aff2243455035",
+            "sha256": "76155d8246abb5aa7ef05624e1c43fff4aabaadb2d4924168f79af8e3f8919e5",
+            "license": "CC0-1.0",
+            "pixels": [
+              1024,
+              1024
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_TrunkBaseLitter_Normal.png",
+            "bytes": 2639696,
+            "md5": "571cb632525100abcbe402d18535a883",
+            "sha256": "8bf5bc3aeaf3e699fe2b480a1a47f56aba2ea3f2785e7e356fb7d3c52876364a",
+            "license": "CC0-1.0",
+            "pixels": [
+              1024,
+              1024
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_TrunkBaseLitter_Roughness.png",
+            "bytes": 769951,
+            "md5": "c8b72aab053a3459b5e5f709b5cf1364",
+            "sha256": "fe0ec5173301d4c4a0204fca5d5b8ee015dadc16feafbe4e57da67874137f092",
+            "license": "CC0-1.0",
+            "pixels": [
+              1024,
+              1024
+            ]
+          }
+        ]
+      }
+    ]
+  }
 }
