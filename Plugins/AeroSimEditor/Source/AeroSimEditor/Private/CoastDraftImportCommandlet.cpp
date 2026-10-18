@@ -93,7 +93,12 @@ const FSource Sources[] = {
     {TEXT("Ground/withered_grass/withered_grass_disp_2k.jpg"), TEXT("T_CoastWitheredGrass_Height"), ETextureRole::Roughness},
     {TEXT("Ground/sparse_grass/sparse_grass_disp_2k.jpg"), TEXT("T_CoastSparseGrass_Height"), ETextureRole::Roughness},
     {TEXT("Ground/dry_decay_leaves/dry_decay_leaves_disp_2k.jpg"), TEXT("T_CoastLeafLitter_Height"), ETextureRole::Roughness},
-    {TEXT("Ground/dry_ground_rocks/dry_ground_rocks_disp_2k.jpg"), TEXT("T_CoastStonyGround_Height"), ETextureRole::Roughness}
+    {TEXT("Ground/dry_ground_rocks/dry_ground_rocks_disp_2k.jpg"), TEXT("T_CoastStonyGround_Height"), ETextureRole::Roughness},
+    // 44-47: ambientCG Foam002 (CC0) for DEV-SEASKY's water foam term; imported here, sampled by them.
+    {TEXT("Water/Foam002/Foam002_2K-JPG_Color.jpg"), TEXT("T_CoastFoam_BaseColor"), ETextureRole::Color},
+    {TEXT("Water/Foam002/Foam002_2K-JPG_NormalDX.jpg"), TEXT("T_CoastFoam_Normal"), ETextureRole::Normal},
+    {TEXT("Water/Foam002/Foam002_2K-JPG_Roughness.jpg"), TEXT("T_CoastFoam_Roughness"), ETextureRole::Roughness},
+    {TEXT("Water/Foam002/Foam002_2K-JPG_Opacity.jpg"), TEXT("T_CoastFoam_Opacity"), ETextureRole::Roughness}
 };
 
 bool SaveDraft(UObject* Asset)
@@ -419,8 +424,15 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
     if(bWorldProjection)
     {
         auto* World=Node<UMaterialExpressionWorldPosition>(Material);
+        // DEV-SEASKY RockWetness (shared sea-state contract): fully wet below still water and a
+        // ragged 0.5-2 m splash band that rises with the same arriving swell crests as the foam.
+        auto* WetTime=Node<UMaterialExpressionTime>(Material);
+        auto* WetCamera=Node<UMaterialExpressionCameraPositionWS>(Material);
+        auto* WetAmplitude=Node<UMaterialExpressionScalarParameter>(Material);WetAmplitude->ParameterName=TEXT("WaveAmplitudeScale");WetAmplitude->DefaultValue=1.0F;
         auto* Wet=Node<UMaterialExpressionCustom>(Material);Wet->OutputType=CMOT_Float1;
-        Wet->Code=TEXT("return 1.0-smoothstep(-6480.0,-6180.0,P.z);");FCustomInput Pos;Pos.InputName=TEXT("P");Pos.Input.Connect(0,World);Wet->Inputs.Add(Pos);
+        Wet->Code=APacificCoastGraybox::GetCoastalWaterShaderCode(APacificCoastGraybox::ECoastalWaterShader::RockWetness);Wet->Inputs.Reset();
+        auto WetInput=[Wet](const TCHAR* InputName,UMaterialExpression* Value){FCustomInput Item;Item.InputName=InputName;Item.Input.Connect(0,Value);Wet->Inputs.Add(Item);};
+        WetInput(TEXT("P"),World);WetInput(TEXT("T"),WetTime);WetInput(TEXT("A"),WetAmplitude);WetInput(TEXT("C"),WetCamera);
         auto* WetColor=Node<UMaterialExpressionMultiply>(Material);WetColor->A.Connect(0,SurfaceColor);WetColor->ConstB=.44F;
         auto* ColorBlend=Node<UMaterialExpressionLinearInterpolate>(Material);ColorBlend->A.Connect(0,SurfaceColor);ColorBlend->B.Connect(0,WetColor);ColorBlend->Alpha.Connect(0,Wet);SurfaceColor=ColorBlend;
         auto* WetRough=Node<UMaterialExpressionLinearInterpolate>(Material);WetRough->A.Connect(0,SurfaceRoughness);WetRough->ConstB=.24F;WetRough->Alpha.Connect(0,Wet);SurfaceRoughness=WetRough;
@@ -609,6 +621,6 @@ int32 UCoastDraftImportCommandlet::Main(const FString& Params)
     const bool bWater = BuildWaterMaterial(WaterNormal);
     const bool bGravel=BuildMaterial(TEXT("M_CoastGravelDraft"),Textures,13,14,15,-1,false,4000.0F/253.0F,WorldAlignedTexture,WorldAlignedNormal);
     if (!(bGround && bRock && bNeedles && bBark && bWater && bGravel)) return 7;
-    UE_LOG(LogTemp, Display, TEXT("COAST_DRAFT_IMPORT_PASS textures=44 materials=6 state=DRAFT_NOT_USER_CONFIRMED"));
+    UE_LOG(LogTemp, Display, TEXT("COAST_DRAFT_IMPORT_PASS textures=48 materials=6 state=DRAFT_NOT_USER_CONFIRMED"));
     return 0;
 }

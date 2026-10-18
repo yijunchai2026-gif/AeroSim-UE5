@@ -71,6 +71,29 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Habitat weights never jump by more than 0.45 across a 5 m cell (no sawtooth band edge)"), Steps > 5000 && MaximumStep < .45F);
     TestTrue(TEXT("Fewer than 4% of 5 m cells change any habitat weight by more than 0.15"), LargeSteps * 25 < Steps);
 
+    // R3: principal drainages are real incised valleys (geometry), each with a tributary.
+    {
+        struct FProbe { FVector2D Centre, Along; const TCHAR* Name; };
+        const FProbe Probes[] = {
+            {FVector2D(-100000, 13300), FVector2D(18000, 6000), TEXT("system A trunk")}, {FVector2D(-114000, 0), FVector2D(8000, 19000), TEXT("system A tributary")},
+            {FVector2D(-118000, -65000), FVector2D(20000, -10000), TEXT("system B trunk")}, {FVector2D(-131000, -70000), FVector2D(22000, 12000), TEXT("system B tributary")},
+            {FVector2D(-99000, 96000), FVector2D(18000, 16000), TEXT("system C trunk")}};
+        for (const FProbe& Probe : Probes)
+        {
+            const FVector2D Across = FVector2D(-Probe.Along.Y, Probe.Along.X).GetSafeNormal();
+            float Floor = BIG_NUMBER;
+            for (float Offset = -3000; Offset <= 3000; Offset += 250)
+            {
+                const FVector2D P = Probe.Centre + Across * Offset;
+                Floor = FMath::Min(Floor, APacificCoastGraybox::GetCoastalLandHeight(P.X, P.Y));
+            }
+            const FVector2D L = Probe.Centre - Across * 16000, R = Probe.Centre + Across * 16000;
+            const float Banks = .5F * (APacificCoastGraybox::GetCoastalLandHeight(L.X, L.Y) + APacificCoastGraybox::GetCoastalLandHeight(R.X, R.Y));
+            TestTrue(FString::Printf(TEXT("Drainage %s is incised at least 15 m below its banks"), Probe.Name), Banks - Floor > 1500);
+            AddInfo(FString::Printf(TEXT("Drainage %s depth below banks %.0f cm"), Probe.Name, Banks - Floor));
+        }
+    }
+
     // Bay Area landform: aspect controls habitat on the main ridge flanks.
     float SunWood = 0, ShadeWood = 0; int32 SunCount = 0, ShadeCount = 0;
     for (float X = -200000; X <= -60000; X += 3000)
@@ -192,6 +215,7 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
         UTexture* Upper = nullptr; UTexture* LowerFace = nullptr;
         TestTrue(TEXT("Upper cliff face uses worn_rock_natural_01"), Rock->GetTextureParameterValue(FMaterialParameterInfo(TEXT("BaseColorTexture")), Upper) && Upper && Upper->GetFName() == TEXT("T_CoastWornRock_BaseColor"));
         TestTrue(TEXT("Lower cliff uses rock_face_03"), Rock->GetTextureParameterValue(FMaterialParameterInfo(TEXT("LowerCliffColor")), LowerFace) && LowerFace && LowerFace->GetFName() == TEXT("T_CoastRockFace_BaseColor"));
+#if WITH_EDITOR
         if (FApp::CanEverRender())
             if (FMaterialResource* Resource = Rock->GetMaterial()->GetMaterialResource(GMaxRHIShaderPlatform))
             {
@@ -199,6 +223,7 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
                 for (const FString& Error : Resource->GetCompileErrors()) AddError(FString::Printf(TEXT("Rock shader compile error: %s"), *Error));
                 TestTrue(TEXT("Rock material shader map compiled"), Resource->GetGameThreadShaderMap() != nullptr);
             }
+#endif
     }
     AddInfo(FString::Printf(TEXT("Habitat coverage of %d land samples: exposed %d sheltered %d woodland %d rock %d"), LandSamples, Counts[0], Counts[1], Counts[2], Counts[3]));
     AddInfo(FString::Printf(TEXT("Habitat 5 m step max %.3f at (%.0f, %.0f); >0.15 in %d of %d cells; woodland mean sun %.3f shade %.3f"),

@@ -13,6 +13,8 @@ constexpr float CliffFoot = -14000.0F;
 constexpr float BedrockBase = -18000.0F;
 constexpr int32 CoastRows = 385;
 constexpr int32 CliffDepthSteps = 36;
+constexpr float HeroBayY = -19000.0F;
+constexpr float HeroBayHalfWidth = 2500.0F;
 
 float Smooth(float Value)
 {
@@ -56,11 +58,49 @@ float ChannelWeight(const float X, const float Y)
         * (1.0F - Smooth(FMath::Abs(Bridge.Y) / 3000.0F));
 }
 
-float CoastY(const int32 Row)
+float BaseCoastY(const int32 Row)
 {
     const float T = Row / static_cast<float>(CoastRows - 1) * 2.0F - 1.0F;
     const float Magnitude = FMath::Abs(T);
     return FMath::Sign(T) * (Magnitude <= .6F ? Magnitude * 100000.0F : 60000.0F + (Magnitude - .6F) * 400000.0F);
+}
+
+const TArray<float>& CoastRowsY()
+{
+    static const TArray<float> Samples=[]
+    {
+        TArray<float> Result;
+        for(int32 Row=0;Row<CoastRows;++Row)
+        {
+            const float Y=BaseCoastY(Row);Result.Add(Y);
+            if(Row+1==CoastRows)continue;
+            const float Next=BaseCoastY(Row+1);
+            if(Next>HeroBayY-HeroBayHalfWidth && Y<HeroBayY+HeroBayHalfWidth)
+                for(int32 Split=1;Split<4;++Split)Result.Add(FMath::Lerp(Y,Next,Split*.25F));
+        }
+        return Result;
+    }();
+    return Samples;
+}
+
+float CoastY(const int32 Row) { return CoastRowsY()[Row]; }
+
+float HeroBayWeight(const float Y)
+{
+    return 1.0F-Smooth((FMath::Abs(Y-HeroBayY)-1600.0F)/900.0F);
+}
+
+float HeroBayLandRelief(const float X,const float Y,const float Edge)
+{
+    if(X<=Edge-3500.0F || X>Edge)return 0;
+    const float Run=(X-(Edge-3500.0F))/3500.0F;
+    const float Center=HeroBayY+450.0F*(Run*Run-.5F);
+    const float Runnel=1.0F-Smooth(FMath::Abs(Y-Center)/(520.0F+120.0F*Run));
+    const float RockShoulder=1.0F-Smooth(FMath::Abs(Y-(Center-1050.0F))/600.0F);
+    // A curved drainage cut and an unequal adjoining bedrock shoulder. Both die into
+    // the existing soil upslope and the unchanged cove outside this single 50 m reach.
+    return HeroBayWeight(Y)*Smooth(Run)*(-300.0F*Runnel*(.4F+.6F*Run)
+        +220.0F*RockShoulder*Smooth((Run-.12F)/.5F));
 }
 
 float CoastalErosion(const float Y)
@@ -99,7 +139,17 @@ float CliffOutcrop(const float Y, const float Depth)
     const float Interior = Smooth(Depth / .07F);
     // No sub-7 m term: short-wavelength block noise serrated the waterline row by row.
     const float Blocks = 450.0F + 380.0F * Noise(Y, 14000.0F, 2100.0F);
-    return Outcrop + Interior * Blocks;
+    // Only the hero cove receives these finite, unequal bedrock ribs and their supported
+    // rubble tongue. Every displacement ramps monotonically with depth: no floating blocks
+    // or overhanging support fiction. Different onsets prevent a row of repeated folds.
+    const float Hero=HeroBayWeight(Y);
+    const float NorthernRib=1.0F-Smooth(FMath::Abs(Y-(HeroBayY+950.0F))/600.0F);
+    const float SouthernRib=1.0F-Smooth(FMath::Abs(Y-(HeroBayY-1050.0F))/850.0F);
+    const float RubbleTongue=1.0F-Smooth(FMath::Abs(Y-(HeroBayY-300.0F))/1500.0F);
+    const float HeroRock=Hero*(320.0F*NorthernRib*Smooth((Depth-.025F)/.085F)
+        +520.0F*SouthernRib*Smooth((Depth-.09F)/.17F)
+        +380.0F*RubbleTongue*Smooth((Depth-.055F)/.30F));
+    return Outcrop + Interior * Blocks + HeroRock;
 }
 
 // --- Bay Area ridge network (DEV-TERRAIN U6) -------------------------------------------------
@@ -212,6 +262,38 @@ float GullyIncision(const FVector2D& Point)
     return Incision;
 }
 
+// R3: three principal drainage systems between the spurs, facing the mountain/overview poses. Each
+// trunk deepens mid-slope and fades into the foothills; tributaries join it obliquely from upslope.
+// They are carved deeper than the minor gully network (cap 55% of local relief vs 42%).
+const FRidgeNode MajorA[] = {{FVector2D(-127000,8000),0,9000},{FVector2D(-110000,10000),4600,12000},{FVector2D(-92000,16000),5200,14000},{FVector2D(-72000,22000),3600,15000},{FVector2D(-52000,30000),0,16000}};
+const FRidgeNode MajorA1[] = {{FVector2D(-118000,-9000),0,7000},{FVector2D(-110000,10000),3100,9000}};
+const FRidgeNode MajorA2[] = {{FVector2D(-112000,34000),0,7000},{FVector2D(-92000,16000),3500,10000}};
+const FRidgeNode MajorA3[] = {{FVector2D(-99000,-6000),0,6500},{FVector2D(-80000,19000),2600,9000}};
+const FRidgeNode MajorB[] = {{FVector2D(-148000,-52000),0,9000},{FVector2D(-128000,-60000),4300,12000},{FVector2D(-108000,-70000),5000,14000},{FVector2D(-88000,-80000),3800,15000},{FVector2D(-66000,-92000),0,16000}};
+const FRidgeNode MajorB1[] = {{FVector2D(-142000,-76000),0,7000},{FVector2D(-120000,-64000),3100,9500}};
+const FRidgeNode MajorB2[] = {{FVector2D(-117000,-50000),0,7000},{FVector2D(-100000,-74000),3100,9500}};
+const FRidgeNode MajorC[] = {{FVector2D(-125000,72000),0,8500},{FVector2D(-108000,88000),4100,11500},{FVector2D(-90000,104000),4600,13000},{FVector2D(-70000,120000),0,15000}};
+const FRidgeNode MajorC1[] = {{FVector2D(-113000,108000),0,6500},{FVector2D(-96000,99000),2900,9000}};
+const FChain MajorDrainages[] = {{MajorA,5},{MajorA1,2},{MajorA2,2},{MajorA3,2},{MajorB,5},{MajorB1,2},{MajorB2,2},{MajorC,4},{MajorC1,2}};
+
+float MajorIncision(const FVector2D& Point)
+{
+    float Incision = 0;
+    for (const FChain& Chain : MajorDrainages)
+        for (int32 Node = 0; Node + 1 < Chain.Count; ++Node)
+        {
+            const FRidgeNode& A = Chain.Nodes[Node];
+            const FRidgeNode& B = Chain.Nodes[Node + 1];
+            const FVector2D Direction = B.Position - A.Position;
+            const float T = FMath::Clamp(static_cast<float>(FVector2D::DotProduct(Point - A.Position, Direction) / Direction.SizeSquared()), 0.0F, 1.0F);
+            const float Distance = static_cast<float>((Point - FMath::Lerp(A.Position, B.Position, T)).Size());
+            const float Floor = FMath::Sqrt(Distance * Distance + 1500.0F * 1500.0F) - 1500.0F;
+            const float S = FMath::Clamp(1.0F - Floor / FMath::Lerp(A.Width, B.Width, T), 0.0F, 1.0F);
+            Incision = FMath::Max(Incision, FMath::Lerp(A.Height, B.Height, T) * S * FMath::Sqrt(S));
+        }
+    return Incision;
+}
+
 // Distant receding ridgelines beyond the playable land (3–9 km west). They rise from below sea
 // level behind the land collar so no channel of sea separates them, and grow taller with distance.
 constexpr float RangeEast = -232000.0F, RangeWest = -900000.0F, RangeHalfY = 760000.0F;
@@ -271,7 +353,7 @@ float APacificCoastGraybox::GetCoastalLandHeight(const float X, const float Y)
     for (const auto& Knoll : Knolls)
         Mountain = JoinRidge(Mountain, RoundRidge(Point, Knoll[0], Knoll[1], 3000.0F));
     // Branching gullies remain subordinate to the ridge mass they cut.
-    Mountain -= FMath::Min(GullyIncision(Point), Mountain * .42F);
+    Mountain -= FMath::Max(FMath::Min(GullyIncision(Point), Mountain * .42F), FMath::Min(MajorIncision(Point), Mountain * .55F));
     // Only broad (170 m) coherent undulation; no short-wavelength ripple over the slopes.
     Mountain += Smooth(Mountain / 7000.0F) * 260.0F * Noise(X, Y, 17000.0F);
     const float Hills = 650.0F + 700.0F * Noise(X, Y, 26000.0F) + 60.0F * Noise(X, Y, 9500.0F);
@@ -282,16 +364,21 @@ float APacificCoastGraybox::GetCoastalLandHeight(const float X, const float Y)
     const float CoastHeight=LandHeight-CoastalErosion(Y)*CoastBlend*Interior;
     // A shallow seasonal swale gives the short woodland bridge an actual crossing to span.
     // Its 16 m bank-to-bank width spans several near-field samples; both bridge landings remain at grade.
-    return CoastHeight - 180.0F * ChannelWeight(X, Y);
+    return CoastHeight - 180.0F * ChannelWeight(X, Y) + HeroBayLandRelief(X,Y,GetCliffEdgeX(Y));
 }
 
 float APacificCoastGraybox::GetCoastalShoreX(float Y)
 {
     using namespace CoastalTerrain;
     Y = FMath::Clamp(Y, -North, North);
-    const float Magnitude = FMath::Abs(Y);
-    const float T = FMath::Sign(Y) * (Magnitude <= 60000 ? Magnitude / 100000.0F : .6F + (Magnitude - 60000.0F) / 400000.0F);
-    const int32 Row = FMath::Clamp(FMath::FloorToInt((T + 1.0F) * .5F * (CoastRows - 1)), 0, CoastRows - 2);
+    const TArray<float>& Samples=CoastRowsY();
+    int32 Low=0,High=Samples.Num()-1;
+    while(Low+1<High)
+    {
+        const int32 Middle=(Low+High)/2;
+        if(Samples[Middle]<=Y)Low=Middle;else High=Middle;
+    }
+    const int32 Row=FMath::Min(Low,Samples.Num()-2);
     const float YA = CoastY(Row), YB = CoastY(Row + 1);
     const float EdgeA = GetCliffEdgeX(YA), EdgeB = GetCliffEdgeX(YB);
     const float TopA = GetCoastalLandHeight(EdgeA, YA), TopB = GetCoastalLandHeight(EdgeB, YB);
@@ -374,7 +461,7 @@ FCoastHabitatSample FPacificCoastHabitat::Sample(const float X, const float Y)
     // Two irregular noise octaves displace every threshold so transitions are broad and patchy,
     // never contour bands or a sawtooth along mesh rows.
     const float Patch = .55F * Noise(X, Y + 3000.0F, 9000.0F) + .3F * Noise(X - 7000.0F, Y, 3100.0F);
-    float Rock = Smooth((Result.Grade - .58F + .14F * Patch) / .42F);
+    float Rock = Smooth((Result.Grade - .42F + .14F * Patch) / .62F);
     // Moisture index: shade and drainage favour woodland; ocean bluffs are wind-pruned grassland.
     const float Bluff = Smooth((X - (Edge - 5000.0F)) / 3500.0F);
     // Golden grass dominates open Bay Area hills; woodland keeps to shaded aspects and drainages.
@@ -430,7 +517,7 @@ float APacificCoastGraybox::GetCoastalVegetationCover(const float X, const float
 void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
 {
     using namespace CoastalTerrain;
-    constexpr int32 Rows = CoastRows;
+    const int32 Rows = CoastRowsY().Num();
     constexpr int32 Columns = 193;
     TArray<FVector> Vertices;
     TArray<FVector2D> UV;
