@@ -7,7 +7,7 @@ struct AEROSIM_API FAeroSimRuntimeContract final
 {
     static constexpr int32 ContractVersion = 1;
     static constexpr const TCHAR* Phase = TEXT("Phase7");
-    static constexpr const TCHAR* BuildId = TEXT("AeroSim-Phase7-20261016");
+    static constexpr const TCHAR* BuildId = TEXT("AeroSim-Phase7-ProductShellA-20261016-v1");
     static constexpr const TCHAR* Contract = TEXT("aerosim.runtime.phase7/v1");
     static constexpr const TCHAR* ProductUxSchema = TEXT("aerosim.product-ux/v1");
     static constexpr const TCHAR* PreviousContract = TEXT("aerosim.runtime.phase6/v1");

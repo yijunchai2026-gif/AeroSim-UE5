@@ -1,0 +1,142 @@
+{
+  "schema": "aerosim.environment-draft.texture-source/v1",
+  "status": "DRAFT_NOT_USER_CONFIRMED",
+  "asset": "pine_tree_01",
+  "provider": "Poly Haven",
+  "asset_page": "https://polyhaven.com/a/pine_tree_01",
+  "license": "CC0-1.0",
+  "license_primary_source": "https://polyhaven.com/license",
+  "metadata_url": "https://api.polyhaven.com/files/pine_tree_01",
+  "info_url": "https://api.polyhaven.com/info/pine_tree_01",
+  "provider_metadata_sha256": "6dc7a454e1047014ba5dc0cc3fe62a0f5ade64c25051f46b9789136dc46b0551",
+  "authors": {
+    "Rob Tuytel": "photography",
+    "Rico Cilliers": "modeling"
+  },
+  "scope": "Seven unchanged provider 1k PNG texture maps only. No provider mesh acquired or imported.",
+  "use": "Draft two-sided masked needle cards plus rough bark; procedural tree geometry remains project-authored.",
+  "texture_requirements": {
+    "twig_alpha": "separate grayscale opacity mask, never opaque material",
+    "twig_nor_dx": "DirectX tangent-space normal map for UE",
+    "roughness": "linear grayscale, not sRGB"
+  },
+  "files": [
+    {
+      "map": "twig_diff",
+      "file": "pine_tree_01_twig_diff_1k.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/png/1k/pine_tree_01/pine_tree_01_twig_diff_1k.png",
+      "bytes": 3208228,
+      "provider_md5": "a4fa4a55aab9231915a4023ea9841577",
+      "md5_verified": true,
+      "sha256": "d02c031de64b8ad671f3dd0da19870fa4783d912ae6674aeab0702871deeaeaa",
+      "color_space": "sRGB",
+      "normal_convention": null
+    },
+    {
+      "map": "twig_alpha",
+      "file": "pine_tree_01_twig_alpha_1k.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/png/1k/pine_tree_01/pine_tree_01_twig_alpha_1k.png",
+      "bytes": 351928,
+      "provider_md5": "641911a5a3f543911dad04ebb26e7bca",
+      "md5_verified": true,
+      "sha256": "6f91aa99f2c27108d6f817f874954aa7df8bfbb4dea2673e9322555a6ae79d99",
+      "color_space": "linear",
+      "normal_convention": null
+    },
+    {
+      "map": "twig_nor_dx",
+      "file": "pine_tree_01_twig_nor_dx_1k.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/png/1k/pine_tree_01/pine_tree_01_twig_nor_dx_1k.png",
+      "bytes": 3017561,
+      "provider_md5": "2e044493c27b12732666ac205eb34089",
+      "md5_verified": true,
+      "sha256": "8bcd8b53fadab2d80f563a940625cd6a5e09e66fd1b93fcd89a100895cb2f7f8",
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (-Y relative to OpenGL)"
+    },
+    {
+      "map": "twig_rough",
+      "file": "pine_tree_01_twig_rough_1k.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/png/1k/pine_tree_01/pine_tree_01_twig_rough_1k.png",
+      "bytes": 1342516,
+      "provider_md5": "8ef8f0d1cbd36b1e4578eb729fa6f0b7",
+      "md5_verified": true,
+      "sha256": "c12da3dd6c1588f50307d96807d78115757f110bc562811369d90b86bd6fddc7",
+      "color_space": "linear",
+      "normal_convention": null
+    },
+    {
+      "map": "bark_diff",
+      "file": "pine_tree_01_bark_diff_1k.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/png/1k/pine_tree_01/pine_tree_01_bark_diff_1k.png",
+      "bytes": 5568559,
+      "provider_md5": "63688d7bcdd5ff5500f12bde192b197a",
+      "md5_verified": true,
+      "sha256": "91e79e9bd1d5d68922262b4eee752808c49c55c2941b531a65b586dae8984bc9",
+      "color_space": "sRGB",
+      "normal_convention": null
+    },
+    {
+      "map": "bark_nor_dx",
+      "file": "pine_tree_01_bark_nor_dx_1k.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/png/1k/pine_tree_01/pine_tree_01_bark_nor_dx_1k.png",
+      "bytes": 5640649,
+      "provider_md5": "11e0e968b7a0a7d37c98c2b9f65228b5",
+      "md5_verified": true,
+      "sha256": "d6997db9bb070f446bc6dfb60e401ef4813ebfeed3f6171c34dd58bb11205c6c",
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (-Y relative to OpenGL)"
+    },
+    {
+      "map": "bark_rough",
+      "file": "pine_tree_01_bark_rough_1k.png",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/png/1k/pine_tree_01/pine_tree_01_bark_rough_1k.png",
+      "bytes": 2488380,
+      "provider_md5": "dca69b84d7846af93fbb31d0c1dafd2e",
+      "md5_verified": true,
+      "sha256": "63c3785c47a2f4193e5054d9f8481da0bd41bc2bfc1a993cd8785fad6339fe97",
+      "color_space": "linear",
+      "normal_convention": null
+    }
+  ],
+  "derived_card": {
+    "algorithm": "8-connected component alpha>24 seeded at (134,300), one-pixel dilation, original alpha preserved, eight-pixel crop margin, Lanczos resize, nearest-needle color/normal padding only where alpha=0",
+    "source_needle_component_pixels": 23704,
+    "source_crop_xyxy": [
+      27,
+      36,
+      234,
+      461
+    ],
+    "output_size": [
+      256,
+      512
+    ],
+    "uv_rectangle": [
+      0,
+      0,
+      1,
+      1
+    ],
+    "geometry_aspect_height_over_width": 2,
+    "notes": "One actual needle twig only; pinecones, stretched UV padding and all other atlas islands excluded. Derived albedo RGBA alpha is the opacity mask.",
+    "files": [
+      {
+        "file": "needle_diff.png",
+        "sha256": "3f5e5ba705da446dcd115459bcbe56ccf53bf721b2c4d21a63d2f344aa8efbc5"
+      },
+      {
+        "file": "needle_normal.png",
+        "sha256": "388eaf381da1575a860c86038e3c7268427db685f29baeb462de386cfd765e53"
+      },
+      {
+        "file": "needle_rough.png",
+        "sha256": "97308eb243d27b2b742f5351f220c659454d2e8747bfbd0f9415dcdf0359f7c7"
+      },
+      {
+        "file": "needle_alpha.png",
+        "sha256": "2034490b6ac883dcc68d52d012201f0927a9f94d751b8240a484c2861844a333"
+      }
+    ]
+  }
+}

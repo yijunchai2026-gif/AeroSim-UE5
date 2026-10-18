@@ -1,0 +1,9 @@
+# Bounded temporal capture and prototype world isolation
+
+2026-10-17. The user reports ground flicker during normal play and requests moving continuous screenshots without repeated window activation.
+
+GameMode owns a Development-only, opt-in `-AeroSimTemporalCapture` diagnostic. It moves a dedicated camera on one fixed ground-inspection path, holds the pose for multiple samples, captures 24 frames at a bounded cadence, and then exits. Each PNG retains existing source/build/image/manifest hashes, plus sequence index, monotonic request time, map and camera pose. Output is restricted to a unique directory under the existing Saved/Screenshots/Product root. No simulated user input, settings persistence, production content edits, network endpoint or added MCP authority. Normal launches do not capture or move a diagnostic camera. This is an internal sampling fallback, not a modification of the external Computer Use MCP service.
+
+The runtime currently inherits the engine OpenWorld default and also generates its own floor. Use the empty engine Entry map as the explicit game default so the template Landscape and its streamed proxies cannot compete with project geometry/collision. The project owns its sky atmosphere. Keep OpenWorld cooked only as an explicitly selected diagnostic comparison; it is not the normal demo entry. Compare fixed poses and moving views on Metal, record failures, and do not infer user G0-G4 approval or performance certification from frame capture.
+
+Acceptance: verify the actual maps and poses in manifests, ordered complete frame sets, same build fingerprint across map comparisons, compile/Automation/Cook/Package, and inspect consecutive frames/contact sheets. Capture cadence and readback overhead are recorded, not presented as normal-play performance. Mouse input and interactive usability remain separate checks.

@@ -6,6 +6,8 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "Scripts"))
+from environment_draft_policy import validate_environment_draft
 
 
 class Phase2ContractsTest(unittest.TestCase):
@@ -31,8 +33,8 @@ class Phase2ContractsTest(unittest.TestCase):
         self.assertGreaterEqual(len(names), 7)
         self.assertTrue(all(name.startswith("AeroSim.Phase2.") for name in names))
 
-    def test_no_binary_content_or_android_token(self) -> None:
-        self.assertEqual(list((ROOT / "Content").rglob("*.uasset")), [])
+    def test_only_audited_draft_content_and_no_android_token(self) -> None:
+        self.assertEqual(validate_environment_draft(ROOT), [])
         engine_ini = (ROOT / "Config/DefaultEngine.ini").read_text(encoding="utf-8")
         self.assertNotIn("AndroidFileServer", engine_ini)
         self.assertNotIn("SecurityToken=", engine_ini)

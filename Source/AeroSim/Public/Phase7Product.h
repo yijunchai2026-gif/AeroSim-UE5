@@ -107,18 +107,23 @@ struct AEROSIM_API FPhase7Settings
     int32 ResolutionWidth = 1440;
     int32 ResolutionHeight = 900;
     EPhase7WindowMode WindowMode = EPhase7WindowMode::Windowed;
+    float HudScale = 1.0F;
+    float TextScale = 1.0F;
+    bool bReducedMotion = false;
 
     bool IsValid() const;
 };
 
-/** Preview/apply/cancel plus one-level rollback; persistence only consumes Applied. */
+/** In-memory settings only; persistence explicitly consumes Applied after application succeeds. */
 struct AEROSIM_API FPhase7SettingsTransaction final
 {
     FPhase7Settings Applied;
+    /** Latest applied cancellation baseline, not the one-level rollback history. */
     FPhase7Settings Opening;
     FPhase7Settings Preview;
     bool bPreviewActive = false;
     bool bCanRollback = false;
+    FPhase7Settings PreviousApplied;
 
     bool Begin(const FPhase7Settings& Candidate);
     bool Apply();

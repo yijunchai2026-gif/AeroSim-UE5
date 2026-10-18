@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Static Phase 2 contract checks requiring only Python's standard library."""
 from __future__ import annotations
+from environment_draft_policy import validate_environment_draft
 
 import re
 import sys
@@ -56,7 +57,7 @@ def main() -> int:
     for token in tokens:
         require(token in source, f"missing Phase 2 token: {token}")
 
-    require(not list((ROOT / "Content").rglob("*.uasset")), "Phase 2 must not add binary uasset files")
+    require(not validate_environment_draft(ROOT), "Only manifested, hash-verified Phase7 development assets are permitted")
     engine_ini = (ROOT / "Config/DefaultEngine.ini").read_text(encoding="utf-8")
     require("AndroidFileServer" not in engine_ini, "AndroidFileServer section must be removed")
     require(re.search(r"(?i)(token|securitytoken)\s*=", engine_ini) is None, "token entry must be removed")

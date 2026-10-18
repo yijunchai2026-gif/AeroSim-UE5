@@ -13,6 +13,7 @@ class UInputAction;
 class UInputMappingContext;
 class USpringArmComponent;
 class UStaticMeshComponent;
+class AAeroSimPlayerController;
 struct FInputActionValue;
 
 enum class EInputDeviceConnectionState : uint8;
@@ -163,6 +164,7 @@ UCLASS()
 class AEROSIM_API AFlightPawn final : public APawn
 {
     GENERATED_BODY()
+    friend class UAeroSimControlBridge;
 
 public:
     AFlightPawn();
@@ -191,6 +193,9 @@ public:
     FFlightResultMetrics GetResultMetrics() const { return FlightTrace.BuildResult(); }
     float GetResumeCountdownSeconds() const { return ResumeCountdownSeconds; }
     bool IsResumeCountdownActive() const { return ResumeCountdownSeconds > 0.0F; }
+    /** Physical recenter check; independent of semantic input neutralization and UI consumption. */
+    UFUNCTION(BlueprintPure, Category = "Input")
+    bool IsPhysicalInputNeutral() const;
     USpringArmComponent* GetFollowSpringArm() const { return SpringArm; }
     UCameraComponent* GetFlightCamera() const { return Camera; }
 
@@ -238,13 +243,25 @@ public:
     void ResetFlight();
 
     /** Deterministic fixed view used only by command-line visual review capture. */
+    bool InitializeGroundedSpawn(const FVector& SurfacePoint);
     void ConfigureReviewView(const FTransform& PawnTransform, EFlightCameraMode Mode);
     void ConfigureReviewFlightState(float AltitudeCm, float SpeedCmPerSecond);
+
+    /** Presentation-only replay; never resets the model or its recorded trace. */
+    void ApplyReplaySample(const FFlightTraceSample& Sample);
+    /** Finite product setters; do not reset camera origin, flight state or trace. */
+    void SetProductCameraMode(EFlightCameraMode Mode);
+    bool ApplyProductVerticalFov(float VerticalDegrees);
 
     /** Testable semantic injection; values are clamped and ignored while paused. */
     void SetSemanticInput(const FFlightControlInput& NewInput);
 
 private:
+    friend class AAeroSimPlayerController;
+    friend class FAeroSimProductInputLifecycleTest;
+    bool IsProductFlightPage() const;
+    bool IsGameplayInputAllowed() const;
+    void HandlePhysicalInputActivity();
     bool ValidateConfiguredInputSuite() const;
     void ApplyMappingContext() const;
     void ApplyCameraMode();
@@ -356,5 +373,7 @@ private:
 
     float FlightElapsedSeconds = 0.0F;
     float TraceAccumulatorSeconds = 0.0F;
+    bool bResumeRequested = false;
+    bool bReplayVisualActive = false;
     FTransform InitialTransform = FTransform::Identity;
 };

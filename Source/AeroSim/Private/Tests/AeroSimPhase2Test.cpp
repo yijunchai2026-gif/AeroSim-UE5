@@ -8,6 +8,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Misc/AutomationTest.h"
 #include "PacificCoastGraybox.h"
+#include "ProceduralMeshComponent.h"
 #include "Phase2Systems.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -144,7 +145,13 @@ bool FAeroSimPhase2HeroZonesSafeAreaTest::RunTest(const FString& Parameters)
     if (Coast != nullptr)
     {
         TestEqual(TEXT("Exactly three hero zones"), Coast->GetGeneratedHeroZoneCount(), 3);
-        TestTrue(TEXT("Detailed slice has substantial procedural geometry"), Coast->GetGeneratedPrimitiveCount() >= 250);
+        // Mesh batching reduces component count without reducing actual scene detail.
+        TArray<UProceduralMeshComponent*> ActualMeshes;
+        Coast->GetComponents(ActualMeshes);
+        int32 ActualTriangles = 0;
+        for (UProceduralMeshComponent* Mesh : ActualMeshes)
+            if (const FProcMeshSection* Section = Mesh->GetProcMeshSection(0)) ActualTriangles += Section->ProcIndexBuffer.Num() / 3;
+        TestTrue(TEXT("Detailed slice contains actual bounded terrain/tree/water geometry"), ActualTriangles > 200000 && ActualTriangles < 4000000);
     }
     const FVector2D PhoneMargin = AFlightHUD::CalculateSafeMargin(1170.0F, 2532.0F);
     TestTrue(TEXT("Safe margin scales beyond minimum"), PhoneMargin.X > 24.0F && PhoneMargin.Y > 24.0F);

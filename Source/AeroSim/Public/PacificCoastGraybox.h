@@ -5,6 +5,11 @@
 #include "Phase2Systems.h"
 #include "PacificCoastGraybox.generated.h"
 
+class USkyAtmosphereComponent;
+class UMeshComponent;
+class UMaterialInterface;
+class UVolumetricCloudComponent;
+
 class UDirectionalLightComponent;
 class UExponentialHeightFogComponent;
 class UPostProcessComponent;
@@ -53,6 +58,14 @@ public:
     APacificCoastGraybox();
     virtual void BeginPlay() override;
 
+    void SetCoastalQuality(bool bHigh);
+    static float GetCliffEdgeX(float Y);
+    static float GetCoastalShoreX(float Y);
+    static float GetCoastalLandHeight(float X, float Y);
+    static float GetCoastalVegetationCover(float X, float Y);
+    static constexpr float SeaLevelCm = -6500.0F;
+    int32 GetCoastalTreeCount() const { return CoastalTreeCount; }
+
     int32 GetGeneratedPrimitiveCount() const { return GeneratedPrimitiveCount; }
     int32 GetGeneratedGateCount() const { return GeneratedGateCount; }
     int32 GetGeneratedRouteArrowCount() const { return GeneratedRouteArrowCount; }
@@ -67,6 +80,25 @@ public:
     void ApplyEnvironmentState(const FEnvironmentState& State);
 
 private:
+    void BuildCoastalLandscape();
+    void BuildCoastalLaunchSite(UStaticMesh* CubeMesh);
+    void BuildCoastalTerrain(UMaterialInterface* Material);
+    void BuildCoastalTrees(UMaterialInterface* Material);
+    void BuildCoastalOcean(UMaterialInterface* Material);
+    void ApplyCoastalMaterials();
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UMeshComponent>> CoastalColorParts;
+    TArray<FLinearColor> CoastalPartColors;
+    UPROPERTY(VisibleAnywhere, Category = "Environment")
+    TObjectPtr<UVolumetricCloudComponent> CoastalClouds;
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInterface> CoastalWaterMaterial;
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInterface> CoastalWaterFallback;
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInterface> CoastalGravelMaterial;
+    int32 CoastalTreeCount = 0;
+
     UStaticMeshComponent* AddBox(
         const FName Name,
         const FVector& Location,
@@ -90,6 +122,9 @@ private:
 
     UPROPERTY(VisibleAnywhere, Category = "Environment")
     TObjectPtr<USkyLightComponent> FillLight;
+
+    UPROPERTY(VisibleAnywhere, Category = "Environment")
+    TObjectPtr<USkyAtmosphereComponent> SkyAtmosphere;
 
     UPROPERTY(VisibleAnywhere, Category = "Environment")
     TObjectPtr<UExponentialHeightFogComponent> WeatherFog;

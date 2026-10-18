@@ -5,15 +5,28 @@
 #include "Components/PostProcessComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkyLightComponent.h"
+#include "Components/SkyAtmosphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/StaticMesh.h"
 #include "FlightPawn.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+#include "ProceduralMeshComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 namespace
 {
+bool IsCoastalCourseDebugEnabled()
+{
+#if UE_BUILD_SHIPPING
+    return false;
+#else
+    return FParse::Param(FCommandLine::Get(),TEXT("AeroSimDebugCourse"));
+#endif
+}
+
 const TArray<FVector> RoutePoints = {
     FVector(0.0F, 0.0F, 100.0F),
     FVector(1800.0F, 0.0F, 400.0F),
@@ -129,6 +142,11 @@ APacificCoastGraybox::APacificCoastGraybox()
     FillLight->SetIntensity(0.7F);
     FillLight->SetMobility(EComponentMobility::Movable);
 
+    // The prototype owns its sky as well as its floor; do not inherit template Landscape geometry.
+    SkyAtmosphere = CreateDefaultSubobject<USkyAtmosphereComponent>(TEXT("SkyAtmosphere"));
+    SkyAtmosphere->SetupAttachment(Root);
+    KeyLight->bAtmosphereSunLight = true;
+
     WeatherFog = CreateDefaultSubobject<UExponentialHeightFogComponent>(TEXT("WeatherFog"));
     WeatherFog->SetupAttachment(Root);
     WeatherFog->SetFogDensity(0.002F);
@@ -147,36 +165,19 @@ APacificCoastGraybox::APacificCoastGraybox()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
     UStaticMesh* CubeMesh = CubeFinder.Object;
 
-    for (int32 XIndex = 0; XIndex < 10; ++XIndex)
-    {
-        for (int32 YIndex = 0; YIndex < 10; ++YIndex)
-        {
-            const float X = -45000.0F + static_cast<float>(XIndex) * GroundTileSizeCm;
-            const float Y = -45000.0F + static_cast<float>(YIndex) * GroundTileSizeCm;
-            const bool bOcean = X >= 10000.0F;
-            const float TopZ = bOcean ? -100.0F : 0.0F;
-            const FLinearColor Color = bOcean
-                ? (((XIndex + YIndex) % 2 == 0) ? OceanA : OceanB)
-                : (((XIndex + YIndex) % 2 == 0) ? LandA : LandB);
-            AddBox(
-                FName(*FString::Printf(TEXT("GroundTile_%02d_%02d"), XIndex, YIndex)),
-                FVector(X, Y, TopZ - GroundThicknessCm * 0.5F),
-                FVector(GroundTileSizeCm, GroundTileSizeCm, GroundThicknessCm),
-                CubeMesh,
-                Color);
-        }
-    }
+    BuildCoastalLandscape();
 
-    AddBox(TEXT("Coastline"), FVector(10000.0F, 0.0F, 30.0F), FVector(1200.0F, 100000.0F, 60.0F), CubeMesh, CoastColor);
-    AddBox(TEXT("TakeoffPad"), FVector(0.0F, 0.0F, 20.0F), FVector(3200.0F, 3200.0F, 40.0F), CubeMesh, PadColor);
-    AddBox(TEXT("StartStripe"), FVector(900.0F, 0.0F, 43.0F), FVector(1000.0F, 180.0F, 6.0F), CubeMesh, RouteColor);
-    AddLabel(TEXT("StartLabel"), TEXT("ZONE 01 / TAKEOFF PAD"), FVector(0.0F, 0.0F, 80.0F), FRotator(0.0F, 0.0F, 0.0F), FColor(232, 196, 84), 42.0F);
+    BuildCoastalLaunchSite(CubeMesh);
 
-    // Core acceptance slice is 500 m along X and 300 m across Y. Low boundary bars remain readable from follow cameras.
-    AddBox(TEXT("CoreNorth"), FVector(0.0F, 15000.0F, 30.0F), FVector(50000.0F, 60.0F, 60.0F), CubeMesh, ReferenceColor);
-    AddBox(TEXT("CoreSouth"), FVector(0.0F, -15000.0F, 30.0F), FVector(50000.0F, 60.0F, 60.0F), CubeMesh, ReferenceColor);
-    AddBox(TEXT("CoreWest"), FVector(-25000.0F, 0.0F, 30.0F), FVector(60.0F, 30000.0F, 60.0F), CubeMesh, ReferenceColor);
-    AddBox(TEXT("CoreEast"), FVector(25000.0F, 0.0F, 30.0F), FVector(60.0F, 30000.0F, 60.0F), CubeMesh, ReferenceColor);
+    // Core bounds are a debug guide, not physical scenery suspended across the cliff.
+    if (UStaticMeshComponent* Guide = AddBox(TEXT("CoreNorth"), FVector(0.0F, 15000.0F, 30.0F), FVector(50000.0F, 60.0F, 60.0F), CubeMesh, ReferenceColor))
+    { Guide->SetHiddenInGame(true); Guide->SetCollisionEnabled(ECollisionEnabled::NoCollision); }
+    if (UStaticMeshComponent* Guide = AddBox(TEXT("CoreSouth"), FVector(0.0F, -15000.0F, 30.0F), FVector(50000.0F, 60.0F, 60.0F), CubeMesh, ReferenceColor))
+    { Guide->SetHiddenInGame(true); Guide->SetCollisionEnabled(ECollisionEnabled::NoCollision); }
+    if (UStaticMeshComponent* Guide = AddBox(TEXT("CoreWest"), FVector(-25000.0F, 0.0F, 30.0F), FVector(60.0F, 30000.0F, 60.0F), CubeMesh, ReferenceColor))
+    { Guide->SetHiddenInGame(true); Guide->SetCollisionEnabled(ECollisionEnabled::NoCollision); }
+    if (UStaticMeshComponent* Guide = AddBox(TEXT("CoreEast"), FVector(25000.0F, 0.0F, 30.0F), FVector(60.0F, 30000.0F, 60.0F), CubeMesh, ReferenceColor))
+    { Guide->SetHiddenInGame(true); Guide->SetCollisionEnabled(ECollisionEnabled::NoCollision); }
 
     // Camera-readable rain volume: deterministic slanted streaks across the core, hidden outside Rain.
     for (int32 Index = 0; Index < 120; ++Index)
@@ -197,17 +198,13 @@ APacificCoastGraybox::APacificCoastGraybox()
         RainStreaks.Add(Streak);
     }
 
-    // Thin glossy overlays make pad and shoreline read as wet without introducing binary materials.
-    UStaticMeshComponent* PadWet = AddBox(TEXT("RainWetPad"), FVector(0.0F, 0.0F, 49.0F), FVector(3000.0F, 3000.0F, 5.0F), CubeMesh, FLinearColor(0.025F, 0.06F, 0.085F));
-    PadWet->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-    PadWet->SetVisibility(false);
-    WetHighlightPrimitives.Add(PadWet);
+    // Wet shoreline patches remain weather-controlled; no raised plastic overlay at the launch mat.
     for (int32 Index = 0; Index < 12; ++Index)
     {
         UStaticMeshComponent* WetPatch = AddBox(
             FName(*FString::Printf(TEXT("RainWetCoast_%02d"), Index)),
-            FVector(8400.0F + static_cast<float>((Index * 271) % 2400), -13750.0F + Index * 2450.0F, 58.0F),
-            FVector(1350.0F + static_cast<float>((Index * 97) % 650), 1100.0F, 7.0F),
+            FVector(GetCliffEdgeX(-13750.0F + Index * 2450.0F) - 2500.0F, -13750.0F + Index * 2450.0F, 2.0F),
+            FVector(1350.0F + static_cast<float>((Index * 97) % 650), 1100.0F, 2.0F),
             CubeMesh,
             FLinearColor(0.018F, 0.055F, 0.075F),
             FRotator(0.0F, Index * 17.0F, 0.0F));
@@ -217,61 +214,92 @@ APacificCoastGraybox::APacificCoastGraybox()
         WetHighlightPrimitives.Add(WetPatch);
     }
 
-    // Hero 1: layered pad surface, expansion seams, perimeter curb and inset safety marks.
-    for (int32 Index = -3; Index <= 3; ++Index)
-    {
-        AddBox(FName(*FString::Printf(TEXT("PadSeam_%02d"), Index + 4)), FVector(Index * 420.0F, 0.0F, 45.0F), FVector(14.0F, 3000.0F, 8.0F), CubeMesh, RockColor);
-    }
-    AddBox(TEXT("PadNorthCurb"), FVector(0.0F, 1570.0F, 75.0F), FVector(3400.0F, 140.0F, 110.0F), CubeMesh, PadAccentColor);
-    AddBox(TEXT("PadSouthCurb"), FVector(0.0F, -1570.0F, 75.0F), FVector(3400.0F, 140.0F, 110.0F), CubeMesh, PadAccentColor);
+    // Hero 1: grounded small survey launch site, built above.
     ++GeneratedHeroZoneCount;
 
-    // Hero 2: interlocked dry/wet rock bands and a bright waterline make the tidal edge legible.
-    for (int32 Index = 0; Index < 18; ++Index)
-    {
-        const float Y = -13500.0F + static_cast<float>(Index) * 1550.0F;
-        const float X = 9000.0F + static_cast<float>((Index * 977) % 1500);
-        const float Scale = 420.0F + static_cast<float>((Index * 131) % 360);
-        AddBox(FName(*FString::Printf(TEXT("DryRock_%02d"), Index)), FVector(X, Y, 130.0F), FVector(Scale * 1.4F, Scale, 360.0F), CubeMesh, RockColor, FRotator(0.0F, Index * 23.0F, Index % 2 == 0 ? 12.0F : -8.0F));
-        AddBox(FName(*FString::Printf(TEXT("WetRock_%02d"), Index)), FVector(X + 900.0F, Y + 260.0F, -5.0F), FVector(Scale, Scale * 0.8F, 170.0F), CubeMesh, WetRockColor, FRotator(0.0F, Index * 31.0F, 0.0F));
-    }
-    AddBox(TEXT("TidalFoam"), FVector(10950.0F, 0.0F, -5.0F), FVector(180.0F, 30000.0F, 28.0F), CubeMesh, ReferenceColor);
-    AddLabel(TEXT("WetEdgeLabel"), TEXT("ZONE 02 / TIDAL ROCKS"), FVector(8500.0F, -8500.0F, 650.0F), FRotator(0.0F, 90.0F, 0.0F), FColor(190, 215, 225), 90.0F);
+    // Hero 2: supported cliff/talus geometry is owned by BuildCoastalTerrain.
+    AddLabel(TEXT("WetEdgeLabel"), TEXT("ZONE 02 / CLIFF AND SEA"), FVector(12500.0F, -8500.0F, 650.0F), FRotator(0.0F, 90.0F, 0.0F), FColor(190, 215, 225), 90.0F);
     ++GeneratedHeroZoneCount;
 
-    // Hero 3: boardwalk deck, handrails and layered forest edge with grounded understory.
-    AddBox(TEXT("BoardwalkDeck"), FVector(-9000.0F, 8500.0F, 170.0F), FVector(11500.0F, 900.0F, 130.0F), CubeMesh, TimberColor, FRotator(0.0F, 18.0F, 0.0F));
-    for (int32 Index = 0; Index < 12; ++Index)
+    // A short human-scale crossing has a purpose: the seasonal drainage swale.
+    const float WalkYaw = 18.0F;
+    const FVector Along(FMath::Cos(FMath::DegreesToRadians(WalkYaw)),FMath::Sin(FMath::DegreesToRadians(WalkYaw)),0);
+    const FVector Across(-Along.Y,Along.X,0);
+    const FVector WalkCenter(-9000,8500,0);
+    const float DeckTop = 32.0F;
+    AddBox(TEXT("BoardwalkDeck"),WalkCenter+FVector(0,0,DeckTop-8),FVector(2600,220,16),CubeMesh,TimberColor,FRotator(0,WalkYaw,0));
+    // Individual planks, two continuous bearers and supports reaching below the real ground.
+    for(int32 Index=0;Index<52;++Index)
     {
-        const float X = -14300.0F + static_cast<float>(Index) * 950.0F;
-        const float Y = 6750.0F + (X + 14300.0F) * 0.325F;
-        AddBox(FName(*FString::Printf(TEXT("WalkPostL_%02d"), Index)), FVector(X, Y - 520.0F, 320.0F), FVector(90.0F, 90.0F, 620.0F), CubeMesh, TimberColor);
-        AddBox(FName(*FString::Printf(TEXT("WalkPostR_%02d"), Index)), FVector(X, Y + 520.0F, 320.0F), FVector(90.0F, 90.0F, 620.0F), CubeMesh, TimberColor);
+        const FVector P=WalkCenter+Along*(-1275+Index*50);
+        AddBox(FName(*FString::Printf(TEXT("WalkPlank_%02d"),Index)),P+FVector(0,0,DeckTop+1),FVector(47,218,3),CubeMesh,
+            TimberColor*(.88F+(Index%5)*.045F),FRotator(0,WalkYaw,0));
     }
-    AddBox(TEXT("WalkRailL"), FVector(-9000.0F, 7970.0F, 590.0F), FVector(11500.0F, 80.0F, 90.0F), CubeMesh, TimberColor, FRotator(0.0F, 18.0F, 0.0F));
-    AddBox(TEXT("WalkRailR"), FVector(-9000.0F, 9030.0F, 590.0F), FVector(11500.0F, 80.0F, 90.0F), CubeMesh, TimberColor, FRotator(0.0F, 18.0F, 0.0F));
-    for (int32 Index = 0; Index < 16; ++Index)
+    for(int32 Side=-1;Side<=1;Side+=2)
     {
-        const float X = -15500.0F + static_cast<float>((Index * 811) % 9000);
-        const float Y = 11200.0F + static_cast<float>((Index * 577) % 3500);
-        const float Height = 1100.0F + static_cast<float>((Index * 173) % 900);
-        AddBox(FName(*FString::Printf(TEXT("ForestTrunk_%02d"), Index)), FVector(X, Y, Height * 0.5F), FVector(180.0F, 180.0F, Height), CubeMesh, TimberColor);
-        AddBox(FName(*FString::Printf(TEXT("ForestCanopy_%02d"), Index)), FVector(X, Y, Height + 420.0F), FVector(900.0F, 900.0F, 850.0F), CubeMesh, ForestColor, FRotator(0.0F, Index * 19.0F, 0.0F));
-        AddBox(FName(*FString::Printf(TEXT("Fern_%02d"), Index)), FVector(X + 350.0F, Y - 420.0F, 120.0F), FVector(600.0F, 600.0F, 240.0F), CubeMesh, FernColor);
+        AddBox(FName(*FString::Printf(TEXT("WalkBearer_%d"),Side)),WalkCenter+Across*(Side*75)+FVector(0,0,12),FVector(2600,15,25),CubeMesh,TimberColor,FRotator(0,WalkYaw,0));
+        AddBox(FName(*FString::Printf(TEXT("WalkRail_%d"),Side)),WalkCenter+Across*(Side*104)+FVector(0,0,DeckTop+101),FVector(2600,7,8),CubeMesh,TimberColor,FRotator(0,WalkYaw,0));
+        for(int32 Index=0;Index<8;++Index)
+        {
+            const FVector P=WalkCenter+Along*(-1250+Index*(2500.0F/7))+Across*(Side*104);
+            const float Ground=GetCoastalLandHeight(P.X,P.Y);
+            const float Bottom=Ground-60,Top=DeckTop+105;
+            AddBox(FName(*FString::Printf(TEXT("WalkPost_%d_%d"),Side,Index)),FVector(P.X,P.Y,(Bottom+Top)*.5F),FVector(10,10,Top-Bottom),CubeMesh,TimberColor,FRotator(0,WalkYaw,0));
+        }
     }
-    AddLabel(TEXT("BoardwalkLabel"), TEXT("ZONE 03 / FOREST WALK"), FVector(-9500.0F, 10500.0F, 1250.0F), FRotator(0.0F, 18.0F, 0.0F), FColor(224, 216, 188), 78.0F);
+    // Sloped timber approaches meet the plank surface and the at-grade trail without a step.
+    const float RampRun=220, RampDrop=33.5F;
+    const float RampAngle=FMath::RadiansToDegrees(FMath::Atan2(RampDrop,RampRun));
+    for(int32 Side=-1;Side<=1;Side+=2)
+    {
+        const FVector RampCenter=WalkCenter+Along*(Side*1410);
+        AddBox(FName(*FString::Printf(TEXT("WalkRamp_%d"),Side)),RampCenter+FVector(0,0,17.75F-3*FMath::Cos(FMath::DegreesToRadians(RampAngle))),
+            FVector(FMath::Sqrt(RampRun*RampRun+RampDrop*RampDrop),220,6),CubeMesh,TimberColor,
+            FRotator(-Side*RampAngle,WalkYaw,0));
+    }
+    // One terrain-following trail strip: scanned surface detail, irregular shoulders and no box sidewalls.
+    UProceduralMeshComponent* Trail=CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("CoastalForestTrail"));
+    Trail->SetupAttachment(Root);Trail->SetCollisionProfileName(TEXT("NoCollision"));Trail->SetCastShadow(false);
+    TArray<FVector> TrailVertices,TrailNormals;TArray<FVector2D> TrailUV;TArray<FLinearColor> TrailColors;TArray<int32> TrailIndices;
+    constexpr int32 TrailRows=121,TrailColumns=7;
+    const float Lateral[TrailColumns]={-1,-.8F,-.45F,0,.45F,.8F,1};
+    for(int32 Side=-1;Side<=1;Side+=2)
+    {
+        const int32 Base=TrailVertices.Num();
+        for(int32 Row=0;Row<TrailRows;++Row)
+        {
+            const float Distance=1520+Row*55;
+            const float Bend=FMath::Square(FMath::Max(0.0F,Distance-2200)/6000.0F)*1600;
+            const FVector Center=WalkCenter+Along*(Side*Distance)+Across*Bend;
+            const float EndFade=FMath::Clamp((8120-Distance)/1200.0F,0.0F,1.0F);
+            const float Width=(110+15*FMath::Sin(Distance/380.0F)+8*FMath::Sin(Distance/137.0F))*FMath::Max(.02F,EndFade);
+            for(int32 Column=0;Column<TrailColumns;++Column)
+            {
+                FVector P=Center+Across*(Lateral[Column]*Width);
+                const float Edge=FMath::Abs(Lateral[Column]);
+                P.Z=GetCoastalLandHeight(P.X,P.Y)+FMath::Lerp(.8F,-.2F,FMath::Square(Edge));
+                const float Cover=GetCoastalVegetationCover(P.X,P.Y);
+                const FLinearColor Ground=FMath::Lerp(FLinearColor(1.08F,.86F,.55F),FLinearColor(.25F,.48F,.31F),Cover);
+                const float Dirt=(1-FMath::SmoothStep(.35F,1.0F,Edge))*EndFade;
+                FLinearColor TrailColor=Ground;TrailColor.A=Dirt;TrailColors.Add(TrailColor);
+                TrailVertices.Add(P);TrailUV.Add(FVector2D(P.X/4000.0F,P.Y/4000.0F));
+                const float DX=(GetCoastalLandHeight(P.X+10,P.Y)-GetCoastalLandHeight(P.X-10,P.Y))/20;
+                const float DY=(GetCoastalLandHeight(P.X,P.Y+10)-GetCoastalLandHeight(P.X,P.Y-10))/20;
+                TrailNormals.Add(FVector(-DX,-DY,1).GetSafeNormal());
+            }
+        }
+        for(int32 Row=0;Row<TrailRows-1;++Row)
+            for(int32 Column=0;Column<TrailColumns-1;++Column)
+            {
+                const int32 A=Base+Row*TrailColumns+Column,B=A+1,C=A+TrailColumns,D=C+1;
+                if(Side>0)TrailIndices.Append({A,B,C,B,D,C});else TrailIndices.Append({A,C,B,B,C,D});
+            }
+    }
+    Trail->CreateMeshSection_LinearColor(0,TrailVertices,TrailIndices,TrailNormals,TrailUV,TrailColors,TArray<FProcMeshTangent>(),false);
+    const UMeshComponent* GroundMesh=Cast<UMeshComponent>(GetDefaultSubobjectByName(TEXT("CoastalPlateau")));
+    if(GroundMesh)Trail->SetMaterial(0,CoastalGravelMaterial ? CoastalGravelMaterial.Get() : GroundMesh->GetMaterial(0));
+    CoastalColorParts.Add(Trail);CoastalPartColors.Add(FLinearColor::White);++GeneratedPrimitiveCount;
     ++GeneratedHeroZoneCount;
-
-    for (int32 Index = 0; Index < 8; ++Index)
-    {
-        const float Y = -42000.0F + static_cast<float>(Index) * 12000.0F;
-        AddBox(
-            FName(*FString::Printf(TEXT("Forest_%02d"), Index + 1)),
-            FVector(-43000.0F, Y, 450.0F),
-            FVector(1200.0F, 1200.0F, 900.0F),
-            CubeMesh,
-            ForestColor);
-    }
 
     for (int32 Index = 0; Index < 4; ++Index)
     {
@@ -347,6 +375,7 @@ void APacificCoastGraybox::BeginPlay()
         Material->SetVectorParameterValue(TEXT("Color"), PrimitiveColors[Index]);
         Component->SetMaterial(0, Material);
     }
+    ApplyCoastalMaterials();
     ApplyEnvironmentState(AppliedEnvironmentState);
 }
 
@@ -443,9 +472,20 @@ UStaticMeshComponent* APacificCoastGraybox::AddBox(
     Component->SetRelativeRotation(Rotation);
     Component->SetRelativeScale3D(Size / 100.0F);
     Component->SetStaticMesh(CubeMesh);
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> ColorMaterial(TEXT("/Engine/EngineDebugMaterials/M_SimpleOpaque.M_SimpleOpaque"));
+    Component->SetMaterial(0, ColorMaterial.Object);
     Component->SetCollisionProfileName(TEXT("BlockAll"));
     Component->SetCastShadow(true);
     Component->SetCastContactShadow(true);
+    const FString PartName=Name.ToString();
+    if(PartName.StartsWith(TEXT("Gate_"))||PartName.StartsWith(TEXT("ScaleRef_"))||PartName.StartsWith(TEXT("Route_")))
+    {
+        const bool bDebug=IsCoastalCourseDebugEnabled();
+        Component->SetHiddenInGame(!bDebug);Component->SetVisibility(bDebug);
+        // The semantic route owns progression; diagnostics never create invisible obstacles.
+        Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        Component->ComponentTags.Add(TEXT("CoastalCourseDiagnostic"));
+    }
     ColoredPrimitives.Add(Component);
     PrimitiveColors.Add(Color);
     ++GeneratedPrimitiveCount;
@@ -468,5 +508,8 @@ void APacificCoastGraybox::AddLabel(
     Label->SetTextRenderColor(Color);
     Label->SetHorizontalAlignment(EHTA_Center);
     Label->SetWorldSize(WorldSize);
-    Label->SetCastShadow(true);
+    const bool bDebug=IsCoastalCourseDebugEnabled();
+    Label->SetHiddenInGame(!bDebug);Label->SetVisibility(bDebug);Label->SetCastShadow(false);
+    Label->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    Label->ComponentTags.Add(TEXT("CoastalCourseDiagnostic"));
 }

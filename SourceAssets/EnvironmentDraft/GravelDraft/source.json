@@ -1,0 +1,69 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "IMPORTED_DRAFT_PENDING_VISUAL_REVIEW",
+  "acquired_utc": "2026-10-17T21:56:52.600165+00:00",
+  "asset_id": "sandy_gravel_02",
+  "asset_page": "https://polyhaven.com/a/sandy_gravel_02",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Dario Barresi": "All"
+  },
+  "physical_dimensions_mm": [
+    2529.9999713897705,
+    2529.9999713897705
+  ],
+  "physical_width_cm": 252.99999713897705,
+  "physical_scale_source": "https://api.polyhaven.com/info/sandy_gravel_02",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json",
+  "millimeters_per_texel_at_2k": 1.2353515485301614,
+  "provider_info_sha256": "f9fea07e9adf1627768c889fe9f789ad7482ec4877971b430092b9f1e99d55a1",
+  "provider_files_sha256": "83ef4d27cea01406d7c38c8802e64a68fe10804935e12deefffb62b9876c10aa",
+  "intended_use": "Candidate fine sandy gravel detail for draft launch work surface and walking trail, tiled at measured 2.53m width.",
+  "limits": "Published sandy-gravel PBR texture, verified publisher hashes and physical scale. Capture technique, site identity and engineering compaction are not independently verified. Fixed sandbox import completed; no formal promotion or user visual acceptance.",
+  "proposed_engine_assets": [
+    "T_CoastGravel_BaseColor",
+    "T_CoastGravel_Normal",
+    "T_CoastGravel_Roughness",
+    "M_CoastGravelDraft"
+  ],
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/GravelDraft/basecolor.jpg",
+      "sha256": "db0d563089e4a4e2f6da0172297168718c9bd4413ff7912f0180bfda33b8c2b3",
+      "bytes": 4097984,
+      "publisher_md5": "0ae7373189752d85642f589c12093ec2",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/sandy_gravel_02/sandy_gravel_02_diff_2k.jpg",
+      "asset": "https://polyhaven.com/a/sandy_gravel_02",
+      "license": "CC0-1.0",
+      "role": "sRGB base color",
+      "source_resolution": "2k"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/GravelDraft/normal.jpg",
+      "sha256": "1216bbfdfe7752bb48ac0574cb936853dc5ffa791f226dbd7fd9ebb1343c5f3d",
+      "bytes": 5311442,
+      "publisher_md5": "7dfcf9e2181b903e00260749ad283dd1",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/sandy_gravel_02/sandy_gravel_02_nor_dx_2k.jpg",
+      "asset": "https://polyhaven.com/a/sandy_gravel_02",
+      "license": "CC0-1.0",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/GravelDraft/roughness.jpg",
+      "sha256": "e34b6cf6f59bd17293eca5b629d2a8af8d544587c61d5ec5002e25d6c72de851",
+      "bytes": 1732319,
+      "publisher_md5": "753a7d079971702788c0b2501de65b1a",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/sandy_gravel_02/sandy_gravel_02_rough_2k.jpg",
+      "asset": "https://polyhaven.com/a/sandy_gravel_02",
+      "license": "CC0-1.0",
+      "role": "linear roughness",
+      "source_resolution": "2k"
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "license_source": "https://polyhaven.com/license",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/basecolor.jpg",
+      "sha256": "9b042fe0618ffbc3650592456d7d8d265ba9a1cb5ce802f5f1d86b7ee79508a1",
+      "bytes": 3232826,
+      "publisher_md5": "68f9c94575ff3c3512be9b010eb03f0e",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rocky_terrain_02/rocky_terrain_02_diff_2k.jpg",
+      "asset": "https://polyhaven.com/a/rocky_terrain_02",
+      "license": "CC0-1.0",
+      "role": "sRGB base color"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/normal.jpg",
+      "sha256": "6a27e05ee713ef1d76485c11f27c1f861abab063bc1d4ba6719c85545bf886d9",
+      "bytes": 4146793,
+      "publisher_md5": "b0c5657f30704fb939ea49451dc2efa2",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rocky_terrain_02/rocky_terrain_02_nor_dx_2k.jpg",
+      "asset": "https://polyhaven.com/a/rocky_terrain_02",
+      "license": "CC0-1.0",
+      "role": "DirectX normal, linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/roughness.jpg",
+      "sha256": "89f3c7b9e467160a821cbac32a1fdfd75f13cb87c9deeb22099d16677a711126",
+      "bytes": 1589303,
+      "publisher_md5": "eb3ca6990da229305918c08980ceb66f",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rocky_terrain_02/rocky_terrain_02_rough_2k.jpg",
+      "asset": "https://polyhaven.com/a/rocky_terrain_02",
+      "license": "CC0-1.0",
+      "role": "linear roughness"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/basecolor.jpg",
+      "sha256": "bc6f92d72eb6383ecc3a1094ed9f5b37efb36ccf83cf29699bb5990e6775afee",
+      "bytes": 3387348,
+      "publisher_md5": "6d129836144e271b30071281241e237d",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/cliff_side/cliff_side_diff_2k.jpg",
+      "asset": "https://polyhaven.com/a/cliff_side",
+      "license": "CC0-1.0",
+      "role": "sRGB base color"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/normal.jpg",
+      "sha256": "662c3a48018c4e20ca0dc4cb9ba881955d502ae789f9ae9e26d090df199fa058",
+      "bytes": 3594268,
+      "publisher_md5": "7063b04a45266597b49033bf80ca1f14",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/cliff_side/cliff_side_nor_dx_2k.jpg",
+      "asset": "https://polyhaven.com/a/cliff_side",
+      "license": "CC0-1.0",
+      "role": "DirectX normal, linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/roughness.jpg",
+      "sha256": "7fd4f6d289b1b44c812533eaea7802e640dda55070b9746025a9d33117a1bd1f",
+      "bytes": 1765122,
+      "publisher_md5": "44abb195b6c4c7b6da902e97e5bbbef2",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/cliff_side/cliff_side_rough_2k.jpg",
+      "asset": "https://polyhaven.com/a/cliff_side",
+      "license": "CC0-1.0",
+      "role": "linear roughness"
+    }
+  ],
+  "physical_width_cm": {
+    "Ground": 9000,
+    "Rock": 180
+  }
+}

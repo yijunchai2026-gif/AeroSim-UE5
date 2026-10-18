@@ -2,6 +2,7 @@
 
 #include "AeroSimRuntimeContract.h"
 #include "AeroSimGameMode.h"
+#include "AeroSimPlayerController.h"
 #include "Camera/CameraComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -246,15 +247,15 @@ AFlightPawn::AFlightPawn()
     }
 
     const FVector SupportLocations[] = {
-        FVector(7.0F, -7.5F, -4.0F), FVector(7.0F, 7.5F, -4.0F),
-        FVector(-7.0F, -7.5F, -4.0F), FVector(-7.0F, 7.5F, -4.0F)
+        FVector(7.0F, -7.5F, -5.7F), FVector(7.0F, 7.5F, -5.7F),
+        FVector(-7.0F, -7.5F, -5.7F), FVector(-7.0F, 7.5F, -5.7F)
     };
     const TCHAR* SupportNames[] = { TEXT("Support_FL"), TEXT("Support_FR"), TEXT("Support_RL"), TEXT("Support_RR") };
     for (int32 Index = 0; Index < 4; ++Index)
     {
         UStaticMeshComponent* Support = CreateDefaultSubobject<UStaticMeshComponent>(FName(SupportNames[Index]));
         const float SupportRoll = SupportLocations[Index].Y < 0.0F ? -8.0F : 8.0F;
-        ConfigurePart(Support, CylinderFinder.Object, SupportLocations[Index], FVector(0.014F, 0.014F, 0.036F), FRotator(0.0F, 0.0F, SupportRoll));
+        ConfigurePart(Support, CylinderFinder.Object, SupportLocations[Index], FVector(0.014F, 0.014F, 0.060F), FRotator(0.0F, 0.0F, SupportRoll));
         LandingSupports.Add(Support);
     }
 
@@ -319,7 +320,6 @@ AFlightPawn::AFlightPawn()
     InputSuite.MappingContext->MapKey(InputSuite.PitchAction, EKeys::W);
     InputSuite.MappingContext->MapKey(InputSuite.PitchAction, EKeys::S).Modifiers.Add(PitchDownNegate);
     InputSuite.MappingContext->MapKey(InputSuite.PitchAction, EKeys::Gamepad_RightY);
-    InputSuite.MappingContext->MapKey(InputSuite.PitchAction, EKeys::MouseY);
 
     UInputModifierNegate* RollLeftNegate = CreateDefaultSubobject<UInputModifierNegate>(TEXT("RollLeftNegate"));
     InputSuite.MappingContext->MapKey(InputSuite.RollAction, EKeys::D);
@@ -330,7 +330,6 @@ AFlightPawn::AFlightPawn()
     InputSuite.MappingContext->MapKey(InputSuite.YawAction, EKeys::E);
     InputSuite.MappingContext->MapKey(InputSuite.YawAction, EKeys::Q).Modifiers.Add(YawLeftNegate);
     InputSuite.MappingContext->MapKey(InputSuite.YawAction, EKeys::Gamepad_RightX);
-    InputSuite.MappingContext->MapKey(InputSuite.YawAction, EKeys::MouseX);
 
     UInputModifierNegate* ThrottleDownNegate = CreateDefaultSubobject<UInputModifierNegate>(TEXT("ThrottleDownNegate"));
     InputSuite.MappingContext->MapKey(InputSuite.ThrottleAction, EKeys::LeftShift);
@@ -341,6 +340,7 @@ AFlightPawn::AFlightPawn()
     InputSuite.MappingContext->MapKey(InputSuite.CameraAction, EKeys::C);
     InputSuite.MappingContext->MapKey(InputSuite.CameraAction, EKeys::Gamepad_FaceButton_Top);
     InputSuite.MappingContext->MapKey(InputSuite.PauseAction, EKeys::P);
+    InputSuite.MappingContext->MapKey(InputSuite.PauseAction, EKeys::Escape);
     InputSuite.MappingContext->MapKey(InputSuite.PauseAction, EKeys::Gamepad_Special_Right);
     InputSuite.MappingContext->MapKey(InputSuite.ResetAction, EKeys::R);
     InputSuite.MappingContext->MapKey(InputSuite.ResetAction, EKeys::Gamepad_FaceButton_Left);
@@ -478,7 +478,16 @@ void AFlightPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AFlightPawn::Tick(const float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    ApplyFov();
+    // Product pages own presentation; do not advance, record or overwrite their visual pose.
+    if (!IsProductFlightPage() || bReplayVisualActive)
+    {
+        NeutralizeInput();
+        if (bResumeRequested) SetSafePaused(true);
+        return;
+    }
     AdvanceResumeCountdown(DeltaSeconds);
+    if (FlightModel.Phase == EFlightPhase::Paused) return;
     FlightModel.Advance(ControlInput, DeltaSeconds);
     GimbalController.Advance(DeltaSeconds);
     if (GimbalCamera != nullptr)
@@ -564,23 +573,71 @@ void AFlightPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
     EnhancedInput->BindAction(InputSuite.PauseAction, ETriggerEvent::Started, this, &AFlightPawn::HandlePause);
     EnhancedInput->BindAction(InputSuite.ResetAction, ETriggerEvent::Started, this, &AFlightPawn::HandleReset);
     PlayerInputComponent->BindKey(EKeys::M, IE_Pressed, this, &AFlightPawn::HandleMissionAdvance); // debug compatibility only
-    PlayerInputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &AFlightPawn::HandleUiActivate);
-    PlayerInputComponent->BindKey(EKeys::SpaceBar, IE_Pressed, this, &AFlightPawn::HandleUiActivate);
-    PlayerInputComponent->BindKey(EKeys::Gamepad_FaceButton_Bottom, IE_Pressed, this, &AFlightPawn::HandleUiActivate);
-    PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &AFlightPawn::HandleSettingsToggle);
-    PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &AFlightPawn::HandleSettingsToggle);
+    PlayerInputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &AFlightPawn::HandleUiActivate).bExecuteWhenPaused = true;
+    PlayerInputComponent->BindKey(EKeys::SpaceBar, IE_Pressed, this, &AFlightPawn::HandleUiActivate).bExecuteWhenPaused = true;
+    PlayerInputComponent->BindKey(EKeys::Gamepad_FaceButton_Bottom, IE_Pressed, this, &AFlightPawn::HandleUiActivate).bExecuteWhenPaused = true;
+    PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &AFlightPawn::HandleSettingsToggle).bExecuteWhenPaused = true;
     PlayerInputComponent->BindKey(EKeys::H, IE_Pressed, this, &AFlightPawn::HandleReturnToHome);
-    PlayerInputComponent->BindKey(EKeys::Gamepad_DPad_Down, IE_Pressed, this, &AFlightPawn::HandleReturnToHome);
     PlayerInputComponent->BindKey(EKeys::T, IE_Pressed, this, &AFlightPawn::HandleWeatherCycle);
     PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &AFlightPawn::HandleUiUp);
     PlayerInputComponent->BindKey(EKeys::Down, IE_Pressed, this, &AFlightPawn::HandleUiDown);
     PlayerInputComponent->BindKey(EKeys::Left, IE_Pressed, this, &AFlightPawn::HandleUiLeft);
     PlayerInputComponent->BindKey(EKeys::Right, IE_Pressed, this, &AFlightPawn::HandleUiRight);
+    // Widgets consume menu navigation first; only an active flight may interpret D-pad down as RTH.
+    PlayerInputComponent->BindKey(EKeys::Gamepad_DPad_Down, IE_Pressed, this, &AFlightPawn::HandleReturnToHome);
+}
+
+bool AFlightPawn::IsProductFlightPage() const
+{
+    const AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr;
+    return GameMode == nullptr || GameMode->GetProductPage() == EProductPage::Flight;
+}
+
+bool AFlightPawn::IsGameplayInputAllowed() const
+{
+    return IsProductFlightPage() && !bReplayVisualActive && FlightModel.Phase != EFlightPhase::Paused && !bResumeRequested;
+}
+
+bool AFlightPawn::IsPhysicalInputNeutral() const
+{
+    if (const AAeroSimPlayerController* PlayerController = Cast<AAeroSimPlayerController>(GetController()))
+    {
+        return PlayerController->IsPhysicalInputNeutral();
+    }
+    if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+    {
+        const FKey Keys[] = { EKeys::W, EKeys::S, EKeys::A, EKeys::D, EKeys::Q, EKeys::E,
+            EKeys::LeftShift, EKeys::RightShift, EKeys::LeftControl, EKeys::RightControl };
+        for (const FKey& Key : Keys) if (PlayerController->IsInputKeyDown(Key)) return false;
+        const FKey Axes[] = { EKeys::Gamepad_LeftX, EKeys::Gamepad_LeftY, EKeys::Gamepad_RightX,
+            EKeys::Gamepad_RightY, EKeys::Gamepad_LeftTriggerAxis, EKeys::Gamepad_RightTriggerAxis };
+        for (const FKey& Key : Axes)
+        {
+            const float Value = PlayerController->GetInputAnalogKeyState(Key);
+            if (!FMath::IsFinite(Value) || FMath::Abs(Value) > 0.1F) return false;
+        }
+        // A product controller without the independent Slate observer cannot certify recentering.
+        if (GetWorld() != nullptr && GetWorld()->GetAuthGameMode<AAeroSimGameMode>() != nullptr) return false;
+        return true;
+    }
+    // Preserve unpossessed, no-GameMode pure Automation injection compatibility.
+    return GetWorld() == nullptr || GetWorld()->GetAuthGameMode<AAeroSimGameMode>() == nullptr;
+}
+
+void AFlightPawn::HandlePhysicalInputActivity()
+{
+    if (bResumeRequested)
+    {
+        // Events restart the interval even if press and release both occur between Pawn ticks.
+        ResumeCountdownSeconds = 3.0F;
+        FlightModel.Pause();
+        NeutralizeInput();
+    }
 }
 
 void AFlightPawn::SetSemanticInput(const FFlightControlInput& NewInput)
 {
-    if (FlightModel.Phase == EFlightPhase::Paused || IsResumeCountdownActive())
+    if (!IsGameplayInputAllowed())
     {
         NeutralizeInput();
         return;
@@ -601,6 +658,7 @@ void AFlightPawn::SetSafePaused(const bool bPaused)
     APlayerController* PlayerController = Cast<APlayerController>(GetController());
     if (bPaused)
     {
+        bResumeRequested = false;
         ResumeCountdownSeconds = 0.0F;
         FlightModel.Pause();
         if (PlayerController != nullptr)
@@ -614,8 +672,9 @@ void AFlightPawn::SetSafePaused(const bool bPaused)
         {
             PlayerController->SetPause(false);
         }
-        if (FlightModel.Phase == EFlightPhase::Paused)
+        if (FlightModel.Phase == EFlightPhase::Paused && IsProductFlightPage() && !bReplayVisualActive)
         {
+            bResumeRequested = true;
             ResumeCountdownSeconds = 3.0F;
         }
     }
@@ -623,20 +682,28 @@ void AFlightPawn::SetSafePaused(const bool bPaused)
 
 void AFlightPawn::AdvanceResumeCountdown(const float DeltaSeconds)
 {
-    if (ResumeCountdownSeconds <= 0.0F)
+    if (!bResumeRequested)
     {
         return;
     }
     NeutralizeInput();
+    if (!IsPhysicalInputNeutral())
+    {
+        ResumeCountdownSeconds = 3.0F;
+        return;
+    }
+    if (!FMath::IsFinite(DeltaSeconds) || DeltaSeconds <= 0.0F) return;
     ResumeCountdownSeconds = FMath::Max(0.0F, ResumeCountdownSeconds - DeltaSeconds);
     if (ResumeCountdownSeconds <= 0.0F)
     {
+        bResumeRequested = false;
         FlightModel.Resume();
     }
 }
 
 void AFlightPawn::CycleCamera()
 {
+    if (!IsGameplayInputAllowed()) return;
     switch (CameraMode)
     {
     case EFlightCameraMode::Chase: CameraMode = EFlightCameraMode::FPV; break;
@@ -646,6 +713,32 @@ void AFlightPawn::CycleCamera()
     default: CameraMode = EFlightCameraMode::Chase; break;
     }
     ApplyCameraMode();
+}
+
+void AFlightPawn::SetProductCameraMode(const EFlightCameraMode Mode)
+{
+    if (static_cast<uint8>(Mode) > static_cast<uint8>(EFlightCameraMode::Gimbal)) return;
+    CameraMode = Mode;
+    ApplyCameraMode();
+}
+
+bool AFlightPawn::ApplyProductVerticalFov(const float VerticalDegrees)
+{
+    if (!FovTransaction.Preview(VerticalDegrees)) return false;
+    FovTransaction.Apply();
+    ApplyFov();
+    return true;
+}
+
+void AFlightPawn::ApplyReplaySample(const FFlightTraceSample& Sample)
+{
+    const AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr;
+    if ((GameMode != nullptr && GameMode->GetProductPage() != EProductPage::Replay)
+        || !FMath::IsFinite(Sample.TimeSeconds) || Sample.Position.ContainsNaN() || Sample.Rotation.ContainsNaN()) return;
+    bReplayVisualActive = true;
+    NeutralizeInput();
+    SetActorLocationAndRotation(InitialTransform.TransformPosition(Sample.Position),
+        InitialTransform.TransformRotation(Sample.Rotation.Quaternion()), false, nullptr, ETeleportType::TeleportPhysics);
 }
 
 void AFlightPawn::SetGimbalTarget(const float PitchDegrees, const float YawDegrees)
@@ -775,8 +868,22 @@ bool AFlightPawn::IsLodProxyVisible() const
     return LodProxy != nullptr && LodProxy->IsVisible();
 }
 
+bool AFlightPawn::InitializeGroundedSpawn(const FVector& SurfacePoint)
+{
+    if(FlightModel.Phase!=EFlightPhase::Grounded||!FlightModel.Position.IsNearlyZero()||SurfacePoint.ContainsNaN())return false;
+    double LowestSupport=0;
+    for(const UStaticMeshComponent* Support:LandingSupports)
+        if(Support&&Support->GetStaticMesh())LowestSupport=FMath::Min(LowestSupport,Support->CalcBounds(Support->GetRelativeTransform()).GetBox().Min.Z);
+    if(LowestSupport>=0)return false;
+    FTransform Pose=GetActorTransform();Pose.SetLocation(SurfacePoint+FVector(0,0,-LowestSupport+.3));Pose.SetRotation(FQuat::Identity);
+    InitialTransform=Pose;SetActorTransform(Pose,false,nullptr,ETeleportType::ResetPhysics);
+    FlightTrace.Reset();FlightTrace.Record(0,FlightModel.Position,FlightModel.Rotation);
+    return true;
+}
+
 void AFlightPawn::ConfigureReviewView(const FTransform& PawnTransform, const EFlightCameraMode Mode)
 {
+    bReplayVisualActive = false;
     InitialTransform = PawnTransform;
     FlightModel.Reset();
     CameraMode = Mode;
@@ -796,6 +903,8 @@ void AFlightPawn::ResetFlight()
 {
     NeutralizeInput();
     ResumeCountdownSeconds = 0.0F;
+    bResumeRequested = false;
+    bReplayVisualActive = false;
     FlightElapsedSeconds = 0.0F;
     TraceAccumulatorSeconds = 0.0F;
     FlightTrace.Reset();
@@ -832,7 +941,7 @@ FFlightHudData AFlightPawn::GetHudData() const
     Data.AltitudeMeters = FlightModel.Position.Z / AeroSimFlight::CentimetersPerMeter;
     Data.SpeedMetersPerSecond = FlightModel.Velocity.Size() / AeroSimFlight::CentimetersPerMeter;
     Data.Throttle = ControlInput.Throttle;
-    Data.bInputNeutral = ControlInput.IsNeutral();
+    Data.bInputNeutral = IsPhysicalInputNeutral();
     Data.AircraftName = AircraftDefinition.DisplayName;
     Data.AssetStatus = TEXT("BLOCKED_ASSET / GENERIC PROXY");
     Data.GimbalPitchDegrees = GimbalController.PitchDegrees;
@@ -911,7 +1020,7 @@ void AFlightPawn::HandlePause(const FInputActionValue& Value)
 
 void AFlightPawn::HandleReset(const FInputActionValue& Value)
 {
-    if (Value.Get<bool>())
+    if (Value.Get<bool>() && IsGameplayInputAllowed())
     {
         ResetFlight();
     }
@@ -927,6 +1036,7 @@ void AFlightPawn::HandleMissionAdvance()
 
 void AFlightPawn::HandleReturnToHome()
 {
+    if (!IsGameplayInputAllowed()) return;
     if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
     {
         GameMode->RequestReturnToHome();
@@ -937,52 +1047,43 @@ void AFlightPawn::HandleSettingsToggle()
 {
     if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
     {
-        GameMode->ToggleDisplaySettings();
+        GameMode->HandleProductBack();
     }
+    else SetSafePaused(FlightModel.Phase != EFlightPhase::Paused);
 }
 
 void AFlightPawn::HandleUiUp()
 {
-    if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
-    {
-        if (GameMode->IsDisplaySettingsOpen()) GameMode->NavigateDisplaySettings(-1); else HandleGimbalPitchUp();
-    }
+    HandleGimbalPitchUp(); // Menus are navigated exclusively by the product widget.
 }
 
 void AFlightPawn::HandleUiDown()
 {
-    if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
-    {
-        if (GameMode->IsDisplaySettingsOpen()) GameMode->NavigateDisplaySettings(1); else HandleGimbalPitchDown();
-    }
+    HandleGimbalPitchDown();
 }
 
 void AFlightPawn::HandleUiLeft()
 {
-    if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
-    {
-        if (GameMode->IsDisplaySettingsOpen()) GameMode->ChangeDisplaySetting(-1); else HandleGimbalYawLeft();
-    }
+    HandleGimbalYawLeft();
 }
 
 void AFlightPawn::HandleUiRight()
 {
-    if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
-    {
-        if (GameMode->IsDisplaySettingsOpen()) GameMode->ChangeDisplaySetting(1); else HandleGimbalYawRight();
-    }
+    HandleGimbalYawRight();
 }
 
 void AFlightPawn::HandleUiActivate()
 {
     if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
     {
-        if (GameMode->IsDisplaySettingsOpen()) GameMode->ActivateDisplaySetting(); else GameMode->AdvanceMission();
+        // Widget owns menu primary; Pawn fallback is only the explicit Flight resume action.
+        if (GameMode->GetProductPage() == EProductPage::Flight) GameMode->ActivatePrimaryAction();
     }
 }
 
 void AFlightPawn::HandleWeatherCycle()
 {
+    if (!IsGameplayInputAllowed()) return;
     if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
     {
         const EAeroSimWeather Current = GameMode->GetEnvironmentState().Weather;
@@ -995,21 +1096,25 @@ void AFlightPawn::HandleWeatherCycle()
 
 void AFlightPawn::HandleGimbalPitchUp()
 {
+    if (!IsGameplayInputAllowed() || CameraMode != EFlightCameraMode::Gimbal) return;
     GimbalController.AddTargetInput(5.0F, 0.0F);
 }
 
 void AFlightPawn::HandleGimbalPitchDown()
 {
+    if (!IsGameplayInputAllowed() || CameraMode != EFlightCameraMode::Gimbal) return;
     GimbalController.AddTargetInput(-5.0F, 0.0F);
 }
 
 void AFlightPawn::HandleGimbalYawLeft()
 {
+    if (!IsGameplayInputAllowed() || CameraMode != EFlightCameraMode::Gimbal) return;
     GimbalController.AddTargetInput(0.0F, -5.0F);
 }
 
 void AFlightPawn::HandleGimbalYawRight()
 {
+    if (!IsGameplayInputAllowed() || CameraMode != EFlightCameraMode::Gimbal) return;
     GimbalController.AddTargetInput(0.0F, 5.0F);
 }
 

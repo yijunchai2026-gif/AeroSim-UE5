@@ -4,8 +4,8 @@
 
 ## 1. 当前工作边界
 
-- Phase 3 已实现 Generic Golden Aircraft 与相机质量合同；当前事实见 `PHASE3.md` 与 `docs/PHASE3_VALIDATION.md`。正式 DJI 资产仍为 `BLOCKED_ASSET`，复杂空气动力学、Phase 4 任务内容、MCP 写权限、多人/XR 仍不在范围内。
-- 不创建提交，不 push，不合并，不改远端、分支保护或仓库可见性。
+- 当前 Runtime 为 `aerosim.runtime.phase7/v1`，具体安装引擎已核对为 UE 5.8.3；产品 Shell 后续批次状态见 `docs/PRODUCT_EXECUTION_STATUS.md` 和 `docs/PRODUCT_UX_VALIDATION.md`。正式具名资产仍为 `BLOCKED_ASSET`，不可用 Generic 代理替代正式内容完成声明。
+- 2026-10-16 用户后续执行指令已授权独立工程批次验证后 commit/push；从最新 main 创建 `aime/<timestamp>-<slug>`。不自动合并，不 force-push，不改远端、分支保护或仓库可见性。没有真实验证不得为赶提交伪写 PASS。
 - 没有 UE Editor/命令行工具时只能做静态审查；所有引擎编译、Cook、运行、截图和性能结果必须记为 `BLOCKED_NO_UE` 或 `NOT_RUN`，绝不能写成 PASS。
 
 ## 2. UE5 技术基线
@@ -105,4 +105,4 @@ Phase 0 冻结具体 UE 5.x 版本、工具链和插件清单。在冻结前只�
 - 提交应小而可回退，消息关联 Phase、REQ/ADR 与验证状态；大二进制按仓库 LFS 策略处理。
 - 禁止提交凭据、签名、缓存、构建、崩溃、全量原始捕获和本机绝对路径。
 - 只有用户明确要求时才 commit/push/建 MR；push 后核对远端 SHA。未经授权不合并、不 force-push、不改历史。
-- 本轮特别约束：**不 commit，不 push。**
+- 本轮特别约束：按用户 2026-10-16 后续执行指令，在完整可独立验收工程批次通过差异/静态/Python/UE Automation/编译/Cook/Package/Metal 后提交并推送；截图、日志、缓存、打包产物和任何凭据不进入 Git。正式外观、人工视觉和跨平台阻塞不得由工程提交代签。

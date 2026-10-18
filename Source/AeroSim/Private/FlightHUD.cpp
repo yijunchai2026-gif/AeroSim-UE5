@@ -80,12 +80,15 @@ FVector2D AFlightHUD::CalculateSafeMargin(const float ViewportWidth, const float
 void AFlightHUD::DrawHUD()
 {
     Super::DrawHUD();
+    if (!bShowHUD) return;
     const AFlightPawn* Pawn = PlayerOwner != nullptr ? Cast<AFlightPawn>(PlayerOwner->GetPawn()) : nullptr;
     if (Pawn == nullptr || Canvas == nullptr) return;
 
     const AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr;
     const FFlightHudData Data = Pawn->GetHudData();
     const FEnvironmentState Environment = GameMode != nullptr ? GameMode->GetEnvironmentState() : FEnvironmentState();
+    // Native CommonUI owns all product menu pages; Canvas is only a flight perimeter layer.
+    if (GameMode != nullptr && GameMode->GetProductPage() != EProductPage::Flight) return;
     FPhase4MissionSession FallbackMission;
     FallbackMission.Reset();
     const FPhase4MissionSession& Mission = GameMode != nullptr ? GameMode->GetPhase4Mission() : FallbackMission;
@@ -108,6 +111,13 @@ void AFlightHUD::DrawHUD()
     const float Top = Margin.Y;
     const float RightWidth = 390.0F;
     const float Right = Canvas->ClipX - Margin.X - RightWidth;
+
+    if (Data.Phase == EFlightPhase::Paused && !Pawn->IsResumeCountdownActive())
+    {
+        DrawRect(FLinearColor(0.04F, 0.11F, 0.15F, 0.94F), Left, Canvas->ClipY - Margin.Y - 120.0F, 660.0F, 54.0F);
+        DrawText(TEXT("SAFE PAUSE / INPUT NEUTRAL\nRELEASE CONTROLS, THEN ENTER / SPACE TO RESUME"),
+            FLinearColor(1.0F, 0.72F, 0.29F), Left + 12.0F, Canvas->ClipY - Margin.Y - 108.0F, GEngine->GetSmallFont(), 1.0F, false);
+    }
 
     if (GameMode != nullptr && GameMode->IsDisplaySettingsOpen())
     {

@@ -9,6 +9,42 @@
 
 namespace
 {
+bool ReadFiniteNumber(const FJsonObject& Root, const TCHAR* Field, double& OutNumber)
+{
+    // Json TryGet accessors can coerce strings/bools. Settings require exact JSON types.
+    return Root.HasTypedField<EJson::Number>(Field) && Root.TryGetNumberField(Field, OutNumber)
+        && FMath::IsFinite(OutNumber);
+}
+
+bool ReadInteger(const FJsonObject& Root, const TCHAR* Field, int32& OutNumber, int32 Minimum, int32 Maximum)
+{
+    double Number = 0.0;
+    if (!ReadFiniteNumber(Root, Field, Number) || Number < Minimum || Number > Maximum
+        || FMath::TruncToDouble(Number) != Number)
+    {
+        return false;
+    }
+    OutNumber = static_cast<int32>(Number);
+    return true;
+}
+
+bool ReadFloat(const FJsonObject& Root, const TCHAR* Field, float& OutNumber, double Minimum, double Maximum)
+{
+    double Number = 0.0;
+    // Check the original double before conversion so overflow and out-of-range rounding cannot pass.
+    if (!ReadFiniteNumber(Root, Field, Number) || Number < Minimum || Number > Maximum)
+    {
+        return false;
+    }
+    OutNumber = static_cast<float>(Number);
+    return FMath::IsFinite(OutNumber);
+}
+
+bool ReadBoolean(const FJsonObject& Root, const TCHAR* Field, bool& OutValue)
+{
+    return Root.HasTypedField<EJson::Boolean>(Field) && Root.TryGetBoolField(Field, OutValue);
+}
+
 FPhase7PerformanceBudget MakeBudget(const TCHAR* Id, EPhase7QualityTier Tier)
 {
     FPhase7PerformanceBudget Result;
@@ -143,9 +179,12 @@ bool FPhase7Settings::IsValid() const
         || (ResolutionWidth == 1440 && ResolutionHeight == 900)
         || (ResolutionWidth == 1920 && ResolutionHeight == 1080);
     const bool bSupportedWindowMode = static_cast<uint8>(WindowMode) <= static_cast<uint8>(EPhase7WindowMode::Fullscreen);
+    const bool bSupportedQuality = static_cast<uint8>(QualityTier) <= static_cast<uint8>(EPhase7QualityTier::Tablet);
     return Version == CurrentVersion && FMath::IsFinite(VerticalFov) && VerticalFov >= 35.0F && VerticalFov <= 100.0F
         && FMath::IsFinite(MasterVolume) && MasterVolume >= 0.0F && MasterVolume <= 1.0F
-        && bSupportedResolution && bSupportedWindowMode;
+        && FMath::IsFinite(HudScale) && HudScale >= 0.8F && HudScale <= 1.4F
+        && FMath::IsFinite(TextScale) && TextScale >= 1.0F && TextScale <= 2.0F
+        && bSupportedResolution && bSupportedWindowMode && bSupportedQuality;
 }
 
 bool FPhase7SettingsTransaction::Begin(const FPhase7Settings& Candidate)
@@ -159,8 +198,11 @@ bool FPhase7SettingsTransaction::Begin(const FPhase7Settings& Candidate)
 
 bool FPhase7SettingsTransaction::Apply()
 {
-    if (!bPreviewActive || !Preview.IsValid()) { return false; }
+    if (!bPreviewActive || !Applied.IsValid() || !Preview.IsValid()) { return false; }
+    PreviousApplied = Applied;
     Applied = Preview;
+    Opening = Applied;
+    Preview = Applied;
     bPreviewActive = false;
     bCanRollback = true;
     return true;
@@ -168,15 +210,18 @@ bool FPhase7SettingsTransaction::Apply()
 
 void FPhase7SettingsTransaction::Cancel()
 {
+    Opening = Applied;
     Preview = Applied;
     bPreviewActive = false;
 }
 
 bool FPhase7SettingsTransaction::Rollback()
 {
-    if (bPreviewActive || !bCanRollback || !Opening.IsValid()) { return false; }
-    Applied = Opening;
+    if (bPreviewActive || !bCanRollback || !PreviousApplied.IsValid()) { return false; }
+    Applied = PreviousApplied;
+    Opening = Applied;
     Preview = Applied;
+    PreviousApplied = Applied;
     bCanRollback = false;
     return true;
 }
@@ -194,6 +239,9 @@ FString FPhase7SaveCodec::Encode(const FPhase7Settings& Settings)
     Root->SetNumberField(TEXT("resolution_width"), Settings.ResolutionWidth);
     Root->SetNumberField(TEXT("resolution_height"), Settings.ResolutionHeight);
     Root->SetNumberField(TEXT("window_mode"), static_cast<uint8>(Settings.WindowMode));
+    Root->SetNumberField(TEXT("hud_scale"), Settings.HudScale);
+    Root->SetNumberField(TEXT("text_scale"), Settings.TextScale);
+    Root->SetBoolField(TEXT("reduced_motion"), Settings.bReducedMotion);
     FString Output;
     FJsonSerializer::Serialize(Root, TJsonWriterFactory<>::Create(&Output));
     return Output;
@@ -207,28 +255,60 @@ bool FPhase7SaveCodec::DecodeAndMigrate(const FString& Json, FPhase7Settings& Ou
         OutError = TEXT("INVALID_JSON"); return false;
     }
     double VersionNumber = 0.0;
-    if (!Root->TryGetNumberField(TEXT("version"), VersionNumber)) { OutError = TEXT("MISSING_VERSION"); return false; }
-    const int32 Version = FMath::RoundToInt(VersionNumber);
-    if (Version < 1 || Version > FPhase7Settings::CurrentVersion) { OutError = TEXT("UNSUPPORTED_VERSION"); return false; }
+    if (!Root->HasField(TEXT("version"))) { OutError = TEXT("MISSING_VERSION"); return false; }
+    if (!ReadFiniteNumber(*Root, TEXT("version"), VersionNumber) || FMath::TruncToDouble(VersionNumber) != VersionNumber)
+    {
+        OutError = TEXT("INVALID_VERSION"); return false;
+    }
+    if (VersionNumber < 1.0 || VersionNumber > FPhase7Settings::CurrentVersion) { OutError = TEXT("UNSUPPORTED_VERSION"); return false; }
+    const int32 Version = static_cast<int32>(VersionNumber);
+    if (Root->HasField(TEXT("schema")))
+    {
+        FString Schema;
+        if (!Root->HasTypedField<EJson::String>(TEXT("schema")) || !Root->TryGetStringField(TEXT("schema"), Schema)
+            || Schema != FString::Printf(TEXT("aerosim.settings/v%d"), Version))
+        {
+            OutError = TEXT("INVALID_SCHEMA"); return false;
+        }
+    }
     FPhase7Settings Candidate;
     Candidate.Version = FPhase7Settings::CurrentVersion;
-    double Number = 0.0;
-    if (!Root->TryGetNumberField(TEXT("vertical_fov"), Number)) { OutError = TEXT("MISSING_VERTICAL_FOV"); return false; }
-    Candidate.VerticalFov = static_cast<float>(Number);
+    if (!Root->HasField(TEXT("vertical_fov"))) { OutError = TEXT("MISSING_VERTICAL_FOV"); return false; }
+    if (!ReadFloat(*Root, TEXT("vertical_fov"), Candidate.VerticalFov, 35.0, 100.0)) { OutError = TEXT("INVALID_VERTICAL_FOV"); return false; }
     if (Version >= 2)
     {
-        if (!Root->TryGetNumberField(TEXT("quality_tier"), Number) || Number < 0.0 || Number > 2.0) { OutError = TEXT("INVALID_QUALITY_TIER"); return false; }
-        Candidate.QualityTier = static_cast<EPhase7QualityTier>(FMath::RoundToInt(Number));
-        if (!Root->TryGetNumberField(TEXT("master_volume"), Number)) { OutError = TEXT("MISSING_MASTER_VOLUME"); return false; }
-        Candidate.MasterVolume = static_cast<float>(Number);
-        if (!Root->TryGetBoolField(TEXT("telemetry_enabled"), Candidate.bTelemetryEnabled)) { OutError = TEXT("MISSING_TELEMETRY_CONSENT"); return false; }
-        // Display fields were added compatibly to schema v2; older v2 saves receive safe defaults.
-        if (Root->TryGetNumberField(TEXT("resolution_width"), Number)) Candidate.ResolutionWidth = FMath::RoundToInt(Number);
-        if (Root->TryGetNumberField(TEXT("resolution_height"), Number)) Candidate.ResolutionHeight = FMath::RoundToInt(Number);
-        if (Root->TryGetNumberField(TEXT("window_mode"), Number))
+        int32 EnumValue = 0;
+        if (!ReadInteger(*Root, TEXT("quality_tier"), EnumValue, 0, 2)) { OutError = TEXT("INVALID_QUALITY_TIER"); return false; }
+        Candidate.QualityTier = static_cast<EPhase7QualityTier>(EnumValue);
+        if (!Root->HasField(TEXT("master_volume"))) { OutError = TEXT("MISSING_MASTER_VOLUME"); return false; }
+        if (!ReadFloat(*Root, TEXT("master_volume"), Candidate.MasterVolume, 0.0, 1.0)) { OutError = TEXT("INVALID_MASTER_VOLUME"); return false; }
+        if (!Root->HasField(TEXT("telemetry_enabled"))) { OutError = TEXT("MISSING_TELEMETRY_CONSENT"); return false; }
+        if (!ReadBoolean(*Root, TEXT("telemetry_enabled"), Candidate.bTelemetryEnabled)) { OutError = TEXT("INVALID_TELEMETRY_CONSENT"); return false; }
+        // Only absent optional fields default. Present null/wrong-type/fractional values fail closed.
+        if (Root->HasField(TEXT("resolution_width")) && !ReadInteger(*Root, TEXT("resolution_width"), Candidate.ResolutionWidth, 1, MAX_int32))
         {
-            if (Number < 0.0 || Number > 2.0) { OutError = TEXT("INVALID_WINDOW_MODE"); return false; }
-            Candidate.WindowMode = static_cast<EPhase7WindowMode>(FMath::RoundToInt(Number));
+            OutError = TEXT("INVALID_RESOLUTION_WIDTH"); return false;
+        }
+        if (Root->HasField(TEXT("resolution_height")) && !ReadInteger(*Root, TEXT("resolution_height"), Candidate.ResolutionHeight, 1, MAX_int32))
+        {
+            OutError = TEXT("INVALID_RESOLUTION_HEIGHT"); return false;
+        }
+        if (Root->HasField(TEXT("window_mode")))
+        {
+            if (!ReadInteger(*Root, TEXT("window_mode"), EnumValue, 0, 2)) { OutError = TEXT("INVALID_WINDOW_MODE"); return false; }
+            Candidate.WindowMode = static_cast<EPhase7WindowMode>(EnumValue);
+        }
+        if (Root->HasField(TEXT("hud_scale")) && !ReadFloat(*Root, TEXT("hud_scale"), Candidate.HudScale, 0.8, 1.4))
+        {
+            OutError = TEXT("INVALID_HUD_SCALE"); return false;
+        }
+        if (Root->HasField(TEXT("text_scale")) && !ReadFloat(*Root, TEXT("text_scale"), Candidate.TextScale, 1.0, 2.0))
+        {
+            OutError = TEXT("INVALID_TEXT_SCALE"); return false;
+        }
+        if (Root->HasField(TEXT("reduced_motion")) && !ReadBoolean(*Root, TEXT("reduced_motion"), Candidate.bReducedMotion))
+        {
+            OutError = TEXT("INVALID_REDUCED_MOTION"); return false;
         }
     }
     else
