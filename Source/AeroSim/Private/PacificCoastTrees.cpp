@@ -12,6 +12,9 @@
 #include "StaticMeshResources.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/Package.h"
+#if WITH_DEV_AUTOMATION_TESTS
+#include "Misc/AutomationTest.h"
+#endif
 
 // Bay Area coastal forest: Douglas-fir and Monterey pine stands with coast live oak
 // patches, built as a small library of instanced archetypes instead of unique merged
@@ -65,6 +68,72 @@ struct FSection
     }
 };
 struct FLod { FSection Bark, Leaf; };
+
+// Cooked fast-built meshes do not execute the Editor-only UV-density builder.
+// Derive channel 0 from the same LOD0 triangles that will be rendered, in cm/UV.
+// Match UE 5.8's sqrt(area) weighting and 10% low/high density trimming without
+// depending on Engine/Private/Streaming/UVChannelDensity.h or Editor-only data.
+TOptional<FMeshUVChannelInfo> StreamingUVInfo(const FSection& Section)
+{
+    if (Section.UV.Num() != Section.P.Num() || Section.I.Num() % 3 != 0) return {};
+    struct FSample { float Density, Weight; };
+    TArray<FSample> Samples; Samples.Reserve(Section.I.Num() / 3);
+    for (int32 I = 0; I < Section.I.Num(); I += 3)
+    {
+        const int32 A = Section.I[I], B = Section.I[I + 1], C = Section.I[I + 2];
+        if (!Section.P.IsValidIndex(A) || !Section.P.IsValidIndex(B) || !Section.P.IsValidIndex(C)) return {};
+        if (Section.P[A].ContainsNaN() || Section.P[B].ContainsNaN() || Section.P[C].ContainsNaN()
+            || Section.UV[A].ContainsNaN() || Section.UV[B].ContainsNaN() || Section.UV[C].ContainsNaN()) return {};
+        const float Area = FVector3f::CrossProduct(Section.P[B] - Section.P[A], Section.P[C] - Section.P[A]).Size();
+        const FVector2f AB = Section.UV[B] - Section.UV[A], AC = Section.UV[C] - Section.UV[A];
+        const float UVArea = FMath::Abs(AB.X * AC.Y - AB.Y * AC.X);
+        if (!FMath::IsFinite(Area) || !FMath::IsFinite(UVArea)) return {};
+        if (Area <= UE_SMALL_NUMBER || UVArea <= UE_SMALL_NUMBER) continue;
+        const float Density = FMath::Sqrt(Area / UVArea), Weight = FMath::Sqrt(Area);
+        if (!FMath::IsFinite(Density) || Density <= 0 || !FMath::IsFinite(Weight)) return {};
+        Samples.Add({Density, Weight});
+    }
+    if (Samples.IsEmpty()) return {};
+    Samples.Sort([](const FSample& A, const FSample& B) { return A.Density < B.Density; });
+    const int32 Trim = FMath::FloorToInt(.10F * Samples.Num());
+    double WeightedDensity = 0, Weight = 0;
+    for (int32 I = Trim; I < Samples.Num() - Trim; ++I)
+    {
+        WeightedDensity += static_cast<double>(Samples[I].Density) * Samples[I].Weight;
+        Weight += Samples[I].Weight;
+    }
+    if (Weight <= UE_SMALL_NUMBER || !FMath::IsFinite(WeightedDensity / Weight)) return {};
+    FMeshUVChannelInfo Result(0.0F);
+    Result.LocalUVDensities[0] = static_cast<float>(WeightedDensity / Weight);
+    return Result;
+}
+
+#if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoastalRuntimeUVDensityMathTest, "AeroSim.Coastal.Flora.RuntimeUVChannelDensityMath",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FCoastalRuntimeUVDensityMathTest::RunTest(const FString& Parameters)
+{
+    FSection Section;
+    Section.P = {FVector3f(0,0,0), FVector3f(200,0,0), FVector3f(0,200,0)};
+    Section.UV = {FVector2f(0,0), FVector2f(1,0), FVector2f(0,1)}; Section.I = {0,1,2};
+    auto Info = StreamingUVInfo(Section);
+    TestTrue(TEXT("A 2m triangle mapped to one UV unit measures 200cm/UV"), Info.IsSet() && FMath::IsNearlyEqual(Info->LocalUVDensities[0], 200.0F));
+    for (FVector2f& UV : Section.UV) UV *= 2;
+    Info = StreamingUVInfo(Section);
+    TestTrue(TEXT("Twice the UV tiling halves the world-space density"), Info.IsSet() && FMath::IsNearlyEqual(Info->LocalUVDensities[0], 100.0F));
+    for (FVector3f& P : Section.P) P *= .5F;
+    Info = StreamingUVInfo(Section);
+    TestTrue(TEXT("Half-size geometry halves the world-space density"), Info.IsSet() && FMath::IsNearlyEqual(Info->LocalUVDensities[0], 50.0F));
+    Section.UV[1] = Section.UV[0]; Section.UV[2] = Section.UV[0];
+    TestFalse(TEXT("A section with only collapsed UVs cannot publish fabricated density"), StreamingUVInfo(Section).IsSet());
+    Section.I[2] = 17;
+    TestFalse(TEXT("Invalid triangle references fail closed"), StreamingUVInfo(Section).IsSet());
+    Section.I[2] = 2; Section.UV = {FVector2f(0,0), FVector2f(1,0), FVector2f(0,1)};
+    Section.P[1] = Section.P[0]; Section.P[2] = Section.P[0];
+    TestFalse(TEXT("A section with only collapsed world triangles cannot publish density"), StreamingUVInfo(Section).IsSet());
+    return true;
+}
+#endif
 
 /** Generalised swept tube. Ring vertices duplicate the seam so U wraps cleanly. */
 void Sweep(FSection& S, const TArray<FVector>& Path, TFunctionRef<float(int32 Ring, float Theta)> Radius,
@@ -605,9 +674,22 @@ UStaticMesh* BuildMesh(const FName Name, const TArray<FLod>& Lods, TArray<int32>
         OutTriangles.Add(Triangles);
         Pointers.Add(&Description);
     }
+    const TOptional<FMeshUVChannelInfo> SlotUV[2] = {StreamingUVInfo(Lods[0].Bark), StreamingUVInfo(Lods[0].Leaf)};
+    if (!SlotUV[0].IsSet() || !SlotUV[1].IsSet())
+    {
+        UE_LOG(LogTemp, Error, TEXT("FLORA_UV_STREAMING_INVALID mesh=%s bark=%d foliage=%d"), *Name.ToString(), SlotUV[0].IsSet(), SlotUV[1].IsSet());
+        return nullptr;
+    }
     UStaticMesh* Mesh = NewObject<UStaticMesh>(GetTransientPackage(), Name, RF_Transient);
-    Mesh->GetStaticMaterials().Add(FStaticMaterial(nullptr, FName(TEXT("Bark"))));
-    Mesh->GetStaticMaterials().Add(FStaticMaterial(nullptr, FName(TEXT("Foliage"))));
+    const FName SlotNames[2] = {TEXT("Bark"), TEXT("Foliage")};
+    for (int32 Slot = 0; Slot < 2; ++Slot)
+    {
+        FStaticMaterial Material(nullptr, SlotNames[Slot]);
+        Material.UVChannelData = SlotUV[Slot].GetValue();
+        Mesh->GetStaticMaterials().Add(Material);
+        UE_LOG(LogTemp, Display, TEXT("FLORA_UV_STREAMING mesh=%s slot=%d name=%s initialized=1 uv0_cm_per_uv=%.6f"),
+            *Name.ToString(), Slot, *SlotNames[Slot].ToString(), Material.UVChannelData.LocalUVDensities[0]);
+    }
     UStaticMesh::FBuildMeshDescriptionsParams Params;
     Params.bFastBuild = true; Params.bCommitMeshDescription = false; Params.bMarkPackageDirty = false; Params.bBuildSimpleCollision = false;
     Params.bAllowCpuAccess = false;
