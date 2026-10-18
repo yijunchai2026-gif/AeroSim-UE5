@@ -85,6 +85,9 @@ private:
     void BuildCoastalTerrain(UMaterialInterface* Material);
     void BuildCoastalTrees(UMaterialInterface* Material);
     void BuildCoastalOcean(UMaterialInterface* Material);
+    // DEV-FLORA: instanced forest-floor understory (ferns, shrubs, edge grass) for the near stands.
+    void BuildCoastalHabitat();
+    // DEV-FLORA end
     void ApplyCoastalMaterials();
     UPROPERTY(Transient)
     TArray<TObjectPtr<UMeshComponent>> CoastalColorParts;

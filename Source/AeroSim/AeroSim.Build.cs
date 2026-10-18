@@ -30,7 +30,10 @@ public class AeroSim : ModuleRules
             "SlateCore",
             "RHI",
             "RenderCore",
-            "ProceduralMeshComponent"
+            "ProceduralMeshComponent",
+            // DEV-FLORA: runtime-built instanced tree archetype meshes (UStaticMesh::BuildFromMeshDescriptions)
+            "MeshDescription",
+            "StaticMeshDescription"
         });
     }
 }

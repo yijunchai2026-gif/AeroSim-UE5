@@ -22,7 +22,8 @@ bool FCoastalSceneSupportTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Route remains at least 30 m inland"), APacificCoastGraybox::GetCliffEdgeX(Point.Y) - Point.X > 3000);
     }
     const APacificCoastGraybox* Coast = GetDefault<APacificCoastGraybox>();
-    TestTrue(TEXT("Bounded grove contains 240 generated trees"), Coast != nullptr && Coast->GetCoastalTreeCount() == 240);
+    // DEV-FLORA: tree count, density and instancing are asserted in AeroSim.Coastal.Flora.*
+    TestTrue(TEXT("Coastal forest contains generated trees"), Coast != nullptr && Coast->GetCoastalTreeCount() > 240);
     if (Coast == nullptr) return false;
     TArray<UProceduralMeshComponent*> Meshes;
     Coast->GetComponents(Meshes);
@@ -97,30 +98,7 @@ bool FCoastalSceneSupportTest::RunTest(const FString& Parameters)
         }
     }
     TestTrue(TEXT("Bridge connects to an at-grade continuous trail"),TrailFound);
-    int32 MaskedNeedleBatches = 0;
-    for (UProceduralMeshComponent* Mesh : Meshes)
-    {
-        if (!Mesh->GetName().StartsWith(TEXT("CoastalNeedles"))) continue;
-        ++MaskedNeedleBatches;
-        UMaterialInterface* NeedleMaterial = Mesh->GetMaterial(0);
-        if (!TestNotNull(TEXT("Needle material was actually imported"), NeedleMaterial)) return false;
-        TestEqual(TEXT("Needle gaps use actual masked blending"), NeedleMaterial->GetBlendMode(), BLEND_Masked);
-        TestTrue(TEXT("Thin needle cards render both sides"), NeedleMaterial->IsTwoSided());
-        float CoverageBias = 0;
-        TestTrue(TEXT("Distance coverage never turns empty atlas background opaque"),
-            NeedleMaterial->GetScalarParameterValue(FMaterialParameterInfo(TEXT("DistantNeedleCoverage")),CoverageBias)
-            && CoverageBias > 0 && CoverageBias < .33F);
-        UTexture* Mask = nullptr;
-        TestTrue(TEXT("Actual leaf alpha texture is connected"), NeedleMaterial->GetTextureParameterValue(FMaterialParameterInfo(TEXT("OpacityTexture")),Mask) && Mask != nullptr);
-        if (Mask != nullptr)
-        {
-            TestFalse(TEXT("Opacity data is linear"), Mask->SRGB);
-#if WITH_EDITORONLY_DATA
-            TestTrue(TEXT("Needle coverage is preserved into distance mips"), Mask->bDoScaleMipsForAlphaCoverage);
-#endif
-        }
-    }
-    TestEqual(TEXT("All four needle batches reference the imported mask"), MaskedNeedleBatches, 4);
+    // DEV-FLORA: foliage material checks moved to AeroSim.Coastal.Flora.FoliageMaterials (instanced archetypes).
     float Roughness;
     TestTrue(TEXT("Solid coast material exposes physical roughness control"), Material != nullptr && Material->GetScalarParameterValue(FMaterialParameterInfo(TEXT("Roughness")),Roughness));
     FLinearColor Color;

@@ -90,6 +90,7 @@ FViewBudget Measure(const AActor* Coast, const FString& View, const float Vertic
         if (Added == 0) continue;
         Result.Triangles += Added;
         ++Result.Components;
+        if (bFlora && View == TEXT("forest")) UE_LOG(LogTemp, Display, TEXT("FLORA_FRUSTUM_PART view=%s component=%s instances=%d triangles=%lld"), *View, *Component->GetName(), VisibleInstances, Added);
         if (bFlora) { Result.FloraTriangles += Added; ++Result.FloraComponents; Result.FloraInstances += VisibleInstances; }
     }
     return Result;
@@ -111,6 +112,9 @@ bool FCoastalFloraFrustumBudgetTest::RunTest(const FString& Parameters)
         AddInfo(FString::Printf(TEXT("FLORA_FRUSTUM view=%s components=%d triangles=%lld flora_components=%d flora_instances=%d flora_triangles=%lld"),
             View, Budget.Components, Budget.Triangles, Budget.FloraComponents, Budget.FloraInstances, Budget.FloraTriangles));
         TestTrue(TEXT("View sees some generated geometry"), Budget.Triangles > 0);
+        // R0 baseline (merged procedural batches): 3,451,597 triangles in the forest view,
+        // 2,941,043 of them tree batches visible from every view regardless of distance.
+        TestTrue(TEXT("Flora frustum geometry is below the merged-mesh baseline"), Budget.FloraTriangles < 2941043 * 6 / 10);
     }
     return true;
 }
