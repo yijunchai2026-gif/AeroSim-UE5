@@ -37,7 +37,7 @@ TArray<FWave> BuildSpectrum()
     // components share a crest line, so the sum never forms one parallel band.
     struct FRow { float Lambda, Amp, Yaw, Q; };
     const FRow Rows[] = {
-        {18600, 34.0F, -164, .30F}, {14100, 24.0F, -173, .30F}, {10700, 16.0F, 172, .32F},
+        {18600, 26.0F, -158, .30F}, {14100, 22.0F, -178, .30F}, {10700, 18.0F, 166, .32F},
         {12300,  9.0F,  132, .28F}, { 7700,  6.0F,  141, .30F},
         { 4600,  9.5F, -128, .45F}, { 3370,  7.0F, -152, .48F}, { 2490,  5.2F, -113, .50F},
         { 1830,  3.8F, -141, .52F}, { 1360,  2.7F, -100, .55F}, { 1010,  1.9F, -160, .55F},
@@ -65,7 +65,7 @@ FDerived Derive(const FWave& Wave, const int32 Index, const int32 Count)
     const float Rotation = (Index % 2 == 0 ? 35.0F : -35.0F) + Index * 3.0F;
     D.Group = Wave.Direction.GetRotated(Rotation);
     D.WarpK = D.K * .18F;
-    D.WarpRad = .9F;
+    D.WarpRad = Index < 5 ? 1.5F : .9F; // stronger crest bending on the long, most regular swell
     D.GroupK = D.K * .11F;
     D.GroupOmega = Wave.AngularFrequency * .055F;
     return D;
@@ -133,8 +133,9 @@ FString EmitWaves(const bool bOffset, const bool bGradient, const bool bSwellOnl
         if (bSwellOnly && Index >= 5) continue;
         const FDerived D = Derive(W, Index, Spectrum.Num());
         // Short components fade with distance before they alias into glitter.
-        const float Near = W.WavelengthCm * (bOffset ? 40.0F : 30.0F);
-        const float Far = W.WavelengthCm * (bOffset ? 160.0F : 120.0F);
+        // Normal detail fades at ~15-60 wavelengths so grazing low-altitude views do not moire.
+        const float Near = W.WavelengthCm * (bOffset ? 40.0F : 15.0F);
+        const float Far = W.WavelengthCm * (bOffset ? 160.0F : 60.0F);
         Code += FString::Printf(TEXT("{float2 d=float2(%s,%s),w=float2(%s,%s),e=float2(%s,%s);"),
             *Num(W.Direction.X), *Num(W.Direction.Y), *Num(D.Warp.X), *Num(D.Warp.Y), *Num(D.Group.X), *Num(D.Group.Y));
         Code += FString::Printf(TEXT("float wa=dot(P.xy,w)*%s+%s; float th=dot(P.xy,d)*%s-T*%s+%s+%s*sin(wa);"),
@@ -206,7 +207,7 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
     case ECoastalWaterShader::Normal:
         // Inputs P,T,A,C,N1,N2 (detail normal samples). World-space normal.
         return EmitWaves(false, true, false)
-            + TEXT("float detail=1-smoothstep(2500,22000,dist);")
+            + TEXT("float detail=1-smoothstep(1500,12000,dist);")
             + TEXT("return normalize(float3(-g+(N1.xy*.15+N2.xy*.06)*detail,1));");
     case ECoastalWaterShader::Foam:
         // Inputs P,T,A,C,Mask (RGB),MaskA (vertex alpha; Custom inputs take only RGB). Mask r=distance to waterline/100 m, g=rock contact energy,
@@ -216,7 +217,7 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
         return EmitWaves(false, false, true) + NoiseHelpers()
             + TEXT("float d=Mask.r*10000; float contact=Mask.g; float shoal=MaskA;")
             + TEXT("float crest=saturate(h/(A*42+1)*.5+.5);")
-            + TEXT("float2 drift=float2(-1,-.28)*T*38;")
+            + TEXT("float2 drift=float2(-1,-.30)*T*110;")
             + TEXT("float cells=noise.f((P.xy+drift)*.0045);")
             + TEXT("float lace=smoothstep(.40,.78,noise.f((P.xy+drift*1.3)*.013)*.6+cells*.4);")
             + TEXT("float gaps=smoothstep(.32,.62,noise.f(float2(P.y*.0011,P.x*.0004)+float2(0,T*.004)));")
@@ -227,14 +228,24 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("float streak=contact*exp(-d/1400)*smoothstep(.64,.92,noise.f((P.xy+drift*.6)*float2(.0016,.0035)))*.32;")
             + TEXT("return saturate(surge+churn*.65+breaker+streak);");
     case ECoastalWaterShader::Scattering:
-        // Input Mask. Greener shallows over the platform, deep blue-grey offshore (per cm).
-        return TEXT("float s=smoothstep(0,1,Mask.b); return lerp(float3(.00009,.00028,.00022),float3(.000035,.00011,.00026),s);");
+        // Input Mask. Greener shallows over the platform, deep blue-grey offshore (per cm); a
+        // turbid surf-zone term keeps the waterline from reading as clear glass over rock.
+        return TEXT("float s=smoothstep(0,1,Mask.b); float surf=1-smoothstep(0,.12,Mask.b); return lerp(float3(.00007,.00020,.00019),float3(.00005,.00012,.00022),s)+float3(.00025,.00030,.00026)*surf;");
     case ECoastalWaterShader::Absorption:
         return TEXT("float s=smoothstep(0,1,Mask.b); return lerp(float3(.0028,.00072,.00062),float3(.0034,.00090,.00046),s);");
     case ECoastalWaterShader::Roughness:
         // Inputs R (base), F (foam), P, C. Slightly rougher with distance so the far sea
         // stays calm and the sun path stays a bounded cone rather than silver glitter.
         return TEXT("float dist=length(P-C); float r=lerp(R,R+.10,smoothstep(8000,250000,dist)); return lerp(r,.62,F);");
+    case ECoastalWaterShader::RockWetness:
+        // For the rock/ground material owner (DEV-TERRAIN): inputs P (world pos), T, A, C.
+        // Returns 0..1 wetness: fully wet below still water, a ragged 0.5-2 m splash band
+        // above it that rises as the same swell crests arrive, dry above.
+        return EmitWaves(false, false, true) + NoiseHelpers()
+            + FString::Printf(TEXT("float above=P.z-(%s);"), *Num(SeaLevelCm))
+            + TEXT("float crest=saturate(h/(A*42+1)*.5+.5);")
+            + TEXT("float top=lerp(110,210,crest)+60*(noise.f(P.xy*.004+float2(P.z*.002,0))-.5);")
+            + TEXT("return 1-smoothstep(top*.35,top,above);");
     default:
         return TEXT("return 0;");
     }
@@ -264,7 +275,8 @@ void APacificCoastGraybox::BuildCoastalOcean(UMaterialInterface* SolidMaterial)
     {
         const float Y = Axis(Row);
         const float ShoreX = ShoreLine.At(Y);
-        const float Top = GetCoastalLandHeight(GetCliffEdgeX(Y), Y);
+        const float CliffEdge = GetCliffEdgeX(Y);
+        const float Top = GetCoastalLandHeight(CliffEdge, Y);
         const float Active = Top > SeaLevelCm + 100 && FMath::Abs(Y) < 210000 ? 1.0F : 0.0F;
         // Headlands concentrate refracted swell energy; recessed coves stay calmer.
         const float Headland = FMath::Clamp((ShoreX - .5F * (ShoreLine.At(Y - 4500) + ShoreLine.At(Y + 4500))) / 1800.0F, -1.0F, 1.0F);
@@ -276,12 +288,38 @@ void APacificCoastGraybox::BuildCoastalOcean(UMaterialInterface* SolidMaterial)
             Positions.Add(FVector(X, Y, SeaLevelCm));
             Normals.Add(FVector::UpVector);
             UV.Add(FVector2D(X/1000.0F, Y/1000.0F));
-            const bool bNear = FMath::Abs(X - ShoreX) < 16000.0F && FMath::Abs(Y) < 212000.0F;
-            const float Distance = bNear ? ShoreLine.Distance(X, Y) : FMath::Abs(X - ShoreX);
-            const float Depth = X < ShoreX - 700.0F ? 250.0F : CoastalSea::SeabedDepth(X, Y, ShoreX);
-            const float Shoal = Active * (1.0F - FMath::SmoothStep(260.0F, 900.0F, Depth)) * (X > ShoreX + 300.0F ? 1.0F : 0.0F);
-            ShoreMasks.Add(FLinearColor(FMath::Clamp(Distance / 10000.0F, 0.0F, 1.0F), Contact,
-                FMath::Clamp(Depth / 4000.0F, 0.0F, 1.0F), Shoal));
+            // Cliff coast: true distance to the cliff-triangle waterline. The shelf fades to the
+            // 175 m floor beyond |Y| 165-210 km exactly as the shelf mesh does, so depth colour
+            // never claims shallow water over deep floor (R1b south-view hard navy patch).
+            const bool bCliffCoast = FMath::Abs(Y) < 212000.0F;
+            const bool bNear = bCliffCoast && FMath::Abs(X - ShoreX) < 16000.0F;
+            float Distance = bNear ? ShoreLine.Distance(X, Y) : (bCliffCoast ? FMath::Abs(X - ShoreX) : 1.0e6F);
+            const float EndFade = 1.0F - FMath::SmoothStep(165000.0F, 210000.0F, FMath::Abs(Y));
+            float Depth = X < ShoreX - 700.0F ? 250.0F : FMath::Lerp(17500.0F, CoastalSea::SeabedDepth(X, Y, ShoreX), EndFade);
+            float VertexContact = Contact;
+            // North/south/west perimeter: the land collar slopes under the sea. Its submerged
+            // surface is the real seabed there; estimate distance to its waterline from depth/grade
+            // so the long straight shores also get surf, shoal colour and swash foam.
+            if (X < CliffEdge - 200.0F && X > -260000.0F && FMath::Abs(Y) < 240000.0F)
+            {
+                const float Land = GetCoastalLandHeight(X, Y);
+                if (Land >= SeaLevelCm) { Distance = 0.0F; Depth = 0.0F; }
+                else if (Land > SeaLevelCm - 2500.0F)
+                {
+                    const float GX = (GetCoastalLandHeight(X + 300.0F, Y) - GetCoastalLandHeight(X - 300.0F, Y)) / 600.0F;
+                    const float GY = (GetCoastalLandHeight(X, Y + 300.0F) - GetCoastalLandHeight(X, Y - 300.0F)) / 600.0F;
+                    const float Grade = FMath::Max(FMath::Sqrt(GX * GX + GY * GY), .02F);
+                    Distance = FMath::Min(Distance, (SeaLevelCm - Land) / Grade);
+                    Depth = FMath::Min(Depth, SeaLevelCm - Land);
+                    const float Swash = .55F + .25F * FMath::PerlinNoise2D(FVector2D(X / 13000.0F + 1.7F, Y / 13000.0F - 4.2F));
+                    VertexContact = FMath::Max(VertexContact * (bCliffCoast ? 1.0F : 0.0F), Swash);
+                }
+            }
+            if (!bCliffCoast && VertexContact == Contact) VertexContact = 0.0F;
+            const float Shoal = (1.0F - FMath::SmoothStep(260.0F, 900.0F, Depth)) * FMath::SmoothStep(200.0F, 500.0F, Distance)
+                * (VertexContact > 0.0F ? 1.0F : 0.0F);
+            ShoreMasks.Add(FLinearColor(FMath::Clamp(Distance / 10000.0F, 0.0F, 1.0F), VertexContact,
+                FMath::Clamp(Depth / 2500.0F, 0.0F, 1.0F), Shoal));
         }
     }
     for (int32 Row = 0; Row < Size-1; ++Row)
