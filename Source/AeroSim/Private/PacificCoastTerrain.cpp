@@ -78,24 +78,27 @@ float CliffOutcrop(const float Y, const float Depth)
 {
     // Unequal gently dipping beds form supported shelves instead of one smooth bow with vertical ribs.
     const float Thresholds[] = {.09F, .27F, .46F, .69F, .85F};
-    const float Widths[] = {.035F, .025F, .045F, .04F, .03F};
-    const float Thickness[] = {270.0F, 510.0F, 390.0F, 660.0F, 340.0F};
+    // R2: beds are sloping benches (wide transitions, thinner offsets), not stair-step ledges.
+    const float Widths[] = {.085F, .07F, .10F, .09F, .075F};
+    const float Thickness[] = {170.0F, 310.0F, 240.0F, 400.0F, 210.0F};
     const float Collapse=CoastalErosion(Y)/5400.0F;
     // Low eroded coves have a wide supported rubble apron; intact headlands retain a steeper face.
     float Outcrop = Depth * 1500.0F + Collapse * 5500.0F * Smooth(Depth/.30F);
     // A continuous rubble/talus foot slopes through the waterline everywhere, so the sea meets a
     // supported apron rather than a vertical wall; its reach varies irregularly along the coast.
-    const float TalusReach = 2100.0F + 1300.0F * Noise(Y, 4400.0F, 9300.0F) + 600.0F * Noise(Y, -2600.0F, 3100.0F);
-    Outcrop += TalusReach * Smooth((Depth - .30F) / .50F);
+    const float TalusReach = 3600.0F + 1800.0F * Noise(Y, 4400.0F, 9300.0F) + 700.0F * Noise(Y, -2600.0F, 3100.0F);
+    Outcrop += TalusReach * FMath::Square(Smooth((Depth - .32F) / .55F));
     for (int32 Bed = 0; Bed < UE_ARRAY_COUNT(Thresholds); ++Bed)
     {
         const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F);
         const float BedHeight = Thickness[Bed] * (1.0F + .25F * Noise(Y, Bed * 9100.0F, 4700.0F));
         Outcrop += BedHeight * Smooth((Depth - Thresholds[Bed] - Dip) / Widths[Bed]);
     }
-    const float Interior = Smooth(Depth / .07F) * (1.0F - Smooth((Depth - .92F) / .08F));
-    const float Blocks = 450.0F + 350.0F * Noise(Y + Depth * 1700.0F, Depth * 14000.0F, 2100.0F)
-        + 180.0F * Noise(Y + 5000.0F, Depth * 18000.0F, 650.0F);
+    // Every term is non-decreasing with depth, so the face never overhangs: blocks vary along the
+    // coast only and ramp in once below the rim.
+    const float Interior = Smooth(Depth / .07F);
+    // No sub-7 m term: short-wavelength block noise serrated the waterline row by row.
+    const float Blocks = 450.0F + 380.0F * Noise(Y, 14000.0F, 2100.0F);
     return Outcrop + Interior * Blocks;
 }
 
@@ -253,7 +256,7 @@ float APacificCoastGraybox::GetCoastalLandHeight(const float X, const float Y)
     float WestDistance = X - West, NorthDistance = North - FMath::Abs(Y);
     const float YSide = Y < 0 ? -1.0F : 1.0F;
     WestDistance += (9000.0F * Noise(Y, 3100.0F, 52000.0F) + 3500.0F * Noise(Y, -4100.0F, 17000.0F)) * FMath::Clamp(WestDistance / 15000.0F, 0.0F, 1.0F);
-    NorthDistance += (10000.0F * Noise(X, 9100.0F * YSide, 47000.0F) + 3500.0F * Noise(X, -5300.0F * YSide, 15000.0F)) * FMath::Clamp(NorthDistance / 15000.0F, 0.0F, 1.0F);
+    NorthDistance += (10000.0F * Noise(X, 9100.0F * YSide, 47000.0F) + 6500.0F * Noise(X, -5300.0F * YSide, 17000.0F) + 2500.0F * Noise(X, 2900.0F * YSide, 6100.0F)) * FMath::Clamp(NorthDistance / 15000.0F, 0.0F, 1.0F);
     const float Interior = Smooth(FMath::Min(WestDistance, NorthDistance) / 56000.0F);
     const float RouteDistance = FMath::Max(FMath::Max(-X - 23000.0F, FMath::Abs(Y) - 17000.0F), 0.0F);
     const float Rise = Smooth(RouteDistance / 24000.0F);
@@ -374,7 +377,8 @@ FCoastHabitatSample FPacificCoastHabitat::Sample(const float X, const float Y)
     float Rock = Smooth((Result.Grade - .58F + .14F * Patch) / .42F);
     // Moisture index: shade and drainage favour woodland; ocean bluffs are wind-pruned grassland.
     const float Bluff = Smooth((X - (Edge - 5000.0F)) / 3500.0F);
-    const float Moisture = .48F - .42F * Result.SunExposure + .62F * Result.Drainage + .2F * Patch - .35F * Bluff;
+    // Golden grass dominates open Bay Area hills; woodland keeps to shaded aspects and drainages.
+    const float Moisture = .30F - .45F * Result.SunExposure + .66F * Result.Drainage + .2F * Patch - .35F * Bluff;
     float Woodland = Smooth((Moisture - .5F) / .45F) * FlightAndBridgeClearance(X, Y);
     float Sheltered = Smooth((Moisture - .18F) / .42F) * (1.0F - Woodland);
     const float Shore = Smooth((X - (Edge - 700.0F)) / 700.0F) + (1.0F - Smooth((H - APacificCoastGraybox::SeaLevelCm - 300.0F) / 600.0F));

@@ -16,6 +16,7 @@
 #include "Materials/MaterialExpressionWorldPosition.h"
 #include "Materials/MaterialExpressionTime.h"
 #include "Materials/MaterialExpressionVertexColor.h"
+#include "Materials/MaterialExpressionVertexNormalWS.h"
 #include "Materials/MaterialExpressionSingleLayerWaterMaterialOutput.h"
 #include "Materials/MaterialExpressionAdd.h"
 #include "Materials/MaterialExpressionConstant3Vector.h"
@@ -81,7 +82,18 @@ const FSource Sources[] = {
     {TEXT("Ground/aerial_grass_rock/aerial_grass_rock_diff_2k.jpg"), TEXT("T_CoastMacroGrassRock_BaseColor"), ETextureRole::Color}, // 30, macro
     {TEXT("Ground/rocky_trail_02/rocky_trail_02_diff_2k.jpg"), TEXT("T_CoastEarthTrail_BaseColor"), ETextureRole::Color},        // 31, 2.0 m
     {TEXT("Ground/rocky_trail_02/rocky_trail_02_nor_dx_2k.jpg"), TEXT("T_CoastEarthTrail_Normal"), ETextureRole::Normal},
-    {TEXT("Ground/rocky_trail_02/rocky_trail_02_rough_2k.jpg"), TEXT("T_CoastEarthTrail_Roughness"), ETextureRole::Roughness}
+    {TEXT("Ground/rocky_trail_02/rocky_trail_02_rough_2k.jpg"), TEXT("T_CoastEarthTrail_Roughness"), ETextureRole::Roughness},
+    {TEXT("Rock/worn_rock_natural_01/worn_rock_natural_01_diff_2k.jpg"), TEXT("T_CoastWornRock_BaseColor"), ETextureRole::Color},   // 34, 2.0 m
+    {TEXT("Rock/worn_rock_natural_01/worn_rock_natural_01_nor_dx_2k.jpg"), TEXT("T_CoastWornRock_Normal"), ETextureRole::Normal},
+    {TEXT("Rock/worn_rock_natural_01/worn_rock_natural_01_rough_2k.jpg"), TEXT("T_CoastWornRock_Roughness"), ETextureRole::Roughness},
+    {TEXT("Rock/rock_face_03/rock_face_03_diff_2k.jpg"), TEXT("T_CoastRockFace_BaseColor"), ETextureRole::Color},               // 37, 2.7 m
+    {TEXT("Rock/rock_face_03/rock_face_03_nor_dx_2k.jpg"), TEXT("T_CoastRockFace_Normal"), ETextureRole::Normal},
+    {TEXT("Rock/rock_face_03/rock_face_03_rough_2k.jpg"), TEXT("T_CoastRockFace_Roughness"), ETextureRole::Roughness},
+    // 40-43: published 8-bit height (disp) maps, used only as height-blend weights (spec §4.1).
+    {TEXT("Ground/withered_grass/withered_grass_disp_2k.jpg"), TEXT("T_CoastWitheredGrass_Height"), ETextureRole::Roughness},
+    {TEXT("Ground/sparse_grass/sparse_grass_disp_2k.jpg"), TEXT("T_CoastSparseGrass_Height"), ETextureRole::Roughness},
+    {TEXT("Ground/dry_decay_leaves/dry_decay_leaves_disp_2k.jpg"), TEXT("T_CoastLeafLitter_Height"), ETextureRole::Roughness},
+    {TEXT("Ground/dry_ground_rocks/dry_ground_rocks_disp_2k.jpg"), TEXT("T_CoastStonyGround_Height"), ETextureRole::Roughness}
 };
 
 bool SaveDraft(UObject* Asset)
@@ -152,21 +164,39 @@ UMaterialExpressionMaterialFunctionCall* Project(UMaterial* Material, UMaterialF
 struct FLandSurface { UMaterialExpression* Color; UMaterialExpression* Normal; UMaterialExpression* Rough; };
 namespace LandCode
 {
-// Shared HLSL prefix: height-blended habitat weights. Diffuse luminance acts as the blend height
-// so grass/litter/stone boundaries break along real texture structure, never a straight band.
+// Shared HLSL prefix (R2). Habitat weights are resolved PER PIXEL:
+//  - vertex colour carries the broad aspect/drainage field from FPacificCoastHabitat;
+//  - the interpolated geometric normal adds steep-rock exposure per pixel;
+//  - mip-free procedural world-space value noise (1.7/6.5/23/80 m) plus near-field texture height
+//    perturbs every weight, then a narrow top-blend turns the smooth vertex gradients into
+//    irregular, noise-broken transitions a few metres wide (no soft camouflage blobs).
+// Each layer is re-centred on a Bay Area October palette (golden straw/ochre with olive mottling,
+// olive-green sheltered grass, dark litter, grey-brown stony ground). Beyond ~40 m the fine layers
+// fade to their palette mean so their 2-4 m tiles cannot form a visible repeat; macro texture and
+// noise mottling keep far ground textured.
 const TCHAR* Weights = TEXT(
-    "float3 L=float3(.30,.59,.11);"
-    "float3 w3=saturate(VC.rgb); float4 w=float4(w3,saturate(1-w3.r-w3.g-w3.b));"
-    "w/=max(dot(w,1),1e-3);"
-    "float macro=saturate(dot(M1,L)*2.2);"
-    "float swap=smoothstep(.35,.65,macro+.25*(dot(M2,L)*2-0.5));"
-    "float3 EC=lerp(ED,E2D,swap), SC=lerp(SD,S2D,1-swap);"
-    "float4 h=float4(dot(EC,L),dot(SC,L),dot(WD,L),dot(RD,L));"
-    "float4 hw=w+h*.45*saturate(w*4);"
-    "float top=max(max(hw.x,hw.y),max(hw.z,hw.w))-.22;"
-    "float4 b=max(hw-top,0); b/=max(dot(b,1),1e-4);"
+    "struct LN { float h(float2 p){ float3 q=frac(float3(p.xyx)*.1031); q+=dot(q,q.yzx+33.33); return frac((q.x+q.y)*q.z);}"
+    " float n(float2 p){ float2 i=floor(p),f=frac(p); f=f*f*(3-2*f); return lerp(lerp(h(i),h(i+float2(1,0)),f.x),lerp(h(i+float2(0,1)),h(i+1),f.x),f.y);} };"
+    "LN N; float3 L=float3(.30,.59,.11); float2 p=WP.xy;"
+    // transition jitter at 1.7 m / 6.5 m; macro mottling at 37 / 113 / 347 m (spec §4.3)
+    "float nA=N.n(p/170.0+3.1), nB=N.n(p/650.0-11.7), nC=N.n(p/3700.0+29.3), nD=N.n(p/11300.0-47.9), nE=N.n(p/34700.0+71.3);"
+    "float fineMix=1-smoothstep(2000.0,6000.0,D);"
     "float nearFade=1-smoothstep(300.0,1500.0,D);"
-    "float farFade=smoothstep(6000.0,25000.0,D);");
+    "float normalFade=1-smoothstep(5000.0,8000.0,D);"
+    "float swap=smoothstep(.35,.65,nB*.7+nA*.3);"
+    // Far x6.8 samples keep only ~half their contrast around the published mean, so no 2-14 m cell
+    // pattern (QA 'honeycomb') can read at 20-200 m; procedural mottling supplies the variation.
+    "float3 EF2=lerp(float3(.419,.297,.196),EF,.5), SF2=lerp(float3(.080,.048,.008),SF,.5), WF2=lerp(float3(.173,.076,.035),WF,.5), RF2=lerp(float3(.306,.178,.080),RF,.45);"
+    "float3 EC=lerp(lerp(ED,E2D,swap),EF2,1-fineMix), SC=lerp(lerp(SD,S2D,1-swap),SF2,1-fineMix);"
+    "float3 WC=lerp(WD,WF2,1-fineMix), RC=lerp(RD,RF2,1-fineMix);"
+    "float3 w3=saturate(VC.rgb); float4 w=float4(w3,saturate(1-w3.r-w3.g-w3.b));"
+    "float steep=smoothstep(.87,.70,VN.z+(nB-.5)*.10);"
+    "w.w=max(w.w,steep); w/=max(dot(w,1),1e-3);"
+    "float4 jitter=float4(nB*.55+nC*.45, nC*.6+nA*.4, nB*.5+nD*.5, nA*.6+nB*.4)-.5;"
+    "float4 h=float4(EH.r,SH.r,WH.r,RH.r)-.5;"
+    "float4 hw=w+jitter*.62*saturate(w*3+.1)+h*.35*fineMix*saturate(w*4);"
+    "float top=max(max(hw.x,hw.y),max(hw.z,hw.w))-.12;"
+    "float4 b=max(hw-top,0); b/=max(dot(b,1),1e-4);");
 }
 FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Textures)
 {
@@ -184,47 +214,70 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
     auto Nor=[&](int32 Index,const TCHAR* Name,UMaterialExpression* C){return Shared(Sample(Material,Textures[Index],Name,C,SAMPLERTYPE_Normal));};
     auto Rgh=[&](int32 Index,const TCHAR* Name,UMaterialExpression* C){return Shared(Sample(Material,Textures[Index],Name,C,SAMPLERTYPE_LinearGrayscale));};
     UMaterialExpression* Grass=UV(200.0F);UMaterialExpression* Stone=UV(400.0F);
-    UMaterialExpression* Grass2=Rotated(273.0F,.61F);
-    UMaterialExpression* Detail=UV(50.0F);UMaterialExpression* Detail2=Rotated(37.0F,FMath::DegreesToRadians(37.0F));
+    // Spec §4.3: near dual sample at 1.37x scale + 37 deg; far repeat x6.8 (also rotated) beyond ~40 m.
+    const float Turn=FMath::DegreesToRadians(37.0F);
+    UMaterialExpression* Grass2=Rotated(274.0F,Turn);
+    UMaterialExpression* GrassFar=Rotated(1360.0F,Turn);UMaterialExpression* StoneFar=Rotated(2720.0F,Turn);
+    UMaterialExpression* Detail=UV(50.0F);UMaterialExpression* Detail2=Rotated(37.0F,Turn);
     struct FIn{const TCHAR* Name;UMaterialExpression* Node;};
     const TArray<FIn> Inputs={
         {TEXT("ED"),Col(16,TEXT("ExposedGrassColor"),Grass)},{TEXT("EN"),Nor(17,TEXT("ExposedGrassNormal"),Grass)},{TEXT("ER"),Rgh(18,TEXT("ExposedGrassRoughness"),Grass)},
-        {TEXT("E2D"),Col(16,TEXT("ExposedGrassColorB"),Grass2)},
+        {TEXT("E2D"),Col(16,TEXT("ExposedGrassColorB"),Grass2)},{TEXT("EF"),Col(16,TEXT("ExposedGrassColorFar"),GrassFar)},{TEXT("EH"),Rgh(40,TEXT("ExposedGrassHeight"),Grass)},
         {TEXT("SD"),Col(19,TEXT("ShelteredGrassColor"),Grass)},{TEXT("SN"),Nor(20,TEXT("ShelteredGrassNormal"),Grass)},{TEXT("SR"),Rgh(21,TEXT("ShelteredGrassRoughness"),Grass)},
-        {TEXT("S2D"),Col(19,TEXT("ShelteredGrassColorB"),Grass2)},
+        {TEXT("S2D"),Col(19,TEXT("ShelteredGrassColorB"),Grass2)},{TEXT("SF"),Col(19,TEXT("ShelteredGrassColorFar"),GrassFar)},{TEXT("SH"),Rgh(41,TEXT("ShelteredGrassHeight"),Grass)},
         {TEXT("WD"),Col(22,TEXT("WoodlandLitterColor"),Grass)},{TEXT("WN"),Nor(23,TEXT("WoodlandLitterNormal"),Grass)},{TEXT("WR"),Rgh(24,TEXT("WoodlandLitterRoughness"),Grass)},
+        {TEXT("WF"),Col(22,TEXT("WoodlandLitterColorFar"),GrassFar)},{TEXT("WH"),Rgh(42,TEXT("WoodlandLitterHeight"),Grass)},
         {TEXT("RD"),Col(25,TEXT("StonyGroundColor"),Stone)},{TEXT("RN"),Nor(26,TEXT("StonyGroundNormal"),Stone)},{TEXT("RR"),Rgh(27,TEXT("StonyGroundRoughness"),Stone)},
+        {TEXT("RF"),Col(25,TEXT("StonyGroundColorFar"),StoneFar)},{TEXT("RH"),Rgh(43,TEXT("StonyGroundHeight"),Stone)},
         {TEXT("DN"),Nor(28,TEXT("DetailNormal"),Detail)},{TEXT("DR"),Rgh(29,TEXT("DetailRoughness"),Detail)},
         {TEXT("DN2"),Nor(28,TEXT("DetailNormalB"),Detail2)},{TEXT("DR2"),Rgh(29,TEXT("DetailRoughnessB"),Detail2)},
-        // Macro modulation only (albedo/roughness): 50 m aerial scan plus the legacy 90 m terrain scan,
-        // non-commensurate so neither repeat is legible. No macro normal (the stretched 90 m normal
+        // Macro modulation only (albedo/roughness), spec §4.3 R2: aerial scan at 173 m rotated 23 deg and
+        // the legacy rocky_terrain_02 scan at 409 m. No macro normal (the stretched 90 m normal
         // produced the 5-10 m "dune ripple" reported by QA).
-        {TEXT("M1"),Col(30,TEXT("MacroVariation"),UV(5000.0F))},
-        {TEXT("M2"),Col(0,TEXT("LandBaseColorTexture"),UV(9000.0F))}};
+        {TEXT("M1"),Col(30,TEXT("MacroVariation"),Rotated(17300.0F,FMath::DegreesToRadians(23.0F)))},
+        {TEXT("M2"),Col(0,TEXT("LandBaseColorTexture"),UV(40900.0F))}};
     auto* Cover=Node<UMaterialExpressionVertexColor>(Material);
     auto* Depth=Node<UMaterialExpressionPixelDepth>(Material);
+    auto* World=Node<UMaterialExpressionWorldPosition>(Material);
+    auto* GeometryNormal=Node<UMaterialExpressionVertexNormalWS>(Material);
     auto Make=[&](ECustomMaterialOutputType Type,const FString& Body)
     {
         auto* C=Node<UMaterialExpressionCustom>(Material);C->OutputType=Type;C->Code=FString(LandCode::Weights)+Body;
         for(const FIn& In:Inputs){FCustomInput Item;Item.InputName=In.Name;Item.Input.Connect(0,In.Node);C->Inputs.Add(Item);}
         FCustomInput V;V.InputName=TEXT("VC");V.Input.Connect(0,Cover);C->Inputs.Add(V);
         FCustomInput DIn;DIn.InputName=TEXT("D");DIn.Input.Connect(0,Depth);C->Inputs.Add(DIn);
+        FCustomInput WIn;WIn.InputName=TEXT("WP");WIn.Input.Connect(0,World);C->Inputs.Add(WIn);
+        FCustomInput NIn;NIn.InputName=TEXT("VN");NIn.Input.Connect(0,GeometryNormal);C->Inputs.Add(NIn);
         return C;
     };
-    // Habitat colour grading keeps sun-facing grass golden and woodland ground darker/cooler.
+    // Palette re-centring: texture / published mean * target (linear). Means measured from the
+    // 2K sources: withered .419/.297/.196, sparse .080/.048/.008, litter .173/.076/.035, stony .306/.178/.080.
+    // October Bay Area grass palette (spec R2, linear): straw .28/.22/.12 (most), ochre .30/.205/.095
+    // (~15%), olive mottling .135/.13/.065 (~20%); R/G <= 1.5, mean luminance ~.2. Stony ground is
+    // desaturated (the raw dry_ground_rocks mean R/G 1.72 read as desert sand).
     auto* Color=Make(CMOT_Float3,TEXT(
-        "float3 c=EC*b.x*float3(1.10,1.00,.78)+SC*b.y*float3(.92,.96,.80)+WD*b.z*float3(.70,.66,.58)+RD*b.w;"
-        "float m1=clamp(dot(M1,L)/.30,.65,1.35), m2=clamp(dot(M2,L)/.28,.75,1.25);"
-        "c*=lerp(1,m1*m2,.5+.25*farFade);"
-        "return c;"));
+        "float mot=nC*.5+nD*.3+nA*.2;"
+        "float3 eT=float3(.28,.22,.12); eT=lerp(eT,float3(.30,.205,.095),smoothstep(.30,.20,mot)); eT=lerp(eT,float3(.135,.13,.065),smoothstep(.66,.76,mot));"
+        "float3 sT=lerp(float3(.16,.155,.075),float3(.10,.125,.05),nC);"
+        "float3 wT=lerp(float3(.10,.078,.048),float3(.066,.08,.04),nD);"
+        "float3 rT=float3(.22,.19,.15)*(.88+.24*nA);"
+        "float3 e=eT*EC/float3(.419,.297,.196);"
+        "float3 s=sT*SC/float3(.080,.048,.008);"
+        "float3 wl=wT*WC/float3(.173,.076,.035);"
+        "float rl=dot(RC,L)/dot(float3(.306,.178,.080),L); float3 r=rT*lerp(rl.xxx,RC/float3(.306,.178,.080),.35);"
+        "float3 c=e*b.x+s*b.y+wl*b.z+r*b.w;"
+        "float m1=clamp(dot(M1,L)/.13,.65,1.4), m2=clamp(dot(M2,L)/.077,.75,1.3);"
+        "c*=lerp(1,m1*m2,.25+.3*(1-fineMix));"
+        "c*=1+.24*(float3(nC,nD,nE)-.5);"
+        "return min(c,float3(.6,.5,.4));"));
     auto* Normal=Make(CMOT_Float3,TEXT(
-        "float3 n=EN*b.x+SN*b.y+WN*b.z+RN*b.w; n.xy*=lerp(1,.35,farFade);"
+        "float3 n=EN*b.x+SN*b.y+WN*b.z+RN*b.w; n.xy*=lerp(.15,1,normalFade);"
         "float2 d=(DN.xy*.55+DN2.xy*.45)*nearFade*.8;"
-        "return normalize(float3(n.xy+d,n.z));"));
+        "return normalize(float3(n.xy+d,max(n.z,.2)));"));
     auto* Rough=Make(CMOT_Float1,TEXT(
-        "float r=ER.r*b.x+SR.r*b.y+WR.r*b.z+RR.r*b.w;"
+        "float r=lerp(.86,ER.r,fineMix)*b.x+lerp(.84,SR.r,fineMix)*b.y+lerp(.9,WR.r,fineMix)*b.z+lerp(.8,RR.r,fineMix)*b.w;"
         "r*=lerp(1,(DR.r+DR2.r)*.67,nearFade*.5);"
-        "r=lerp(r,r*clamp(.85+.3*dot(M1,L),.8,1.15),.6);"
+        "r*=lerp(.92,1.08,nC);"
         "return saturate(r);"));
     return {Color,Normal,Rough};
 }
@@ -258,15 +311,16 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
     FString BaseOutput, NormalOutput, RoughnessOutput;
     if (bWorldProjection)
     {
-        BaseExpression = Project(Material, AlignedTexture, Textures[Base], TEXT("BaseColorTexture"), SAMPLERTYPE_Color);
-        NormalExpression = Project(Material, AlignedNormal, Textures[Normal], TEXT("NormalTexture"), SAMPLERTYPE_Normal);
-        RoughnessExpression = Project(Material, AlignedTexture, Textures[Roughness], TEXT("RoughnessTexture"), SAMPLERTYPE_LinearGrayscale);
+        // Near: worn_rock_natural_01 triplanar at its published 2.0 m; broad structure from cliff_side below.
+        BaseExpression = Project(Material, AlignedTexture, Textures[Base], TEXT("BaseColorTexture"), SAMPLERTYPE_Color, 200.0F);
+        NormalExpression = Project(Material, AlignedNormal, Textures[Normal], TEXT("NormalTexture"), SAMPLERTYPE_Normal, 200.0F);
+        RoughnessExpression = Project(Material, AlignedTexture, Textures[Roughness], TEXT("RoughnessTexture"), SAMPLERTYPE_LinearGrayscale, 200.0F);
         BaseOutput = NormalOutput = RoughnessOutput = TEXT("XYZ Texture");
         if (!BaseExpression || !NormalExpression || !RoughnessExpression) return false;
         // Retain physical 1.8 m scan detail, with separate broad colour/normal
         // structure so a 65 m cliff does not become 36 identical horizontal rows.
-        auto* MacroColor = Project(Material, AlignedTexture, Textures[Base], TEXT("RockMacroColor"), SAMPLERTYPE_Color, 2300.0F);
-        auto* MacroNormal = Project(Material, AlignedNormal, Textures[Normal], TEXT("RockMacroNormal"), SAMPLERTYPE_Normal, 1100.0F);
+        auto* MacroColor = Project(Material, AlignedTexture, Textures[3], TEXT("RockMacroColor"), SAMPLERTYPE_Color, 2300.0F);
+        auto* MacroNormal = Project(Material, AlignedNormal, Textures[4], TEXT("RockMacroNormal"), SAMPLERTYPE_Normal, 1100.0F);
         if (!MacroColor || !MacroNormal) return false;
         auto* ColorBlend = Node<UMaterialExpressionLinearInterpolate>(Material);
         ColorBlend->ConstAlpha = .72F;
@@ -280,6 +334,32 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
         UnitNormal->VectorInput.Connect(0, NormalBlend);
         BaseExpression = ColorBlend; NormalExpression = UnitNormal;
         BaseOutput = NormalOutput = TEXT("");
+        // Spec R2: worn sandstone (pulled toward pale tan) forms the upper sea-cliff face; fractured
+        // rock_face_03 (published 2.7 m, used at 4 m) takes over on the lower cliff, slumps and talus
+        // with a noise-broken boundary ~35-45 m above the sea.
+        auto* FaceColor = Project(Material, AlignedTexture, Textures[37], TEXT("LowerCliffColor"), SAMPLERTYPE_Color, 400.0F);
+        auto* FaceNormal = Project(Material, AlignedNormal, Textures[38], TEXT("LowerCliffNormal"), SAMPLERTYPE_Normal, 400.0F);
+        auto* FaceRough = Project(Material, AlignedTexture, Textures[39], TEXT("LowerCliffRoughness"), SAMPLERTYPE_LinearGrayscale, 400.0F);
+        if (!FaceColor || !FaceNormal || !FaceRough) return false;
+        auto* CliffWorld = Node<UMaterialExpressionWorldPosition>(Material);
+        auto* Lower = Node<UMaterialExpressionCustom>(Material); Lower->OutputType = CMOT_Float1;
+        Lower->Code = TEXT("float n=sin(P.x*.0021+sin(P.y*.0013)*2.1)*.5+sin(P.y*.0047+P.x*.0011)*.5; return 1-smoothstep(-3200.0,-2400.0,P.z+n*500.0);");
+        { FCustomInput I; I.InputName = TEXT("P"); I.Input.Connect(0, CliffWorld); Lower->Inputs.Add(I); }
+        auto* Tan = Node<UMaterialExpressionMultiply>(Material); Tan->A.Connect(0, BaseExpression);
+        auto* TanTint = Node<UMaterialExpressionConstant3Vector>(Material); TanTint->Constant = FLinearColor(1.12F, 1.06F, .92F); Tan->B.Connect(0, TanTint);
+        auto* CliffColor = Node<UMaterialExpressionLinearInterpolate>(Material); CliffColor->A.Connect(0, Tan);
+        bool bFace = UMaterialEditingLibrary::ConnectMaterialExpressions(FaceColor, TEXT("XYZ Texture"), CliffColor, TEXT("B"));
+        CliffColor->Alpha.Connect(0, Lower);
+        auto* CliffNormal = Node<UMaterialExpressionLinearInterpolate>(Material); CliffNormal->A.Connect(0, NormalExpression);
+        bFace &= UMaterialEditingLibrary::ConnectMaterialExpressions(FaceNormal, TEXT("XYZ Texture"), CliffNormal, TEXT("B"));
+        CliffNormal->Alpha.Connect(0, Lower);
+        auto* CliffUnit = Node<UMaterialExpressionNormalize>(Material); CliffUnit->VectorInput.Connect(0, CliffNormal);
+        auto* CliffRough = Node<UMaterialExpressionLinearInterpolate>(Material);
+        bFace &= UMaterialEditingLibrary::ConnectMaterialExpressions(RoughnessExpression, RoughnessOutput, CliffRough, TEXT("A"));
+        bFace &= UMaterialEditingLibrary::ConnectMaterialExpressions(FaceRough, TEXT("XYZ Texture"), CliffRough, TEXT("B"));
+        CliffRough->Alpha.Connect(0, Lower);
+        if (!bFace) return false;
+        BaseExpression = CliffColor; NormalExpression = CliffUnit; RoughnessExpression = CliffRough; RoughnessOutput = TEXT("");
     }
     else
     {
@@ -523,12 +603,12 @@ int32 UCoastDraftImportCommandlet::Main(const FString& Params)
     }
     // Terrain UVs are position/4000 cm; the actual source scan spans 9000 cm, not 200 cm.
     const bool bGround = BuildMaterial(TEXT("M_CoastGroundDraft"), Textures, 0, 1, 2, -1, false, 4000.0F / 9000.0F, WorldAlignedTexture, WorldAlignedNormal);
-    const bool bRock = BuildMaterial(TEXT("M_CoastRockDraft"), Textures, 3, 4, 5, -1, true, 1.0F, WorldAlignedTexture, WorldAlignedNormal);
+    const bool bRock = BuildMaterial(TEXT("M_CoastRockDraft"), Textures, 34, 35, 36, -1, true, 1.0F, WorldAlignedTexture, WorldAlignedNormal);
     const bool bNeedles = BuildMaterial(TEXT("M_CoastNeedlesDraft"), Textures, 6, 8, 9, 7, false, 1.0F, WorldAlignedTexture, WorldAlignedNormal);
     const bool bBark = BuildMaterial(TEXT("M_CoastBarkDraft"), Textures, 10, 11, 12, -1, false, 1.0F, WorldAlignedTexture, WorldAlignedNormal);
     const bool bWater = BuildWaterMaterial(WaterNormal);
     const bool bGravel=BuildMaterial(TEXT("M_CoastGravelDraft"),Textures,13,14,15,-1,false,4000.0F/253.0F,WorldAlignedTexture,WorldAlignedNormal);
     if (!(bGround && bRock && bNeedles && bBark && bWater && bGravel)) return 7;
-    UE_LOG(LogTemp, Display, TEXT("COAST_DRAFT_IMPORT_PASS textures=34 materials=6 state=DRAFT_NOT_USER_CONFIRMED"));
+    UE_LOG(LogTemp, Display, TEXT("COAST_DRAFT_IMPORT_PASS textures=44 materials=6 state=DRAFT_NOT_USER_CONFIRMED"));
     return 0;
 }
