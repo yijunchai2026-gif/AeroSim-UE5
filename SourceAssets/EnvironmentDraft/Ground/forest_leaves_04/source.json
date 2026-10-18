@@ -1,0 +1,81 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "forest_leaves_04",
+  "asset_page": "https://polyhaven.com/a/forest_leaves_04",
+  "name": "Forest Leaves 04",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Rob Tuytel": "All"
+  },
+  "physical_dimensions_mm": [
+    1500,
+    1500.0001192092896
+  ],
+  "physical_width_m": 1.5,
+  "physical_width_cm": 150.0,
+  "millimeters_per_texel_at_2k": 0.7324,
+  "physical_scale_source": "https://api.polyhaven.com/info/forest_leaves_04",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "684ad4c553efea5bc7ac20e2cd2439619f5bc4b9fffdf320ad3d9bab35d84e1e",
+  "provider_files_sha256": "2944bc194c4f8e66a4766a7a36c1e01bd6556d96e09e49104099ecb3b30bb741",
+  "blend_role": "base",
+  "serves": [
+    "U5"
+  ],
+  "intended_use": "Pine-needle forest floor under the conifer stand and forest training corridor.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/forest_leaves_04/forest_leaves_04_diff_2k.jpg",
+      "bytes": 1539210,
+      "md5": "a6cfde9e6846f5aa27bcbe0a58fe9907",
+      "sha256": "a4f964eb32909ef9b41dbf4000bde142995711b7b755850f6523eb4d99c4a5d4",
+      "publisher_md5": "a6cfde9e6846f5aa27bcbe0a58fe9907",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/forest_leaves_04/forest_leaves_04_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/forest_leaves_04/forest_leaves_04_nor_dx_2k.jpg",
+      "bytes": 2207426,
+      "md5": "a2a95e99dbef49d5feda0ad35e171007",
+      "sha256": "151d2b52a2764b747dc253757053cd11af3591d7184addb0b1402bc2becfb0b6",
+      "publisher_md5": "a2a95e99dbef49d5feda0ad35e171007",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/forest_leaves_04/forest_leaves_04_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/forest_leaves_04/forest_leaves_04_rough_2k.jpg",
+      "bytes": 1227328,
+      "md5": "af02739e88a39f8760df09f28c64fee6",
+      "sha256": "80db3af88b964a24fbe3f9e2c1284c5d8426e51a0b776d8f1fca5a4e0fdd8b2f",
+      "publisher_md5": "af02739e88a39f8760df09f28c64fee6",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/forest_leaves_04/forest_leaves_04_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/forest_leaves_04/forest_leaves_04_disp_2k.jpg",
+      "bytes": 416672,
+      "md5": "1777c60f9d0aa03c92929280b1bbee17",
+      "sha256": "cfca13ba1645f66ef675592bfad553330845d96d0ebbf634b689459f111b8216",
+      "publisher_md5": "1777c60f9d0aa03c92929280b1bbee17",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/forest_leaves_04/forest_leaves_04_disp_2k.jpg",
+      "role": "linear height (8-bit JPG), for height-lerp layer blending only",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

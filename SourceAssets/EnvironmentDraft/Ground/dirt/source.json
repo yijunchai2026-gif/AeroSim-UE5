@@ -1,0 +1,57 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "dirt",
+  "asset_page": "https://polyhaven.com/a/dirt",
+  "name": "Dirt",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Charlotte Baglioni": "All"
+  },
+  "physical_dimensions_mm": [
+    2000,
+    2000
+  ],
+  "physical_width_m": 2.0,
+  "physical_width_cm": 200.0,
+  "millimeters_per_texel_at_2k": 0.9766,
+  "physical_scale_source": "https://api.polyhaven.com/info/dirt",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "782b5641a81286222d4f5e9d1c4ce1381dd7a232b59c628ea62f770fda8d6e51",
+  "provider_files_sha256": "e47999c63343557cf1764f278a0c5b09b5e420d9b2c42daeda38ec3abfa0d7b7",
+  "blend_role": "detail",
+  "serves": [
+    "U5"
+  ],
+  "intended_use": "Neutral fine-grain soil normal/roughness used only as a tileable close-range detail layer.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/dirt/dirt_nor_dx_2k.jpg",
+      "bytes": 4899425,
+      "md5": "687cd5baab1e037734a391ba575e1e7a",
+      "sha256": "50f56472147f593d8b62d71bf91a454b73674112dd3da94a43ebc5906e311dc4",
+      "publisher_md5": "687cd5baab1e037734a391ba575e1e7a",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dirt/dirt_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/dirt/dirt_rough_2k.jpg",
+      "bytes": 964887,
+      "md5": "420569deb8fab894119e32ed3712f7b8",
+      "sha256": "a17048230e1a86fc874b381360f6a821df1f6b0174ca7f85a59596c4290080fa",
+      "publisher_md5": "420569deb8fab894119e32ed3712f7b8",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dirt/dirt_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

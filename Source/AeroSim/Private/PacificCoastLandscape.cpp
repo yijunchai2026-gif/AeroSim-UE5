@@ -84,11 +84,29 @@ void APacificCoastGraybox::ApplyCoastalMaterials()
     {
         UMeshComponent* Mesh = CoastalColorParts[Index];
         if (Mesh == nullptr || Mesh->GetMaterial(0) == nullptr) continue;
-        if(CoastalGravelMaterial && (Mesh->GetFName()==TEXT("CoastalLaunchApron")||Mesh->GetFName()==TEXT("CoastalLaunchAccessTrail")||Mesh->GetFName()==TEXT("CoastalForestTrail")))
+        const bool bWorkedGround=Mesh->GetFName()==TEXT("CoastalLaunchApron")||Mesh->GetFName()==TEXT("CoastalLaunchAccessTrail")||Mesh->GetFName()==TEXT("CoastalForestTrail");
+        if(CoastalGravelMaterial && bWorkedGround)
             Mesh->SetMaterial(0,CoastalGravelMaterial);
+        if(bWorkedGround)
+        {
+            // Shoulders must blend into exactly the habitat layers of the terrain beneath them:
+            // rewrite their RGB habitat weights from the shared field, keeping the worn-core alpha.
+            UProceduralMeshComponent* Surface=Cast<UProceduralMeshComponent>(Mesh);
+            if(FProcMeshSection* Section=Surface ? Surface->GetProcMeshSection(0) : nullptr)
+            {
+                for(FProcMeshVertex& Vertex:Section->ProcVertexBuffer)
+                {
+                    FColor Habitat=FPacificCoastHabitat::GetGroundVertexColor(Vertex.Position.X,Vertex.Position.Y).ToFColor(false);
+                    Habitat.A=Vertex.Color.A;Vertex.Color=Habitat;
+                }
+                Surface->SetProcMeshSection(0,*Section);
+            }
+        }
         UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(Mesh->GetMaterial(0), this);
         Material->SetVectorParameterValue(TEXT("Color"), Mesh->GetMaterial(0)==CoastalGravelMaterial ? FLinearColor(.72F,.74F,.72F) : CoastalPartColors[Index]);
         Material->SetScalarParameterValue(TEXT("Roughness"), .95F);
+        // Trails read as compacted earth paths with grass shoulders; the launch apron stays gravel.
+        Material->SetScalarParameterValue(TEXT("PathEarth"), Mesh->GetFName()==TEXT("CoastalLaunchApron") ? 0.0F : 1.0F);
         Mesh->SetMaterial(0, Material);
     }
     TArray<UProceduralMeshComponent*> Meshes;

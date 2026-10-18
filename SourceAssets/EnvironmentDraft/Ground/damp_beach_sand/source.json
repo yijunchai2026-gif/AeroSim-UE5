@@ -1,0 +1,81 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "damp_beach_sand",
+  "asset_page": "https://polyhaven.com/a/damp_beach_sand",
+  "name": "Damp Beach Sand",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Dimitrios Savva": "All"
+  },
+  "physical_dimensions_mm": [
+    2000,
+    2000
+  ],
+  "physical_width_m": 2.0,
+  "physical_width_cm": 200.0,
+  "millimeters_per_texel_at_2k": 0.9766,
+  "physical_scale_source": "https://api.polyhaven.com/info/damp_beach_sand",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "556e299a50257292e291760f8490bb0fe97ec87aa273d9cc0dcaab439a72c206",
+  "provider_files_sha256": "bbc20157c96c18e81fd2aafc728b9c064f2245affbba76052f36cf2cbe6fd19d",
+  "blend_role": "base",
+  "serves": [
+    "U3"
+  ],
+  "intended_use": "Damp compacted beach sand for cove floors and swash zone.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/damp_beach_sand/damp_beach_sand_diff_2k.jpg",
+      "bytes": 3249410,
+      "md5": "87e71069e2d6210ef300464550e81efe",
+      "sha256": "d87190deb69254dea4722cb5a017b98f3e022185a9d67ddb53d1576e5416ddf8",
+      "publisher_md5": "87e71069e2d6210ef300464550e81efe",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/damp_beach_sand/damp_beach_sand_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/damp_beach_sand/damp_beach_sand_nor_dx_2k.jpg",
+      "bytes": 3336593,
+      "md5": "04e32c384c47ccdc4f856ea0d5ef923d",
+      "sha256": "4b1d36baac631862827efdefd0e500d11010ecfd9d600c17a0200698d62c76f8",
+      "publisher_md5": "04e32c384c47ccdc4f856ea0d5ef923d",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/damp_beach_sand/damp_beach_sand_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/damp_beach_sand/damp_beach_sand_rough_2k.jpg",
+      "bytes": 2643271,
+      "md5": "2a24e7babac1c1b61adadf76ebd92803",
+      "sha256": "9b96ef8971f7899dcaaa371b058eb6a855d2018ce4c73c03d309d2e457564d69",
+      "publisher_md5": "2a24e7babac1c1b61adadf76ebd92803",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/damp_beach_sand/damp_beach_sand_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/damp_beach_sand/damp_beach_sand_disp_2k.jpg",
+      "bytes": 1048436,
+      "md5": "da4996c1b6a2b097e6d7d7fc31c2043f",
+      "sha256": "5df930cbbc00815a7b55320a034d7d486fa4f7be1801b714214327832162fb7b",
+      "publisher_md5": "da4996c1b6a2b097e6d7d7fc31c2043f",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/damp_beach_sand/damp_beach_sand_disp_2k.jpg",
+      "role": "linear height (8-bit JPG), for height-lerp layer blending only",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

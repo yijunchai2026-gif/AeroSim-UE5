@@ -1,0 +1,82 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "clean_pebbles",
+  "asset_page": "https://polyhaven.com/a/clean_pebbles",
+  "name": "Clean Pebbles",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Dario Barresi": "Processing ",
+    "Charlotte Baglioni": "Photography"
+  },
+  "physical_dimensions_mm": [
+    2000,
+    2000
+  ],
+  "physical_width_m": 2.0,
+  "physical_width_cm": 200.0,
+  "millimeters_per_texel_at_2k": 0.9766,
+  "physical_scale_source": "https://api.polyhaven.com/info/clean_pebbles",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "c90e15748696e6d39cb8450faba05b874542619d1fca479dc5cb9f2b52050457",
+  "provider_files_sha256": "799d3d27d53c79a776db328d0a570ed3715e28bbed9753d6a11e30e61d0fbaad",
+  "blend_role": "base",
+  "serves": [
+    "U3"
+  ],
+  "intended_use": "Rounded shingle/pebbles for cove back-beach and storm berm.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/clean_pebbles/clean_pebbles_diff_2k.jpg",
+      "bytes": 3028597,
+      "md5": "6fa01d208cfe5c44303379438cb73a0b",
+      "sha256": "c895ca99e4dceb9d307acd0a9b502b06936f37382e032a0681c8bf14ff405904",
+      "publisher_md5": "6fa01d208cfe5c44303379438cb73a0b",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/clean_pebbles/clean_pebbles_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/clean_pebbles/clean_pebbles_nor_dx_2k.jpg",
+      "bytes": 4869555,
+      "md5": "cffe5150d84ad736c9abcb9d3c85c5fb",
+      "sha256": "969aba5d3500b698c5bc5e4765a4b4e7957d343bb2ceb9d5f02d8ba90ad33220",
+      "publisher_md5": "cffe5150d84ad736c9abcb9d3c85c5fb",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/clean_pebbles/clean_pebbles_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/clean_pebbles/clean_pebbles_rough_2k.jpg",
+      "bytes": 2611761,
+      "md5": "94991048cc324ee901cb64210f4e1d95",
+      "sha256": "c1b5f444f1f7c7d833be4394c261449c34d4a95394fa34f522662550cce7a35f",
+      "publisher_md5": "94991048cc324ee901cb64210f4e1d95",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/clean_pebbles/clean_pebbles_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/clean_pebbles/clean_pebbles_disp_2k.jpg",
+      "bytes": 1753300,
+      "md5": "0187f6af7339d13931a1962eadd67bb2",
+      "sha256": "952d415f4cce08d8afcdf2ca74eef4cbee3304d0583e787fbf4a7742b3708452",
+      "publisher_md5": "0187f6af7339d13931a1962eadd67bb2",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/clean_pebbles/clean_pebbles_disp_2k.jpg",
+      "role": "linear height (8-bit JPG), for height-lerp layer blending only",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

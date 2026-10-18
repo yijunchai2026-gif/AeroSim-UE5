@@ -1,0 +1,82 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "rock_face_03",
+  "asset_page": "https://polyhaven.com/a/rock_face_03",
+  "name": "Rock Face 03",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Dario Barresi": "Photography",
+    "Rico Cilliers": "Processing"
+  },
+  "physical_dimensions_mm": [
+    2699.9995708465576,
+    2699.9995708465576
+  ],
+  "physical_width_m": 2.7,
+  "physical_width_cm": 270.0,
+  "millimeters_per_texel_at_2k": 1.3184,
+  "physical_scale_source": "https://api.polyhaven.com/info/rock_face_03",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "3cc7a8c2c0e46ce2cbe4a9bc6889cad347d115ae5025b0f6d5122f7f7a8b20e4",
+  "provider_files_sha256": "c351a9a3b30b6d31ff05383890906fd974e9546b6eb1cf01f0cd1f4554c2a2bf",
+  "blend_role": "base",
+  "serves": [
+    "U6"
+  ],
+  "intended_use": "Fractured tan rock face for road cuts, gully walls and steep outcrops.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/rock_face_03/rock_face_03_diff_2k.jpg",
+      "bytes": 3814362,
+      "md5": "657add9e8a8dffaeed19bdfc58078b59",
+      "sha256": "644ee79df7ffbf5f6afc330b64dd3f33794bab8820915fe61ffe0c88ecfd7ece",
+      "publisher_md5": "657add9e8a8dffaeed19bdfc58078b59",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rock_face_03/rock_face_03_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/rock_face_03/rock_face_03_nor_dx_2k.jpg",
+      "bytes": 4462567,
+      "md5": "daca10c7ff9153b89c47893b9ddf0707",
+      "sha256": "83b039065bff5de79ca55674c59361152d808fe3779498e5c2ee0725c1172faa",
+      "publisher_md5": "daca10c7ff9153b89c47893b9ddf0707",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rock_face_03/rock_face_03_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/rock_face_03/rock_face_03_rough_2k.jpg",
+      "bytes": 2601552,
+      "md5": "8895a8b199487fd6cfeed2fed1fb39b4",
+      "sha256": "9ca3e9e196685f702328f24d66f039b72f5330fc35cf2a2c265cfa50a7916301",
+      "publisher_md5": "8895a8b199487fd6cfeed2fed1fb39b4",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rock_face_03/rock_face_03_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/rock_face_03/rock_face_03_disp_2k.jpg",
+      "bytes": 798149,
+      "md5": "e7629af66fe9420fe3e73b937f3eba40",
+      "sha256": "5d24ec5a7f4f7333bcf9c158f63d0059d9a3ba234eeff7570a5f6cf2f4522cd5",
+      "publisher_md5": "e7629af66fe9420fe3e73b937f3eba40",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rock_face_03/rock_face_03_disp_2k.jpg",
+      "role": "linear height (8-bit JPG), for height-lerp layer blending only",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

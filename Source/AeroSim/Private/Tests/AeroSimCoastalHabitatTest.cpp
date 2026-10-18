@@ -2,6 +2,11 @@
 #include "Misc/AutomationTest.h"
 #include "PacificCoastGraybox.h"
 #include "ProceduralMeshComponent.h"
+#include "Engine/Texture.h"
+#include "Materials/Material.h"
+#include "MaterialShared.h"
+#include "Misc/App.h"
+#include "RHIGlobals.h"
 
 // DEV-TERRAIN (RD-08): habitat field, landform and shoreline invariants for U5/U6.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoastalHabitatTest, "AeroSim.Environment.CoastalTerrain.HabitatLandformAndShore",
@@ -122,6 +127,34 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
         const FCoastHabitatSample W = FPacificCoastHabitat::Sample(WorstStep.X + DX, WorstStep.Y);
         AddInfo(FString::Printf(TEXT("Worst-step neighbourhood x%+.0f: h %.0f grade %.3f sun %.3f drain %.3f | E %.2f S %.2f W %.2f R %.2f Sh %.2f"), DX,
             APacificCoastGraybox::GetCoastalLandHeight(WorstStep.X + DX, WorstStep.Y), W.Grade, W.SunExposure, W.Drainage, W.ExposedGrass, W.ShelteredGrass, W.Woodland, W.Rock, W.Shore));
+    }
+    // U5 ground: true-scale CC0 habitat layers, detail and macro inputs on the shared land function.
+    for (const TCHAR* Surface : {TEXT("CoastalPlateau"), TEXT("CoastalForestTrail")})
+    {
+        UMaterialInterface* Ground = nullptr;
+        for (UProceduralMeshComponent* Mesh : Meshes) if (Mesh->GetName() == Surface) Ground = Mesh->GetMaterial(0);
+        if (!TestNotNull(TEXT("Terrain surface uses an imported draft ground material"), Ground)) continue;
+        const TPair<const TCHAR*, const TCHAR*> Layers[] = {
+            {TEXT("ExposedGrassColor"), TEXT("T_CoastWitheredGrass_BaseColor")}, {TEXT("ShelteredGrassColor"), TEXT("T_CoastSparseGrass_BaseColor")},
+            {TEXT("WoodlandLitterColor"), TEXT("T_CoastLeafLitter_BaseColor")}, {TEXT("StonyGroundColor"), TEXT("T_CoastStonyGround_BaseColor")},
+            {TEXT("DetailNormal"), TEXT("T_CoastDetailDirt_Normal")}, {TEXT("DetailNormalB"), TEXT("T_CoastDetailDirt_Normal")},
+            {TEXT("MacroVariation"), TEXT("T_CoastMacroGrassRock_BaseColor")}};
+        for (const auto& Layer : Layers)
+        {
+            UTexture* Texture = nullptr;
+            TestTrue(FString::Printf(TEXT("%s uses %s"), Layer.Key, Layer.Value), Ground->GetTextureParameterValue(FMaterialParameterInfo(Layer.Key), Texture) && Texture && Texture->GetFName() == Layer.Value);
+        }
+        if (FApp::CanEverRender())
+        {
+            FMaterialResource* Resource = Ground->GetMaterial()->GetMaterialResource(GMaxRHIShaderPlatform);
+            if (TestNotNull(TEXT("Ground material has a render resource"), Resource))
+            {
+                Resource->FinishCompilation();
+                for (const FString& Error : Resource->GetCompileErrors()) AddError(FString::Printf(TEXT("Ground shader compile error: %s"), *Error));
+                TestTrue(TEXT("Ground material shader map compiled"), Resource->GetGameThreadShaderMap() != nullptr);
+            }
+        }
+        else AddInfo(TEXT("Ground shader compile check NOT_RUN under NullRHI"));
     }
     AddInfo(FString::Printf(TEXT("Habitat coverage of %d land samples: exposed %d sheltered %d woodland %d rock %d"), LandSamples, Counts[0], Counts[1], Counts[2], Counts[3]));
     AddInfo(FString::Printf(TEXT("Habitat 5 m step max %.3f at (%.0f, %.0f); >0.15 in %d of %d cells; woodland mean sun %.3f shade %.3f"),

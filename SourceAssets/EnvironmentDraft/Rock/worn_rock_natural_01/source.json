@@ -1,0 +1,83 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "worn_rock_natural_01",
+  "asset_page": "https://polyhaven.com/a/worn_rock_natural_01",
+  "name": "Worn Rock Natural 01",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Rob Tuytel": "Processing",
+    "Dimitrios Savva": "Photography"
+  },
+  "physical_dimensions_mm": [
+    2000,
+    2000
+  ],
+  "physical_width_m": 2.0,
+  "physical_width_cm": 200.0,
+  "millimeters_per_texel_at_2k": 0.9766,
+  "physical_scale_source": "https://api.polyhaven.com/info/worn_rock_natural_01",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "a0193c031d9a9f3882a6dd4bef99f61d4690513484ce2bfc6c4ff73b337bcb39",
+  "provider_files_sha256": "6fd1d52951ba447eb344a70690aef9cbd20d028fd3e2c432b02749761139335a",
+  "blend_role": "base",
+  "serves": [
+    "U6",
+    "U3"
+  ],
+  "intended_use": "Weathered tan sandstone for steep exposed hill rock and upper coastal cliff faces.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/worn_rock_natural_01/worn_rock_natural_01_diff_2k.jpg",
+      "bytes": 3376056,
+      "md5": "7fd6546ffdb78eb3d1a541f6c25a0fcf",
+      "sha256": "084e528a8b63684cf6cd9c9c1d44cef32a8f4c9e8404394a4a1a40c70cbf000d",
+      "publisher_md5": "7fd6546ffdb78eb3d1a541f6c25a0fcf",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/worn_rock_natural_01/worn_rock_natural_01_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/worn_rock_natural_01/worn_rock_natural_01_nor_dx_2k.jpg",
+      "bytes": 3484366,
+      "md5": "ce3e7826f7d208093b44015deb7c4af2",
+      "sha256": "e76ced931974d30ea9fe9869ece624ded020f90ca6e2d69e920adb53cc478b3c",
+      "publisher_md5": "ce3e7826f7d208093b44015deb7c4af2",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/worn_rock_natural_01/worn_rock_natural_01_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/worn_rock_natural_01/worn_rock_natural_01_rough_2k.jpg",
+      "bytes": 2166423,
+      "md5": "02d285642f9291b1a9584f82ba934b90",
+      "sha256": "1aac2cf72392f1207b5dbf880cbe0ef58d4c7eecd9dadc12640f031670969395",
+      "publisher_md5": "02d285642f9291b1a9584f82ba934b90",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/worn_rock_natural_01/worn_rock_natural_01_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/worn_rock_natural_01/worn_rock_natural_01_disp_2k.jpg",
+      "bytes": 791031,
+      "md5": "cb1ecda1df9a5a627f2b874fa0b1a16d",
+      "sha256": "39f2680f1c09926cd6350e4e3e39d6e203c2394708a97559c4ae6536dcbb10ea",
+      "publisher_md5": "cb1ecda1df9a5a627f2b874fa0b1a16d",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/worn_rock_natural_01/worn_rock_natural_01_disp_2k.jpg",
+      "role": "linear height (8-bit JPG), for height-lerp layer blending only",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}
