@@ -1,0 +1,1575 @@
+{
+  "schema": "aerosim.flora-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "acquired_utc": "2026-10-18T09:38:42.687158+00:00",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "providers": [
+    {
+      "asset": "pine_bark",
+      "page": "https://polyhaven.com/a/pine_bark",
+      "authors": {
+        "Dimitrios Savva": "All"
+      },
+      "provider_type": "texture",
+      "physical_dimensions_mm": [
+        1999.9996423721313,
+        1999.9996423721313
+      ],
+      "provider_polycount": null,
+      "info_sha256": "6ef27cead6f171e3eb8564fdee87b0198c18debfdc5252c19d5df7c6b8076a93",
+      "files_sha256": "0685b6fbdafcdadf115e60562850e6045a563cd39369342132882c9df21421df"
+    },
+    {
+      "asset": "bark_willow_02",
+      "page": "https://polyhaven.com/a/bark_willow_02",
+      "authors": {
+        "Charlotte Baglioni": "All"
+      },
+      "provider_type": "texture",
+      "physical_dimensions_mm": [
+        2150.0000953674316,
+        2150.0000953674316
+      ],
+      "provider_polycount": null,
+      "info_sha256": "0ea1218991ea171348077f176abb98c4df65a8e5695f02dce92bcb52bba0c45d",
+      "files_sha256": "480d9cba41be4712bb690c8fe414c51287cb20b788ebdf4ea32f1c727a1b309a"
+    },
+    {
+      "asset": "jolcham_oak_bark_01",
+      "page": "https://polyhaven.com/a/jolcham_oak_bark_01",
+      "authors": {
+        "Charlotte Baglioni": "All"
+      },
+      "provider_type": "texture",
+      "physical_dimensions_mm": [
+        1000,
+        2000
+      ],
+      "provider_polycount": null,
+      "info_sha256": "971288222609b41c981b6956453ebcf62979ceb93ad207673e993cd61727b687",
+      "files_sha256": "da22d84f5c1f4a19ab0a547466ed23b7bfae98fb17dcddfb39e6a97639394acf"
+    },
+    {
+      "asset": "tree_bark_03",
+      "page": "https://polyhaven.com/a/tree_bark_03",
+      "authors": {
+        "Rob Tuytel": "All"
+      },
+      "provider_type": "texture",
+      "physical_dimensions_mm": [
+        1000,
+        1000
+      ],
+      "provider_polycount": null,
+      "info_sha256": "38e37ebf0993f91bcb7ec16e24d9343eb2e1695f0cea8e6c30b4f49b2baaa9d4",
+      "files_sha256": "252dbec12da4d5e2b651485de27b9be54d930fff9bee8a32ba1835937992a598"
+    },
+    {
+      "asset": "forest_leaves_04",
+      "page": "https://polyhaven.com/a/forest_leaves_04",
+      "authors": {
+        "Rob Tuytel": "All"
+      },
+      "provider_type": "texture",
+      "physical_dimensions_mm": [
+        1500,
+        1500.0001192092896
+      ],
+      "provider_polycount": null,
+      "info_sha256": "684ad4c553efea5bc7ac20e2cd2439619f5bc4b9fffdf320ad3d9bab35d84e1e",
+      "files_sha256": "2944bc194c4f8e66a4766a7a36c1e01bd6556d96e09e49104099ecb3b30bb741"
+    },
+    {
+      "asset": "dry_decay_leaves",
+      "page": "https://polyhaven.com/a/dry_decay_leaves",
+      "authors": {
+        "Amal Kumar": "All"
+      },
+      "provider_type": "texture",
+      "physical_dimensions_mm": [
+        2000,
+        2000
+      ],
+      "provider_polycount": null,
+      "info_sha256": "28caea584dab804ab2b7e0e34f22f6674d04562000ee08bec19981863e4e605b",
+      "files_sha256": "8284eac8569196fa54a27b19890f9d51b205feb4ae1977229ba3040b0b664c05"
+    },
+    {
+      "asset": "fir_tree_01",
+      "page": "https://polyhaven.com/a/fir_tree_01",
+      "authors": {
+        "Rob Tuytel": "photography",
+        "Rico Cilliers": "modeling"
+      },
+      "provider_type": "model",
+      "physical_dimensions_mm": [
+        26732.96093940735,
+        6541.954040527344,
+        19267.957717180252
+      ],
+      "provider_polycount": 7853731,
+      "info_sha256": "b1ddccd7bbe3ab1b80f50f74532f9286d009a73cb89ee8ec42cf764b21d2dca2",
+      "files_sha256": "b72c1e9efce10799ffa9502ce06409745d1deba9d091630412a69891e370ce0c"
+    },
+    {
+      "asset": "pine_tree_01",
+      "page": "https://polyhaven.com/a/pine_tree_01",
+      "authors": {
+        "Rob Tuytel": "photography",
+        "Rico Cilliers": "modeling"
+      },
+      "provider_type": "model",
+      "physical_dimensions_mm": [
+        26719.930171966553,
+        1300.55171251297,
+        17577.758572995663
+      ],
+      "provider_polycount": 17427094,
+      "info_sha256": "7c871acb7c638947b16fa4f645f70693e1b3db2ccfa4254fbc47aa62298b4fdd",
+      "files_sha256": "6dc7a454e1047014ba5dc0cc3fe62a0f5ade64c25051f46b9789136dc46b0551"
+    },
+    {
+      "asset": "island_tree_02",
+      "page": "https://polyhaven.com/a/island_tree_02",
+      "authors": {
+        "Rob Tuytel": "scanning, processing",
+        "Rico Cilliers": "cleanup, processing"
+      },
+      "provider_type": "model",
+      "physical_dimensions_mm": [
+        8485.51321029663,
+        4078.6155462265015,
+        3408.9039135724306
+      ],
+      "provider_polycount": 1762064,
+      "info_sha256": "4f4e9f38188ed47006f7645b3ad4b756ec4cda5478cb3666efd2b33bd28623bd",
+      "files_sha256": "744d15500ead24ec5bca96205f2fa54ea1deee58561652d25544e09796ac9739"
+    },
+    {
+      "asset": "searsia_lucida",
+      "page": "https://polyhaven.com/a/searsia_lucida",
+      "authors": {
+        "James Ray Cock": "modeling",
+        "Jenelle van Heerden": "Photography"
+      },
+      "provider_type": "model",
+      "physical_dimensions_mm": [
+        4782.970905303955,
+        2844.3095684051514,
+        2339.1980212181807
+      ],
+      "provider_polycount": 841648,
+      "info_sha256": "ec5161cc99d73ab963a10e79c2b2af94060ecc31b58f5534fe00ad8c79cda5dc",
+      "files_sha256": "a7141bfcec3a9fa1c89d3687e214509c23393e1026b30f0b257713d74c2a43cb"
+    },
+    {
+      "asset": "fern_02",
+      "page": "https://polyhaven.com/a/fern_02",
+      "authors": {
+        "Rob Tuytel": "scanning",
+        "Rico Cilliers": "modeling"
+      },
+      "provider_type": "model",
+      "physical_dimensions_mm": [
+        1972.5302457809448,
+        1724.0281701087952,
+        427.6947118341923
+      ],
+      "provider_polycount": 6232,
+      "info_sha256": "7f1d9cfc1cbe88de8c15aa7c7b3580906b3c12a3145ac2f95be51cdaa2bb1b12",
+      "files_sha256": "a3e43a1dad9a175defdc5816daed6ab1192d4dcd4c8f8a5becd44e63616ba0b3"
+    },
+    {
+      "asset": "shrub_04",
+      "page": "https://polyhaven.com/a/shrub_04",
+      "authors": {
+        "Rico Cilliers": "All"
+      },
+      "provider_type": "model",
+      "physical_dimensions_mm": [
+        746.7864416539669,
+        186.9201734662056,
+        280.6698549538851
+      ],
+      "provider_polycount": 47813,
+      "info_sha256": "93ec99022c8ff8f8302dec0dffd79db6db262b1bdedde76ae24f48aa6e0ca853",
+      "files_sha256": "982d40288050ce2d06fdbe3518d444ef177a7d6defd3362aa8dec109c9a8f79a"
+    },
+    {
+      "asset": "wild_rooibos_bush",
+      "page": "https://polyhaven.com/a/wild_rooibos_bush",
+      "authors": {
+        "James Ray Cock": "modeling",
+        "Jenelle van Heerden": "photography"
+      },
+      "provider_type": "model",
+      "physical_dimensions_mm": [
+        2285.276174545288,
+        854.104071855545,
+        543.936595087871
+      ],
+      "provider_polycount": 76521,
+      "info_sha256": "1a1427b5688d3909f8f348510b4df9d1ca52fa63742eefaa315edae60b748f79",
+      "files_sha256": "69e7d02fd3b6e672011f6e3bc21e468804140092208e6423afcac9ec5f0dd165"
+    },
+    {
+      "asset": "dry_branches_medium_01",
+      "page": "https://polyhaven.com/a/dry_branches_medium_01",
+      "authors": {
+        "Rico Cilliers": "All"
+      },
+      "provider_type": "model",
+      "physical_dimensions_mm": [
+        1059.486210346222,
+        1299.152910709381,
+        340.9853130578995
+      ],
+      "provider_polycount": 16803,
+      "info_sha256": "1b95c83afc6aaaed849360e4d0a8f3cf382519141bc4e29d330c361ce4c731c1",
+      "files_sha256": "a73992e1dcaa1151693e137b5c530ef109ebc7b2d8ed694595dd3987b28330e7"
+    }
+  ],
+  "meshes": [
+    {
+      "asset": "fern_02",
+      "role": "Sword-fern-like understory fern clumps",
+      "complaint": "U2",
+      "gltf": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/fern_02.gltf",
+      "meshes": [
+        {
+          "mesh": "Plane.024",
+          "triangles": 2384,
+          "bounds_cm_xyz_up": [
+            99.0,
+            89.4,
+            42.8
+          ]
+        },
+        {
+          "mesh": "Plane.044",
+          "triangles": 2248,
+          "bounds_cm_xyz_up": [
+            87.4,
+            76.5,
+            34.9
+          ]
+        },
+        {
+          "mesh": "Plane.006",
+          "triangles": 784,
+          "bounds_cm_xyz_up": [
+            55.2,
+            61.3,
+            28.7
+          ]
+        },
+        {
+          "mesh": "Plane.059",
+          "triangles": 816,
+          "bounds_cm_xyz_up": [
+            57.3,
+            59.3,
+            21.3
+          ]
+        }
+      ]
+    },
+    {
+      "asset": "shrub_04",
+      "role": "Low leafy shrub variants (understory filler)",
+      "complaint": "U2",
+      "gltf": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/shrub_04.gltf",
+      "meshes": [
+        {
+          "mesh": "Plane.063",
+          "triangles": 27327,
+          "bounds_cm_xyz_up": [
+            58.4,
+            14.6,
+            21.9
+          ]
+        }
+      ]
+    },
+    {
+      "asset": "wild_rooibos_bush",
+      "role": "Fine-leaved dry shrub (chaparral / coyote-brush proxy)",
+      "complaint": "U2",
+      "gltf": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/wild_rooibos_bush.gltf",
+      "meshes": [
+        {
+          "mesh": "Plane.012",
+          "triangles": 13151,
+          "bounds_cm_xyz_up": [
+            69.7,
+            84.3,
+            53.9
+          ]
+        },
+        {
+          "mesh": "Plane.001",
+          "triangles": 6287,
+          "bounds_cm_xyz_up": [
+            52.4,
+            47.5,
+            54.1
+          ]
+        },
+        {
+          "mesh": "Plane.050",
+          "triangles": 4204,
+          "bounds_cm_xyz_up": [
+            42.5,
+            47.2,
+            44.8
+          ]
+        },
+        {
+          "mesh": "Plane.003",
+          "triangles": 2684,
+          "bounds_cm_xyz_up": [
+            32.7,
+            38.4,
+            42.0
+          ]
+        },
+        {
+          "mesh": "Plane.014",
+          "triangles": 1193,
+          "bounds_cm_xyz_up": [
+            27.8,
+            16.6,
+            30.6
+          ]
+        }
+      ]
+    },
+    {
+      "asset": "dry_branches_medium_01",
+      "role": "Fallen dead branches / twigs for forest floor",
+      "complaint": "U1/U2",
+      "gltf": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/dry_branches_medium_01.gltf",
+      "meshes": [
+        {
+          "mesh": "branches_b_dynamesh.001",
+          "triangles": 5616,
+          "bounds_cm_xyz_up": [
+            13.1,
+            77.7,
+            14.3
+          ]
+        },
+        {
+          "mesh": "branches_b_dynamesh.002",
+          "triangles": 5254,
+          "bounds_cm_xyz_up": [
+            15.1,
+            103.9,
+            14.2
+          ]
+        },
+        {
+          "mesh": "branches_b_dynamesh.003",
+          "triangles": 5933,
+          "bounds_cm_xyz_up": [
+            32.3,
+            129.9,
+            34.1
+          ]
+        }
+      ]
+    }
+  ],
+  "total_bytes": 89658860,
+  "file_count": 67,
+  "limits": "Published CC0 scans of non-Californian species used as visual proxies (no Monterey pine, Douglas-fir or coast live oak identity claimed). Model scene dimensions cover all variants laid out side by side, not one plant. No engine import, material, placement or visual acceptance is claimed. Spec: docs/designs/flora-asset-spec.md.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_bark/pine_bark_diff_2k.jpg",
+      "asset": "pine_bark",
+      "provider_key": "Diffuse",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/pine_bark/pine_bark_diff_2k.jpg",
+      "bytes": 3167561,
+      "publisher_md5": "d10980446d36a65a73081cf61bc84992",
+      "publisher_md5_verified": true,
+      "sha256": "741f333ab9f8a0996d8a53905b5ac792fab77d7ccb8cac5fbaed8c99b9f6abd5",
+      "license": "CC0-1.0",
+      "role": "Monterey pine trunk bark: plated red-brown ridges, deep furrows",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_bark/pine_bark_nor_dx_2k.jpg",
+      "asset": "pine_bark",
+      "provider_key": "nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/pine_bark/pine_bark_nor_dx_2k.jpg",
+      "bytes": 4526173,
+      "publisher_md5": "df0b191cb9b214ca3af649ff4c48e2f2",
+      "publisher_md5_verified": true,
+      "sha256": "fd470b8c5fb438aecb5af277f9c34e564076ad642a1484175798f833ad8ec970",
+      "license": "CC0-1.0",
+      "role": "Monterey pine trunk bark: plated red-brown ridges, deep furrows",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_bark/pine_bark_rough_2k.jpg",
+      "asset": "pine_bark",
+      "provider_key": "Rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/pine_bark/pine_bark_rough_2k.jpg",
+      "bytes": 2085022,
+      "publisher_md5": "9ea974ea3e298b30ee3b7a21ec05b566",
+      "publisher_md5_verified": true,
+      "sha256": "a86618f6358a97410b15d226d0b3d52bb203aed8d9a29cfa355769b95df94d03",
+      "license": "CC0-1.0",
+      "role": "Monterey pine trunk bark: plated red-brown ridges, deep furrows",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_bark/pine_bark_disp_2k.jpg",
+      "asset": "pine_bark",
+      "provider_key": "Displacement",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/pine_bark/pine_bark_disp_2k.jpg",
+      "bytes": 1259109,
+      "publisher_md5": "4f46a23fd05aed2f2c5ab948abb1e589",
+      "publisher_md5_verified": true,
+      "sha256": "066b021e6192eb49019bde474bf55323d7f0f13706f32c308d96ac1dbcba7c3c",
+      "license": "CC0-1.0",
+      "role": "Monterey pine trunk bark: plated red-brown ridges, deep furrows",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/bark_willow_02/bark_willow_02_diff_2k.jpg",
+      "asset": "bark_willow_02",
+      "provider_key": "Diffuse",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/bark_willow_02/bark_willow_02_diff_2k.jpg",
+      "bytes": 4010319,
+      "publisher_md5": "c6bc363160c1e91d7af4b579dd0345f4",
+      "publisher_md5_verified": true,
+      "sha256": "6bec05b58cad3907ba2704010f2d6878152b679e5f5ab5c6c6ff7d449c373a76",
+      "license": "CC0-1.0",
+      "role": "Douglas-fir proxy bark: deep vertical furrows, grey-brown corky ridges",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/bark_willow_02/bark_willow_02_nor_dx_2k.jpg",
+      "asset": "bark_willow_02",
+      "provider_key": "nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/bark_willow_02/bark_willow_02_nor_dx_2k.jpg",
+      "bytes": 5202335,
+      "publisher_md5": "d1a05457043ab1a0318ace56474f8ce6",
+      "publisher_md5_verified": true,
+      "sha256": "a97754ba6c21c99f266398b19a6bb14efee7669776d73a72ddefe6f0cc082269",
+      "license": "CC0-1.0",
+      "role": "Douglas-fir proxy bark: deep vertical furrows, grey-brown corky ridges",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/bark_willow_02/bark_willow_02_rough_2k.jpg",
+      "asset": "bark_willow_02",
+      "provider_key": "Rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/bark_willow_02/bark_willow_02_rough_2k.jpg",
+      "bytes": 2172857,
+      "publisher_md5": "87beaa7588d0120638b7f3726f968f72",
+      "publisher_md5_verified": true,
+      "sha256": "360bfce5b6f8ff6fd6ab5c8b61dcdaa4bcc36c86c920964c71d38e8fc671ebcb",
+      "license": "CC0-1.0",
+      "role": "Douglas-fir proxy bark: deep vertical furrows, grey-brown corky ridges",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/bark_willow_02/bark_willow_02_disp_2k.jpg",
+      "asset": "bark_willow_02",
+      "provider_key": "Displacement",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/bark_willow_02/bark_willow_02_disp_2k.jpg",
+      "bytes": 1639832,
+      "publisher_md5": "c4668773e5fbe7ad5d4f209c130db433",
+      "publisher_md5_verified": true,
+      "sha256": "ba22ead0cc5883346cba74766d0d782cab6fae32157ae5801cc5b8b3b00087b2",
+      "license": "CC0-1.0",
+      "role": "Douglas-fir proxy bark: deep vertical furrows, grey-brown corky ridges",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/jolcham_oak_bark_01/jolcham_oak_bark_01_diff_1k.jpg",
+      "asset": "jolcham_oak_bark_01",
+      "provider_key": "Diffuse",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/jolcham_oak_bark_01/jolcham_oak_bark_01_diff_1k.jpg",
+      "bytes": 1936622,
+      "publisher_md5": "a74acddb27c17674d94498c1be7f0495",
+      "publisher_md5_verified": true,
+      "sha256": "08c26b3ea38718dfc3902d0889ac06e2ce0ae9cddb31d8988723eee1780a71c8",
+      "license": "CC0-1.0",
+      "role": "Coast live oak bark (primary): grey furrowed oak bark; 1k is 1024x2048",
+      "complaint": "U1",
+      "pixels": [
+        1024,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/jolcham_oak_bark_01/jolcham_oak_bark_01_nor_dx_1k.jpg",
+      "asset": "jolcham_oak_bark_01",
+      "provider_key": "nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/jolcham_oak_bark_01/jolcham_oak_bark_01_nor_dx_1k.jpg",
+      "bytes": 2690494,
+      "publisher_md5": "c77540777dad0563575751329c53e02b",
+      "publisher_md5_verified": true,
+      "sha256": "8a10fe4b63906dd0c8ac4626fcb0024cb0e9376c6922369fcbb30c38c15f0327",
+      "license": "CC0-1.0",
+      "role": "Coast live oak bark (primary): grey furrowed oak bark; 1k is 1024x2048",
+      "complaint": "U1",
+      "pixels": [
+        1024,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/jolcham_oak_bark_01/jolcham_oak_bark_01_rough_1k.jpg",
+      "asset": "jolcham_oak_bark_01",
+      "provider_key": "Rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/jolcham_oak_bark_01/jolcham_oak_bark_01_rough_1k.jpg",
+      "bytes": 799081,
+      "publisher_md5": "24680673158b325898d67ded4116c5f5",
+      "publisher_md5_verified": true,
+      "sha256": "070f859c0c86dbb9d75d53cb885e07e9c3d8a0385fe82ab1c3083032aff7f31a",
+      "license": "CC0-1.0",
+      "role": "Coast live oak bark (primary): grey furrowed oak bark; 1k is 1024x2048",
+      "complaint": "U1",
+      "pixels": [
+        1024,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/jolcham_oak_bark_01/jolcham_oak_bark_01_disp_1k.jpg",
+      "asset": "jolcham_oak_bark_01",
+      "provider_key": "Displacement",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/jolcham_oak_bark_01/jolcham_oak_bark_01_disp_1k.jpg",
+      "bytes": 880643,
+      "publisher_md5": "dc3a2b176ed98286cb8e603370632f68",
+      "publisher_md5_verified": true,
+      "sha256": "adea055f5164422197c73f98fb26ad5761d8e2eb9db67fb8210ec334cdc2f0cb",
+      "license": "CC0-1.0",
+      "role": "Coast live oak bark (primary): grey furrowed oak bark; 1k is 1024x2048",
+      "complaint": "U1",
+      "pixels": [
+        1024,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/tree_bark_03/tree_bark_03_diff_2k.jpg",
+      "asset": "tree_bark_03",
+      "provider_key": "Diffuse",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/tree_bark_03/tree_bark_03_diff_2k.jpg",
+      "bytes": 3807797,
+      "publisher_md5": "5ca9ee65b42be92e1c7800385721ff56",
+      "publisher_md5_verified": true,
+      "sha256": "8e8e2f2f4cf3fb09d91203e688c4f5fd3e14b3044d45236ad1f192452f55b34c",
+      "license": "CC0-1.0",
+      "role": "Coast live oak bark (alternate): light grey blocky ridges with lichen",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/tree_bark_03/tree_bark_03_nor_dx_2k.jpg",
+      "asset": "tree_bark_03",
+      "provider_key": "nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/tree_bark_03/tree_bark_03_nor_dx_2k.jpg",
+      "bytes": 4736688,
+      "publisher_md5": "4eb99134b87b12478397e97f3807a196",
+      "publisher_md5_verified": true,
+      "sha256": "d942759d7c7e62dcbdb1873915a6e63a71a7eeb3829d40edd05fe74140d57847",
+      "license": "CC0-1.0",
+      "role": "Coast live oak bark (alternate): light grey blocky ridges with lichen",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/tree_bark_03/tree_bark_03_rough_2k.jpg",
+      "asset": "tree_bark_03",
+      "provider_key": "Rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/tree_bark_03/tree_bark_03_rough_2k.jpg",
+      "bytes": 1771898,
+      "publisher_md5": "8cb3f67a7384350de35c0bc043432027",
+      "publisher_md5_verified": true,
+      "sha256": "35b623b8c4daa1612e18d626adde7f8886835d417b633ffac2b0e24efec81060",
+      "license": "CC0-1.0",
+      "role": "Coast live oak bark (alternate): light grey blocky ridges with lichen",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/tree_bark_03/tree_bark_03_disp_2k.jpg",
+      "asset": "tree_bark_03",
+      "provider_key": "Displacement",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/tree_bark_03/tree_bark_03_disp_2k.jpg",
+      "bytes": 1027696,
+      "publisher_md5": "c2afc215933d7765323f522434bb5169",
+      "publisher_md5_verified": true,
+      "sha256": "82f77e7ac6b8b2a8b2d04ded670125d3521471864be9d4e39c7e393d83a03919",
+      "license": "CC0-1.0",
+      "role": "Coast live oak bark (alternate): light grey blocky ridges with lichen",
+      "complaint": "U1",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/forest_leaves_04/forest_leaves_04_diff_2k.jpg",
+      "asset": "forest_leaves_04",
+      "provider_key": "Diffuse",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/forest_leaves_04/forest_leaves_04_diff_2k.jpg",
+      "bytes": 1539210,
+      "publisher_md5": "a6cfde9e6846f5aa27bcbe0a58fe9907",
+      "publisher_md5_verified": true,
+      "sha256": "a4f964eb32909ef9b41dbf4000bde142995711b7b755850f6523eb4d99c4a5d4",
+      "license": "CC0-1.0",
+      "role": "Pine needle and cone forest-floor litter",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/forest_leaves_04/forest_leaves_04_nor_dx_2k.jpg",
+      "asset": "forest_leaves_04",
+      "provider_key": "nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/forest_leaves_04/forest_leaves_04_nor_dx_2k.jpg",
+      "bytes": 2207426,
+      "publisher_md5": "a2a95e99dbef49d5feda0ad35e171007",
+      "publisher_md5_verified": true,
+      "sha256": "151d2b52a2764b747dc253757053cd11af3591d7184addb0b1402bc2becfb0b6",
+      "license": "CC0-1.0",
+      "role": "Pine needle and cone forest-floor litter",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/forest_leaves_04/forest_leaves_04_rough_2k.jpg",
+      "asset": "forest_leaves_04",
+      "provider_key": "Rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/forest_leaves_04/forest_leaves_04_rough_2k.jpg",
+      "bytes": 1227328,
+      "publisher_md5": "af02739e88a39f8760df09f28c64fee6",
+      "publisher_md5_verified": true,
+      "sha256": "80db3af88b964a24fbe3f9e2c1284c5d8426e51a0b776d8f1fca5a4e0fdd8b2f",
+      "license": "CC0-1.0",
+      "role": "Pine needle and cone forest-floor litter",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/forest_leaves_04/forest_leaves_04_disp_2k.jpg",
+      "asset": "forest_leaves_04",
+      "provider_key": "Displacement",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/forest_leaves_04/forest_leaves_04_disp_2k.jpg",
+      "bytes": 416672,
+      "publisher_md5": "1777c60f9d0aa03c92929280b1bbee17",
+      "publisher_md5_verified": true,
+      "sha256": "cfca13ba1645f66ef675592bfad553330845d96d0ebbf634b689459f111b8216",
+      "license": "CC0-1.0",
+      "role": "Pine needle and cone forest-floor litter",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_decay_leaves/dry_decay_leaves_diff_2k.jpg",
+      "asset": "dry_decay_leaves",
+      "provider_key": "Diffuse",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dry_decay_leaves/dry_decay_leaves_diff_2k.jpg",
+      "bytes": 2856071,
+      "publisher_md5": "922abbf4d0910b1557e13695306c3f7d",
+      "publisher_md5_verified": true,
+      "sha256": "4dc7dde86f3db0df3566ca0ae77390000e979db31fbdc861796d2e516e6ad04e",
+      "license": "CC0-1.0",
+      "role": "Dry broadleaf (oak-like) leaf litter",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_decay_leaves/dry_decay_leaves_nor_dx_2k.jpg",
+      "asset": "dry_decay_leaves",
+      "provider_key": "nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dry_decay_leaves/dry_decay_leaves_nor_dx_2k.jpg",
+      "bytes": 3925748,
+      "publisher_md5": "02f119aef570195b8f1bea303f97ea55",
+      "publisher_md5_verified": true,
+      "sha256": "a9a007a758cb126fd8f0e9e411e0c62e3c8a3bbf950d8dc7823108058975bd70",
+      "license": "CC0-1.0",
+      "role": "Dry broadleaf (oak-like) leaf litter",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_decay_leaves/dry_decay_leaves_rough_2k.jpg",
+      "asset": "dry_decay_leaves",
+      "provider_key": "Rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dry_decay_leaves/dry_decay_leaves_rough_2k.jpg",
+      "bytes": 1962109,
+      "publisher_md5": "68ad9d61963e5c0349887b71be162f84",
+      "publisher_md5_verified": true,
+      "sha256": "13024199e2f90d1a43733a1a599386b4a4a7778a0affcc310430629de6a623e7",
+      "license": "CC0-1.0",
+      "role": "Dry broadleaf (oak-like) leaf litter",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_decay_leaves/dry_decay_leaves_disp_2k.jpg",
+      "asset": "dry_decay_leaves",
+      "provider_key": "Displacement",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dry_decay_leaves/dry_decay_leaves_disp_2k.jpg",
+      "bytes": 1191385,
+      "publisher_md5": "f60637cb8d8b4941aece306b5fc45c9c",
+      "publisher_md5_verified": true,
+      "sha256": "cd2461f31eeeb6b360bc9dcdcb745d56b3cb489992c344b7142ef9e672e8ecbb",
+      "license": "CC0-1.0",
+      "role": "Dry broadleaf (oak-like) leaf litter",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fir_tree_01/fir_tree_01_twig_diff_2k.jpg",
+      "asset": "fir_tree_01",
+      "provider_key": "twig_diff",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/fir_tree_01/fir_tree_01_twig_diff_2k.jpg",
+      "bytes": 1141996,
+      "publisher_md5": "6d023f52dab632b031a2ab8e5a27541f",
+      "publisher_md5_verified": true,
+      "sha256": "5504646d484a08649a9cd14402860063e69fd10072238f5afe72214e6bf478be",
+      "license": "CC0-1.0",
+      "role": "Fir needle spray card atlas (Douglas-fir proxy); texture only, no 7.8M-tri mesh",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fir_tree_01/fir_tree_01_twig_alpha_2k.jpg",
+      "asset": "fir_tree_01",
+      "provider_key": "twig_alpha",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/fir_tree_01/fir_tree_01_twig_alpha_2k.jpg",
+      "bytes": 798315,
+      "publisher_md5": "2adf3baea4bc1efc98693c5427cd872f",
+      "publisher_md5_verified": true,
+      "sha256": "69c1a0ab17e57ef3b74913ba883b853e1c7a9409a9a43743cce1dd756a7adfee",
+      "license": "CC0-1.0",
+      "role": "Fir needle spray card atlas (Douglas-fir proxy); texture only, no 7.8M-tri mesh",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fir_tree_01/fir_tree_01_twig_nor_dx_2k.jpg",
+      "asset": "fir_tree_01",
+      "provider_key": "twig_nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/fir_tree_01/fir_tree_01_twig_nor_dx_2k.jpg",
+      "bytes": 1649208,
+      "publisher_md5": "049bf61a5060aa015209cff003646c5a",
+      "publisher_md5_verified": true,
+      "sha256": "6019fece57cab266524ec976356a36583fd3132f8cdbb20ffcdc0e606a5b316c",
+      "license": "CC0-1.0",
+      "role": "Fir needle spray card atlas (Douglas-fir proxy); texture only, no 7.8M-tri mesh",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fir_tree_01/fir_tree_01_twig_rough_2k.jpg",
+      "asset": "fir_tree_01",
+      "provider_key": "twig_rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/fir_tree_01/fir_tree_01_twig_rough_2k.jpg",
+      "bytes": 949259,
+      "publisher_md5": "3b2f886df56d38fc17b7f7af32ff0f09",
+      "publisher_md5_verified": true,
+      "sha256": "6e56fc3f066e1d45348bf5d8db9c03c957f5cd3f6778196fd7698b746c8dd02d",
+      "license": "CC0-1.0",
+      "role": "Fir needle spray card atlas (Douglas-fir proxy); texture only, no 7.8M-tri mesh",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_tree_01/pine_tree_01_twig_diff_2k.jpg",
+      "asset": "pine_tree_01",
+      "provider_key": "twig_diff",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/pine_tree_01/pine_tree_01_twig_diff_2k.jpg",
+      "bytes": 1623201,
+      "publisher_md5": "45d577b1b780711976147d66234a1f4c",
+      "publisher_md5_verified": true,
+      "sha256": "288f8752514dfcfb78e5d6bc927b585605a13b050a1a79de78044f7c0574c0fc",
+      "license": "CC0-1.0",
+      "role": "Pine needle fascicle + twig card atlas, 2K upgrade of PineTree01 1K set; texture only, no 17.4M-tri mesh",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_tree_01/pine_tree_01_twig_alpha_2k.jpg",
+      "asset": "pine_tree_01",
+      "provider_key": "twig_alpha",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/pine_tree_01/pine_tree_01_twig_alpha_2k.jpg",
+      "bytes": 543197,
+      "publisher_md5": "62d321c31d625a3cf786db46b729f8c6",
+      "publisher_md5_verified": true,
+      "sha256": "f5ed442eb05363114c79901136feddbf500b7c089ae991e7e4b9ff250ea47195",
+      "license": "CC0-1.0",
+      "role": "Pine needle fascicle + twig card atlas, 2K upgrade of PineTree01 1K set; texture only, no 17.4M-tri mesh",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_tree_01/pine_tree_01_twig_nor_dx_2k.jpg",
+      "asset": "pine_tree_01",
+      "provider_key": "twig_nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/pine_tree_01/pine_tree_01_twig_nor_dx_2k.jpg",
+      "bytes": 2954902,
+      "publisher_md5": "ace376b2bc9add47851fa9a5f0a4f5ab",
+      "publisher_md5_verified": true,
+      "sha256": "81fc7db703ed877aa4f9c250e12da60f6e3fafd11d2def28632c842da20e9e39",
+      "license": "CC0-1.0",
+      "role": "Pine needle fascicle + twig card atlas, 2K upgrade of PineTree01 1K set; texture only, no 17.4M-tri mesh",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_tree_01/pine_tree_01_twig_rough_2k.jpg",
+      "asset": "pine_tree_01",
+      "provider_key": "twig_rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/pine_tree_01/pine_tree_01_twig_rough_2k.jpg",
+      "bytes": 1273936,
+      "publisher_md5": "3743e26db2752ca93611b5e6f3d8ca8c",
+      "publisher_md5_verified": true,
+      "sha256": "78928f9b1fbaf9eba7b2e6e539ca4624ac0994aec17610f4eeea2652be7a0557",
+      "license": "CC0-1.0",
+      "role": "Pine needle fascicle + twig card atlas, 2K upgrade of PineTree01 1K set; texture only, no 17.4M-tri mesh",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/island_tree_02/island_tree_02_leaves_diff_2k.jpg",
+      "asset": "island_tree_02",
+      "provider_key": "leaves_diff",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/island_tree_02/island_tree_02_leaves_diff_2k.jpg",
+      "bytes": 661175,
+      "publisher_md5": "9898a7bf79fe6214f7ca8c3b139c4116",
+      "publisher_md5_verified": true,
+      "sha256": "e5c56ca13525aed76572852da5f69ae87cbee9e15abe2e1eff23adf92975f14a",
+      "license": "CC0-1.0",
+      "role": "Broadleaf oval leaf card atlas (oak canopy proxy); texture only",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/island_tree_02/island_tree_02_leaves_alpha_2k.jpg",
+      "asset": "island_tree_02",
+      "provider_key": "leaves_alpha",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/island_tree_02/island_tree_02_leaves_alpha_2k.jpg",
+      "bytes": 189384,
+      "publisher_md5": "38e12b7531d4c13ec9d3cf70342ccb6c",
+      "publisher_md5_verified": true,
+      "sha256": "d202ec020ad2dda57a9d36cfd4045e530146f8793bd46ce3ab779e7845fb28f5",
+      "license": "CC0-1.0",
+      "role": "Broadleaf oval leaf card atlas (oak canopy proxy); texture only",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/island_tree_02/island_tree_02_leaves_nor_dx_2k.jpg",
+      "asset": "island_tree_02",
+      "provider_key": "leaves_nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/island_tree_02/island_tree_02_leaves_nor_dx_2k.jpg",
+      "bytes": 1373711,
+      "publisher_md5": "621086fb103b5fe971da17e6948ab1e7",
+      "publisher_md5_verified": true,
+      "sha256": "442ec88cc5a5da3df2a4daec2be04079d737a1edbdd2eec9304c8ffe5036fb67",
+      "license": "CC0-1.0",
+      "role": "Broadleaf oval leaf card atlas (oak canopy proxy); texture only",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/island_tree_02/island_tree_02_leaves_rough_2k.jpg",
+      "asset": "island_tree_02",
+      "provider_key": "leaves_rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/island_tree_02/island_tree_02_leaves_rough_2k.jpg",
+      "bytes": 1365787,
+      "publisher_md5": "d9938e98adbdb3a38f08fbca5270c1a7",
+      "publisher_md5_verified": true,
+      "sha256": "04ec4237fe0ca0c0db8ae09bdf78c3b30488d83d4a1c2ddc11828fb461c4a31c",
+      "license": "CC0-1.0",
+      "role": "Broadleaf oval leaf card atlas (oak canopy proxy); texture only",
+      "complaint": "U1/U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/searsia_lucida/searsia_lucida_diff_2k.jpg",
+      "asset": "searsia_lucida",
+      "provider_key": "Diffuse",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/searsia_lucida/searsia_lucida_diff_2k.jpg",
+      "bytes": 1797791,
+      "publisher_md5": "38b70b5dfc6ac049cefc8a502fa94bf5",
+      "publisher_md5_verified": true,
+      "sha256": "16eebc961b456192da906aa1385c6ab805ec9797fd600a15b3a2e72db1e3844d",
+      "license": "CC0-1.0",
+      "role": "Leathery leaf + twig atlas (chaparral / live-oak leaf proxy); texture only",
+      "complaint": "U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/searsia_lucida/searsia_lucida_alpha_2k.jpg",
+      "asset": "searsia_lucida",
+      "provider_key": "Alpha",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/searsia_lucida/searsia_lucida_alpha_2k.jpg",
+      "bytes": 326518,
+      "publisher_md5": "21cef52a3d812da98131ad1485206ef4",
+      "publisher_md5_verified": true,
+      "sha256": "ef3f438b0fefbea58affb1d4ffbb15aaec29dca5f8535a047a84ef7d181d60e8",
+      "license": "CC0-1.0",
+      "role": "Leathery leaf + twig atlas (chaparral / live-oak leaf proxy); texture only",
+      "complaint": "U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/searsia_lucida/searsia_lucida_nor_dx_2k.jpg",
+      "asset": "searsia_lucida",
+      "provider_key": "nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/searsia_lucida/searsia_lucida_nor_dx_2k.jpg",
+      "bytes": 3007031,
+      "publisher_md5": "26cfcbe23e2bc7d88fa8906499f6319c",
+      "publisher_md5_verified": true,
+      "sha256": "a7933f7dae018ba13a5dab1b346d9f0f4e2c64b3d57593f2b0ae8121c3c44371",
+      "license": "CC0-1.0",
+      "role": "Leathery leaf + twig atlas (chaparral / live-oak leaf proxy); texture only",
+      "complaint": "U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/searsia_lucida/searsia_lucida_rough_2k.jpg",
+      "asset": "searsia_lucida",
+      "provider_key": "Rough",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/2k/searsia_lucida/searsia_lucida_rough_2k.jpg",
+      "bytes": 1312248,
+      "publisher_md5": "d0541d28650c1b6d4ddb3110983e3134",
+      "publisher_md5_verified": true,
+      "sha256": "df202755e0e71e76cb45a6017192e53bd1cfef158ab18b53cf2079595d5436cf",
+      "license": "CC0-1.0",
+      "role": "Leathery leaf + twig atlas (chaparral / live-oak leaf proxy); texture only",
+      "complaint": "U2",
+      "pixels": [
+        2048,
+        2048
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/fern_02.gltf",
+      "asset": "fern_02",
+      "provider_key": "gltf",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/fern_02/fern_02_1k.gltf",
+      "bytes": 6899,
+      "publisher_md5": "cf276874d37bfb73c299504a6b355b77",
+      "publisher_md5_verified": true,
+      "sha256": "33974295ee19670af4877705fc7d91f33f42d6302f0d44a625e072271223031f",
+      "license": "CC0-1.0",
+      "role": "Sword-fern-like understory fern clumps",
+      "complaint": "U2"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/textures/fern_02_arm_1k.jpg",
+      "asset": "fern_02",
+      "provider_key": "textures/fern_02_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fern_02/fern_02_arm_1k.jpg",
+      "bytes": 280359,
+      "publisher_md5": "1bbb2b22951f450720d28e17d93a2987",
+      "publisher_md5_verified": true,
+      "sha256": "ebfb5d76ce9cbdaec20bcd22dce9b755f0b1b8650ef29ca13555e3e6961025d7",
+      "license": "CC0-1.0",
+      "role": "Sword-fern-like understory fern clumps",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/textures/fern_02_diff_1k.jpg",
+      "asset": "fern_02",
+      "provider_key": "textures/fern_02_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fern_02/fern_02_diff_1k.jpg",
+      "bytes": 315705,
+      "publisher_md5": "82c18a6cfd5ae91c37c0e078f591181c",
+      "publisher_md5_verified": true,
+      "sha256": "a828a6e7b4c01c826911e2eac4b3afc7457dab7b3b392a31c681ed88b7d50029",
+      "license": "CC0-1.0",
+      "role": "Sword-fern-like understory fern clumps",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/textures/fern_02_nor_gl_1k.jpg",
+      "asset": "fern_02",
+      "provider_key": "textures/fern_02_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fern_02/fern_02_nor_gl_1k.jpg",
+      "bytes": 367222,
+      "publisher_md5": "43aed63dff79554f6064627515afd9d7",
+      "publisher_md5_verified": true,
+      "sha256": "45bce132c6e96a0864bc89ab5da51361ab3f4afa83a6669ae499ab5ca811f621",
+      "license": "CC0-1.0",
+      "role": "Sword-fern-like understory fern clumps",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear",
+      "normal_convention": "OpenGL tangent-space (glTF bundle; flip green or use nor_dx sibling in UE)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/fern_02.bin",
+      "asset": "fern_02",
+      "provider_key": "fern_02.bin",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/fern_02/fern_02.bin",
+      "bytes": 176176,
+      "publisher_md5": "c061e9255f7d36ae9ce0e92ef3e100b2",
+      "publisher_md5_verified": true,
+      "sha256": "fe1abb762bcbbc7ad9e86925c8080437a62add257d9280e9142fdc85c226e64c",
+      "license": "CC0-1.0",
+      "role": "Sword-fern-like understory fern clumps",
+      "complaint": "U2"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/fern_02_alpha_1k.jpg",
+      "asset": "fern_02",
+      "provider_key": "Alpha",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fern_02/fern_02_alpha_1k.jpg",
+      "bytes": 246038,
+      "publisher_md5": "f2f725efc89ed87132c8706ca3ad223e",
+      "publisher_md5_verified": true,
+      "sha256": "4d8c4d57373651e500f1a3b2071cd59d2d9cc031bc30ff73bc8a5d2b2c91571a",
+      "license": "CC0-1.0",
+      "role": "Sword-fern-like understory fern clumps",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/fern_02_nor_dx_1k.jpg",
+      "asset": "fern_02",
+      "provider_key": "nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fern_02/fern_02_nor_dx_1k.jpg",
+      "bytes": 368916,
+      "publisher_md5": "b9837c51ae57af79b5343fc77145f56b",
+      "publisher_md5_verified": true,
+      "sha256": "cf8e9af7191bdd6721fb4540e4c22d10b65808e2aaef2f2615d66f51270a6bba",
+      "license": "CC0-1.0",
+      "role": "Sword-fern-like understory fern clumps",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/shrub_04.gltf",
+      "asset": "shrub_04",
+      "provider_key": "gltf",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/shrub_04/shrub_04_1k.gltf",
+      "bytes": 2882,
+      "publisher_md5": "eba22f7e018dd3d9ed951150c2092f17",
+      "publisher_md5_verified": true,
+      "sha256": "782832cbc57e96686b78c6ef9df6234c25f564f78421c8ed4bd42c3631f5aeae",
+      "license": "CC0-1.0",
+      "role": "Low leafy shrub variants (understory filler)",
+      "complaint": "U2"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/textures/shrub_04_nor_gl_1k.jpg",
+      "asset": "shrub_04",
+      "provider_key": "textures/shrub_04_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_04/shrub_04_nor_gl_1k.jpg",
+      "bytes": 449241,
+      "publisher_md5": "b08f500d19ee9b29d7da06fc0e874bb2",
+      "publisher_md5_verified": true,
+      "sha256": "200d791e0474495bfc876ba1c289dade669c6a5b124647c55bc840a875f6b51c",
+      "license": "CC0-1.0",
+      "role": "Low leafy shrub variants (understory filler)",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear",
+      "normal_convention": "OpenGL tangent-space (glTF bundle; flip green or use nor_dx sibling in UE)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/textures/shrub_04_diff_1k.jpg",
+      "asset": "shrub_04",
+      "provider_key": "textures/shrub_04_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_04/shrub_04_diff_1k.jpg",
+      "bytes": 373350,
+      "publisher_md5": "b2b4682a82f44be10b8d4b4d481a4fe8",
+      "publisher_md5_verified": true,
+      "sha256": "0b0fa0a474753d13f3093858cea79d0de05da1e6a0c5d6e181cd351080980b6c",
+      "license": "CC0-1.0",
+      "role": "Low leafy shrub variants (understory filler)",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/textures/shrub_04_arm_1k.jpg",
+      "asset": "shrub_04",
+      "provider_key": "textures/shrub_04_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_04/shrub_04_arm_1k.jpg",
+      "bytes": 332957,
+      "publisher_md5": "65e414abd3533b7157f05aed63f5f329",
+      "publisher_md5_verified": true,
+      "sha256": "d1085df021928b29b0f38dde7e58e9a2e304c4e8d838e390b37cf57f8aa492e8",
+      "license": "CC0-1.0",
+      "role": "Low leafy shrub variants (understory filler)",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/shrub_04.bin",
+      "asset": "shrub_04",
+      "provider_key": "shrub_04.bin",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/shrub_04/shrub_04.bin",
+      "bytes": 749084,
+      "publisher_md5": "987a672e598f9dc04b6d23cb8f36d697",
+      "publisher_md5_verified": true,
+      "sha256": "cb442c39682e54cc63f912aa78ab17a03566f947a61adbbbaaa6473166744f01",
+      "license": "CC0-1.0",
+      "role": "Low leafy shrub variants (understory filler)",
+      "complaint": "U2"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/shrub_04_alpha_1k.jpg",
+      "asset": "shrub_04",
+      "provider_key": "Alpha",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_04/shrub_04_alpha_1k.jpg",
+      "bytes": 77934,
+      "publisher_md5": "f5a4f3fc270075d65eebfa87d008325d",
+      "publisher_md5_verified": true,
+      "sha256": "79b42a2e9703f3080192e1d0c6be89d7d36a5543ee7cc411339f2741dd11a1ee",
+      "license": "CC0-1.0",
+      "role": "Low leafy shrub variants (understory filler)",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/shrub_04_nor_dx_1k.jpg",
+      "asset": "shrub_04",
+      "provider_key": "nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_04/shrub_04_nor_dx_1k.jpg",
+      "bytes": 441018,
+      "publisher_md5": "ab4284239e524642be8c446df465ba2a",
+      "publisher_md5_verified": true,
+      "sha256": "63e2fefc575a917d6334d2150d0a323d7a0744b09be55f17eb54c0b02db5fb41",
+      "license": "CC0-1.0",
+      "role": "Low leafy shrub variants (understory filler)",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/wild_rooibos_bush.gltf",
+      "asset": "wild_rooibos_bush",
+      "provider_key": "gltf",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/wild_rooibos_bush/wild_rooibos_bush_1k.gltf",
+      "bytes": 23122,
+      "publisher_md5": "589911681acc2ebac68ff12ded20460d",
+      "publisher_md5_verified": true,
+      "sha256": "7f3fb17e4606e33d0bc4239c4901c9610b4bd17fe26b6780ba11ab4493f25d29",
+      "license": "CC0-1.0",
+      "role": "Fine-leaved dry shrub (chaparral / coyote-brush proxy)",
+      "complaint": "U2"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/textures/wild_rooibos_bush_nor_gl_1k.jpg",
+      "asset": "wild_rooibos_bush",
+      "provider_key": "textures/wild_rooibos_bush_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wild_rooibos_bush/wild_rooibos_bush_nor_gl_1k.jpg",
+      "bytes": 463170,
+      "publisher_md5": "78a6bd59ce4a2e21fb01cadf382a1338",
+      "publisher_md5_verified": true,
+      "sha256": "ffd557b4cb732d24988d41741398df150567f3ac9d1433f11b88d60158c953d4",
+      "license": "CC0-1.0",
+      "role": "Fine-leaved dry shrub (chaparral / coyote-brush proxy)",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear",
+      "normal_convention": "OpenGL tangent-space (glTF bundle; flip green or use nor_dx sibling in UE)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/textures/wild_rooibos_bush_diff_1k.jpg",
+      "asset": "wild_rooibos_bush",
+      "provider_key": "textures/wild_rooibos_bush_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wild_rooibos_bush/wild_rooibos_bush_diff_1k.jpg",
+      "bytes": 374003,
+      "publisher_md5": "47ee13b7a87d2aff07c0ec708a33f6ab",
+      "publisher_md5_verified": true,
+      "sha256": "d963cdaf769bc39bb57295d518b37cd9456168cf5e3b82fd59f58c98d3faf596",
+      "license": "CC0-1.0",
+      "role": "Fine-leaved dry shrub (chaparral / coyote-brush proxy)",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/textures/wild_rooibos_bush_arm_1k.jpg",
+      "asset": "wild_rooibos_bush",
+      "provider_key": "textures/wild_rooibos_bush_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wild_rooibos_bush/wild_rooibos_bush_arm_1k.jpg",
+      "bytes": 367273,
+      "publisher_md5": "bd65f1b013b7df7d75ef87d9a66b669c",
+      "publisher_md5_verified": true,
+      "sha256": "e0e512f263b8f1fe1c485e61912ba1ce5d42b397cf9a4e2b1786677e732bb84b",
+      "license": "CC0-1.0",
+      "role": "Fine-leaved dry shrub (chaparral / coyote-brush proxy)",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/wild_rooibos_bush.bin",
+      "asset": "wild_rooibos_bush",
+      "provider_key": "wild_rooibos_bush.bin",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/wild_rooibos_bush/wild_rooibos_bush.bin",
+      "bytes": 1236928,
+      "publisher_md5": "0d6c39ac444bac0381ecdff32a191a9c",
+      "publisher_md5_verified": true,
+      "sha256": "7a3471b4d110fe9927f4a200191eae86fa3c0a08f8e8e797d22e94a1703322e1",
+      "license": "CC0-1.0",
+      "role": "Fine-leaved dry shrub (chaparral / coyote-brush proxy)",
+      "complaint": "U2"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/wild_rooibos_bush_alpha_1k.jpg",
+      "asset": "wild_rooibos_bush",
+      "provider_key": "Alpha",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wild_rooibos_bush/wild_rooibos_bush_alpha_1k.jpg",
+      "bytes": 115572,
+      "publisher_md5": "eceda19cdb5c6026a721b4bdb908a181",
+      "publisher_md5_verified": true,
+      "sha256": "c3d5f5b5ef36aa0c246daa113dee30fe43c595db9e3363370f9cc7aad03088ad",
+      "license": "CC0-1.0",
+      "role": "Fine-leaved dry shrub (chaparral / coyote-brush proxy)",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/wild_rooibos_bush_nor_dx_1k.jpg",
+      "asset": "wild_rooibos_bush",
+      "provider_key": "nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/wild_rooibos_bush/wild_rooibos_bush_nor_dx_1k.jpg",
+      "bytes": 460436,
+      "publisher_md5": "c1d3b8740b602e33f1037d8e4c057904",
+      "publisher_md5_verified": true,
+      "sha256": "97b0e985bfc2b50f31ff74e0174657316a9964c1971168386cb99cb8788eced2",
+      "license": "CC0-1.0",
+      "role": "Fine-leaved dry shrub (chaparral / coyote-brush proxy)",
+      "complaint": "U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/dry_branches_medium_01.gltf",
+      "asset": "dry_branches_medium_01",
+      "provider_key": "gltf",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/dry_branches_medium_01/dry_branches_medium_01_1k.gltf",
+      "bytes": 5844,
+      "publisher_md5": "bd6d60dff97c59a80d770f94f23b566b",
+      "publisher_md5_verified": true,
+      "sha256": "23f328ded9be1e151ccd7994b303c70221551544c4857a71474c1c01a14b8a22",
+      "license": "CC0-1.0",
+      "role": "Fallen dead branches / twigs for forest floor",
+      "complaint": "U1/U2"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/textures/dry_branches_medium_01_arm_1k.jpg",
+      "asset": "dry_branches_medium_01",
+      "provider_key": "textures/dry_branches_medium_01_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/dry_branches_medium_01/dry_branches_medium_01_arm_1k.jpg",
+      "bytes": 831180,
+      "publisher_md5": "a0c5fface8ffdf81a806fcd5cf05788f",
+      "publisher_md5_verified": true,
+      "sha256": "6d1ba6f4763d2815301a15bf62eaf68c345cecafb107e2681d12f26fbc657f5a",
+      "license": "CC0-1.0",
+      "role": "Fallen dead branches / twigs for forest floor",
+      "complaint": "U1/U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/textures/dry_branches_medium_01_diff_1k.jpg",
+      "asset": "dry_branches_medium_01",
+      "provider_key": "textures/dry_branches_medium_01_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/dry_branches_medium_01/dry_branches_medium_01_diff_1k.jpg",
+      "bytes": 778799,
+      "publisher_md5": "2b01d9d1613c88496250f64828566f7c",
+      "publisher_md5_verified": true,
+      "sha256": "1fbaf810a9ca29d2faf0a179834e8dce10cf4854bafe13f63af111030b3ec660",
+      "license": "CC0-1.0",
+      "role": "Fallen dead branches / twigs for forest floor",
+      "complaint": "U1/U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "sRGB"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/textures/dry_branches_medium_01_nor_gl_1k.jpg",
+      "asset": "dry_branches_medium_01",
+      "provider_key": "textures/dry_branches_medium_01_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/dry_branches_medium_01/dry_branches_medium_01_nor_gl_1k.jpg",
+      "bytes": 1170647,
+      "publisher_md5": "d374fbbd8c4829310104cce0de7cd826",
+      "publisher_md5_verified": true,
+      "sha256": "62f5205bfec599000bb7a430e003bbada939bc8d7976a7d3ab7709fd5893413c",
+      "license": "CC0-1.0",
+      "role": "Fallen dead branches / twigs for forest floor",
+      "complaint": "U1/U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear",
+      "normal_convention": "OpenGL tangent-space (glTF bundle; flip green or use nor_dx sibling in UE)"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/dry_branches_medium_01.bin",
+      "asset": "dry_branches_medium_01",
+      "provider_key": "dry_branches_medium_01.bin",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/dry_branches_medium_01/dry_branches_medium_01.bin",
+      "bytes": 465172,
+      "publisher_md5": "10de852c8bf38e3f3ca5fb1d6c8de9d0",
+      "publisher_md5_verified": true,
+      "sha256": "969da1e8cbb2d8201e7fa0fc0dac5b19ef354b32c3d8c62dd9faa7cb3833d8ca",
+      "license": "CC0-1.0",
+      "role": "Fallen dead branches / twigs for forest floor",
+      "complaint": "U1/U2"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/dry_branches_medium_01_nor_dx_1k.jpg",
+      "asset": "dry_branches_medium_01",
+      "provider_key": "nor_dx",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/dry_branches_medium_01/dry_branches_medium_01_nor_dx_1k.jpg",
+      "bytes": 1171198,
+      "publisher_md5": "80e7aaabfd4e094fea9c4469de1dc9af",
+      "publisher_md5_verified": true,
+      "sha256": "e16b61af1a0ff3c962a40a4628f13ab5694aad3923c1a0c92d187fa58e43300b",
+      "license": "CC0-1.0",
+      "role": "Fallen dead branches / twigs for forest floor",
+      "complaint": "U1/U2",
+      "pixels": [
+        1024,
+        1024
+      ],
+      "color_space": "linear",
+      "normal_convention": "DirectX tangent-space (UE native)"
+    }
+  ]
+}
