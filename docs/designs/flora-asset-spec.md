@@ -6,7 +6,8 @@ This doc only describes source material and how it should be used. Nothing here 
 
 - Acquisition: `python3 Scripts/acquire_coast_flora.py` (idempotent; it re-verifies the provider MD5 and size, and only downloads again when they don't match).
 - Receipts: `SourceAssets/EnvironmentDraft/FloraDraft/source.json` records the URL, authors, CC0 license, bytes, publisher MD5, SHA256, pixel size, colour space, normal convention and glTF triangle counts for each file.
-- Totals: 67 files, 89,658,860 bytes. Every texture is ≤2048 px on its longest side. Every file comes from a Poly Haven asset under [CC0](https://polyhaven.com/license).
+- Totals (after R2): 95 files and 150,709,564 bytes on disk, from 183,283,841 bytes downloaded (the ambientCG zips are discarded after their maps are extracted). There are also 8 project-derived PNGs (17,548,707 bytes) under `FloraDraft/Derived/`, rebuilt with `--derive`.
+- R1 totals: 67 files, 89,658,860 bytes. Every texture is ≤2048 px on its longest side. Every file comes from Poly Haven ([CC0](https://polyhaven.com/license)) or, from R2 on, ambientCG ([CC0](https://docs.ambientcg.com/license/)). ambientCG publishes no per-file MD5, so the receipts record the declared zip size check plus the MD5 and SHA256 of the zip and of each extracted map.
 - Species honesty: all of these are scans of non-Californian species, used as visual proxies. None of them establishes that something is a Monterey pine, a Douglas-fir or a coast live oak.
 
 ## 1. Texel-density target
@@ -72,6 +73,52 @@ The glTF bundle's own normal map is OpenGL. Use the `*_nor_dx_1k.jpg` sibling in
 
 Saplings (U2): no CC0 sapling under 400k triangles was found. Build pine saplings (1–3 m) procedurally from the `pine_tree_01` and `fir_tree_01` sprigs on a 3–5 whorl stem, ≤4k triangles.
 
+## R2 additions (PMO request, 2026-10-18)
+
+### R2.1 Oak-like leaf atlas (U1/U2). Maps: Color, Opacity, NormalDX, Roughness, Displacement
+
+I found no CC0 coast live oak or other evergreen-oak leaf scan on Poly Haven or ambientCG. ambientCG's only oak set, `LeafSet016`, is deciduous and lobed, so it was rejected. The closest small-leaf sets are below.
+
+| Asset | Content | Card guidance |
+|---|---|---|
+| `LeafSet024` (ambientCG, photogrammetry; 40 cm atlas at 2048², about 0.2 mm/texel) | 9 small oval, smooth-edged leaves on a 3×3 grid | **Primary live-oak leaf.** Scale each leaf to 3–6 cm. Darken in the material (base colour × 0.55, shift toward olive) and lower roughness to about 0.35–0.45 for the glossy upper side. Clip 0.4. Build twig cards of 40–60 cm with 25–40 leaves each, densely overlapped |
+| `LeafSet005` (ambientCG, 2048×1024) | Small serrated leaves, one of them on a twig | Twig and petiole source. Its serration is a rough stand-in for the spiny live-oak margin |
+
+The compromise is stated plainly: these are light-green deciduous leaves that the material re-tints to read as dark evergreen leaves. They are not live-oak scans.
+
+### R2.2 Deep-furrowed bark (U1). Maps: base colour, normal (DirectX), roughness, displacement
+
+| Asset | Intended tree | Real-world tile | 2K density | UV rule |
+|---|---|---|---|---|
+| `Bark014` (ambientCG, photogrammetry, tagged "fir") | **Douglas-fir, primary**; supersedes the `bark_willow_02` stand-in | 1.2 × 1.2 m | 0.59 mm/texel | V: 1 tile per 1.2 m. U: round(circumference / 1.2 m) |
+| `metasequoia_bark` (Poly Haven, Charlotte Baglioni) | Coast redwood stand-in: deep vertical fibrous furrows, lichen | 1.94 × 1.94 m | 0.95 mm/texel | V: 1 tile per 1.94 m. U: round(circumference / 1.94 m). Tint it redder for coast redwood |
+
+### R2.3 Trunk-base litter (U1)
+
+- `Derived/T_TrunkBaseLitter_*`: a project-derived decal, 1024², covering 150 cm, about 1.5 mm/texel. It is the `forest_leaves_04` tile (pine needles, cones, twigs) with an irregular radial alpha that is zero at the border. Maps: BaseColor RGBA (alpha in A), separate Alpha, Normal (DirectX), Roughness.
+  - Use it as a DBuffer decal, or as a masked ground-hugging card, centred on each trunk.
+  - Scale it to 1.5–3 m diameter and randomise rotation per instance.
+  - Combine it with the bark's bottom 20–40 cm, blended into the ground, to hide the trunk-to-ground contact.
+- `PineNeedles001` (ambientCG): loose individual fallen needles with Opacity. Use them as scatter cards (5–10 cm cards, clip 0.4) or decal flecks on top of the patch and along trails.
+
+### R2.4 Dense crown and sapling cards (U1/U2): fixes "bare poles"
+
+- `Derived/T_PineClumpCards_*`: a 2048² atlas built only from the two real needle sprigs in `pine_tree_01` twig 2K. Each 1024² cell is a dense composite of 24–28 sprigs, generated deterministically with seed 20261018. Each sprig's DirectX normal is rotated with it, and every cell's alpha fades out over the last 32 px at its border.
+  - UV rectangles:
+    - A, radial clump: (0, 0)–(0.5, 0.5)
+    - B, branch-tip fan: (0.5, 0)–(1, 0.5)
+    - C, horizontal branch spray: (0, 0.5)–(0.5, 1)
+    - D, sapling whorl column: (0.5, 0.5)–(1, 1)
+  - Measured alpha coverage (alpha > 0.35) per cell: A 0.36, B 0.31, C 0.25, D 0.26. These are geometric fractions only, not a visual judgement.
+  - Suggested card size: about 80 cm per cell.
+  - Crown recipe for a Monterey pine: on each branch, use 3–6 C or B cards (crossed at about 60°); fill the crown interior with 8–15 A cards; give each tree 60–120 cards in total.
+  - Keep the total card count so that it stays ≤15k triangles.
+- `LeafSet019` (ambientCG): three dense conifer sprays with Opacity. Use them as the Douglas-fir and redwood spray cards (40–70 cm), or alongside `fir_tree_01` sprays.
+- Saplings at ≤4k triangles:
+  - Use a 1–3 m tapered stem of 6–8 sides (about 200 triangles).
+  - Add 3–5 whorls, each with 3–5 quads using cell C, plus a leader quad pair using cell D or B.
+  - Total: 30–60 quads, which comes to under 1k triangles even with 2×2-subdivided bent cards.
+
 ## 6. Rejected candidates
 
 - Full tree meshes: `pine_tree_01` (17.4M triangles), `fir_tree_01` (7.85M), `tree_small_02` (4.65M), `island_tree_02` (1.76M), `searsia_lucida` (842k), `searsia_burchellii` (1.43M). They are too heavy for 300–400 trees per hectare; only their textures were taken. `jacaranda_tree` was also rejected because it is a non-native purple-flowering ornamental.
@@ -81,5 +128,9 @@ Saplings (U2): no CC0 sapling under 400k triangles was found. Build pine sapling
 - `metasequoia_bark`, `chinese_cedar_bark`: fibrous redwood or cedar bark, the wrong target species. Deferred in case coast redwood is added.
 - `leaves_forest_ground`: saturated orange autumn deciduous litter.
 - `pine_roots`, `root_cluster_01/02`: exposed root scans would reintroduce leg-like roots (U1).
-- ambientCG: CC0 and acceptable, but not needed. It would also widen the script's host whitelist.
+- R2 ambientCG rejects:
+  - `LeafSet016`: deciduous, lobed oak leaves.
+  - `ScatteredLeaves00x`: orange autumn litter.
+  - `Bark001`: an approximated scan rather than photogrammetry.
+  - `Ground077`: an opaque tile; the forest_leaves_04 decal covers the same need.
 - Quixel, Sketchfab, asset stores, and anything requiring attribution or with an unclear license: rejected by policy.

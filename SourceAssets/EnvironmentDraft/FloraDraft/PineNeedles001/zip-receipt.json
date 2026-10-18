@@ -1,0 +1,26 @@
+{
+  "zip_url": "https://ambientcg.com/get?file=PineNeedles001_2K-JPG.zip",
+  "zip_bytes": 13677344,
+  "zip_md5": "a42959ce24392b1fdc4b4814d0ed475d",
+  "zip_sha256": "5d473887e07c8e9a25b4780843d737ccaebd6989e23c8438939a3dc774b06c6d",
+  "zip_members": [
+    "PineNeedles001.png",
+    "PineNeedles001_2K-JPG.blend",
+    "PineNeedles001_2K-JPG.mtlx",
+    "PineNeedles001_2K-JPG.tres",
+    "PineNeedles001_2K-JPG.usdc",
+    "PineNeedles001_2K-JPG_Color.jpg",
+    "PineNeedles001_2K-JPG_Displacement.jpg",
+    "PineNeedles001_2K-JPG_NormalDX.jpg",
+    "PineNeedles001_2K-JPG_NormalGL.jpg",
+    "PineNeedles001_2K-JPG_Opacity.jpg",
+    "PineNeedles001_2K-JPG_Roughness.jpg"
+  ],
+  "members": {
+    "Color": "0da838fd09d9c50ee1222d9e33e8b45a96a3cecc63268176273f050f7f612963",
+    "NormalDX": "f5760d265204d42b85c3f3a1ddb71de7ed461294c4c0924e148af266a2939b20",
+    "Roughness": "545e6b69f34badfc0551b4234826b5dd25f0612ac8b7686e7228e30804794184",
+    "Opacity": "bb73577c4b649dea1ad529623b0c0d0708e101accfc72950eacee568203bf52e",
+    "Displacement": "1a1b2cb4fa8d3ca6c4385d1953321cf2047b9ef39d2ff38962efdc03639b2517"
+  }
+}
