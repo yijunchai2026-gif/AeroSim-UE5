@@ -92,7 +92,7 @@ bool FCoastalTreePlacementTest::RunTest(const FString& Parameters)
     for (float X = -31000; X < 12500; X += 500) for (float Y = -28000; Y < 28000; Y += 500)
         if (NearStandDensity(X + 250, Y + 250) >= .9F) ++InteriorCells;
     int32 InteriorTrees = 0, InteriorStems = 0, NearAll = 0, Mature = 0, Pole = 0, Sapling = 0;
-    int32 Floating = 0, Buried = 0, RouteIntrusions = 0, CliffIntrusions = 0, BoardwalkIntrusions = 0;
+    int32 Floating = 0, BuriedTrees = 0, RouteIntrusions = 0, CliffIntrusions = 0, BoardwalkIntrusions = 0;
     for (const FPlacedTree& Tree : Layout.Trees)
     {
         if (!Tree.bNearForest) continue;
@@ -112,7 +112,7 @@ bool FCoastalTreePlacementTest::RunTest(const FString& Parameters)
                 const double Ground = APacificCoastGraybox::GetCoastalLandHeight(World.X, World.Y);
                 const double BuriedEnd = T.TransformPosition(Local - FVector(0, 0, A.BuriedDepth)).Z;
                 if (Ground < World.Z - .5) ++Floating;
-                if (Ground > World.Z + 45 || Ground < BuriedEnd + 10) ++Buried;
+                if (Ground > World.Z + 45 || Ground < BuriedEnd + 10) ++BuriedTrees;
             }
         if (!A.IsOverstory()) continue;
         const FVector2D P(Tree.Base);
@@ -134,7 +134,7 @@ bool FCoastalTreePlacementTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Forest zones cover several hectares"), InteriorHa > 4);
     TestTrue(TEXT("Age mix includes mature, pole and sapling trees"), Mature > Pole && Pole > 0 && Sapling > 0);
     TestEqual(TEXT("No collar floats above the terrain"), Floating, 0);
-    TestEqual(TEXT("Terrain always crosses the trunk between collar and buried end"), Buried, 0);
+    TestEqual(TEXT("Terrain always crosses the trunk between collar and buried end"), BuriedTrees, 0);
     TestEqual(TEXT("Overstory trees clear the flight route by 25 m"), RouteIntrusions, 0);
     TestEqual(TEXT("Trees stand at least 20 m inland of the cliff"), CliffIntrusions, 0);
     TestEqual(TEXT("Trees clear the boardwalk footprint"), BoardwalkIntrusions, 0);
