@@ -948,6 +948,7 @@ bool AAeroSimGameMode::ResolveReviewView(const FString& Name, const int32 Step, 
     else if (Name == TEXT("bridge")) { Location = FVector(-12300 + Step*25, 6100 + Step*20, 260); Rotation = FRotator(-3,36,0); }
     else if (Name == TEXT("mountain")) { Location = FVector(-40000 - Step*120, -35000 + Step*80, 12000); Rotation = FRotator(3,175,0); }
     else if (Name == TEXT("shore")) { const float Y=-19000+Step*35;Location=FVector(APacificCoastGraybox::GetCoastalShoreX(Y)+1900,Y,APacificCoastGraybox::SeaLevelCm+280);Rotation=FRotator(7,165,0); }
+    else if (Name == TEXT("corridor")) { Location = FVector(-15609 - Step*18, -6895 - Step*36, 250); Rotation = FRotator(-3,-117.3F,0); }
     else if (Name == TEXT("cliff")) { Location = FVector(33000 + Step*120, -25000 + Step*120, -1500); Rotation = FRotator(-3,160,0); }
     else return false;
     return true;

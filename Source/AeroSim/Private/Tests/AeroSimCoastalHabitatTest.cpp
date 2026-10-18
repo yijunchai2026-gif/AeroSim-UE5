@@ -192,6 +192,7 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
         UTexture* Upper = nullptr; UTexture* LowerFace = nullptr;
         TestTrue(TEXT("Upper cliff face uses worn_rock_natural_01"), Rock->GetTextureParameterValue(FMaterialParameterInfo(TEXT("BaseColorTexture")), Upper) && Upper && Upper->GetFName() == TEXT("T_CoastWornRock_BaseColor"));
         TestTrue(TEXT("Lower cliff uses rock_face_03"), Rock->GetTextureParameterValue(FMaterialParameterInfo(TEXT("LowerCliffColor")), LowerFace) && LowerFace && LowerFace->GetFName() == TEXT("T_CoastRockFace_BaseColor"));
+#if WITH_EDITOR
         if (FApp::CanEverRender())
             if (FMaterialResource* Resource = Rock->GetMaterial()->GetMaterialResource(GMaxRHIShaderPlatform))
             {
@@ -199,6 +200,7 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
                 for (const FString& Error : Resource->GetCompileErrors()) AddError(FString::Printf(TEXT("Rock shader compile error: %s"), *Error));
                 TestTrue(TEXT("Rock material shader map compiled"), Resource->GetGameThreadShaderMap() != nullptr);
             }
+#endif
     }
     AddInfo(FString::Printf(TEXT("Habitat coverage of %d land samples: exposed %d sheltered %d woodland %d rock %d"), LandSamples, Counts[0], Counts[1], Counts[2], Counts[3]));
     AddInfo(FString::Printf(TEXT("Habitat 5 m step max %.3f at (%.0f, %.0f); >0.15 in %d of %d cells; woodland mean sun %.3f shade %.3f"),
