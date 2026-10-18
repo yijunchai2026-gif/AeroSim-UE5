@@ -16,6 +16,7 @@ void APacificCoastGraybox::BuildCoastalLandscape()
 
     BuildCoastalTerrain(SolidFinder.Object);
     BuildCoastalTrees(SolidFinder.Object);
+    BuildCoastalHabitat();
     BuildCoastalOcean(SolidFinder.Object);
     // This isolated development asset set is authored by the offline Editor importer.
     // Bootstrap remains buildable before those fixed packages have been generated.

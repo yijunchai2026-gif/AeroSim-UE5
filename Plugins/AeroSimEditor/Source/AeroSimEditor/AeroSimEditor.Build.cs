@@ -19,6 +19,8 @@ public class AeroSimEditor : ModuleRules
             "AssetRegistry",
             "AssetTools",
             "MaterialEditor",
+            "MeshDescription",
+            "StaticMeshDescription",
             "Json",
             "Projects",
             "UnrealEd"

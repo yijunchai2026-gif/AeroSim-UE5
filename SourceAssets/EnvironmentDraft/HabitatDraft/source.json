@@ -1,0 +1,392 @@
+{
+  "schema": "aerosim.habitat-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "providers": [
+    {
+      "asset": "grass_medium_01",
+      "authors": {
+        "Rob Tuytel": "Photography",
+        "Rico Cilliers": "Modeling"
+      },
+      "info_sha256": "b4ab105f5b429e0407e1a2b8ef50a12b2bcc6bf197e880e89cc42f41b958fbb2",
+      "files_sha256": "daa882bd7a3925042501536763269b064f66c736779dd90fd9bd1cb405cb4d53",
+      "page": "https://polyhaven.com/a/grass_medium_01"
+    },
+    {
+      "asset": "shrub_03",
+      "authors": {
+        "Rico Cilliers": "All"
+      },
+      "info_sha256": "98737d49530a2308e1956423bf984eeb5822ab020c7e0b5a2298ef0df7634a08",
+      "files_sha256": "01c34bcc8da5e97b9a84350254de868016d348f067df98782a368e7fca088a03",
+      "page": "https://polyhaven.com/a/shrub_03"
+    }
+  ],
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/grass_medium_01.gltf",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/grass_medium_01/grass_medium_01_1k.gltf",
+      "sha256": "3e5e2a314c94e16de54fd7c28e41709731fbd2b1613ab539f1544f622ddb6a85",
+      "publisher_md5": "28dd8247f3faa749bf87a0b84be01e7e",
+      "bytes": 27110,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/grass_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/textures/grass_medium_01_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/grass_medium_01/grass_medium_01_nor_gl_1k.jpg",
+      "sha256": "cae298d3d1d7ff7c7e210ad8ac772b96706e356f9315a6b04fde373ce01ccf1e",
+      "publisher_md5": "fcf43dd1253f56e4c361079f34155c37",
+      "bytes": 956166,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/grass_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/textures/grass_medium_01_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/grass_medium_01/grass_medium_01_diff_1k.jpg",
+      "sha256": "71495bd6a11fddcab0aaff38246fea1a7b802a705483f1c7cbca53955daa8050",
+      "publisher_md5": "6b18ed50d776fd20c1304d9994bd764e",
+      "bytes": 395673,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/grass_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/textures/grass_medium_01_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/grass_medium_01/grass_medium_01_arm_1k.jpg",
+      "sha256": "9a3a30f72bc02f4398967c5b08f2d20cce30bd423a2613b42a727034296fa3ae",
+      "publisher_md5": "37ed2730a507b681af2e9f9f7ef3ae5e",
+      "bytes": 679518,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/grass_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/grass_medium_01.bin",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/grass_medium_01/grass_medium_01.bin",
+      "sha256": "f4587cabdb96a2e96d8be644923dc954a248edfaaa717a0ff224cacb898bee1f",
+      "publisher_md5": "e0527a0561c2dae5b7b5c1b478d8c6bf",
+      "bytes": 1006632,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/grass_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/basecolor.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/grass_medium_01/grass_medium_01_dry_diff_1k.jpg",
+      "sha256": "41886a87024ad554987b6fc5b9ae633d90b9c649998ccbf1b4b551f41d04bc76",
+      "publisher_md5": "df1e82fec31268ecee8c17757115ba32",
+      "bytes": 423096,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/grass_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/alpha.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/grass_medium_01/grass_medium_01_alpha_1k.jpg",
+      "sha256": "90ad8db2b471de6b61597c60bc218d1295c4bf68230be9083aa2001b9067b2e2",
+      "publisher_md5": "f1ffbffd4b568bfa72f53649bdfff20b",
+      "bytes": 447537,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/grass_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/grass_medium_01/grass_medium_01_nor_dx_1k.jpg",
+      "sha256": "1212c7739cc13b4755e9e736e5aad0bf9b9006d3145074adbdcd2a9cff07db36",
+      "publisher_md5": "f61cba2c944bae529aaa0c99ff8ef3cc",
+      "bytes": 954836,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/grass_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/grass_medium_01/grass_medium_01_rough_1k.jpg",
+      "sha256": "e9a7c5b3cd4c4a3e4eeb016fed248c51796262ee412624e4b9e5b9cc862bd203",
+      "publisher_md5": "f60c4663fb5b1f08c7c7178db9f8b684",
+      "bytes": 541262,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/grass_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastGrassSmallDraft.mesh.json",
+      "sha256": "48971697ee0357a132114c744c25181b0b53f4ea63899cf81c406ae0d4b2caa3",
+      "license": "CC0-1.0",
+      "derived_from": "grass_medium_01",
+      "triangles": 833,
+      "vertices": 888,
+      "asset": "SM_CoastGrassSmallDraft",
+      "dimensions_cm": [
+        18.48401054739952,
+        16.23130440711975,
+        14.042667532339692
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastGrassTallDraft.mesh.json",
+      "sha256": "60751c38c29c3d8a8475f85ffb3d415868cd22c3cea561bb065ccb7cbb4a89f7",
+      "license": "CC0-1.0",
+      "derived_from": "grass_medium_01",
+      "triangles": 290,
+      "vertices": 330,
+      "asset": "SM_CoastGrassTallDraft",
+      "dimensions_cm": [
+        16.095640510320663,
+        15.853147953748703,
+        32.25463912822306
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastGrassTinyDraft.mesh.json",
+      "sha256": "e5bb6eab11dd488152b06f23c7186f253566e8c92ed90ca6248ec588e5c6db77",
+      "license": "CC0-1.0",
+      "derived_from": "grass_medium_01",
+      "triangles": 28,
+      "vertices": 30,
+      "asset": "SM_CoastGrassTinyDraft",
+      "dimensions_cm": [
+        2.3569785989820957,
+        3.439873448223807,
+        6.020848010666668
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/shrub_03.gltf",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/shrub_03/shrub_03_1k.gltf",
+      "sha256": "b76d7c14bc027e834e82d3f984c32b5d060e62908aa90ff9420a637ca253a8ea",
+      "publisher_md5": "2c1ef10ff17e23f81d29c851d1409c9a",
+      "bytes": 7296,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/shrub_03"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/shrub_03.bin",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/4k/shrub_03/shrub_03.bin",
+      "sha256": "bf4df21e6d2a2bc5f00b4c9142f776171fe7da00cf960001825748067af542b6",
+      "publisher_md5": "c26c6ed23b0034664eab5a0e3ee00f6a",
+      "bytes": 238684,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/shrub_03"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/textures/shrub_03_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_03/shrub_03_arm_1k.jpg",
+      "sha256": "3e2b16812a623037138eedace958210c5f3443a827bbe69663045bba5612f815",
+      "publisher_md5": "67faf4c5c213589b41a3bd18d378fa7d",
+      "bytes": 396238,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/shrub_03"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/textures/shrub_03_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_03/shrub_03_diff_1k.jpg",
+      "sha256": "3cadc7aba46d3aabbd7d6d2b1d04aa32e2a7da0bc87c2d38ef3cb1ee42cb03ec",
+      "publisher_md5": "5da9190b7c2837a9e209a3fe774dba3c",
+      "bytes": 481841,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/shrub_03"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/textures/shrub_03_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_03/shrub_03_nor_gl_1k.jpg",
+      "sha256": "ff856bacfce859b8a7555dd9a3b92fbd36b2e775d486be71df485afb4235d6c9",
+      "publisher_md5": "38956b2171644cfefda2ef542e055100",
+      "bytes": 504734,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/shrub_03"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/basecolor.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_03/shrub_03_diff_1k.jpg",
+      "sha256": "3cadc7aba46d3aabbd7d6d2b1d04aa32e2a7da0bc87c2d38ef3cb1ee42cb03ec",
+      "publisher_md5": "5da9190b7c2837a9e209a3fe774dba3c",
+      "bytes": 481841,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/shrub_03"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/alpha.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_03/shrub_03_alpha_1k.jpg",
+      "sha256": "a696908aa8144a2697eb528815acf103ac6c5e3511aace8383f771b2f9c4ade8",
+      "publisher_md5": "57c1a864f3cfd30e89d88c1851707d5a",
+      "bytes": 144985,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/shrub_03"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_03/shrub_03_nor_dx_1k.jpg",
+      "sha256": "6c6d01b399770085ff45dd06baab97d7c20ad711221cd8e237218d2ebd9274b7",
+      "publisher_md5": "d71e94c22d82b4e686cfa1489a505f81",
+      "bytes": 500425,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/shrub_03"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_03/shrub_03_rough_1k.jpg",
+      "sha256": "1dc13afd3eb6d44fcecc4222278697e7e2e6ac44b050f1afdf95f7c173ea780f",
+      "publisher_md5": "52e45dbbe80e9c18409dbfb66021f7ea",
+      "bytes": 262676,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/shrub_03"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastShrubADraft.mesh.json",
+      "sha256": "2b45cfefb2f94079ecd913573bade13d365107f9889f1ffec02e2115bb613a53",
+      "license": "CC0-1.0",
+      "derived_from": "shrub_03",
+      "triangles": 2385,
+      "vertices": 1697,
+      "asset": "SM_CoastShrubADraft",
+      "dimensions_cm": [
+        20.062384009361267,
+        15.120302885770798,
+        40.278380597010255
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastShrubBDraft.mesh.json",
+      "sha256": "c3c4c0f6fffc97878a5c636caeaba54512a3b6eb2027ab4ee793edb86ad4ae8a",
+      "license": "CC0-1.0",
+      "derived_from": "shrub_03",
+      "triangles": 1790,
+      "vertices": 1281,
+      "asset": "SM_CoastShrubBDraft",
+      "dimensions_cm": [
+        9.581319242715836,
+        11.315583810210228,
+        30.439479101914912
+      ]
+    }
+  ],
+  "meshes": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastGrassSmallDraft.mesh.json",
+      "sha256": "48971697ee0357a132114c744c25181b0b53f4ea63899cf81c406ae0d4b2caa3",
+      "license": "CC0-1.0",
+      "derived_from": "grass_medium_01",
+      "triangles": 833,
+      "vertices": 888,
+      "asset": "SM_CoastGrassSmallDraft",
+      "dimensions_cm": [
+        18.48401054739952,
+        16.23130440711975,
+        14.042667532339692
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastGrassTallDraft.mesh.json",
+      "sha256": "60751c38c29c3d8a8475f85ffb3d415868cd22c3cea561bb065ccb7cbb4a89f7",
+      "license": "CC0-1.0",
+      "derived_from": "grass_medium_01",
+      "triangles": 290,
+      "vertices": 330,
+      "asset": "SM_CoastGrassTallDraft",
+      "dimensions_cm": [
+        16.095640510320663,
+        15.853147953748703,
+        32.25463912822306
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastGrassTinyDraft.mesh.json",
+      "sha256": "e5bb6eab11dd488152b06f23c7186f253566e8c92ed90ca6248ec588e5c6db77",
+      "license": "CC0-1.0",
+      "derived_from": "grass_medium_01",
+      "triangles": 28,
+      "vertices": 30,
+      "asset": "SM_CoastGrassTinyDraft",
+      "dimensions_cm": [
+        2.3569785989820957,
+        3.439873448223807,
+        6.020848010666668
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastShrubADraft.mesh.json",
+      "sha256": "2b45cfefb2f94079ecd913573bade13d365107f9889f1ffec02e2115bb613a53",
+      "license": "CC0-1.0",
+      "derived_from": "shrub_03",
+      "triangles": 2385,
+      "vertices": 1697,
+      "asset": "SM_CoastShrubADraft",
+      "dimensions_cm": [
+        20.062384009361267,
+        15.120302885770798,
+        40.278380597010255
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastShrubBDraft.mesh.json",
+      "sha256": "c3c4c0f6fffc97878a5c636caeaba54512a3b6eb2027ab4ee793edb86ad4ae8a",
+      "license": "CC0-1.0",
+      "derived_from": "shrub_03",
+      "triangles": 1790,
+      "vertices": 1281,
+      "asset": "SM_CoastShrubBDraft",
+      "dimensions_cm": [
+        9.581319242715836,
+        11.315583810210228,
+        30.439479101914912
+      ]
+    }
+  ],
+  "limits": "Generic published dry grass and small oval-leaved plants; no Bay Area oak identity or production acceptance. Original glTF and all linked files preserved; custom DirectX/alpha/roughness maps are explicitly assigned by the isolated importer. Mesh node display offsets discarded; each mesh bottom is grounded at local Z=0.",
+  "flora_derived": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_FloraFernADraft.mesh.json",
+      "sha256": "8ea6a839da64ae79a60b47446515d933474b0a05047a2333e29afec19e88699f",
+      "license": "CC0-1.0",
+      "derived_from": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02",
+      "triangles": 2384,
+      "vertices": 1660,
+      "asset": "SM_FloraFernADraft",
+      "dimensions_cm": [
+        98.97,
+        89.37,
+        42.77
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_FloraFernBDraft.mesh.json",
+      "sha256": "4e0880adecf0cf69a43c8c1f381f60b35a4606d2c360781f1ba9110f51f74fbe",
+      "license": "CC0-1.0",
+      "derived_from": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02",
+      "triangles": 784,
+      "vertices": 544,
+      "asset": "SM_FloraFernBDraft",
+      "dimensions_cm": [
+        55.19,
+        61.34,
+        28.68
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_FloraRooibosADraft.mesh.json",
+      "sha256": "895babbb908e93490c9814ae5bc359b4c438139cd8fafefc16a315d5841da3d8",
+      "license": "CC0-1.0",
+      "derived_from": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush",
+      "triangles": 6287,
+      "vertices": 7420,
+      "asset": "SM_FloraRooibosADraft",
+      "dimensions_cm": [
+        52.43,
+        47.47,
+        54.13
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_FloraRooibosBDraft.mesh.json",
+      "sha256": "7f2acd46200c40d4f438204e6b7f7db915497af6f0e6c1edc5550a50924521ca",
+      "license": "CC0-1.0",
+      "derived_from": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush",
+      "triangles": 2684,
+      "vertices": 3285,
+      "asset": "SM_FloraRooibosBDraft",
+      "dimensions_cm": [
+        32.74,
+        38.36,
+        41.99
+      ]
+    }
+  ]
+}
