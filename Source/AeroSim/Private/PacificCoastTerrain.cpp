@@ -13,8 +13,6 @@ constexpr float CliffFoot = -14000.0F;
 constexpr float BedrockBase = -18000.0F;
 constexpr int32 CoastRows = 385;
 constexpr int32 CliffDepthSteps = 36;
-constexpr float HeroBayY = -19000.0F;
-constexpr float HeroBayHalfWidth = 2500.0F;
 
 float Smooth(float Value)
 {
@@ -58,49 +56,11 @@ float ChannelWeight(const float X, const float Y)
         * (1.0F - Smooth(FMath::Abs(Bridge.Y) / 3000.0F));
 }
 
-float BaseCoastY(const int32 Row)
+float CoastY(const int32 Row)
 {
     const float T = Row / static_cast<float>(CoastRows - 1) * 2.0F - 1.0F;
     const float Magnitude = FMath::Abs(T);
     return FMath::Sign(T) * (Magnitude <= .6F ? Magnitude * 100000.0F : 60000.0F + (Magnitude - .6F) * 400000.0F);
-}
-
-const TArray<float>& CoastRowsY()
-{
-    static const TArray<float> Samples=[]
-    {
-        TArray<float> Result;
-        for(int32 Row=0;Row<CoastRows;++Row)
-        {
-            const float Y=BaseCoastY(Row);Result.Add(Y);
-            if(Row+1==CoastRows)continue;
-            const float Next=BaseCoastY(Row+1);
-            if(Next>HeroBayY-HeroBayHalfWidth && Y<HeroBayY+HeroBayHalfWidth)
-                for(int32 Split=1;Split<4;++Split)Result.Add(FMath::Lerp(Y,Next,Split*.25F));
-        }
-        return Result;
-    }();
-    return Samples;
-}
-
-float CoastY(const int32 Row) { return CoastRowsY()[Row]; }
-
-float HeroBayWeight(const float Y)
-{
-    return 1.0F-Smooth((FMath::Abs(Y-HeroBayY)-1600.0F)/900.0F);
-}
-
-float HeroBayLandRelief(const float X,const float Y,const float Edge)
-{
-    if(X<=Edge-3500.0F || X>Edge)return 0;
-    const float Run=(X-(Edge-3500.0F))/3500.0F;
-    const float Center=HeroBayY+450.0F*(Run*Run-.5F);
-    const float Runnel=1.0F-Smooth(FMath::Abs(Y-Center)/(520.0F+120.0F*Run));
-    const float RockShoulder=1.0F-Smooth(FMath::Abs(Y-(Center-1050.0F))/600.0F);
-    // A curved drainage cut and an unequal adjoining bedrock shoulder. Both die into
-    // the existing soil upslope and the unchanged cove outside this single 50 m reach.
-    return HeroBayWeight(Y)*Smooth(Run)*(-300.0F*Runnel*(.4F+.6F*Run)
-        +220.0F*RockShoulder*Smooth((Run-.12F)/.5F));
 }
 
 float CoastalErosion(const float Y)
@@ -139,17 +99,7 @@ float CliffOutcrop(const float Y, const float Depth)
     const float Interior = Smooth(Depth / .07F);
     // No sub-7 m term: short-wavelength block noise serrated the waterline row by row.
     const float Blocks = 450.0F + 380.0F * Noise(Y, 14000.0F, 2100.0F);
-    // Only the hero cove receives these finite, unequal bedrock ribs and their supported
-    // rubble tongue. Every displacement ramps monotonically with depth: no floating blocks
-    // or overhanging support fiction. Different onsets prevent a row of repeated folds.
-    const float Hero=HeroBayWeight(Y);
-    const float NorthernRib=1.0F-Smooth(FMath::Abs(Y-(HeroBayY+950.0F))/600.0F);
-    const float SouthernRib=1.0F-Smooth(FMath::Abs(Y-(HeroBayY-1050.0F))/850.0F);
-    const float RubbleTongue=1.0F-Smooth(FMath::Abs(Y-(HeroBayY-300.0F))/1500.0F);
-    const float HeroRock=Hero*(320.0F*NorthernRib*Smooth((Depth-.025F)/.085F)
-        +520.0F*SouthernRib*Smooth((Depth-.09F)/.17F)
-        +380.0F*RubbleTongue*Smooth((Depth-.055F)/.30F));
-    return Outcrop + Interior * Blocks + HeroRock;
+    return Outcrop + Interior * Blocks;
 }
 
 // --- Bay Area ridge network (DEV-TERRAIN U6) -------------------------------------------------
@@ -364,21 +314,16 @@ float APacificCoastGraybox::GetCoastalLandHeight(const float X, const float Y)
     const float CoastHeight=LandHeight-CoastalErosion(Y)*CoastBlend*Interior;
     // A shallow seasonal swale gives the short woodland bridge an actual crossing to span.
     // Its 16 m bank-to-bank width spans several near-field samples; both bridge landings remain at grade.
-    return CoastHeight - 180.0F * ChannelWeight(X, Y) + HeroBayLandRelief(X,Y,GetCliffEdgeX(Y));
+    return CoastHeight - 180.0F * ChannelWeight(X, Y);
 }
 
 float APacificCoastGraybox::GetCoastalShoreX(float Y)
 {
     using namespace CoastalTerrain;
     Y = FMath::Clamp(Y, -North, North);
-    const TArray<float>& Samples=CoastRowsY();
-    int32 Low=0,High=Samples.Num()-1;
-    while(Low+1<High)
-    {
-        const int32 Middle=(Low+High)/2;
-        if(Samples[Middle]<=Y)Low=Middle;else High=Middle;
-    }
-    const int32 Row=FMath::Min(Low,Samples.Num()-2);
+    const float Magnitude = FMath::Abs(Y);
+    const float T = FMath::Sign(Y) * (Magnitude <= 60000 ? Magnitude / 100000.0F : .6F + (Magnitude - 60000.0F) / 400000.0F);
+    const int32 Row = FMath::Clamp(FMath::FloorToInt((T + 1.0F) * .5F * (CoastRows - 1)), 0, CoastRows - 2);
     const float YA = CoastY(Row), YB = CoastY(Row + 1);
     const float EdgeA = GetCliffEdgeX(YA), EdgeB = GetCliffEdgeX(YB);
     const float TopA = GetCoastalLandHeight(EdgeA, YA), TopB = GetCoastalLandHeight(EdgeB, YB);
@@ -517,7 +462,7 @@ float APacificCoastGraybox::GetCoastalVegetationCover(const float X, const float
 void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
 {
     using namespace CoastalTerrain;
-    const int32 Rows = CoastRowsY().Num();
+    constexpr int32 Rows = CoastRows;
     constexpr int32 Columns = 193;
     TArray<FVector> Vertices;
     TArray<FVector2D> UV;
