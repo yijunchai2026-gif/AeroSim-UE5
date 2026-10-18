@@ -1,0 +1,131 @@
+#if WITH_DEV_AUTOMATION_TESTS
+#include "Misc/AutomationTest.h"
+#include "PacificCoastGraybox.h"
+#include "ProceduralMeshComponent.h"
+
+// DEV-TERRAIN (RD-08): habitat field, landform and shoreline invariants for U5/U6.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoastalHabitatTest, "AeroSim.Environment.CoastalTerrain.HabitatLandformAndShore",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FCoastalHabitatTest::RunTest(const FString& Parameters)
+{
+    // Determinism, normalisation and coverage of the public habitat API.
+    int32 Counts[5] = {0, 0, 0, 0, 0};
+    int32 LandSamples = 0, Mismatches = 0, BadWeights = 0;
+    for (float X = -230000; X <= 15000; X += 4000)
+        for (float Y = -210000; Y <= 210000; Y += 4000)
+        {
+            const FCoastHabitatSample A = FPacificCoastHabitat::Sample(X, Y);
+            const FCoastHabitatSample B = FPacificCoastHabitat::Sample(X, Y);
+            if (A.Class != B.Class || A.Woodland != B.Woodland || A.Rock != B.Rock || FPacificCoastHabitat::GetHabitatClass(X, Y) != A.Class) ++Mismatches;
+            const float Sum = A.ExposedGrass + A.ShelteredGrass + A.Woodland + A.Rock + A.Shore;
+            if (!FMath::IsNearlyEqual(Sum, 1.0F, .001F) || FMath::Min(FMath::Min(A.ExposedGrass, A.ShelteredGrass), FMath::Min(A.Woodland, FMath::Min(A.Rock, A.Shore))) < 0) ++BadWeights;
+            if (A.Class == ECoastHabitatClass::CliffShore) continue;
+            ++LandSamples;
+            ++Counts[static_cast<int32>(A.Class)];
+        }
+    TestEqual(TEXT("Habitat sampling is deterministic"), Mismatches, 0);
+    TestEqual(TEXT("Habitat soft weights are non-negative and sum to one"), BadWeights, 0);
+    const TCHAR* Names[] = {TEXT("exposed grass"), TEXT("sheltered grass"), TEXT("woodland"), TEXT("steep rock")};
+    for (int32 Class = 0; Class < 4; ++Class)
+        TestTrue(FString::Printf(TEXT("Habitat class %s covers at least 2%% of the land"), Names[Class]), LandSamples > 0 && Counts[Class] > LandSamples / 50);
+    TestTrue(TEXT("Dry exposed grass remains the most common open-land habitat"), Counts[0] > Counts[3]);
+    TestTrue(TEXT("Open sea beyond the cliff is classified as shore"), FPacificCoastHabitat::GetHabitatClass(APacificCoastGraybox::GetCliffEdgeX(0) + 5000, 0) == ECoastHabitatClass::CliffShore);
+    for (const FVector& Route : FPacificCoastGrayboxContract::GetRoutePoints())
+    {
+        const ECoastHabitatClass Class = FPacificCoastHabitat::GetHabitatClass(Route.X, Route.Y);
+        TestTrue(TEXT("Flight route ground is open grass, not woodland or rock"), Class == ECoastHabitatClass::ExposedGrass || Class == ECoastHabitatClass::ShelteredGrass);
+        // Route grade preserved: the corridor around every waypoint is exactly level.
+        for (const FVector2D Offset : {FVector2D(0, 2000), FVector2D(0, -2000), FVector2D(-2000, 0), FVector2D(-2000, 2000)})
+            TestTrue(TEXT("Route corridor keeps its level supported grade"), FMath::Abs(APacificCoastGraybox::GetCoastalLandHeight(Route.X + Offset.X, Route.Y + Offset.Y)) < .5F);
+    }
+
+    // No hard classification band edges: weight change between 5 m neighbours on real slopes.
+    float MaximumStep = 0;
+    int32 Steps = 0, LargeSteps = 0;
+    FVector2D WorstStep = FVector2D::ZeroVector;
+    for (float Y = -150000; Y <= 150000; Y += 15000)
+    {
+        FCoastHabitatSample Previous = FPacificCoastHabitat::Sample(-215000, Y);
+        for (float X = -214500; X <= -40000; X += 500)
+        {
+            const FCoastHabitatSample Current = FPacificCoastHabitat::Sample(X, Y);
+            if (Current.Shore < .01F && Previous.Shore < .01F)
+            {
+                const float Step = FMath::Max(FMath::Max(FMath::Abs(Current.ExposedGrass - Previous.ExposedGrass), FMath::Abs(Current.ShelteredGrass - Previous.ShelteredGrass)),
+                    FMath::Max(FMath::Abs(Current.Woodland - Previous.Woodland), FMath::Abs(Current.Rock - Previous.Rock)));
+                ++Steps;
+                if (Step > .15F) ++LargeSteps;
+                if (Step > MaximumStep) { MaximumStep = Step; WorstStep = FVector2D(X, Y); }
+            }
+            Previous = Current;
+        }
+    }
+    // A hard classification edge would change a weight by ~1.0 in one cell; every transition here
+    // must spread over at least three 5 m cells, and steep transitions must be rare.
+    TestTrue(TEXT("Habitat weights never jump by more than 0.45 across a 5 m cell (no sawtooth band edge)"), Steps > 5000 && MaximumStep < .45F);
+    TestTrue(TEXT("Fewer than 4% of 5 m cells change any habitat weight by more than 0.15"), LargeSteps * 25 < Steps);
+
+    // Bay Area landform: aspect controls habitat on the main ridge flanks.
+    float SunWood = 0, ShadeWood = 0; int32 SunCount = 0, ShadeCount = 0;
+    for (float X = -200000; X <= -60000; X += 3000)
+        for (float Y = -160000; Y <= 160000; Y += 3000)
+        {
+            const FCoastHabitatSample S = FPacificCoastHabitat::Sample(X, Y);
+            if (S.Shore > .5F || S.Grade < .15F) continue;
+            if (S.SunExposure > .5F) { SunWood += S.Woodland; ++SunCount; }
+            if (S.SunExposure < -.5F) { ShadeWood += S.Woodland; ++ShadeCount; }
+        }
+    TestTrue(TEXT("Shaded aspects carry clearly more woodland than sun-facing aspects"), SunCount > 50 && ShadeCount > 50 && ShadeWood / ShadeCount > SunWood / SunCount + .2F);
+
+    // Shorelines: the north, south and west waterlines are irregular, not ruler-straight.
+    auto Spread = [](const TArray<float>& Values) { float Min = BIG_NUMBER, Max = -BIG_NUMBER; for (float V : Values) { Min = FMath::Min(Min, V); Max = FMath::Max(Max, V); } return Max - Min; };
+    for (int32 Side = -1; Side <= 1; Side += 2)
+    {
+        TArray<float> Waterline;
+        for (float X = -200000; X <= -20000; X += 2500)
+            for (float Y = 220000; Y > 120000; Y -= 250)
+                if (APacificCoastGraybox::GetCoastalLandHeight(X, Side * Y) > APacificCoastGraybox::SeaLevelCm) { Waterline.Add(Y); break; }
+        TestTrue(TEXT("North/south waterline wanders by more than 60 m"), Waterline.Num() > 60 && Spread(Waterline) > 6000);
+    }
+    TArray<float> WestWaterline;
+    for (float Y = -150000; Y <= 150000; Y += 2500)
+        for (float X = -240000; X < -150000; X += 250)
+            if (APacificCoastGraybox::GetCoastalLandHeight(X, Y) > APacificCoastGraybox::SeaLevelCm) { WestWaterline.Add(X); break; }
+    TestTrue(TEXT("West waterline wanders by more than 60 m"), WestWaterline.Num() > 100 && Spread(WestWaterline) > 6000);
+
+    // Distant receding ridgelines: rooted below sea at their perimeter, taller than the main summit.
+    const APacificCoastGraybox* Coast = GetDefault<APacificCoastGraybox>();
+    TArray<UProceduralMeshComponent*> Meshes; Coast->GetComponents(Meshes);
+    bool bRange = false;
+    for (UProceduralMeshComponent* Mesh : Meshes)
+    {
+        if (Mesh->GetFName() != TEXT("CoastalDistantRange")) continue;
+        const FProcMeshSection* Section = Mesh->GetProcMeshSection(0);
+        if (!TestNotNull(TEXT("Distant range has geometry"), Section)) return false;
+        bRange = true;
+        const FBox Box = Section->SectionLocalBox;
+        float PerimeterMax = -BIG_NUMBER, Top = -BIG_NUMBER;
+        for (const FProcMeshVertex& V : Section->ProcVertexBuffer)
+        {
+            Top = FMath::Max(Top, static_cast<float>(V.Position.Z));
+            if (V.Position.X > Box.Max.X - 1 || V.Position.X < Box.Min.X + 1 || FMath::Abs(V.Position.Y) > Box.Max.Y - 1)
+                PerimeterMax = FMath::Max(PerimeterMax, static_cast<float>(V.Position.Z));
+        }
+        TestTrue(TEXT("Distant range perimeter is rooted below sea level"), PerimeterMax < APacificCoastGraybox::SeaLevelCm - 3000);
+        TestTrue(TEXT("Distant range starts behind the playable land"), Box.Max.X < -228000);
+        TestTrue(TEXT("Receding ridgelines rise above the near main summit"), Top > 40000 && Top < 70000);
+        AddInfo(FString::Printf(TEXT("Distant range top %.0f cm; perimeter max %.0f cm; %d triangles"), Top, PerimeterMax, Section->ProcIndexBuffer.Num() / 3));
+    }
+    TestTrue(TEXT("Distant receding ridgeline mesh exists"), bRange);
+    for (float DX : {-1000.0F, -500.0F, 0.0F, 500.0F})
+    {
+        const FCoastHabitatSample W = FPacificCoastHabitat::Sample(WorstStep.X + DX, WorstStep.Y);
+        AddInfo(FString::Printf(TEXT("Worst-step neighbourhood x%+.0f: h %.0f grade %.3f sun %.3f drain %.3f | E %.2f S %.2f W %.2f R %.2f Sh %.2f"), DX,
+            APacificCoastGraybox::GetCoastalLandHeight(WorstStep.X + DX, WorstStep.Y), W.Grade, W.SunExposure, W.Drainage, W.ExposedGrass, W.ShelteredGrass, W.Woodland, W.Rock, W.Shore));
+    }
+    AddInfo(FString::Printf(TEXT("Habitat coverage of %d land samples: exposed %d sheltered %d woodland %d rock %d"), LandSamples, Counts[0], Counts[1], Counts[2], Counts[3]));
+    AddInfo(FString::Printf(TEXT("Habitat 5 m step max %.3f at (%.0f, %.0f); >0.15 in %d of %d cells; woodland mean sun %.3f shade %.3f"),
+        MaximumStep, WorstStep.X, WorstStep.Y, LargeSteps, Steps, SunCount ? SunWood / SunCount : 0, ShadeCount ? ShadeWood / ShadeCount : 0));
+    return true;
+}
+#endif

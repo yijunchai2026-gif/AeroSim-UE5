@@ -35,7 +35,7 @@ void APacificCoastGraybox::BuildCoastalLandscape()
             UMaterialInterface* Material = nullptr;
             FLinearColor Tint = FLinearColor::White;
             if (Name == TEXT("CoastalPlateau") || Name == TEXT("CoastalMountainScrub")
-                || Name == TEXT("CoastalMountainRock")) Material = Ground.Object;
+                || Name == TEXT("CoastalMountainRock") || Name == TEXT("CoastalDistantRange")) Material = Ground.Object;
             else if (Name == TEXT("CoastalBedrock")
                 || Name == TEXT("CoastalFracturedRock") || Name == TEXT("CoastalTalusButtresses")
                 || Name == TEXT("CoastalSubtidalShelf"))
