@@ -10,6 +10,14 @@
 #include "Engine/World.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "ProceduralMeshComponent.h"
+#include "Materials/Material.h"
+#include "MaterialShared.h"
+#include "RHIGlobals.h"
+#include "DataDrivenShaderPlatformInfo.h"
+#include "Misc/App.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "RHIShaderPlatform.h"
+#include "UObject/SoftObjectPtr.h"
 
 namespace SeaSkyTest
 {
@@ -82,7 +90,20 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
             const bool bWind = Material && Material->GetScalarParameterValue(FMaterialParameterInfo(TEXT("WindMultiplier")), Wind);
             AddInfo(FString::Printf(TEXT("Cloud params: coverage %d %.3f wind %d %.3f; layer %.2f km + %.2f km"),
                 bCoverage, Coverage, bWind, Wind, Clouds->LayerBottomAltitude, Clouds->LayerHeight));
+            if (const UMaterialInstanceDynamic* Instance = Cast<UMaterialInstanceDynamic>(Material))
+            {
+                float BaseCoverage = -1, BaseDensity = -1, Density = -1;
+                if (Instance->Parent)
+                {
+                    Instance->Parent->GetScalarParameterValue(FMaterialParameterInfo(TEXT("Cloud_GlobalCoverage")), BaseCoverage);
+                    Instance->Parent->GetScalarParameterValue(FMaterialParameterInfo(TEXT("Cloud_GlobalDensity")), BaseDensity);
+                }
+                Instance->GetScalarParameterValue(FMaterialParameterInfo(TEXT("Cloud_GlobalDensity")), Density);
+                AddInfo(FString::Printf(TEXT("Cloud engine defaults: coverage %.3f density %.3f; applied density %.3f"), BaseCoverage, BaseDensity, Density));
+            }
             TestTrue(TEXT("Clear cloud layer is a shallow fair-weather band"), Clouds->LayerBottomAltitude >= 1.2F && Clouds->LayerHeight <= 2.0F);
+            TestTrue(TEXT("Clear coverage bias is below the engine's broken-cumulus default (-0.2)"), bCoverage && Coverage < -.35F);
+            TestTrue(TEXT("Cloud evolution frozen for a deterministic baseline"), bWind && Wind == 0.0F);
         }
     }
     if (World) World->DestroyWorld(false);
@@ -253,4 +274,39 @@ bool FCoastalRainWetnessTest::RunTest(const FString& Parameters)
     if (World) World->DestroyWorld(false);
     return true;
 }
+#if WITH_EDITOR
+// NullRHI never compiles shaders. Run this one under the Metal RHI (no -NullRHI):
+// it forces the real platform compile of every draft coast material and fails on any
+// compiler error (e.g. the R1 'vector swizzle a out of bounds' checkerboard fallback).
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoastalMetalMaterialCompileTest, "AeroSim.Environment.SeaSky.MetalMaterialsCompile",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FCoastalMetalMaterialCompileTest::RunTest(const FString& Parameters)
+{
+    const EShaderPlatform Platform = GMaxRHIShaderPlatform;
+    if (!IsMetalPlatform(Platform) || !FApp::CanEverRender())
+    {
+        AddWarning(TEXT("NOT_RUN: no Metal RHI in this process (NullRHI); rerun without -NullRHI to compile shaders"));
+        return true;
+    }
+    const TCHAR* Paths[] = {
+        TEXT("/Game/Development/CoastDraft/Materials/M_CoastWaterDraft.M_CoastWaterDraft"),
+        TEXT("/Game/Development/CoastDraft/Materials/M_CoastGroundDraft.M_CoastGroundDraft"),
+        TEXT("/Game/Development/CoastDraft/Materials/M_CoastRockDraft.M_CoastRockDraft"),
+        TEXT("/Game/Development/CoastDraft/Materials/M_CoastGravelDraft.M_CoastGravelDraft"),
+        TEXT("/Engine/EngineSky/VolumetricClouds/m_SimpleVolumetricCloud.m_SimpleVolumetricCloud")};
+    for (const TCHAR* Path : Paths)
+    {
+        UMaterial* Material = TSoftObjectPtr<UMaterial>(FSoftObjectPath(Path)).LoadSynchronous();
+        if (!TestNotNull(FString::Printf(TEXT("Material loads: %s"), Path), Material)) continue;
+        FMaterialResource* Resource = Material->GetMaterialResource(Platform);
+        if (!TestNotNull(FString::Printf(TEXT("Metal material resource exists: %s"), Path), Resource)) continue;
+        Resource->FinishCompilation();
+        AddInfo(FString::Printf(TEXT("Compiled %s for %s: %d errors"), Path, *FDataDrivenShaderPlatformInfo::GetName(Platform).ToString(), Resource->GetCompileErrors().Num()));
+        for (const FString& Error : Resource->GetCompileErrors()) AddError(FString::Printf(TEXT("%s: %s"), Path, *Error));
+        TestTrue(FString::Printf(TEXT("Compiled for %s without errors: %s"), *FDataDrivenShaderPlatformInfo::GetName(Platform).ToString(), Path),
+            Resource->GetCompileErrors().IsEmpty() && Resource->GetGameThreadShaderMap() != nullptr);
+    }
+    return true;
+}
+#endif
 #endif
