@@ -1,21 +1,40 @@
 {
   "schema": "aerosim.environment-draft.assets/v1",
   "state": "DRAFT_NOT_USER_CONFIRMED",
-  "version": "coast-draft-20261017-v7",
+  "version": "coast-draft-20261018-flora-r1",
   "source_pages": [
     "https://polyhaven.com/a/pine_tree_01",
     "https://polyhaven.com/a/rocky_terrain_02",
     "https://polyhaven.com/a/cliff_side",
-    "https://polyhaven.com/a/sandy_gravel_02"
+    "https://polyhaven.com/a/sandy_gravel_02",
+    "https://polyhaven.com/a/grass_medium_01",
+    "https://polyhaven.com/a/shrub_03",
+    "https://polyhaven.com/a/pine_bark",
+    "https://polyhaven.com/a/bark_willow_02",
+    "https://polyhaven.com/a/jolcham_oak_bark_01",
+    "https://polyhaven.com/a/fir_tree_01",
+    "https://polyhaven.com/a/island_tree_02",
+    "https://polyhaven.com/a/fern_02",
+    "https://polyhaven.com/a/wild_rooibos_bush"
   ],
   "license": "CC0-1.0",
   "license_source": "https://polyhaven.com/license",
-  "importer": "CoastDraftImportCommandlet (fixed whitelist, Editor only)",
+  "importer": "CoastDraftImportCommandlet + HabitatDraftImportCommandlet (fixed whitelists, Editor only)",
   "assets": [
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastBarkDraft.uasset",
       "sha256": "4c98cc37063eba8ae91d9b7329c947cf1b76c28648c3c0f78f8382940b33b234",
       "bytes": 9868
+    },
+    {
+      "path": "Content/Development/CoastDraft/Materials/M_CoastBroadShrubDraft.uasset",
+      "sha256": "d1b8ef3b1475b177956970235868e88a8ef4266292385d495150f767e26b444b",
+      "bytes": 17195
+    },
+    {
+      "path": "Content/Development/CoastDraft/Materials/M_CoastDryGrassDraft.uasset",
+      "sha256": "e011207a04b1e16af68a200c0939203bd0d84e761bebef5f8af30ba5088c140b",
+      "bytes": 17169
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastGravelDraft.uasset",
@@ -43,6 +62,91 @@
       "bytes": 24632
     },
     {
+      "path": "Content/Development/CoastDraft/Materials/M_FloraFernDraft.uasset",
+      "sha256": "e1de61c3e83bd79079c8cf042a93297e85e039e181d69c7afb283d4f149fb280",
+      "bytes": 17131
+    },
+    {
+      "path": "Content/Development/CoastDraft/Materials/M_FloraFirBarkDraft.uasset",
+      "sha256": "017d94173518bf8c1c9ad7bb5e74712cbc41561641fc3e5a97c1ad71e6a548d5",
+      "bytes": 15331
+    },
+    {
+      "path": "Content/Development/CoastDraft/Materials/M_FloraFirNeedlesDraft.uasset",
+      "sha256": "a8e4d407269231385da0f1e023cdd58fe871fae490af642d17b7e290ba9988b8",
+      "bytes": 17171
+    },
+    {
+      "path": "Content/Development/CoastDraft/Materials/M_FloraOakBarkDraft.uasset",
+      "sha256": "ade7de1df43af6a93f43e3d756b21473679e6dffa805291dc35353a756c59226",
+      "bytes": 15331
+    },
+    {
+      "path": "Content/Development/CoastDraft/Materials/M_FloraOakLeavesDraft.uasset",
+      "sha256": "af5c4363c89f949c0099483630a33b49bb37082466b4b216980afe11b93b06f9",
+      "bytes": 17166
+    },
+    {
+      "path": "Content/Development/CoastDraft/Materials/M_FloraPineBarkDraft.uasset",
+      "sha256": "a06f678df3ee0bf6f3949875c7d33e5d179bc1a5ab315a3af1ce9e9d79bb0c2b",
+      "bytes": 15342
+    },
+    {
+      "path": "Content/Development/CoastDraft/Materials/M_FloraPineNeedlesDraft.uasset",
+      "sha256": "5028fc39d0c5b7b7d1676772aa1688f28df5078297508f6021899547fddcbeab",
+      "bytes": 17184
+    },
+    {
+      "path": "Content/Development/CoastDraft/Materials/M_FloraRooibosDraft.uasset",
+      "sha256": "5d3841f918dfd0abefb222fac5fd40d5ed7ed0b5d97300fa130d5b0e574416ce",
+      "bytes": 17170
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_CoastGrassSmallDraft.uasset",
+      "sha256": "4cc21849048afee015513f693205bb23f6b2c12a3fcc2621ab0458461ac5b997",
+      "bytes": 54028
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_CoastGrassTallDraft.uasset",
+      "sha256": "f893fa1b94985697446c0fbc170d0431812d6181ff4e34fb16b6d4efe773bc76",
+      "bytes": 30202
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_CoastGrassTinyDraft.uasset",
+      "sha256": "f098cb4022b7466aec83228b0b2c802ea4d678e4c27dd8d1fdcea58cfe61afbe",
+      "bytes": 12309
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_CoastShrubADraft.uasset",
+      "sha256": "47e4db588db59baf399b6d93de90044f0f863fc37dae520d7fc2ed12928ebd88",
+      "bytes": 105890
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_CoastShrubBDraft.uasset",
+      "sha256": "f2ffdb0854e2fb6003ad6b27d518edfa79bd1d199d068ff03f0f4a41c7c83493",
+      "bytes": 86332
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_FloraFernADraft.uasset",
+      "sha256": "73bae7e9d9ea182302077b517edd4c9fd0a0c4debf47a3dae2c6aff589bf2a4e",
+      "bytes": 103683
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_FloraFernBDraft.uasset",
+      "sha256": "b99029964520dc331d6767ad2146040a1ccd1066d3511036617eeff5e83892fa",
+      "bytes": 45645
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_FloraRooibosADraft.uasset",
+      "sha256": "1b188a326f64720dcda8d75c060867c6d114ef47c88d1e4d972870f3c0f0e7b8",
+      "bytes": 258461
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_FloraRooibosBDraft.uasset",
+      "sha256": "c7229ce414a6749b08a7af7b893a481912027accde973f46564b66263387ae8a",
+      "bytes": 124329
+    },
+    {
       "path": "Content/Development/CoastDraft/Textures/T_CoastBark_BaseColor.uasset",
       "sha256": "678def54a0b36ed0266f9c99ab6d497e5676fc4990543fcf8b6d9fb4af4bb6e1",
       "bytes": 5755461
@@ -56,6 +160,46 @@
       "path": "Content/Development/CoastDraft/Textures/T_CoastBark_Roughness.uasset",
       "sha256": "666e56f1cac87310de73f5723652ed714ad46488017452a4d124e52fc0801ba2",
       "bytes": 2904695
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastBroadShrub_Alpha.uasset",
+      "sha256": "4efd19cab72a0ca3d026ce32e153205eb096acea9f6ceb9497d0dafee9f34bad",
+      "bytes": 149336
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastBroadShrub_BaseColor.uasset",
+      "sha256": "c97ab245de0777deef7e1596e6b4e5574d5d6bf96877d200083faf574cb66641",
+      "bytes": 485978
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastBroadShrub_Normal.uasset",
+      "sha256": "9b860d4baab446069bd226427bc6708f4bf77ac17a7832f601daf3d8834f0e46",
+      "bytes": 504866
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastBroadShrub_Roughness.uasset",
+      "sha256": "8ff221d68b8dd75a265dbdf22fc2a352b84d93b8f2ef7544fdb275f5ff03bc5c",
+      "bytes": 266989
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastDryGrass_Alpha.uasset",
+      "sha256": "6e8ee691e247a491746611811cc3726434311fd927d4383c38bd194d4ca13aba",
+      "bytes": 451894
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastDryGrass_BaseColor.uasset",
+      "sha256": "fc83c78acaaf3e08299aab18bdd2937cbbdf66e13e3c318d619d132bb4f02f8a",
+      "bytes": 427239
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastDryGrass_Normal.uasset",
+      "sha256": "c8cc149625c869eb3af5a1b4e6ae9a52c904eba355b440a749042d74fc8ca378",
+      "bytes": 959283
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastDryGrass_Roughness.uasset",
+      "sha256": "af65d1e2e2334c83e45cdade38d5d7e17fb5812cafca0f899e01d3b8f8dca103",
+      "bytes": 545581
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastGravel_BaseColor.uasset",
@@ -121,9 +265,489 @@
       "path": "Content/Development/CoastDraft/Textures/T_CoastRock_Roughness.uasset",
       "sha256": "adab1a0fdd6e2e2ed6fa57f350831ab24f0178a5fcf3fd120dd0a0e6c1e505d0",
       "bytes": 1769322
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraFern_ARM.uasset",
+      "sha256": "371f326460ab60c15fb99a4626b5426b26192abbe3a567ba7eb7ffba806bcdf2",
+      "bytes": 284644
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraFern_Alpha.uasset",
+      "sha256": "6a659694712b05e4f768faa2f613717c3c70d48941eca93d74a3df0accb976eb",
+      "bytes": 250381
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraFern_BaseColor.uasset",
+      "sha256": "41ec98bc5e0ee8fa9859668181b77da20cdd94498f1ffa7773508fdc8009b2e6",
+      "bytes": 319842
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraFern_Normal.uasset",
+      "sha256": "d80d89b0d271cd8383e24b26d49250327b0797afa423cc463ebe61d78f9633d0",
+      "bytes": 373349
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraFirBark_BaseColor.uasset",
+      "sha256": "6765e88c90e38dc8c279c2bc32ef613e9bb39b1b18e5e0a7652a743195913f58",
+      "bytes": 4014478
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraFirBark_Normal.uasset",
+      "sha256": "eb3deda16d2827127ad68c952cd92f22eca736c3a092565ba947661fa455b3b2",
+      "bytes": 5206808
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraFirBark_Roughness.uasset",
+      "sha256": "88f68830bbf283ecd2e2289350d16841bfb98265db63e7a862d73dc90f6d54bb",
+      "bytes": 2177200
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraFirTwig_Alpha.uasset",
+      "sha256": "f8c1455ba75a52d63313cf6f07c841f956ac06852bd17ef2524e27b686398eb6",
+      "bytes": 802702
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraFirTwig_BaseColor.uasset",
+      "sha256": "5e95cd6142744d2b226c2e6a1781108e0ddbbefebeacc09e29cfc6a4e7228523",
+      "bytes": 1146153
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraFirTwig_Normal.uasset",
+      "sha256": "e9bafd8bc182536e48746981dd315c3aed6e63e3241147b92d8556616024748b",
+      "bytes": 1653679
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraFirTwig_Roughness.uasset",
+      "sha256": "e16d051322c5d13035a7d093f9a68a6e664ef7888f4f58d5e219b515e1a10262",
+      "bytes": 953594
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraOakBark_BaseColor.uasset",
+      "sha256": "24db53141cc97dd92bf54e2d3f54274a48962eceb92a64400f3626a623e044b8",
+      "bytes": 1940801
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraOakBark_Normal.uasset",
+      "sha256": "b0fdac16e2e623c12351b65e5887b318506b77ea2e5f4d01932877c7b36c32b9",
+      "bytes": 2694987
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraOakBark_Roughness.uasset",
+      "sha256": "bc6431aadb613246e1e1bd5dcfd9eb0551e1edc0687a52e7c82f4e6f6609fd27",
+      "bytes": 803438
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraOakLeaf_Alpha.uasset",
+      "sha256": "e554038c3971658c66e5d8264606a9a076a80673cde3c3d3a7fae82c8edbac93",
+      "bytes": 193781
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraOakLeaf_BaseColor.uasset",
+      "sha256": "8bcfab7b1a1f3808314149f2bc546df9e9a34ee89a7179fac18c44c3579070c9",
+      "bytes": 665348
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraOakLeaf_Normal.uasset",
+      "sha256": "f1981beb517d44f7f5e630ae58ceaf043541976a0b43c55fc5a707ef8e8894ad",
+      "bytes": 1378058
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraOakLeaf_Roughness.uasset",
+      "sha256": "58999df5f1725ddb0ae0f0a8ab9853daf3caae89948626b5a2e838ac72f3ab83",
+      "bytes": 1370138
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraPineBark_BaseColor.uasset",
+      "sha256": "40c4a50b9231e4cb08f1d0bcf56c793f5d98ad529d656ccbc2c7d571cd305a6e",
+      "bytes": 3171704
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraPineBark_Normal.uasset",
+      "sha256": "d49dd5d01f289654219f0e2b09c8cac58b03c003b323b5c58d733837df1e997c",
+      "bytes": 4530630
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraPineBark_Roughness.uasset",
+      "sha256": "6d60e2b030c8eafbdfb8182a1f23c3bf9b2c01f5e2407f3d2497abbd33d78c01",
+      "bytes": 2089349
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraPineTwig_Alpha.uasset",
+      "sha256": "08f4656343379cdd42e8ac5b34088b817b656a4ba7ad134a2f4c8791aa78776f",
+      "bytes": 547592
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraPineTwig_BaseColor.uasset",
+      "sha256": "adbfa5ec4fd68f31b2df6f3628bdcb489900184d09f1d2607bfe70b00a3fa888",
+      "bytes": 1627366
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraPineTwig_Normal.uasset",
+      "sha256": "c2c000dc189f8696563d98133b1d292873a85c7bfd7f3958f79ba40fb50638f5",
+      "bytes": 2959381
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraPineTwig_Roughness.uasset",
+      "sha256": "337d25e1300c21c389a54f129761f599bf302b92fa93e32d44f0b6091fd01d5f",
+      "bytes": 1278285
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraRooibos_ARM.uasset",
+      "sha256": "9c66d19ed35d0d6ea4ba669b38355028aa05422777545bd20f06240535a422cf",
+      "bytes": 371610
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraRooibos_Alpha.uasset",
+      "sha256": "efad6223b8d789a7ec6754f99ef830575c88d54839abff1df6bfe287f7a4214d",
+      "bytes": 119973
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraRooibos_BaseColor.uasset",
+      "sha256": "27e4c8d0cff289fffa278c0bebee19618486ced12a855417a1a83ebf18c099f8",
+      "bytes": 378192
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_FloraRooibos_Normal.uasset",
+      "sha256": "2c38ec21b28a5e75d60d1ddabbc4aca158430264a169afb26db80840249d782f",
+      "bytes": 464921
     }
   ],
   "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/bark_willow_02/bark_willow_02_diff_2k.jpg",
+      "sha256": "6bec05b58cad3907ba2704010f2d6878152b679e5f5ab5c6c6ff7d449c373a76",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/bark_willow_02/bark_willow_02_disp_2k.jpg",
+      "sha256": "ba22ead0cc5883346cba74766d0d782cab6fae32157ae5801cc5b8b3b00087b2",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/bark_willow_02/bark_willow_02_nor_dx_2k.jpg",
+      "sha256": "a97754ba6c21c99f266398b19a6bb14efee7669776d73a72ddefe6f0cc082269",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/bark_willow_02/bark_willow_02_rough_2k.jpg",
+      "sha256": "360bfce5b6f8ff6fd6ab5c8b61dcdaa4bcc36c86c920964c71d38e8fc671ebcb",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/dry_branches_medium_01.bin",
+      "sha256": "969da1e8cbb2d8201e7fa0fc0dac5b19ef354b32c3d8c62dd9faa7cb3833d8ca",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/dry_branches_medium_01.gltf",
+      "sha256": "23f328ded9be1e151ccd7994b303c70221551544c4857a71474c1c01a14b8a22",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/dry_branches_medium_01_nor_dx_1k.jpg",
+      "sha256": "e16b61af1a0ff3c962a40a4628f13ab5694aad3923c1a0c92d187fa58e43300b",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/textures/dry_branches_medium_01_arm_1k.jpg",
+      "sha256": "6d1ba6f4763d2815301a15bf62eaf68c345cecafb107e2681d12f26fbc657f5a",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/textures/dry_branches_medium_01_diff_1k.jpg",
+      "sha256": "1fbaf810a9ca29d2faf0a179834e8dce10cf4854bafe13f63af111030b3ec660",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_branches_medium_01/textures/dry_branches_medium_01_nor_gl_1k.jpg",
+      "sha256": "62f5205bfec599000bb7a430e003bbada939bc8d7976a7d3ab7709fd5893413c",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_decay_leaves/dry_decay_leaves_diff_2k.jpg",
+      "sha256": "4dc7dde86f3db0df3566ca0ae77390000e979db31fbdc861796d2e516e6ad04e",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_decay_leaves/dry_decay_leaves_disp_2k.jpg",
+      "sha256": "cd2461f31eeeb6b360bc9dcdcb745d56b3cb489992c344b7142ef9e672e8ecbb",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_decay_leaves/dry_decay_leaves_nor_dx_2k.jpg",
+      "sha256": "a9a007a758cb126fd8f0e9e411e0c62e3c8a3bbf950d8dc7823108058975bd70",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/dry_decay_leaves/dry_decay_leaves_rough_2k.jpg",
+      "sha256": "13024199e2f90d1a43733a1a599386b4a4a7778a0affcc310430629de6a623e7",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/fern_02.bin",
+      "sha256": "fe1abb762bcbbc7ad9e86925c8080437a62add257d9280e9142fdc85c226e64c",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/fern_02.gltf",
+      "sha256": "33974295ee19670af4877705fc7d91f33f42d6302f0d44a625e072271223031f",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/fern_02_alpha_1k.jpg",
+      "sha256": "4d8c4d57373651e500f1a3b2071cd59d2d9cc031bc30ff73bc8a5d2b2c91571a",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/fern_02_nor_dx_1k.jpg",
+      "sha256": "cf8e9af7191bdd6721fb4540e4c22d10b65808e2aaef2f2615d66f51270a6bba",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/textures/fern_02_arm_1k.jpg",
+      "sha256": "ebfb5d76ce9cbdaec20bcd22dce9b755f0b1b8650ef29ca13555e3e6961025d7",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/textures/fern_02_diff_1k.jpg",
+      "sha256": "a828a6e7b4c01c826911e2eac4b3afc7457dab7b3b392a31c681ed88b7d50029",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fern_02/textures/fern_02_nor_gl_1k.jpg",
+      "sha256": "45bce132c6e96a0864bc89ab5da51361ab3f4afa83a6669ae499ab5ca811f621",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fir_tree_01/fir_tree_01_twig_alpha_2k.jpg",
+      "sha256": "69c1a0ab17e57ef3b74913ba883b853e1c7a9409a9a43743cce1dd756a7adfee",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fir_tree_01/fir_tree_01_twig_diff_2k.jpg",
+      "sha256": "5504646d484a08649a9cd14402860063e69fd10072238f5afe72214e6bf478be",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fir_tree_01/fir_tree_01_twig_nor_dx_2k.jpg",
+      "sha256": "6019fece57cab266524ec976356a36583fd3132f8cdbb20ffcdc0e606a5b316c",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/fir_tree_01/fir_tree_01_twig_rough_2k.jpg",
+      "sha256": "6e56fc3f066e1d45348bf5d8db9c03c957f5cd3f6778196fd7698b746c8dd02d",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/forest_leaves_04/forest_leaves_04_diff_2k.jpg",
+      "sha256": "a4f964eb32909ef9b41dbf4000bde142995711b7b755850f6523eb4d99c4a5d4",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/forest_leaves_04/forest_leaves_04_disp_2k.jpg",
+      "sha256": "cfca13ba1645f66ef675592bfad553330845d96d0ebbf634b689459f111b8216",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/forest_leaves_04/forest_leaves_04_nor_dx_2k.jpg",
+      "sha256": "151d2b52a2764b747dc253757053cd11af3591d7184addb0b1402bc2becfb0b6",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/forest_leaves_04/forest_leaves_04_rough_2k.jpg",
+      "sha256": "80db3af88b964a24fbe3f9e2c1284c5d8426e51a0b776d8f1fca5a4e0fdd8b2f",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/island_tree_02/island_tree_02_leaves_alpha_2k.jpg",
+      "sha256": "d202ec020ad2dda57a9d36cfd4045e530146f8793bd46ce3ab779e7845fb28f5",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/island_tree_02/island_tree_02_leaves_diff_2k.jpg",
+      "sha256": "e5c56ca13525aed76572852da5f69ae87cbee9e15abe2e1eff23adf92975f14a",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/island_tree_02/island_tree_02_leaves_nor_dx_2k.jpg",
+      "sha256": "442ec88cc5a5da3df2a4daec2be04079d737a1edbdd2eec9304c8ffe5036fb67",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/island_tree_02/island_tree_02_leaves_rough_2k.jpg",
+      "sha256": "04ec4237fe0ca0c0db8ae09bdf78c3b30488d83d4a1c2ddc11828fb461c4a31c",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/jolcham_oak_bark_01/jolcham_oak_bark_01_diff_1k.jpg",
+      "sha256": "08c26b3ea38718dfc3902d0889ac06e2ce0ae9cddb31d8988723eee1780a71c8",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/jolcham_oak_bark_01/jolcham_oak_bark_01_disp_1k.jpg",
+      "sha256": "adea055f5164422197c73f98fb26ad5761d8e2eb9db67fb8210ec334cdc2f0cb",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/jolcham_oak_bark_01/jolcham_oak_bark_01_nor_dx_1k.jpg",
+      "sha256": "8a10fe4b63906dd0c8ac4626fcb0024cb0e9376c6922369fcbb30c38c15f0327",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/jolcham_oak_bark_01/jolcham_oak_bark_01_rough_1k.jpg",
+      "sha256": "070f859c0c86dbb9d75d53cb885e07e9c3d8a0385fe82ab1c3083032aff7f31a",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_bark/pine_bark_diff_2k.jpg",
+      "sha256": "741f333ab9f8a0996d8a53905b5ac792fab77d7ccb8cac5fbaed8c99b9f6abd5",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_bark/pine_bark_disp_2k.jpg",
+      "sha256": "066b021e6192eb49019bde474bf55323d7f0f13706f32c308d96ac1dbcba7c3c",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_bark/pine_bark_nor_dx_2k.jpg",
+      "sha256": "fd470b8c5fb438aecb5af277f9c34e564076ad642a1484175798f833ad8ec970",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_bark/pine_bark_rough_2k.jpg",
+      "sha256": "a86618f6358a97410b15d226d0b3d52bb203aed8d9a29cfa355769b95df94d03",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_tree_01/pine_tree_01_twig_alpha_2k.jpg",
+      "sha256": "f5ed442eb05363114c79901136feddbf500b7c089ae991e7e4b9ff250ea47195",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_tree_01/pine_tree_01_twig_diff_2k.jpg",
+      "sha256": "288f8752514dfcfb78e5d6bc927b585605a13b050a1a79de78044f7c0574c0fc",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_tree_01/pine_tree_01_twig_nor_dx_2k.jpg",
+      "sha256": "81fc7db703ed877aa4f9c250e12da60f6e3fafd11d2def28632c842da20e9e39",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/pine_tree_01/pine_tree_01_twig_rough_2k.jpg",
+      "sha256": "78928f9b1fbaf9eba7b2e6e539ca4624ac0994aec17610f4eeea2652be7a0557",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/searsia_lucida/searsia_lucida_alpha_2k.jpg",
+      "sha256": "ef3f438b0fefbea58affb1d4ffbb15aaec29dca5f8535a047a84ef7d181d60e8",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/searsia_lucida/searsia_lucida_diff_2k.jpg",
+      "sha256": "16eebc961b456192da906aa1385c6ab805ec9797fd600a15b3a2e72db1e3844d",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/searsia_lucida/searsia_lucida_nor_dx_2k.jpg",
+      "sha256": "a7933f7dae018ba13a5dab1b346d9f0f4e2c64b3d57593f2b0ae8121c3c44371",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/searsia_lucida/searsia_lucida_rough_2k.jpg",
+      "sha256": "df202755e0e71e76cb45a6017192e53bd1cfef158ab18b53cf2079595d5436cf",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/shrub_04.bin",
+      "sha256": "cb442c39682e54cc63f912aa78ab17a03566f947a61adbbbaaa6473166744f01",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/shrub_04.gltf",
+      "sha256": "782832cbc57e96686b78c6ef9df6234c25f564f78421c8ed4bd42c3631f5aeae",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/shrub_04_alpha_1k.jpg",
+      "sha256": "79b42a2e9703f3080192e1d0c6be89d7d36a5543ee7cc411339f2741dd11a1ee",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/shrub_04_nor_dx_1k.jpg",
+      "sha256": "63e2fefc575a917d6334d2150d0a323d7a0744b09be55f17eb54c0b02db5fb41",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/textures/shrub_04_arm_1k.jpg",
+      "sha256": "d1085df021928b29b0f38dde7e58e9a2e304c4e8d838e390b37cf57f8aa492e8",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/textures/shrub_04_diff_1k.jpg",
+      "sha256": "0b0fa0a474753d13f3093858cea79d0de05da1e6a0c5d6e181cd351080980b6c",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/shrub_04/textures/shrub_04_nor_gl_1k.jpg",
+      "sha256": "200d791e0474495bfc876ba1c289dade669c6a5b124647c55bc840a875f6b51c",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/tree_bark_03/tree_bark_03_diff_2k.jpg",
+      "sha256": "8e8e2f2f4cf3fb09d91203e688c4f5fd3e14b3044d45236ad1f192452f55b34c",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/tree_bark_03/tree_bark_03_disp_2k.jpg",
+      "sha256": "82f77e7ac6b8b2a8b2d04ded670125d3521471864be9d4e39c7e393d83a03919",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/tree_bark_03/tree_bark_03_nor_dx_2k.jpg",
+      "sha256": "d942759d7c7e62dcbdb1873915a6e63a71a7eeb3829d40edd05fe74140d57847",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/tree_bark_03/tree_bark_03_rough_2k.jpg",
+      "sha256": "35b623b8c4daa1612e18d626adde7f8886835d417b633ffac2b0e24efec81060",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/textures/wild_rooibos_bush_arm_1k.jpg",
+      "sha256": "e0e512f263b8f1fe1c485e61912ba1ce5d42b397cf9a4e2b1786677e732bb84b",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/textures/wild_rooibos_bush_diff_1k.jpg",
+      "sha256": "d963cdaf769bc39bb57295d518b37cd9456168cf5e3b82fd59f58c98d3faf596",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/textures/wild_rooibos_bush_nor_gl_1k.jpg",
+      "sha256": "ffd557b4cb732d24988d41741398df150567f3ac9d1433f11b88d60158c953d4",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/wild_rooibos_bush.bin",
+      "sha256": "7a3471b4d110fe9927f4a200191eae86fa3c0a08f8e8e797d22e94a1703322e1",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/wild_rooibos_bush.gltf",
+      "sha256": "7f3fb17e4606e33d0bc4239c4901c9610b4bd17fe26b6780ba11ab4493f25d29",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/wild_rooibos_bush_alpha_1k.jpg",
+      "sha256": "c3d5f5b5ef36aa0c246daa113dee30fe43c595db9e3363370f9cc7aad03088ad",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/FloraDraft/wild_rooibos_bush/wild_rooibos_bush_nor_dx_1k.jpg",
+      "sha256": "97b0e985bfc2b50f31ff74e0174657316a9964c1971168386cb99cb8788eced2",
+      "license": "CC0-1.0"
+    },
     {
       "path": "SourceAssets/EnvironmentDraft/GravelDraft/basecolor.jpg",
       "sha256": "db0d563089e4a4e2f6da0172297168718c9bd4413ff7912f0180bfda33b8c2b3",
@@ -152,6 +776,141 @@
     {
       "path": "SourceAssets/EnvironmentDraft/Ground/roughness.jpg",
       "sha256": "89f3c7b9e467160a821cbac32a1fdfd75f13cb87c9deeb22099d16677a711126",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastGrassSmallDraft.mesh.json",
+      "sha256": "48971697ee0357a132114c744c25181b0b53f4ea63899cf81c406ae0d4b2caa3",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastGrassTallDraft.mesh.json",
+      "sha256": "60751c38c29c3d8a8475f85ffb3d415868cd22c3cea561bb065ccb7cbb4a89f7",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastGrassTinyDraft.mesh.json",
+      "sha256": "e5bb6eab11dd488152b06f23c7186f253566e8c92ed90ca6248ec588e5c6db77",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastShrubADraft.mesh.json",
+      "sha256": "2b45cfefb2f94079ecd913573bade13d365107f9889f1ffec02e2115bb613a53",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastShrubBDraft.mesh.json",
+      "sha256": "c3c4c0f6fffc97878a5c636caeaba54512a3b6eb2027ab4ee793edb86ad4ae8a",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_FloraFernADraft.mesh.json",
+      "sha256": "8ea6a839da64ae79a60b47446515d933474b0a05047a2333e29afec19e88699f",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_FloraFernBDraft.mesh.json",
+      "sha256": "4e0880adecf0cf69a43c8c1f381f60b35a4606d2c360781f1ba9110f51f74fbe",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_FloraRooibosADraft.mesh.json",
+      "sha256": "895babbb908e93490c9814ae5bc359b4c438139cd8fafefc16a315d5841da3d8",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_FloraRooibosBDraft.mesh.json",
+      "sha256": "7f2acd46200c40d4f438204e6b7f7db915497af6f0e6c1edc5550a50924521ca",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/alpha.jpg",
+      "sha256": "90ad8db2b471de6b61597c60bc218d1295c4bf68230be9083aa2001b9067b2e2",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/basecolor.jpg",
+      "sha256": "41886a87024ad554987b6fc5b9ae633d90b9c649998ccbf1b4b551f41d04bc76",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/grass_medium_01.bin",
+      "sha256": "f4587cabdb96a2e96d8be644923dc954a248edfaaa717a0ff224cacb898bee1f",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/grass_medium_01.gltf",
+      "sha256": "3e5e2a314c94e16de54fd7c28e41709731fbd2b1613ab539f1544f622ddb6a85",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/normal.jpg",
+      "sha256": "1212c7739cc13b4755e9e736e5aad0bf9b9006d3145074adbdcd2a9cff07db36",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/roughness.jpg",
+      "sha256": "e9a7c5b3cd4c4a3e4eeb016fed248c51796262ee412624e4b9e5b9cc862bd203",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/textures/grass_medium_01_arm_1k.jpg",
+      "sha256": "9a3a30f72bc02f4398967c5b08f2d20cce30bd423a2613b42a727034296fa3ae",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/textures/grass_medium_01_diff_1k.jpg",
+      "sha256": "71495bd6a11fddcab0aaff38246fea1a7b802a705483f1c7cbca53955daa8050",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/textures/grass_medium_01_nor_gl_1k.jpg",
+      "sha256": "cae298d3d1d7ff7c7e210ad8ac772b96706e356f9315a6b04fde373ce01ccf1e",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/alpha.jpg",
+      "sha256": "a696908aa8144a2697eb528815acf103ac6c5e3511aace8383f771b2f9c4ade8",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/basecolor.jpg",
+      "sha256": "3cadc7aba46d3aabbd7d6d2b1d04aa32e2a7da0bc87c2d38ef3cb1ee42cb03ec",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/normal.jpg",
+      "sha256": "6c6d01b399770085ff45dd06baab97d7c20ad711221cd8e237218d2ebd9274b7",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/roughness.jpg",
+      "sha256": "1dc13afd3eb6d44fcecc4222278697e7e2e6ac44b050f1afdf95f7c173ea780f",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/shrub_03.bin",
+      "sha256": "bf4df21e6d2a2bc5f00b4c9142f776171fe7da00cf960001825748067af542b6",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/shrub_03.gltf",
+      "sha256": "b76d7c14bc027e834e82d3f984c32b5d060e62908aa90ff9420a637ca253a8ea",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/textures/shrub_03_arm_1k.jpg",
+      "sha256": "3e2b16812a623037138eedace958210c5f3443a827bbe69663045bba5612f815",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/textures/shrub_03_diff_1k.jpg",
+      "sha256": "3cadc7aba46d3aabbd7d6d2b1d04aa32e2a7da0bc87c2d38ef3cb1ee42cb03ec",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_03/textures/shrub_03_nor_gl_1k.jpg",
+      "sha256": "ff856bacfce859b8a7555dd9a3b92fbd36b2e775d486be71df485afb4235d6c9",
       "license": "CC0-1.0"
     },
     {
