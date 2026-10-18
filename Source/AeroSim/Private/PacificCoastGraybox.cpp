@@ -492,9 +492,11 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
     WeatherFog->SetFogInscatteringColor(FogColor[W]);
     WeatherFog->SetFogMaxOpacity(FogOpacity[W]);
     WeatherFog->SetStartDistance(FogStart[W]);
-    WeatherFog->SetDirectionalInscatteringExponent(6.0F);
+    // Sun-side warm haze: with SkyAtmosphere this colour is added to the transmitted sun
+    // illuminance in the fog's directional lobe, so it only tints toward the low SW sun.
+    WeatherFog->SetDirectionalInscatteringExponent(5.0F);
     WeatherFog->SetDirectionalInscatteringStartDistance(15000.0F);
-    WeatherFog->SetDirectionalInscatteringColor(W == 0 ? FLinearColor(.42F,.30F,.18F) : FLinearColor(.06F,.06F,.06F));
+    WeatherFog->SetDirectionalInscatteringColor(W == 0 ? FLinearColor(.75F,.46F,.22F) : FLinearColor(.06F,.06F,.06F));
     WeatherFog->SetSecondFogDensity(LayerDensity[W]);
     WeatherFog->SetSecondFogHeightOffset(LayerOffset[W]);
     WeatherFog->SetSecondFogHeightFalloff(LayerFalloff[W]);
