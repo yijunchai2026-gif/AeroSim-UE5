@@ -79,6 +79,8 @@ float NearStandDensity(float X, float Y);
 float CorridorDistance(const FVector2D& Point, float* OutHalfWidth = nullptr, FVector2D* OutTangent = nullptr);
 /** True if the point lies within Clearance of the flight route, launch path, boardwalk or trails. */
 bool IsProtected(const FVector2D& Point, float Clearance);
+/** True within Clearance of the launch access path, forest trails or boardwalk (not the flight route). */
+bool IsWalkway(const FVector2D& Point, float Clearance);
 /** Boardwalk footprint distance used by the historical tree clearance test. */
 float BoardwalkDistance(const FVector2D& Point);
 }

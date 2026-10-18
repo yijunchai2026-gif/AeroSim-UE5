@@ -78,3 +78,22 @@ Root inspected all ten final PNGs. The prior bright polygonal apron edge is subs
 
 
 V8 desktop handoff: the desktop demo link now targets the archived UmunhumPackage v8 candidate; the previous ControlPackage target is recorded in ignored v8-desktop-rollback.json. Opened once with the opt-in control bridge. Native MCP inspect returned matching frozen source fingerprint, PID 38301, Home, possessed player, active mappings, physical neutral and grounded actor (55,79,10.868225075082592) cm. Inspect does not activate a window. No movement was injected at handoff.
+
+
+## PMO R2 rebaseline — 2026-10-18
+
+User's independent AAA integration work reviewed at 894ab6a / source 819c0d34f31dc98b75cf704f390d4b011d5f684940bb8694698192ccfff4cfef. Prior v8 remains historical; the old project directory's failed WIP build is not the R2 integration result. Existing R2 Editor/package logs succeeded, Python79 succeeded, Automation66 clean +3warning (one explicitly unrun Metal test under NullRHI and two HTTP probes), zero failed. A fresh packaged Metal/MCP run produced22 source-matched original frames across9 viewpoints/12sets, all image integrity PASS. This is a review of the existing build, not a new code iteration or formal acceptance.
+
+Current level: playable environment Alpha, first art integration, below polished vertical-slice/AAA. Actual open defects: UVChannelData.bInitialized handled ensure on startup; north/south rectangular water-colour seam; flat card-like foliage and weak corridor readability; smooth low-bay trough and repetitive cliff surfaces; sparse ground dressing and mismatched habitat transitions. Real low-water flight remains an explicit P0 feasibility risk from the model's nonnegative relative altitude rule; review-camera access does not prove playable access. Short stationary sequences and synchronous readback metrics do not close motion/performance.
+
+Updated COAST_AAA_PROGRAM.md and new COAST_AAA_PMO_REVIEW.md sequence P0 stability/water seam/flight reachability, then bounded tree/corridor and one low-bay hero-area polish, then coast motion and target performance. Preserve current density and evidence; stop broad asset accumulation until needed for a specific defect. No implementation, desktop target, promotion, Git commit or push changed by this PMO review.
+
+
+## PMO dispatch toward AAA target — 2026-10-18
+
+Final objective remains AAA-level Pacific Coast scene and playable experience. Added COAST_AAA_TASK_BOARD.md with explicit owner/status/exit conditions and five evidence-gated milestones. Dispatched R3-STAB-01 to DEV-FLORA in flora worktree; R3-WATER-01 to DEV-SEASKY in seasky worktree; R3-FLIGHT-01 as independent read-only reachability spike. Root is sole integration/build coordinator, with four active-role cap. Assignments are not completion; no new build/visual PASS is claimed. Asset accumulation and full-scene density expansion wait until concrete defects require them. Formal asset/user/platform gates remain unchanged.
+
+
+## R3 bounded verification completed — 2026-10-18
+
+Frozen source3c34d3eb6a25bc571ed2b4bd9b55c28a0bdbda0720d147c9bc5b547c6f9a6754. Runtime UV metadata and false exterior shallows fixes passed Editor build, Python79, ten applicable static validators, full NullRHI Automation68clean+3warning/0failed, separate real Metal material Automation1clean, Cook/Package, three cooked cold starts and same-build29-frame MCP evidence. Root/QA actual north/south views no longer show the rectangle; all26slots initialize without former ensure. Details/failed first protocol attempt/remaining limits are in tasks/AAA-R3-ENGINEERING_RESULT.md. Whole task/AAA/flight P0/production performance remain open. Continuous goal stays active; flight, hero-bay and three-archetype work continue in isolated lanes.
