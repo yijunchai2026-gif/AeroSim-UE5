@@ -236,6 +236,20 @@ bool FCoastalShoreMaskTest::RunTest(const FString& Parameters)
             Shallow += C.B < .25F ? 1 : 0;
         }
     }
+    // R1b: beyond the shelf end the floor is 175 m deep; depth colour must agree (no shallow
+    // tint over deep water). The long perimeter shores must carry surf contact.
+    int32 FalseShallow = 0, PerimeterSurf = 0;
+    for (const FProcMeshVertex& V : Section->ProcVertexBuffer)
+    {
+        const FLinearColor C = V.Color.ReinterpretAsLinear();
+        if (FMath::Abs(V.Position.Y) > 215000 && FMath::Abs(V.Position.Y) < 400000 && V.Position.X > 60000 && V.Position.X < 400000 && C.B < .99F) ++FalseShallow;
+        if (FMath::Abs(V.Position.Y) > 150000 && V.Position.X < 0 && C.G > .3F && C.R < .2F && C.B > 0) ++PerimeterSurf;
+    }
+    AddInfo(FString::Printf(TEXT("false shallow beyond shelf %d, perimeter surf vertices %d"), FalseShallow, PerimeterSurf));
+    TestEqual(TEXT("No shallow colour over the 175 m floor beyond the shelf"), FalseShallow, 0);
+    TestTrue(TEXT("North/south/west perimeter shores carry surf contact"), PerimeterSurf > 20);
+    const FString Wet = APacificCoastGraybox::GetCoastalWaterShaderCode(APacificCoastGraybox::ECoastalWaterShader::RockWetness);
+    TestTrue(TEXT("Rock wetness function is published for the rock material"), Wet.Contains(TEXT("float above=P.z-(")) && Wet.Contains(TEXT("return 1-smoothstep")));
     AddInfo(FString::Printf(TEXT("offshore %d (gated %d), contact %d, shallow %d"), Offshore, OffshoreFoamGates, Contact, Shallow));
     TestTrue(TEXT("Water mesh is flat: swell is travelling material displacement"), bFlat);
     TestEqual(TEXT("Open water never receives contact/shoal foam"), OffshoreFoamGates, 0);
