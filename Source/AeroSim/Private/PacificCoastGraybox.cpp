@@ -462,10 +462,10 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
     // Index: Clear, Overcast, Rain. One state, one table: weather never moves the sun.
     const FLinearColor SunColor[] = {FLinearColor(1.0F,.96F,.90F), FLinearColor(.74F,.78F,.82F), FLinearColor(.52F,.60F,.70F)};
     const float SkyFill[] = {1.0F, .75F, .5F};
-    const float Mie[] = {.0048F, .014F, .024F}, MieG[] = {.80F, .62F, .55F}, Aerial[] = {2.4F, 3.0F, 3.4F};
-    const float FogFalloff[] = {.20F, .18F, .12F}, FogOpacity[] = {.75F, .95F, 1.0F}, FogStart[] = {60000.0F, 0.0F, 0.0F};
+    const float Mie[] = {.0034F, .014F, .024F}, MieG[] = {.80F, .62F, .55F}, Aerial[] = {1.6F, 2.6F, 3.2F};
+    const float FogFalloff[] = {.20F, .18F, .12F}, FogOpacity[] = {.75F, .95F, 1.0F}, FogStart[] = {250000.0F, 0.0F, 0.0F};
     const FLinearColor FogColor[] = {FLinearColor(.60F,.66F,.72F), FLinearColor(.30F,.36F,.41F), FLinearColor(.12F,.20F,.28F)};
-    const float LayerDensity[] = {.02F, .03F, .05F}, LayerOffset[] = {200.0F, 1500.0F, 2500.0F}, LayerFalloff[] = {1.2F, .5F, .35F};
+    const float LayerDensity[] = {.006F, .03F, .05F}, LayerOffset[] = {200.0F, 1500.0F, 2500.0F}, LayerFalloff[] = {1.2F, .5F, .35F};
     const float CloudBottomKm[] = {1.6F, .7F, .45F}, CloudHeightKm[] = {1.6F, 2.4F, 3.5F};
     const float WaterRoughness[] = {.07F, .11F, .16F}, WaveScale[] = {1.0F, 1.2F, 1.45F};
 
@@ -512,9 +512,11 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
         }
         if (Clouds != nullptr)
         {
-            // Sparse fair-weather cumulus for Clear; wind frozen so the seed-21630
+            // Cloud_GlobalCoverage is an additive bias (engine default -0.2 already reads
+            // as broken cumulus). Clear pushes well below it toward ~10-20% sparse
+            // fair-weather cumulus; Overcast/Rain raise it. Wind frozen so the seed-21630
             // comparison baseline does not evolve between captures.
-            Clouds->SetScalarParameterValue(TEXT("Cloud_GlobalCoverage"), .06F + .9F * State.GetCloudCover());
+            Clouds->SetScalarParameterValue(TEXT("Cloud_GlobalCoverage"), -.50F + .90F * State.GetCloudCover());
             Clouds->SetScalarParameterValue(TEXT("WindMultiplier"), 0.0F);
         }
     }
