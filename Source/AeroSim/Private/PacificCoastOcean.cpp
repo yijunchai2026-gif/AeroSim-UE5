@@ -209,12 +209,12 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("float detail=1-smoothstep(2500,22000,dist);")
             + TEXT("return normalize(float3(-g+(N1.xy*.15+N2.xy*.06)*detail,1));");
     case ECoastalWaterShader::Foam:
-        // Inputs P,T,A,C,Mask. Mask r=distance to waterline/100 m, g=rock contact energy,
+        // Inputs P,T,A,C,Mask (RGB),MaskA (vertex alpha; Custom inputs take only RGB). Mask r=distance to waterline/100 m, g=rock contact energy,
         // b=depth/40 m, a=shoal (reef) factor. Foam follows the swell crest that actually
         // reaches the rock and drifts shoreward with it; open water never receives foam
         // because every term is gated by rock contact or shoal depth.
         return EmitWaves(false, false, true) + NoiseHelpers()
-            + TEXT("float d=Mask.r*10000; float contact=Mask.g; float shoal=Mask.a;")
+            + TEXT("float d=Mask.r*10000; float contact=Mask.g; float shoal=MaskA;")
             + TEXT("float crest=saturate(h/(A*42+1)*.5+.5);")
             + TEXT("float2 drift=float2(-1,-.28)*T*38;")
             + TEXT("float cells=noise.f((P.xy+drift)*.0045);")

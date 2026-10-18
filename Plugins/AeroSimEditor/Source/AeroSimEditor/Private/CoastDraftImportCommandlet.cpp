@@ -427,6 +427,7 @@ bool BuildWaterMaterial(UTexture2D* NormalTexture)
     Input(Normal,TEXT("N1"),N1);Input(Normal,TEXT("N2"),N2);
     auto* Foam=Custom(EShader::Foam,CMOT_Float1);
     Input(Foam,TEXT("P"),World);Input(Foam,TEXT("T"),Time);Input(Foam,TEXT("A"),Amplitude);Input(Foam,TEXT("C"),Camera);Input(Foam,TEXT("Mask"),Mask);
+    {FCustomInput Alpha;Alpha.InputName=TEXT("MaskA");Alpha.Input.Connect(4,Mask);Foam->Inputs.Add(Alpha);}
     auto* Deep=Node<UMaterialExpressionConstant3Vector>(Material);Deep->Constant=FLinearColor(.012F,.024F,.034F);
     auto* White=Node<UMaterialExpressionConstant3Vector>(Material);White->Constant=FLinearColor(.66F,.70F,.70F);
     auto* Color=Node<UMaterialExpressionLinearInterpolate>(Material);Color->A.Connect(0,Deep);Color->B.Connect(0,White);Color->Alpha.Connect(0,Foam);
