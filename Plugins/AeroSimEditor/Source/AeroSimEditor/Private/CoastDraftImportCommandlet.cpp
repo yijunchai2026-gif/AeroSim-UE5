@@ -9,7 +9,9 @@
 #include "HAL/PlatformFileManager.h"
 #include "IAssetTools.h"
 #include "MaterialEditingLibrary.h"
+#include "PacificCoastGraybox.h"
 #include "Materials/Material.h"
+#include "Materials/MaterialExpressionCameraPositionWS.h"
 #include "Materials/MaterialExpressionCustom.h"
 #include "Materials/MaterialExpressionWorldPosition.h"
 #include "Materials/MaterialExpressionTime.h"
@@ -247,9 +249,17 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
     return SaveDraft(Material);
 }
 
+// Fixed engine path resolved by the commandlet constructor; no runtime path loading.
+UTexture2D* MidWaterNormal=nullptr;
+
 bool BuildWaterMaterial(UTexture2D* NormalTexture)
 {
+    // DEV-SEASKY: all wave/foam/colour HLSL comes from the runtime sea-state contract
+    // (APacificCoastGraybox::GetCoastalWaterShaderCode) so CPU tests and the shader agree.
     if(!NormalTexture)return false;
+    using EShader=APacificCoastGraybox::ECoastalWaterShader;
+    // Mid-scale engine Water-plugin normal (UE content, referenced in-engine, not copied).
+    UTexture2D* MidNormal=MidWaterNormal?MidWaterNormal:NormalTexture;
     const TCHAR* Name=TEXT("M_CoastWaterDraft");
     const FString PackageName=FString(DestinationRoot)+TEXT("Materials/")+Name;
     UPackage* Package=CreatePackage(*PackageName);Package->FullyLoad();
@@ -260,36 +270,43 @@ bool BuildWaterMaterial(UTexture2D* NormalTexture)
     Material->BlendMode=BLEND_Opaque;Material->TwoSided=false;Material->bTangentSpaceNormal=false;
     Material->SetShadingModel(MSM_SingleLayerWater);
     auto* World=Node<UMaterialExpressionWorldPosition>(Material);World->WorldPositionShaderOffset=WPT_ExcludeAllShaderOffsets;
+    auto* Camera=Node<UMaterialExpressionCameraPositionWS>(Material);
     auto* Time=Node<UMaterialExpressionTime>(Material);
     auto* Mask=Node<UMaterialExpressionVertexColor>(Material);
-    auto* Amplitude=Node<UMaterialExpressionScalarParameter>(Material);Amplitude->ParameterName=TEXT("WaveAmplitudeCm");Amplitude->DefaultValue=32;
+    auto* Amplitude=Node<UMaterialExpressionScalarParameter>(Material);Amplitude->ParameterName=TEXT("WaveAmplitudeScale");Amplitude->DefaultValue=1;
     auto Input=[](UMaterialExpressionCustom* Expression,const TCHAR* InputName,UMaterialExpression* Value)
     {FCustomInput Item;Item.InputName=InputName;Item.Input.Connect(0,Value);Expression->Inputs.Add(Item);};
-    auto* Offset=Node<UMaterialExpressionCustom>(Material);Offset->OutputType=CMOT_Float3;
-    Offset->Code=TEXT("float h=0; float2 g=float2(0,0); { float2 d=float2(0.9393727,0.3428978),w=float2(0.1205028,0.9927130),e=float2(0.9393727,-0.3428978); float b=dot(P.xy,w)*.00037+0.00000; float a=dot(P.xy,d)*0.000641141-T*0.7926655+.65*sin(b); float z=dot(P.xy,e)*.00012+0.00000+T*.07; float v=.72+.28*sin(z); float2 da=d*0.000641141+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.35000*v*sin(a); g+=A*0.35000*(dv*sin(a)+v*cos(a)*da); } { float2 d=float2(0.6216100,-0.7833269),w=float2(0.9800666,0.1986693),e=float2(-0.0291995,-0.9995736); float b=dot(P.xy,w)*.00037+1.73100; float a=dot(P.xy,d)*0.000966644-T*0.9732990+.65*sin(b); float z=dot(P.xy,e)*.00012+1.73100+T*.07; float v=.72+.28*sin(z); float2 da=d*0.000966644+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.30000*v*sin(a); g+=A*0.30000*(dv*sin(a)+v*cos(a)*da); } { float2 d=float2(-0.1782461,0.9839859),w=float2(-0.9577872,0.2874780),e=float2(0.4975710,0.8674232); float b=dot(P.xy,w)*.00037+3.46200; float a=dot(P.xy,d)*0.001495997-T*1.2108165+.65*sin(b); float z=dot(P.xy,e)*.00012+3.46200+T*.07; float v=.72+.28*sin(z); float2 da=d*0.001495997+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.26000*v*sin(a); g+=A*0.26000*(dv*sin(a)+v*cos(a)*da); } { float2 d=float2(0.7899922,0.6131169),w=float2(-0.1880768,0.9821543),e=float2(0.9992001,-0.0399893); float b=dot(P.xy,w)*.00037+5.19300; float a=dot(P.xy,d)*0.002327106-T*1.5101535+.65*sin(b); float z=dot(P.xy,e)*.00012+5.19300+T*.07; float v=.72+.28*sin(z); float2 da=d*0.002327106+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.18000*v*sin(a); g+=A*0.18000*(dv*sin(a)+v*cos(a)*da); } { float2 d=float2(-0.7373937,-0.6754632),w=float2(0.2674988,-0.9635582),e=float2(-0.9991352,-0.0415807); float b=dot(P.xy,w)*.00037+6.92400; float a=dot(P.xy,d)*0.003695991-T*1.9031741+.65*sin(b); float z=dot(P.xy,e)*.00012+6.92400+T*.07; float v=.72+.28*sin(z); float2 da=d*0.003695991+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.12000*v*sin(a); g+=A*0.12000*(dv*sin(a)+v*cos(a)*da); } { float2 d=float2(-0.9040721,0.4273799),w=float2(-0.7909677,-0.6118579),e=float2(-0.4161468,0.9092974); float b=dot(P.xy,w)*.00037+8.65500; float a=dot(P.xy,d)*0.005711987-T*2.3659558+.65*sin(b); float z=dot(P.xy,e)*.00012+8.65500+T*.07; float v=.72+.28*sin(z); float2 da=d*0.005711987+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.07500*v*sin(a); g+=A*0.07500*(dv*sin(a)+v*cos(a)*da); } { float2 d=float2(0.9887711,-0.1494381),w=float2(0.5816831,0.8134155),e=float2(0.6599831,-0.7512804); float b=dot(P.xy,w)*.00037+10.38600; float a=dot(P.xy,d)*0.008975979-T*2.9658826+.65*sin(b); float z=dot(P.xy,e)*.00012+10.38600+T*.07; float v=.72+.28*sin(z); float2 da=d*0.008975979+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.05000*v*sin(a); g+=A*0.05000*(dv*sin(a)+v*cos(a)*da); } return float3(0,0,h);");
-    Input(Offset,TEXT("P"),World);Input(Offset,TEXT("T"),Time);Input(Offset,TEXT("A"),Amplitude);
-    auto* FirstUV=Node<UMaterialExpressionTextureCoordinate>(Material);FirstUV->UTiling=.30F;FirstUV->VTiling=.30F;
-    auto* FirstPan=Node<UMaterialExpressionPanner>(Material);FirstPan->Coordinate.Connect(0,FirstUV);FirstPan->SpeedX=-.012F;FirstPan->SpeedY=.005F;FirstPan->bFractionalPart=true;
-    auto* SecondUV=Node<UMaterialExpressionTextureCoordinate>(Material);SecondUV->UTiling=1.5F;SecondUV->VTiling=1.5F;
-    auto* SecondPan=Node<UMaterialExpressionPanner>(Material);SecondPan->Coordinate.Connect(0,SecondUV);SecondPan->SpeedX=.008F;SecondPan->SpeedY=.013F;SecondPan->bFractionalPart=true;
-    auto* N1=Sample(Material,NormalTexture,TEXT("WaterNormalA"),FirstPan,SAMPLERTYPE_Normal);
+    auto Custom=[&](EShader Kind,ECustomMaterialOutputType Type)
+    {
+        auto* Expression=Node<UMaterialExpressionCustom>(Material);Expression->OutputType=Type;
+        Expression->Code=APacificCoastGraybox::GetCoastalWaterShaderCode(Kind);Expression->Inputs.Reset();
+        return Expression;
+    };
+    auto* Offset=Custom(EShader::Offset,CMOT_Float3);
+    Input(Offset,TEXT("P"),World);Input(Offset,TEXT("T"),Time);Input(Offset,TEXT("A"),Amplitude);Input(Offset,TEXT("C"),Camera);
+    // Two detail scales (~40 m and ~6 m repeat), panning with the NW wind sea at different rates.
+    auto* FirstUV=Node<UMaterialExpressionTextureCoordinate>(Material);FirstUV->UTiling=.25F;FirstUV->VTiling=.25F;
+    auto* FirstPan=Node<UMaterialExpressionPanner>(Material);FirstPan->Coordinate.Connect(0,FirstUV);FirstPan->SpeedX=-.010F;FirstPan->SpeedY=-.006F;FirstPan->bFractionalPart=true;
+    auto* SecondUV=Node<UMaterialExpressionTextureCoordinate>(Material);SecondUV->UTiling=1.6F;SecondUV->VTiling=1.6F;
+    auto* SecondPan=Node<UMaterialExpressionPanner>(Material);SecondPan->Coordinate.Connect(0,SecondUV);SecondPan->SpeedX=-.021F;SecondPan->SpeedY=-.017F;SecondPan->bFractionalPart=true;
+    auto* N1=Sample(Material,MidNormal,TEXT("WaterNormalA"),FirstPan,SAMPLERTYPE_Normal);
     auto* N2=Sample(Material,NormalTexture,TEXT("WaterNormalB"),SecondPan,SAMPLERTYPE_Normal);
-    auto* Normal=Node<UMaterialExpressionCustom>(Material);Normal->OutputType=CMOT_Float3;
-    Normal->Code=TEXT("float h=0; float2 g=float2(0,0); { float2 d=float2(0.9393727,0.3428978),w=float2(0.1205028,0.9927130),e=float2(0.9393727,-0.3428978); float b=dot(P.xy,w)*.00037+0.00000; float a=dot(P.xy,d)*0.000641141-T*0.7926655+.65*sin(b); float z=dot(P.xy,e)*.00012+0.00000+T*.07; float v=.72+.28*sin(z); float2 da=d*0.000641141+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.35000*v*sin(a); g+=A*0.35000*(dv*sin(a)+v*cos(a)*da); } { float2 d=float2(0.6216100,-0.7833269),w=float2(0.9800666,0.1986693),e=float2(-0.0291995,-0.9995736); float b=dot(P.xy,w)*.00037+1.73100; float a=dot(P.xy,d)*0.000966644-T*0.9732990+.65*sin(b); float z=dot(P.xy,e)*.00012+1.73100+T*.07; float v=.72+.28*sin(z); float2 da=d*0.000966644+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.30000*v*sin(a); g+=A*0.30000*(dv*sin(a)+v*cos(a)*da); } { float2 d=float2(-0.1782461,0.9839859),w=float2(-0.9577872,0.2874780),e=float2(0.4975710,0.8674232); float b=dot(P.xy,w)*.00037+3.46200; float a=dot(P.xy,d)*0.001495997-T*1.2108165+.65*sin(b); float z=dot(P.xy,e)*.00012+3.46200+T*.07; float v=.72+.28*sin(z); float2 da=d*0.001495997+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.26000*v*sin(a); g+=A*0.26000*(dv*sin(a)+v*cos(a)*da); } { float2 d=float2(0.7899922,0.6131169),w=float2(-0.1880768,0.9821543),e=float2(0.9992001,-0.0399893); float b=dot(P.xy,w)*.00037+5.19300; float a=dot(P.xy,d)*0.002327106-T*1.5101535+.65*sin(b); float z=dot(P.xy,e)*.00012+5.19300+T*.07; float v=.72+.28*sin(z); float2 da=d*0.002327106+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.18000*v*sin(a); g+=A*0.18000*(dv*sin(a)+v*cos(a)*da); } { float2 d=float2(-0.7373937,-0.6754632),w=float2(0.2674988,-0.9635582),e=float2(-0.9991352,-0.0415807); float b=dot(P.xy,w)*.00037+6.92400; float a=dot(P.xy,d)*0.003695991-T*1.9031741+.65*sin(b); float z=dot(P.xy,e)*.00012+6.92400+T*.07; float v=.72+.28*sin(z); float2 da=d*0.003695991+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.12000*v*sin(a); g+=A*0.12000*(dv*sin(a)+v*cos(a)*da); } { float2 d=float2(-0.9040721,0.4273799),w=float2(-0.7909677,-0.6118579),e=float2(-0.4161468,0.9092974); float b=dot(P.xy,w)*.00037+8.65500; float a=dot(P.xy,d)*0.005711987-T*2.3659558+.65*sin(b); float z=dot(P.xy,e)*.00012+8.65500+T*.07; float v=.72+.28*sin(z); float2 da=d*0.005711987+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.07500*v*sin(a); g+=A*0.07500*(dv*sin(a)+v*cos(a)*da); } { float2 d=float2(0.9887711,-0.1494381),w=float2(0.5816831,0.8134155),e=float2(0.6599831,-0.7512804); float b=dot(P.xy,w)*.00037+10.38600; float a=dot(P.xy,d)*0.008975979-T*2.9658826+.65*sin(b); float z=dot(P.xy,e)*.00012+10.38600+T*.07; float v=.72+.28*sin(z); float2 da=d*0.008975979+.65*cos(b)*w*.00037; float2 dv=.28*cos(z)*e*.00012; h+=A*0.05000*v*sin(a); g+=A*0.05000*(dv*sin(a)+v*cos(a)*da); } return normalize(float3(-g+N1.xy*.17+N2.xy*.065,1));");
-    Input(Normal,TEXT("P"),World);Input(Normal,TEXT("T"),Time);Input(Normal,TEXT("A"),Amplitude);Input(Normal,TEXT("N1"),N1);Input(Normal,TEXT("N2"),N2);
-    auto* Foam=Node<UMaterialExpressionCustom>(Material);Foam->OutputType=CMOT_Float1;
-    Foam->Code=TEXT("float d=Mask.r*10000;float cycle=frac(T*.075+sin(P.y*.0009)*.13);float front=(1-cycle)*1500;float width=150+45*sin(P.y*.0023);float band=exp(-pow((d-front)/width,2));float fade=pow(sin(cycle*3.14159265),2);float patch=.5+.25*sin(P.y*.0031+T*.23)+.25*sin(P.y*.0077-T*.47+sin(P.x*.002));float broken=smoothstep(.18,.82,patch);float wet=exp(-d/220)*(.12+.06*sin(P.y*.0019-T*.4));return saturate((band*.75*fade+wet)*broken*exp(-d/1700)*Mask.g);");
-    Input(Foam,TEXT("P"),World);Input(Foam,TEXT("T"),Time);Input(Foam,TEXT("Mask"),Mask);
-    auto* Deep=Node<UMaterialExpressionConstant3Vector>(Material);Deep->Constant=FLinearColor(.006F,.018F,.024F);
-    auto* White=Node<UMaterialExpressionConstant3Vector>(Material);White->Constant=FLinearColor(.62F,.67F,.64F);
+    auto* Normal=Custom(EShader::Normal,CMOT_Float3);
+    Input(Normal,TEXT("P"),World);Input(Normal,TEXT("T"),Time);Input(Normal,TEXT("A"),Amplitude);Input(Normal,TEXT("C"),Camera);
+    Input(Normal,TEXT("N1"),N1);Input(Normal,TEXT("N2"),N2);
+    auto* Foam=Custom(EShader::Foam,CMOT_Float1);
+    Input(Foam,TEXT("P"),World);Input(Foam,TEXT("T"),Time);Input(Foam,TEXT("A"),Amplitude);Input(Foam,TEXT("C"),Camera);Input(Foam,TEXT("Mask"),Mask);
+    auto* Deep=Node<UMaterialExpressionConstant3Vector>(Material);Deep->Constant=FLinearColor(.012F,.024F,.034F);
+    auto* White=Node<UMaterialExpressionConstant3Vector>(Material);White->Constant=FLinearColor(.66F,.70F,.70F);
     auto* Color=Node<UMaterialExpressionLinearInterpolate>(Material);Color->A.Connect(0,Deep);Color->B.Connect(0,White);Color->Alpha.Connect(0,Foam);
-    auto* Rough=Node<UMaterialExpressionScalarParameter>(Material);Rough->ParameterName=TEXT("Roughness");Rough->DefaultValue=.24F;
-    auto* SurfaceRough=Node<UMaterialExpressionLinearInterpolate>(Material);SurfaceRough->A.Connect(0,Rough);SurfaceRough->ConstB=.62F;SurfaceRough->Alpha.Connect(0,Foam);
-    auto* Opacity=Node<UMaterialExpressionLinearInterpolate>(Material);Opacity->ConstA=.05F;Opacity->ConstB=.85F;Opacity->Alpha.Connect(0,Foam);
+    auto* Rough=Node<UMaterialExpressionScalarParameter>(Material);Rough->ParameterName=TEXT("Roughness");Rough->DefaultValue=.07F;
+    auto* SurfaceRough=Custom(EShader::Roughness,CMOT_Float1);
+    Input(SurfaceRough,TEXT("R"),Rough);Input(SurfaceRough,TEXT("F"),Foam);Input(SurfaceRough,TEXT("P"),World);Input(SurfaceRough,TEXT("C"),Camera);
+    auto* Opacity=Node<UMaterialExpressionLinearInterpolate>(Material);Opacity->ConstA=.03F;Opacity->ConstB=.9F;Opacity->Alpha.Connect(0,Foam);
     auto* Specular=Node<UMaterialExpressionScalarParameter>(Material);Specular->ParameterName=TEXT("WaterSpecular");Specular->DefaultValue=.255F;
     auto* Volume=Node<UMaterialExpressionSingleLayerWaterMaterialOutput>(Material);
-    auto* Scatter=Node<UMaterialExpressionConstant3Vector>(Material);Scatter->Constant=FLinearColor(.00004F,.00018F,.00022F);
-    auto* Absorb=Node<UMaterialExpressionConstant3Vector>(Material);Absorb->Constant=FLinearColor(.0011F,.0005F,.00038F);
+    auto* Scatter=Custom(EShader::Scattering,CMOT_Float3);Input(Scatter,TEXT("Mask"),Mask);
+    auto* Absorb=Custom(EShader::Absorption,CMOT_Float3);Input(Absorb,TEXT("Mask"),Mask);
     Volume->ScatteringCoefficients.Connect(0,Scatter);Volume->AbsorptionCoefficients.Connect(0,Absorb);
     bool Connected=UMaterialEditingLibrary::ConnectMaterialProperty(Color,TEXT(""),MP_BaseColor);
     Connected&=UMaterialEditingLibrary::ConnectMaterialProperty(Normal,TEXT(""),MP_Normal);
@@ -316,6 +333,8 @@ UCoastDraftImportCommandlet::UCoastDraftImportCommandlet()
     WorldAlignedTexture = TextureFunction.Object;
     WorldAlignedNormal = NormalFunction.Object;
     WaterNormal = WaterNormalTexture.Object;
+    static ConstructorHelpers::FObjectFinderOptional<UTexture2D> MidWaterNormalTexture(TEXT("/Water/Textures/Normals/T_Water_TilingNormal_Waves_02.T_Water_TilingNormal_Waves_02"));
+    CoastDraftImport::MidWaterNormal = MidWaterNormalTexture.Get();
 }
 
 int32 UCoastDraftImportCommandlet::Main(const FString& Params)

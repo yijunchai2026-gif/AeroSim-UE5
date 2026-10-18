@@ -150,4 +150,31 @@ private:
     int32 GeneratedRouteArrowCount = 0;
     int32 GeneratedScaleReferenceCount = 0;
     int32 GeneratedHeroZoneCount = 0;
+
+    // DEV-SEASKY begin: sea/sky contract shared by runtime, the editor water import and tests.
+    // World axes: +X is west/offshore, +Y is north, Z up (compass bearing = 270 deg + yaw).
+public:
+    struct FCoastalWaveComponent
+    {
+        FVector2D Direction;      // unit propagation direction in world XY
+        float WavelengthCm;
+        float AmplitudeCm;        // at WaveAmplitudeScale = 1
+        float Steepness;          // Gerstner Q, 0..1
+        float AngularFrequency;   // deep-water dispersion, rad/s
+        float Phase;
+    };
+    enum class ECoastalWaterShader : uint8 { Offset, Normal, Foam, Scattering, Absorption, Roughness };
+    static const TArray<FCoastalWaveComponent>& GetCoastalWaveSpectrum();
+    static FVector GetCoastalOceanDisplacement(float X, float Y, float TimeSeconds, float AmplitudeScale = 1.0F);
+    static float GetCoastalSeabedDepthCm(float X, float Y);
+    static FString GetCoastalWaterShaderCode(ECoastalWaterShader Kind);
+    /** Solar (elevation, azimuth) in degrees, azimuth clockwise from north, for the fixed coast site/date. */
+    static FVector2D GetCoastalSunElevationAzimuth(const FEnvironmentState& State);
+    static FRotator GetCoastalSunRotation(const FEnvironmentState& State);
+    float GetAppliedSurfaceWetness() const { return AppliedSurfaceWetness; }
+private:
+    void ApplyCoastalSky(const FEnvironmentState& State);
+    void ApplyCoastalSurfaceWeather(const FEnvironmentState& State);
+    float AppliedSurfaceWetness = 0.0F;
+    // DEV-SEASKY end
 };
