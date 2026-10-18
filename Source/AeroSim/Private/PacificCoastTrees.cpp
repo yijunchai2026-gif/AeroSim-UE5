@@ -157,7 +157,8 @@ void Card(FSection& S, const FVector& Origin, const FVector& Along, const FVecto
 // Skeletons
 // ---------------------------------------------------------------------------------
 struct FLimb { TArray<FVector> Path; float R0 = 1, R1 = .5F; int32 Level = 1; float Wind0 = 0, Wind1 = .5F; };
-struct FTuft { FVector Origin, Dir, Across, Outward; float Length; float Occlusion; float Wind; int32 Island; };
+// Mass cards are large branch-spray cards that carry crown volume into the mid/far LODs.
+struct FTuft { FVector Origin, Dir, Across, Outward; float Length; float Occlusion; float Wind; int32 Island; bool bMass = false; };
 struct FSkeleton
 {
     ESpecies Species = ESpecies::DouglasFir;
@@ -223,7 +224,7 @@ void AddConiferBranches(FSkeleton& K, FRandomStream& Random, bool bPine, bool bS
             Stub.R0 = FMath::Max(1.2F, RadiusAt(Z) * .10F); Stub.R1 = .8F; Stub.Level = 3; Stub.Wind0 = Stub.Wind1 = 0;
             K.Limbs.Add(Stub);
         }
-    const float Step0 = bSapling ? 34.0F : bPine ? 58.0F : 30.0F, Step1 = bSapling ? 48.0F : bPine ? 95.0F : 46.0F;
+    const float Step0 = bSapling ? 34.0F : bPine ? 48.0F : 26.0F, Step1 = bSapling ? 48.0F : bPine ? 80.0F : 40.0F;
     for (float Z = K.CrownBase; Z < H * .965F; Z += Random.FRandRange(Step0, Step1))
     {
         const float U = (Z - K.CrownBase) / FMath::Max(1.0F, H - K.CrownBase);
@@ -282,7 +283,7 @@ void AddConiferBranches(FSkeleton& K, FRandomStream& Random, bool bPine, bool bS
                     {
                         FVector D = (TipPair.Value * .75F + Random.VRand() * .85F + FVector(0, 0, .35F)).GetSafeNormal();
                         FTuft Tuft{TipPair.Key - TipPair.Value * 8.0F, D, FVector::CrossProduct(D, Random.VRand()), Outward(TipPair.Key),
-                            Random.FRandRange(26, 36) * (bSapling ? .75F : 1.0F), Occl(TipPair.Key), Limb.Wind1, Random.RandRange(0, 1)};
+                            Random.FRandRange(44, 62) * (bSapling ? .65F : 1.0F), Occl(TipPair.Key), Limb.Wind1, Random.RandRange(0, 1)};
                         K.Tufts.Add(Tuft);
                     }
                     // A second, smaller tuft behind the tip thickens each foliage clump.
@@ -290,7 +291,15 @@ void AddConiferBranches(FSkeleton& K, FRandomStream& Random, bool bPine, bool bS
                     {
                         const FVector At = TipPair.Key - TipPair.Value * Random.FRandRange(30, 55);
                         FVector D = (Random.VRand() + FVector(0, 0, .5F)).GetSafeNormal();
-                        K.Tufts.Add({At, D, FVector::CrossProduct(D, TipPair.Value), Outward(At), Random.FRandRange(24, 32), Occl(At) * .9F, Limb.Wind1 * .8F, Random.RandRange(0, 1)});
+                        K.Tufts.Add({At, D, FVector::CrossProduct(D, TipPair.Value), Outward(At), Random.FRandRange(40, 54), Occl(At) * .9F, Limb.Wind1 * .8F, Random.RandRange(0, 1)});
+                    }
+                    // Crossed clump cards give each tuft canopy mass at distance.
+                    for (int32 Mass = 0; Mass < (bSapling ? 1 : 3); ++Mass)
+                    {
+                        const FVector D = (TipPair.Value * .5F + Dir(Mass * 2.09F + Random.FRandRange(-.4F, .4F), .35F)).GetSafeNormal();
+                        FTuft Clump{TipPair.Key - D * 45.0F, D, Dir(Mass * 2.09F + 1.57F, 0), Outward(TipPair.Key), Random.FRandRange(110, 150) * (bSapling ? .5F : 1.0F), Occl(TipPair.Key), Limb.Wind1, Random.RandRange(0, 1)};
+                        Clump.bMass = true;
+                        K.Tufts.Add(Clump);
                     }
                 }
             }
@@ -298,7 +307,21 @@ void AddConiferBranches(FSkeleton& K, FRandomStream& Random, bool bPine, bool bS
             {
                 // Douglas-fir: flat two-ranked sprays along the limb and short side branchlets.
                 const FVector Flat = FVector::CrossProduct(FVector::UpVector, (Tip - Base).GetSafeNormal()).GetSafeNormal();
-                const float Spacing = bSapling ? 15.0F : 21.0F;
+                const float Spacing = bSapling ? 16.0F : 24.0F;
+                // Branch-spray mass cards layered along the limb (both sides, slightly above).
+                for (float D = L * .15F; D < L; D += (bSapling ? 60.0F : 75.0F) * Random.FRandRange(.8F, 1.2F))
+                {
+                    const float S = D / L;
+                    const FVector At = PointAt(S), Ahead = (PointAt(FMath::Min(1.0F, S + .08F)) - At).GetSafeNormal();
+                    for (int32 Side = -1; Side <= 1; Side += 2)
+                    {
+                        const FVector Spray = (Ahead * .65F + Flat * Side * .62F + FVector(0, 0, Random.FRandRange(.0F, .2F))).GetSafeNormal();
+                        FTuft Clump{At + FVector(0, 0, 6), Spray, FVector::CrossProduct(Spray, FVector::UpVector) + FVector(0, 0, Random.FRandRange(-.25F, .25F)), Outward(At),
+                            Random.FRandRange(115, 165) * (bSapling ? .45F : 1.0F) * FMath::Lerp(1.0F, .7F, S), Occl(At), FMath::Lerp(Limb.Wind0, Limb.Wind1, S), Random.RandRange(0, 2)};
+                        Clump.bMass = true;
+                        K.Tufts.Add(Clump);
+                    }
+                }
                 for (float D = L * .22F; D < L; D += Spacing * Random.FRandRange(.8F, 1.2F))
                 {
                     const float S = D / L;
@@ -307,7 +330,7 @@ void AddConiferBranches(FSkeleton& K, FRandomStream& Random, bool bPine, bool bS
                     {
                         const FVector Spray = (Ahead * .55F + Flat * Side * .80F + FVector(0, 0, Random.FRandRange(-.05F, .18F))).GetSafeNormal();
                         K.Tufts.Add({At, Spray, FVector::CrossProduct(Spray, FVector::UpVector) + FVector(0, 0, Random.FRandRange(-.3F, .3F)), Outward(At),
-                            Random.FRandRange(34, 52) * (bSapling ? .7F : 1.0F) * FMath::Lerp(1.0F, .75F, S), Occl(At), FMath::Lerp(Limb.Wind0, Limb.Wind1, S), Random.RandRange(0, 2)});
+                            Random.FRandRange(68, 104) * (bSapling ? .5F : 1.0F) * FMath::Lerp(1.0F, .72F, S), Occl(At), FMath::Lerp(Limb.Wind0, Limb.Wind1, S), Random.RandRange(0, 2)});
                     }
                     if (!bSapling && L > 140 && FMath::Fmod(D, 48.0F) < Spacing && S < .85F)
                     {
@@ -319,11 +342,11 @@ void AddConiferBranches(FSkeleton& K, FRandomStream& Random, bool bPine, bool bS
                         Branchlet.Wind0 = FMath::Lerp(Limb.Wind0, Limb.Wind1, S); Branchlet.Wind1 = FMath::Min(1.0F, Branchlet.Wind0 + .25F);
                         K.Limbs.Add(Branchlet);
                         const FVector Across = FVector::CrossProduct(FVector::UpVector, BD).GetSafeNormal();
-                        for (float BDist = BL * .2F; BDist < BL; BDist += 17.0F)
+                        for (float BDist = BL * .2F; BDist < BL; BDist += 24.0F)
                             for (int32 BS = -1; BS <= 1; BS += 2)
                             {
                                 const FVector P = At + BD * BDist, Spray = (BD * .5F + Across * BS * .85F + FVector(0, 0, .06F)).GetSafeNormal();
-                                K.Tufts.Add({P, Spray, FVector::CrossProduct(Spray, FVector::UpVector), Outward(P), Random.FRandRange(30, 44), Occl(P), Branchlet.Wind1, Random.RandRange(0, 2)});
+                                K.Tufts.Add({P, Spray, FVector::CrossProduct(Spray, FVector::UpVector), Outward(P), Random.FRandRange(55, 80), Occl(P), Branchlet.Wind1, Random.RandRange(0, 2)});
                             }
                     }
                 }
@@ -350,7 +373,8 @@ FSkeleton MakeConifer(ESpecies Species, EAge Age, int32 Seed)
         : Random.FRandRange(bPine ? 1700 : 2300, bPine ? 2600 : 3400);
     const float H = K.Height;
     K.Breast = bSapling ? 2.5F + H * .006F : H * (bPine ? .0155F : .0125F) + 3.0F;
-    K.CrownBase = bSapling ? H * .12F : H * (Age == EAge::Pole ? Random.FRandRange(.30F, .40F) : bPine ? Random.FRandRange(.36F, .46F) : Random.FRandRange(.42F, .55F));
+    // Live crown 52-68% of height for conifers (PMO R1: no bare poles).
+    K.CrownBase = bSapling ? H * .12F : H * (Age == EAge::Pole ? Random.FRandRange(.26F, .34F) : bPine ? Random.FRandRange(.32F, .40F) : Random.FRandRange(.34F, .46F));
     K.CrownRadius = bSapling ? H * .28F : H * (bPine ? .30F : .19F);
     const float LeanYaw = Random.FRandRange(0, 2 * PI), Sweep = bPine ? Random.FRandRange(.015F, .045F) : Random.FRandRange(.004F, .012F);
     for (float Z : StemHeights(H))
@@ -393,7 +417,7 @@ FSkeleton MakeOak(int32 Seed)
     {
         const float Yaw = StemYaw0 + Stem * 2 * PI / K.Stems + Random.FRandRange(-.4F, .4F);
         const float Lean = FMath::DegreesToRadians(Random.FRandRange(18, 40));
-        const float Length = Random.FRandRange(380, 600);
+        const float Length = Random.FRandRange(460, 720);
         FLimb Trunk; Trunk.Level = 0; Trunk.R0 = K.Breast * .66F; Trunk.R1 = K.Breast * .40F; Trunk.Wind0 = 0; Trunk.Wind1 = .05F;
         const FVector Start = FVector(0, 0, Fork - 25) + Dir(Yaw, 0) * K.Breast * .3F;
         for (int32 Step = 0; Step <= 5; ++Step)
@@ -411,7 +435,7 @@ FSkeleton MakeOak(int32 Seed)
         {
             const float LYaw = Yaw + Random.FRandRange(-1.1F, 1.1F);
             const float LPitch = FMath::DegreesToRadians(Random.FRandRange(8, 38));
-            const float LL = Random.FRandRange(300, 480);
+            const float LL = Random.FRandRange(380, 560);
             FLimb Limb; Limb.Level = 1; Limb.R0 = Trunk.R1 * .78F; Limb.R1 = 3.0F; Limb.Wind0 = .05F; Limb.Wind1 = .35F;
             const FVector From = FMath::Lerp(Trunk.Path[4], StemTop, Random.FRandRange(.3F, 1.0F));
             for (int32 Step = 0; Step <= 4; ++Step)
@@ -459,11 +483,18 @@ FSkeleton MakeOak(int32 Seed)
     {
         const FVector Outward = (Tip - CrownCenter).GetSafeNormal();
         const float Occlusion = FMath::Clamp(.35F + .65F * FVector::Distance(Tip, CrownCenter) / FMath::Max(300.0F, K.CrownRadius), .35F, 1.0F);
-        for (int32 Leaf = 0; Leaf < 9; ++Leaf)
+        for (int32 Leaf = 0; Leaf < 12; ++Leaf)
         {
             const FVector D = (Outward * .55F + Random.VRand() * .9F).GetSafeNormal();
             const FVector At = Tip + Random.VRand() * Random.FRandRange(0, 28);
-            K.Tufts.Add({At, D, FVector::CrossProduct(D, Random.VRand()), Outward, Random.FRandRange(10, 13.5F), Occlusion, .9F, Random.RandRange(0, 1)});
+            K.Tufts.Add({At, D, FVector::CrossProduct(D, Random.VRand()), Outward, Random.FRandRange(13, 18), Occlusion, .9F, Random.RandRange(0, 1)});
+        }
+        for (int32 Mass = 0; Mass < 2; ++Mass)
+        {
+            const FVector D = (Outward * .6F + Random.VRand() * .7F).GetSafeNormal();
+            FTuft Clump{Tip - D * 30.0F, D, FVector::CrossProduct(D, Random.VRand()), Outward, Random.FRandRange(55, 75), Occlusion, .9F, Random.RandRange(0, 1)};
+            Clump.bMass = true;
+            K.Tufts.Add(Clump);
         }
     }
     return K;
@@ -493,7 +524,10 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed)
         [&](int32 Ring)
         {
             const float Z = K.Trunk[Ring].Z;
-            return FVector4f(FMath::Clamp(.05F + Z / 55.0F, 0.0F, 1.0F), FMath::Square(FMath::Max(Z, 0.0F) / Height) * .12F, 0, 1);
+            // Soil contact darkening, stand shade on the bole, deeper shade inside the crown;
+            // far LODs are darker still so distant trunks never read as pale matchsticks.
+            const float Shade = (Z > K.CrownBase ? .62F : .80F) * (Lod >= 2 ? .72F : 1.0F);
+            return FVector4f(FMath::Min(FMath::Clamp(.05F + Z / 55.0F, 0.0F, 1.0F), Shade), FMath::Square(FMath::Max(Z, 0.0F) / Height) * .12F, 0, 1);
         });
     for (const FLimb& Limb : K.Limbs)
     {
@@ -506,18 +540,23 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed)
             Sides, Limb.R0 > 12 ? 2.0F : 1.0F, K.TileV,
             [&](int32 Ring) { return FVector4f(1, FMath::Lerp(Limb.Wind0, Limb.Wind1, Ring / static_cast<float>(N - 1)), 0, 1); });
     }
-    // Sample the foliage set; scale kept cards up so crown coverage is preserved.
-    const int32 Keep = Lod == 0 ? 1 : Lod == 1 ? 5 : Lod == 2 ? 16 : 44;
-    const float Grow = Lod == 0 ? 1.0F : Lod == 1 ? 2.05F : Lod == 2 ? 3.4F : 5.4F;
-    int32 Emitted = 0;
+    // Regular cards carry near detail; mass (clump) cards carry canopy volume to mid/far LODs.
+    // Kept cards are scaled up so projected crown coverage survives the LOD transitions.
+    const int32 KeepRegular = Lod == 0 ? 1 : Lod == 1 ? 6 : 0;
+    const float GrowRegular = Lod == 0 ? 1.0F : 1.9F;
+    const int32 KeepMass = Lod == 0 ? (bOak ? 0 : 1) : Lod == 1 ? 1 : Lod == 2 ? (bOak ? 3 : 2) : (bOak ? 9 : 7);
+    const float GrowMass = Lod <= 1 ? (bOak && Lod == 1 ? 1.5F : 1.0F) : Lod == 2 ? (bOak ? 2.2F : 1.8F) : (bOak ? 4.0F : 3.5F);
+    int32 Regular = 0, Mass = 0;
     for (int32 Index = 0; Index < K.Tufts.Num(); ++Index)
     {
-        if ((Index * 7919 + Seed) % Keep != 0 && !(Lod == 3 && Emitted < 8 && Index > K.Tufts.Num() - 8)) continue;
         const FTuft& Tuft = K.Tufts[Index];
+        const int32 Keep = Tuft.bMass ? KeepMass : KeepRegular;
+        int32& Counter = Tuft.bMass ? Mass : Regular;
+        if (Keep <= 0 || (Counter++ * 7919 + Seed) % Keep != 0) continue;
+        const float Grow = Tuft.bMass ? GrowMass : GrowRegular;
         const FVector Along = Tuft.Dir;
         Card(Out.Leaf, Tuft.Origin - Along * Tuft.Length * (Grow - 1) * .3F, Along, Tuft.Across, Tuft.Length * Grow,
             K.Islands[Tuft.Island % K.IslandCount], Tuft.Outward, FVector4f(Tuft.Occlusion, Tuft.Wind, 0, 1));
-        ++Emitted;
     }
 }
 
@@ -749,18 +788,24 @@ bool IsProtected(const FVector2D& Point, float Clearance)
 float NearStandDensity(const float X, const float Y)
 {
     const float AbsY = FMath::Abs(Y);
-    // Feathered irregular boundaries (not parallelograms): every edge is displaced by noise.
-    const float FieldEdge = 7700.0F + 900.0F * Fbm(X, Y > 0 ? 1000.0F : -1000.0F, 5200.0F) - 450.0F;
-    const float OuterEdge = 26000.0F + 1500.0F * (Fbm(X + 5000, Y, 7000.0F) - .5F);
-    const float WestEdge = -30000.0F + 1800.0F * (Fbm(Y, X, 6000.0F) - .5F);
-    const float EastEdge = NearEastEdge(Y) - 900.0F * Fbm(Y, 300.0F, 4200.0F);
+    // Irregular macro outline (40-120 m lobes) plus a fine ragged edge; never a parallelogram.
+    // The south field edge stays close in front of the `forest` review pose and corridor entry.
+    const float EntryKeep = Y < 0 ? FMath::Clamp(FMath::Abs(X + 15800.0F) / 5000.0F - .4F, 0.0F, 1.0F) : 1.0F;
+    const float FieldEdge = 7700.0F + 900.0F * Fbm(X, Y > 0 ? 1000.0F : -1000.0F, 5200.0F) - 450.0F
+        + EntryKeep * 5200.0F * FMath::Max(0.0F, Fbm(X + 3100.0F, Y > 0 ? 7000.0F : -7000.0F, 15000.0F) - .42F);
+    const float OuterEdge = 25000.0F + 6000.0F * (Fbm(X + 5000, Y, 13000.0F) - .5F);
+    const float WestEdge = -29000.0F + 7000.0F * (Fbm(Y, X, 12000.0F) - .5F);
+    const float EastEdge = NearEastEdge(Y) - 900.0F * Fbm(Y, 300.0F, 4200.0F) - 4500.0F * FMath::Max(0.0F, Fbm(Y - 2000.0F, 900.0F, 11000.0F) - .4F);
     const float Inside = FMath::Min(FMath::Min(AbsY - FieldEdge, OuterEdge - AbsY), FMath::Min(X - WestEdge, EastEdge - X));
     if (Inside <= 0) return 0;
-    // Ragged 6–20 m feather from sparse edge trees into the closed stand.
+    // Ragged 6-20 m feather from sparse edge trees into the closed stand.
     const float Feather = .28F + .72F * Smooth01(Inside / (600.0F + 1400.0F * Fbm(X, Y, 3100.0F)));
-    // Small natural glades (~8% of area) keep openings without thinning the stand everywhere.
+    // Small natural glades keep openings without thinning the stand everywhere.
     const float Glade = Fbm(X + 9100, Y - 4700, 4600.0F);
-    return Feather * (1.0F - Smooth01((Glade - .64F) / .06F));
+    // DEV-TERRAIN habitat: steep rock and strongly sun-exposed dry grass break the stand.
+    const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(X, Y);
+    const float Hostile = Habitat.Rock + Habitat.Shore + FMath::Max(0.0F, Habitat.ExposedGrass - .55F) * Smooth01(Habitat.SunExposure / .5F);
+    return Feather * (1.0F - Smooth01((Glade - .64F) / .06F)) * (1.0F - Smooth01((Hostile - .25F) / .35F));
 }
 
 FTransform InstanceTransform(const FPlacedTree& Tree)
@@ -907,31 +952,33 @@ const FLayout& GetLayout()
             const float MaxLean = A.Species == ESpecies::MontereyPine ? 7.0F : A.Species == ESpecies::CoastLiveOak ? 0 : 3.5F;
             Place(P, Archetype, Scale, Yaw, FMath::DegreesToRadians(MaxLean * LeanRoll), LeanYaw, true, false, Spacing);
         }
-    // 3. Inland woodland mosaic on the ridge: oak in sheltered drainages, conifers above.
+    // 3. Woodland mosaic beyond the near stands, driven by DEV-TERRAIN habitat classes:
+    //    live oak in gullies/drainages, Douglas-fir groves on shaded slopes, Monterey pine
+    //    near the coast, open (tree-free) sun-exposed grass. Spacing and density follow the
+    //    woodland weight, so edges feather with the habitat instead of a drawn boundary.
     FRandomStream Distant(918437);
-    FVector2D GroveCenter = FVector2D::ZeroVector; int32 GroveRemaining = 0;
     int32 DistantCount = 0;
-    for (int32 Attempt = 0; Attempt < 40000 && DistantCount < 1400; ++Attempt)
-    {
-        if (GroveRemaining <= 0)
+    for (float GX = -180000; GX < 14000; GX += 900.0F)
+        for (float GY = -150000; GY < 150000; GY += 900.0F)
         {
-            GroveCenter = FVector2D(Distant.FRandRange(-170000, -36000), Distant.FRandRange(-110000, 110000));
-            GroveRemaining = Distant.RandRange(18, 34);
+            const FVector2D P(GX + Distant.FRandRange(0, 900), GY + Distant.FRandRange(0, 900));
+            const float Roll = Distant.FRand(), Pick = Distant.FRand(), Yaw = Distant.FRandRange(0, 2 * PI), ScaleRoll = Distant.FRand();
+            if (DistantCount >= 6000 || NearStandDensity(P.X, P.Y) > 0) continue;
+            const bool bMid = P.X > -70000 && FMath::Abs(P.Y) < 70000;
+            // Far ridge: coarser 18 m sampling keeps the instance count bounded.
+            if (!bMid && (FMath::FloorToInt(GX / 900) % 2 || FMath::FloorToInt(GY / 900) % 2)) continue;
+            const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(P.X, P.Y);
+            const float Woodland = Habitat.Woodland + .25F * Habitat.ShelteredGrass;
+            if (Woodland < .30F || Roll > Smooth01((Woodland - .30F) / .45F) * .85F) continue;
+            if (IsProtected(P, 400)) continue;
+            if (APacificCoastGraybox::GetCoastalLandHeight(P.X, P.Y) < APacificCoastGraybox::SeaLevelCm + 600) continue;
+            if (!Clear(P, 300)) continue;
+            const bool bOak = Habitat.Drainage > .45F ? Pick < .75F : Habitat.SunExposure > -.1F ? Pick < .55F : Pick < .2F;
+            const bool bPine = !bOak && P.X > -25000 && Pick > .5F;
+            const int32 Archetype = bOak ? Oaks[Distant.RandRange(0, Oaks.Num() - 1)] : bPine ? Pines[Distant.RandRange(0, Pines.Num() - 1)] : Firs[Distant.RandRange(0, Firs.Num() - 1)];
+            Place(P, Archetype, FMath::Lerp(.8F, 1.1F, ScaleRoll), Yaw, 0, 0, false, false, 300);
+            ++DistantCount;
         }
-        const float Angle = Distant.FRandRange(0, 2 * PI), Radius = FMath::Sqrt(Distant.FRand()) * 3200.0F;
-        const FVector2D P = GroveCenter + FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * Radius;
-        const float Roll = Distant.FRand(), Pick = Distant.FRand(), Yaw = Distant.FRandRange(0, 2 * PI), ScaleRoll = Distant.FRand();
-        --GroveRemaining;
-        if (NearStandDensity(P.X, P.Y) > 0 || FMath::Abs(P.Y) < 30000 && P.X > -32000) continue;
-        const float Cover = APacificCoastGraybox::GetCoastalVegetationCover(P.X, P.Y);
-        if (Cover < .55F || Roll > Cover * Cover) continue;
-        if (APacificCoastGraybox::GetCoastalLandHeight(P.X, P.Y) < 200) continue;
-        if (!Clear(P, 280)) continue;
-        const bool bOak = Cover > .72F && Pick < .6F;
-        const int32 Archetype = bOak ? Oaks[Distant.RandRange(0, Oaks.Num() - 1)] : Pick < .82F ? Firs[Distant.RandRange(0, Firs.Num() - 1)] : Pines[Distant.RandRange(0, Pines.Num() - 1)];
-        Place(P, Archetype, FMath::Lerp(.8F, 1.1F, ScaleRoll), Yaw, 0, 0, false, false, 280);
-        ++DistantCount;
-    }
     for (const FPlacedTree& Tree : Layout.Trees)
     {
         const FArchetype& A = Archetypes[Tree.Archetype];

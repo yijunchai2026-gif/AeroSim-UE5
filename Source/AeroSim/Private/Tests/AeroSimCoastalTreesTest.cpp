@@ -257,3 +257,43 @@ bool FCoastalTreeCorridorTest::RunTest(const FString& Parameters)
     return true;
 }
 #endif
+
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
+#include "Materials/Material.h"
+#include "MaterialShared.h"
+#include "RHIGlobals.h"
+
+// Shader gate: every DEV-FLORA draft material actually bound to the generated coast compiles
+// for the running RHI (Metal when the editor runs without -NullRHI) and keeps ISM usage.
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoastalFloraMaterialCompileTest, "AeroSim.Coastal.Flora.MaterialsCompileForRunningRHI",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FCoastalFloraMaterialCompileTest::RunTest(const FString& Parameters)
+{
+    const APacificCoastGraybox* Coast = GetDefault<APacificCoastGraybox>();
+    if (!TestNotNull(TEXT("Generated coast exists"), Coast)) return false;
+    TSet<UMaterial*> Materials;
+    TArray<UHierarchicalInstancedStaticMeshComponent*> Batches; Coast->GetComponents(Batches);
+    for (const auto* Batch : Batches)
+        if (Batch->GetName().StartsWith(TEXT("CoastalFlora")))
+            for (int32 Slot = 0; Slot < Batch->GetNumMaterials(); ++Slot)
+                if (UMaterialInterface* Interface = Batch->GetMaterial(Slot))
+                    if (UMaterial* Material = Interface->GetMaterial(); Material && Material->GetName().Contains(TEXT("Draft"))) Materials.Add(Material);
+    TestTrue(TEXT("All ten flora draft materials are bound"), Materials.Num() >= 10);
+    const bool bNullRHI = !GDynamicRHI || FCString::Strcmp(GDynamicRHI->GetName(), TEXT("Null")) == 0;
+    AddInfo(FString::Printf(TEXT("FLORA_SHADER_GATE rhi=%s"), GDynamicRHI ? GDynamicRHI->GetName() : TEXT("none")));
+    int32 Compiled = 0;
+    for (UMaterial* Material : Materials)
+    {
+        TestTrue(TEXT("Instanced static mesh usage is baked in"), Material->bUsedWithInstancedStaticMeshes);
+        if (bNullRHI) continue;
+        FMaterialResource* Resource = Material->GetMaterialResource(GMaxRHIShaderPlatform);
+        if (!TestNotNull(TEXT("Material resource exists for the running shader platform"), Resource)) continue;
+        Resource->FinishCompilation();
+        for (const FString& Error : Resource->GetCompileErrors()) AddError(FString::Printf(TEXT("Failed to compile Material %s: %s"), *Material->GetName(), *Error));
+        TestTrue(TEXT("Material has a complete game-thread shader map"), Resource->GetGameThreadShaderMap() != nullptr);
+        ++Compiled;
+    }
+    AddInfo(FString::Printf(TEXT("FLORA_SHADER_GATE compiled=%d of %d (0 under NullRHI)"), Compiled, Materials.Num()));
+    return true;
+}
+#endif

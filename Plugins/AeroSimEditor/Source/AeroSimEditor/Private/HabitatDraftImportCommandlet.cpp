@@ -142,7 +142,7 @@ UMaterial* Foliage(const TCHAR* Name,UTexture2D* Base,UTexture2D* Alpha,UTexture
     auto* Rgh=Sample(M,Rough,TEXT("RoughnessTexture"),Rough&&Rough->CompressionSettings==TC_Masks?SAMPLERTYPE_Masks:SAMPLERTYPE_LinearGrayscale);
     auto* TintParam=Node<UMaterialExpressionVectorParameter>(M);TintParam->ParameterName=TEXT("Color");TintParam->DefaultValue=Tint;
     auto* RoughParam=Node<UMaterialExpressionScalarParameter>(M);RoughParam->ParameterName=TEXT("Roughness");RoughParam->DefaultValue=1.0F;
-    auto* Coverage=Node<UMaterialExpressionScalarParameter>(M);Coverage->ParameterName=TEXT("DistantNeedleCoverage");Coverage->DefaultValue=.12F;
+    auto* Coverage=Node<UMaterialExpressionScalarParameter>(M);Coverage->ParameterName=TEXT("DistantNeedleCoverage");Coverage->DefaultValue=.20F;
     auto* Random=Node<UMaterialExpressionPerInstanceRandom>(M);auto* Vertex=Node<UMaterialExpressionVertexColor>(M);
     auto* Depth=Node<UMaterialExpressionPixelDepth>(M);auto* Fade=Node<UMaterialExpressionPerInstanceFadeAmount>(M);
     auto* World=Node<UMaterialExpressionWorldPosition>(M);auto* Time=Node<UMaterialExpressionTime>(M);
@@ -150,7 +150,7 @@ UMaterial* Foliage(const TCHAR* Name,UTexture2D* Base,UTexture2D* Alpha,UTexture
     auto* Surface=Custom(M,TEXT("float3 c=C*Tint.rgb*lerp(.80,1.12,R)*float3(lerp(1.04,.94,R),1,lerp(.96,1.06,R));return c*(.50+.50*V.r);"),CMOT_Float3,
         {{TEXT("C"),Color,0},{TEXT("Tint"),TintParam,0},{TEXT("R"),Random,0},{TEXT("V"),Vertex,0}});
     // The bias stays below the clip value so dilated atlas background never becomes opaque.
-    auto* Opacity=Custom(M,TEXT("return A*F+saturate((D-1800.0)/4500.0)*B;"),CMOT_Float1,
+    auto* Opacity=Custom(M,TEXT("return A*F+saturate((D-1500.0)/3500.0)*B;"),CMOT_Float1,
         {{TEXT("A"),Mask,1},{TEXT("D"),Depth,0},{TEXT("B"),Coverage,0},{TEXT("F"),Fade,0}});
     auto* Roughness=Custom(M,TEXT("return saturate(Rg*K);"),CMOT_Float1,{{TEXT("Rg"),Rgh,1+RoughChannel},{TEXT("K"),RoughParam,0}});
     auto* Subsurface=Custom(M,TEXT("return S*.38;"),CMOT_Float3,{{TEXT("S"),Surface,0}});
@@ -262,9 +262,9 @@ int32 UHabitatDraftImportCommandlet::Main(const FString& Params)
     // Live-oak leaves are darker and glossier than the published island_tree_02 scan.
     UMaterial* OakLeaves=Foliage(TEXT("M_FloraOakLeavesDraft"),T(TEXT("T_FloraOakLeaf_BaseColor")),T(TEXT("T_FloraOakLeaf_Alpha")),T(TEXT("T_FloraOakLeaf_Normal")),T(TEXT("T_FloraOakLeaf_Roughness")),0,.36F,FLinearColor(.52F,.62F,.46F));
     // Douglas-fir proxy bark is tinted warmer (+red), per the ART-FLORA spec.
-    UMaterial* PineBark=Bark(TEXT("M_FloraPineBarkDraft"),T(TEXT("T_FloraPineBark_BaseColor")),T(TEXT("T_FloraPineBark_Normal")),T(TEXT("T_FloraPineBark_Roughness")),FLinearColor(.95F,.88F,.82F));
-    UMaterial* FirBark=Bark(TEXT("M_FloraFirBarkDraft"),T(TEXT("T_FloraFirBark_BaseColor")),T(TEXT("T_FloraFirBark_Normal")),T(TEXT("T_FloraFirBark_Roughness")),FLinearColor(.92F,.74F,.60F));
-    UMaterial* OakBark=Bark(TEXT("M_FloraOakBarkDraft"),T(TEXT("T_FloraOakBark_BaseColor")),T(TEXT("T_FloraOakBark_Normal")),T(TEXT("T_FloraOakBark_Roughness")),FLinearColor(.80F,.78F,.74F));
+    UMaterial* PineBark=Bark(TEXT("M_FloraPineBarkDraft"),T(TEXT("T_FloraPineBark_BaseColor")),T(TEXT("T_FloraPineBark_Normal")),T(TEXT("T_FloraPineBark_Roughness")),FLinearColor(.62F,.55F,.50F));
+    UMaterial* FirBark=Bark(TEXT("M_FloraFirBarkDraft"),T(TEXT("T_FloraFirBark_BaseColor")),T(TEXT("T_FloraFirBark_Normal")),T(TEXT("T_FloraFirBark_Roughness")),FLinearColor(.40F,.34F,.30F));
+    UMaterial* OakBark=Bark(TEXT("M_FloraOakBarkDraft"),T(TEXT("T_FloraOakBark_BaseColor")),T(TEXT("T_FloraOakBark_Normal")),T(TEXT("T_FloraOakBark_Roughness")),FLinearColor(.70F,.68F,.66F));
     if(!(Grass&&Shrub&&Fern&&Rooibos&&PineNeedles&&FirNeedles&&OakLeaves&&PineBark&&FirBark&&OakBark))return 5;
     const TPair<const TCHAR*,UMaterial*> Meshes[]={{TEXT("SM_CoastGrassSmallDraft"),Grass},{TEXT("SM_CoastGrassTallDraft"),Grass},{TEXT("SM_CoastGrassTinyDraft"),Grass},
         {TEXT("SM_CoastShrubADraft"),Shrub},{TEXT("SM_CoastShrubBDraft"),Shrub},{TEXT("SM_FloraFernADraft"),Fern},{TEXT("SM_FloraFernBDraft"),Fern},
