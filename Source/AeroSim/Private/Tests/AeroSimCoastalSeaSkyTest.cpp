@@ -238,16 +238,48 @@ bool FCoastalShoreMaskTest::RunTest(const FString& Parameters)
     }
     // R1b: beyond the shelf end the floor is 175 m deep; depth colour must agree (no shallow
     // tint over deep water). The long perimeter shores must carry surf contact.
-    int32 FalseShallow = 0, PerimeterSurf = 0;
+    int32 FalseShallow = 0, PerimeterSurf = 0, LandwardExterior = 0, FalseExteriorShallow = 0, ValidPerimeterShallows = 0;
     for (const FProcMeshVertex& V : Section->ProcVertexBuffer)
     {
         const FLinearColor C = V.Color.ReinterpretAsLinear();
         if (FMath::Abs(V.Position.Y) > 215000 && FMath::Abs(V.Position.Y) < 400000 && V.Position.X > 60000 && V.Position.X < 400000 && C.B < .99F) ++FalseShallow;
         if (FMath::Abs(V.Position.Y) > 150000 && V.Position.X < 0 && C.G > .3F && C.R < .2F && C.B > 0) ++PerimeterSurf;
+        // R3-WATER-01: the previous regression sampled only +X ocean. The false rectangle
+        // occupied negative-X open water north/south of the land and beyond its west edge.
+        const bool bOutsideFlanks=FMath::Abs(V.Position.Y)>222000 && FMath::Abs(V.Position.Y)<400000 && V.Position.X<0 && V.Position.X>-400000;
+        const bool bOutsideWest=V.Position.X<-245000 && V.Position.X>-400000 && FMath::Abs(V.Position.Y)<400000;
+        if(bOutsideFlanks || bOutsideWest)
+        {
+            ++LandwardExterior;
+            if(C.B<.99F || C.A>.01F || C.R<.99F)++FalseExteriorShallow;
+        }
+        if(FMath::Abs(V.Position.Y)>150000 && FMath::Abs(V.Position.Y)<220000 && V.Position.X<0
+            && C.B>.02F && C.B<.4F && C.G>.3F && C.R<.2F)++ValidPerimeterShallows;
     }
     AddInfo(FString::Printf(TEXT("false shallow beyond shelf %d, perimeter surf vertices %d"), FalseShallow, PerimeterSurf));
     TestEqual(TEXT("No shallow colour over the 175 m floor beyond the shelf"), FalseShallow, 0);
     TestTrue(TEXT("North/south/west perimeter shores carry surf contact"), PerimeterSurf > 20);
+    TestTrue(TEXT("Regression includes negative-X ocean outside both flanks and the western land edge"),LandwardExterior>100);
+    TestEqual(TEXT("No rectangular shallow-water/shoal mask outside actual land/shelf support"),FalseExteriorShallow,0);
+    TestTrue(TEXT("Actual shallow perimeter water is retained rather than painting the whole sea deep"),ValidPerimeterShallows>10);
+    auto* Floor=Cast<UProceduralMeshComponent>(SeaSkyTest::FindPart(Coast,TEXT("PacificSeaFloor")));
+    const auto* FloorSection=Floor?Floor->GetProcMeshSection(0):nullptr;
+    if(TestTrue(TEXT("Actual closing sea-floor geometry exists"),FloorSection && !FloorSection->ProcVertexBuffer.IsEmpty()))
+    {
+        const float ActualFloorDepth=APacificCoastGraybox::SeaLevelCm-FloorSection->ProcVertexBuffer[0].Position.Z;
+        for(const FVector2D Point:{FVector2D(-100000,240000),FVector2D(-100000,-240000),FVector2D(-300000,100000),FVector2D(-300000,-100000)})
+            TestTrue(TEXT("Exterior depth agrees with actual floor geometry on both flanks and west"),
+                FMath::IsNearlyEqual(APacificCoastGraybox::GetCoastalSeabedDepthCm(Point.X,Point.Y),ActualFloorDepth,.1F));
+        for(const float Side:{-1.0F,1.0F})
+        {
+            const float InsideY=Side*209000,OutsideY=Side*211000;
+            const float Inside=APacificCoastGraybox::GetCoastalSeabedDepthCm(APacificCoastGraybox::GetCoastalShoreX(InsideY)+3000,InsideY);
+            const float Outside=APacificCoastGraybox::GetCoastalSeabedDepthCm(APacificCoastGraybox::GetCoastalShoreX(OutsideY)+3000,OutsideY);
+            TestTrue(TEXT("Both shelf ends meet the actual deep floor without a shallow depth step"),
+                FMath::Abs(Inside-Outside)<50 && FMath::IsNearlyEqual(Outside,ActualFloorDepth,.1F));
+        }
+    }
+    AddInfo(FString::Printf(TEXT("R3-WATER-01 exterior samples %d, false shallow %d, valid shallow perimeter %d"),LandwardExterior,FalseExteriorShallow,ValidPerimeterShallows));
     const FString Wet = APacificCoastGraybox::GetCoastalWaterShaderCode(APacificCoastGraybox::ECoastalWaterShader::RockWetness);
     TestTrue(TEXT("Rock wetness function is published for the rock material"), Wet.Contains(TEXT("float above=P.z-(")) && Wet.Contains(TEXT("return 1-smoothstep")));
     AddInfo(FString::Printf(TEXT("offshore %d (gated %d), contact %d, shallow %d"), Offshore, OffshoreFoamGates, Contact, Shallow));
