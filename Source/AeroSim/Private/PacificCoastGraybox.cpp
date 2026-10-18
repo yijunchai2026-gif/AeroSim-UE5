@@ -8,6 +8,7 @@
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
+#include "Components/VolumetricCloudComponent.h"
 #include "Engine/StaticMesh.h"
 #include "FlightPawn.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -130,27 +131,34 @@ APacificCoastGraybox::APacificCoastGraybox()
     Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
     SetRootComponent(Root);
 
+    // DEV-SEASKY: Clear 16:30 PDT, mid-October, ~37 N Pacific coast. The sun sits ~21 deg
+    // up in the south-west over the ocean; every weather derives from that one state.
+    const FEnvironmentState Baseline;
     KeyLight = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("KeyLight"));
     KeyLight->SetupAttachment(Root);
-    KeyLight->SetRelativeRotation(FRotator(-48.0F, -35.0F, 0.0F));
-    KeyLight->SetIntensity(7.0F);
-    KeyLight->SetLightColor(FLinearColor(1.0F, 0.91F, 0.78F));
+    KeyLight->SetRelativeRotation(GetCoastalSunRotation(Baseline));
+    KeyLight->SetIntensity(Baseline.GetLightIntensity());
+    KeyLight->SetLightColor(FLinearColor(1.0F, 0.96F, 0.90F));
     KeyLight->SetCastShadows(true);
+    KeyLight->bAtmosphereSunLight = true;
 
     FillLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("FillLight"));
     FillLight->SetupAttachment(Root);
-    FillLight->SetIntensity(0.7F);
+    FillLight->SetIntensity(1.0F);
     FillLight->SetMobility(EComponentMobility::Movable);
+    // Blue sky fill in shadows comes from the actual atmosphere, recaptured per weather.
+    FillLight->bRealTimeCapture = true;
+    FillLight->bLowerHemisphereIsBlack = false;
+    FillLight->SetLowerHemisphereColor(FLinearColor(0.035F, 0.050F, 0.060F));
 
     // The prototype owns its sky as well as its floor; do not inherit template Landscape geometry.
     SkyAtmosphere = CreateDefaultSubobject<USkyAtmosphereComponent>(TEXT("SkyAtmosphere"));
     SkyAtmosphere->SetupAttachment(Root);
-    KeyLight->bAtmosphereSunLight = true;
 
     WeatherFog = CreateDefaultSubobject<UExponentialHeightFogComponent>(TEXT("WeatherFog"));
     WeatherFog->SetupAttachment(Root);
-    WeatherFog->SetFogDensity(0.002F);
-    WeatherFog->SetFogHeightFalloff(0.25F);
+    WeatherFog->SetFogDensity(Baseline.GetFogDensity());
+    WeatherFog->SetFogHeightFalloff(0.2F);
     WeatherFog->SetFogInscatteringColor(FLinearColor(0.58F, 0.67F, 0.72F));
 
     WeatherPostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("WeatherPostProcess"));
@@ -198,21 +206,8 @@ APacificCoastGraybox::APacificCoastGraybox()
         RainStreaks.Add(Streak);
     }
 
-    // Wet shoreline patches remain weather-controlled; no raised plastic overlay at the launch mat.
-    for (int32 Index = 0; Index < 12; ++Index)
-    {
-        UStaticMeshComponent* WetPatch = AddBox(
-            FName(*FString::Printf(TEXT("RainWetCoast_%02d"), Index)),
-            FVector(GetCliffEdgeX(-13750.0F + Index * 2450.0F) - 2500.0F, -13750.0F + Index * 2450.0F, 2.0F),
-            FVector(1350.0F + static_cast<float>((Index * 97) % 650), 1100.0F, 2.0F),
-            CubeMesh,
-            FLinearColor(0.018F, 0.055F, 0.075F),
-            FRotator(0.0F, Index * 17.0F, 0.0F));
-        WetPatch->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-        WetPatch->SetCastShadow(false);
-        WetPatch->SetVisibility(false);
-        WetHighlightPrimitives.Add(WetPatch);
-    }
+    // Sea-level wetness belongs to the actual rock material. Flat legacy rain
+    // overlays cannot follow eroded bays and would float above the new land.
 
     // Hero 1: grounded small survey launch site, built above.
     ++GeneratedHeroZoneCount;
@@ -387,16 +382,7 @@ void APacificCoastGraybox::ApplyEnvironmentState(const FEnvironmentState& State)
     }
     AppliedEnvironmentState = State;
     const bool bRain = State.Weather == EAeroSimWeather::Rain;
-    KeyLight->SetIntensity(State.GetLightIntensity());
-    KeyLight->SetLightColor(State.Weather == EAeroSimWeather::Clear
-        ? FLinearColor(1.0F, 0.91F, 0.78F)
-        : (bRain ? FLinearColor(0.48F, 0.58F, 0.70F) : FLinearColor(0.70F, 0.74F, 0.78F)));
-    FillLight->SetIntensity(State.Weather == EAeroSimWeather::Clear ? 0.7F : (bRain ? 0.18F : 0.34F));
-    WeatherFog->SetFogDensity(State.GetFogDensity());
-    WeatherFog->SetFogHeightFalloff(bRain ? 0.12F : 0.25F);
-    WeatherFog->SetFogInscatteringColor(State.Weather == EAeroSimWeather::Clear
-        ? FLinearColor(0.58F, 0.67F, 0.72F)
-        : (bRain ? FLinearColor(0.12F, 0.20F, 0.28F) : FLinearColor(0.30F, 0.36F, 0.41F)));
+    ApplyCoastalSky(State);
 
     WeatherPostProcess->Settings.AutoExposureBias = State.GetExposureBias();
     const float Saturation = State.GetSceneSaturation();
@@ -411,13 +397,6 @@ void APacificCoastGraybox::ApplyEnvironmentState(const FEnvironmentState& State)
         if (RainStreak != nullptr)
         {
             RainStreak->SetVisibility(bRain);
-        }
-    }
-    for (UStaticMeshComponent* WetHighlight : WetHighlightPrimitives)
-    {
-        if (WetHighlight != nullptr)
-        {
-            WetHighlight->SetVisibility(bRain);
         }
     }
 
@@ -443,6 +422,130 @@ void APacificCoastGraybox::ApplyEnvironmentState(const FEnvironmentState& State)
             Material->SetVectorParameterValue(TEXT("Color"), RainTint * Brightness);
             Material->SetScalarParameterValue(TEXT("Roughness"), FMath::Lerp(0.72F, 0.22F, Wetness));
         }
+    }
+    ApplyCoastalSurfaceWeather(State);
+}
+
+// DEV-SEASKY: solar position for the fixed site (36.97 N, 122.03 W, Santa Cruz-like),
+// 18 October, local clock in PDT (UTC-7). NOAA general solar position equations.
+FVector2D APacificCoastGraybox::GetCoastalSunElevationAzimuth(const FEnvironmentState& State)
+{
+    constexpr double Latitude = 36.97, Longitude = -122.03, UtcOffsetHours = -7.0;
+    constexpr int32 DayOfYear = 291;
+    const double Hours = State.TimeMinutes / 60.0;
+    const double Gamma = 2.0 * UE_DOUBLE_PI / 365.0 * (DayOfYear - 1 + (Hours - 12.0) / 24.0);
+    const double EquationOfTime = 229.18 * (0.000075 + 0.001868 * FMath::Cos(Gamma) - 0.032077 * FMath::Sin(Gamma)
+        - 0.014615 * FMath::Cos(2 * Gamma) - 0.040849 * FMath::Sin(2 * Gamma));
+    const double Declination = 0.006918 - 0.399912 * FMath::Cos(Gamma) + 0.070257 * FMath::Sin(Gamma)
+        - 0.006758 * FMath::Cos(2 * Gamma) + 0.000907 * FMath::Sin(2 * Gamma)
+        - 0.002697 * FMath::Cos(3 * Gamma) + 0.00148 * FMath::Sin(3 * Gamma);
+    const double TrueSolarMinutes = State.TimeMinutes + EquationOfTime + 4.0 * Longitude - 60.0 * UtcOffsetHours;
+    const double HourAngle = FMath::DegreesToRadians(TrueSolarMinutes / 4.0 - 180.0);
+    const double Phi = FMath::DegreesToRadians(Latitude);
+    const double SinElevation = FMath::Sin(Phi) * FMath::Sin(Declination) + FMath::Cos(Phi) * FMath::Cos(Declination) * FMath::Cos(HourAngle);
+    const double Elevation = FMath::RadiansToDegrees(FMath::Asin(FMath::Clamp(SinElevation, -1.0, 1.0)));
+    const double Azimuth = FMath::RadiansToDegrees(FMath::Atan2(FMath::Sin(HourAngle),
+        FMath::Cos(HourAngle) * FMath::Sin(Phi) - FMath::Tan(Declination) * FMath::Cos(Phi))) + 180.0;
+    return FVector2D(Elevation, FMath::Fmod(Azimuth + 360.0, 360.0));
+}
+
+FRotator APacificCoastGraybox::GetCoastalSunRotation(const FEnvironmentState& State)
+{
+    // Light travels away from the sun: yaw = bearing - 270 + 180 (+X west, +Y north).
+    const FVector2D Sun = GetCoastalSunElevationAzimuth(State);
+    return FRotator(-Sun.X, FRotator::NormalizeAxis(Sun.Y - 90.0), 0.0F);
+}
+
+void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
+{
+    const int32 W = State.Weather == EAeroSimWeather::Clear ? 0 : (State.Weather == EAeroSimWeather::Overcast ? 1 : 2);
+    // Index: Clear, Overcast, Rain. One state, one table: weather never moves the sun.
+    const FLinearColor SunColor[] = {FLinearColor(1.0F,.96F,.90F), FLinearColor(.74F,.78F,.82F), FLinearColor(.52F,.60F,.70F)};
+    const float SkyFill[] = {1.0F, .75F, .5F};
+    const float Mie[] = {.0048F, .014F, .024F}, MieG[] = {.80F, .62F, .55F}, Aerial[] = {2.4F, 3.0F, 3.4F};
+    const float FogFalloff[] = {.20F, .18F, .12F}, FogOpacity[] = {.75F, .95F, 1.0F}, FogStart[] = {60000.0F, 0.0F, 0.0F};
+    const FLinearColor FogColor[] = {FLinearColor(.60F,.66F,.72F), FLinearColor(.30F,.36F,.41F), FLinearColor(.12F,.20F,.28F)};
+    const float LayerDensity[] = {.02F, .03F, .05F}, LayerOffset[] = {200.0F, 1500.0F, 2500.0F}, LayerFalloff[] = {1.2F, .5F, .35F};
+    const float CloudBottomKm[] = {1.6F, .7F, .45F}, CloudHeightKm[] = {1.6F, 2.4F, 3.5F};
+    const float WaterRoughness[] = {.07F, .11F, .16F}, WaveScale[] = {1.0F, 1.2F, 1.45F};
+
+    KeyLight->SetRelativeRotation(GetCoastalSunRotation(State));
+    KeyLight->SetIntensity(State.GetLightIntensity());
+    KeyLight->SetLightColor(SunColor[W]);
+    FillLight->SetIntensity(SkyFill[W]);
+
+    // Dry October air: default Rayleigh keeps a deep zenith blue; low-lying coastal
+    // aerosol gives a thin warm horizon; aerial perspective is boosted so 2–4 km ridges
+    // go bluer and lighter at this compact slice scale.
+    SkyAtmosphere->SetMieScatteringScale(Mie[W]);
+    SkyAtmosphere->SetMieAnisotropy(MieG[W]);
+    SkyAtmosphere->SetMieExponentialDistribution(.9F);
+    SkyAtmosphere->SetMieAbsorptionScale(.0006F);
+    SkyAtmosphere->SetAerialPespectiveViewDistanceScale(Aerial[W]);
+
+    // Fog height sits at sea level so the sea stays readable at low altitude; Clear has
+    // no fog near the camera, a warm sun-side glow and a thin marine layer hugging the
+    // offshore horizon (second fog). Density itself is the Environment State's value.
+    WeatherFog->SetRelativeLocation(FVector(0, 0, SeaLevelCm));
+    WeatherFog->SetFogDensity(State.GetFogDensity());
+    WeatherFog->SetFogHeightFalloff(FogFalloff[W]);
+    WeatherFog->SetFogInscatteringColor(FogColor[W]);
+    WeatherFog->SetFogMaxOpacity(FogOpacity[W]);
+    WeatherFog->SetStartDistance(FogStart[W]);
+    WeatherFog->SetDirectionalInscatteringExponent(6.0F);
+    WeatherFog->SetDirectionalInscatteringStartDistance(15000.0F);
+    WeatherFog->SetDirectionalInscatteringColor(W == 0 ? FLinearColor(.42F,.30F,.18F) : FLinearColor(.06F,.06F,.06F));
+    WeatherFog->SetSecondFogDensity(LayerDensity[W]);
+    WeatherFog->SetSecondFogHeightOffset(LayerOffset[W]);
+    WeatherFog->SetSecondFogHeightFalloff(LayerFalloff[W]);
+
+    if (CoastalClouds != nullptr)
+    {
+        CoastalClouds->SetLayerBottomAltitude(CloudBottomKm[W]);
+        CoastalClouds->SetLayerHeight(CloudHeightKm[W]);
+        UMaterialInterface* CloudMaterial = CoastalClouds->GetMaterial();
+        UMaterialInstanceDynamic* Clouds = Cast<UMaterialInstanceDynamic>(CloudMaterial);
+        if (Clouds == nullptr && CloudMaterial != nullptr)
+        {
+            Clouds = UMaterialInstanceDynamic::Create(CloudMaterial, this);
+            CoastalClouds->SetMaterial(Clouds);
+        }
+        if (Clouds != nullptr)
+        {
+            // Sparse fair-weather cumulus for Clear; wind frozen so the seed-21630
+            // comparison baseline does not evolve between captures.
+            Clouds->SetScalarParameterValue(TEXT("Cloud_GlobalCoverage"), .06F + .9F * State.GetCloudCover());
+            Clouds->SetScalarParameterValue(TEXT("WindMultiplier"), 0.0F);
+        }
+    }
+
+    if (UMaterialInstanceDynamic* Water = Cast<UMaterialInstanceDynamic>(CoastalWaterMaterial.Get()))
+    {
+        Water->SetScalarParameterValue(TEXT("Roughness"), WaterRoughness[W]);
+        Water->SetScalarParameterValue(TEXT("WaveAmplitudeScale"), WaveScale[W]);
+    }
+    FillLight->RecaptureSky();
+}
+
+void APacificCoastGraybox::ApplyCoastalSurfaceWeather(const FEnvironmentState& State)
+{
+    // Rain wetness follows the real terrain/rock surfaces instead of floating boxes:
+    // darker albedo and much lower roughness on every coastal surface material.
+    AppliedSurfaceWetness = State.GetWetness();
+    for (int32 Index = 0; Index < CoastalColorParts.Num(); ++Index)
+    {
+        UMeshComponent* Mesh = CoastalColorParts[Index];
+        if (Mesh == nullptr || Mesh->GetMaterial(0) == nullptr || !CoastalPartColors.IsValidIndex(Index)) continue;
+        UMaterialInstanceDynamic* Material = Cast<UMaterialInstanceDynamic>(Mesh->GetMaterial(0));
+        if (Material == nullptr)
+        {
+            Material = UMaterialInstanceDynamic::Create(Mesh->GetMaterial(0), this);
+            Mesh->SetMaterial(0, Material);
+        }
+        const bool bGravel = CoastalGravelMaterial != nullptr && Material->Parent == CoastalGravelMaterial;
+        const FLinearColor Base = bGravel ? FLinearColor(.72F,.74F,.72F) : CoastalPartColors[Index];
+        Material->SetVectorParameterValue(TEXT("Color"), FMath::Lerp(Base, Base * FLinearColor(.52F,.56F,.60F), AppliedSurfaceWetness));
+        Material->SetScalarParameterValue(TEXT("Roughness"), FMath::Lerp(.95F, .32F, AppliedSurfaceWetness));
     }
 }
 
