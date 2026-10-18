@@ -1,0 +1,70 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "aerial_grass_rock",
+  "asset_page": "https://polyhaven.com/a/aerial_grass_rock",
+  "name": "Aerial Grass Rock",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Rob Tuytel": "All"
+  },
+  "physical_dimensions_mm": [
+    15000,
+    15000
+  ],
+  "physical_width_m": 15.0,
+  "physical_width_cm": 1500.0,
+  "millimeters_per_texel_at_2k": 7.3242,
+  "physical_scale_source": "https://api.polyhaven.com/info/aerial_grass_rock",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "7deb192ac62e8f7b28a44504f453d1c15af11e6ffef06d2578f77a1d1cb6ab52",
+  "provider_files_sha256": "b4fc59bf78a2ea9c1ce18eaa46e004b98b89f37bdac38d18e6ceac4fd8cb5344",
+  "blend_role": "macro",
+  "serves": [
+    "U5",
+    "U6"
+  ],
+  "intended_use": "Aerial grass/rock macro variation map to break base-layer tiling at mid/far distance.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/aerial_grass_rock/aerial_grass_rock_diff_2k.jpg",
+      "bytes": 2624635,
+      "md5": "024018554c0002620127749d1f585f3d",
+      "sha256": "1a2ddfa4652adbe00447b940c40019d46f4b88245bc1b341cdf622c2110b7bc5",
+      "publisher_md5": "024018554c0002620127749d1f585f3d",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/aerial_grass_rock/aerial_grass_rock_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/aerial_grass_rock/aerial_grass_rock_nor_dx_2k.jpg",
+      "bytes": 3879028,
+      "md5": "55466b239d3781482d22fc3387b76b73",
+      "sha256": "2522704b40a81e0da84b024ba170834e34d0226fc9b15c679f69a56bb91dddb9",
+      "publisher_md5": "55466b239d3781482d22fc3387b76b73",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/aerial_grass_rock/aerial_grass_rock_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/aerial_grass_rock/aerial_grass_rock_rough_2k.jpg",
+      "bytes": 1495844,
+      "md5": "8d181000237d420a73f99dfc260dab17",
+      "sha256": "fc0fff40e3378f2f54d225db6e3e566a8563bb2c143eef0f09b543c9d4698776",
+      "publisher_md5": "8d181000237d420a73f99dfc260dab17",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/aerial_grass_rock/aerial_grass_rock_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

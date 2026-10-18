@@ -1,0 +1,81 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "seaside_rock",
+  "asset_page": "https://polyhaven.com/a/seaside_rock",
+  "name": "Seaside Rock",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Dimitrios Savva": "All"
+  },
+  "physical_dimensions_mm": [
+    2000,
+    2000
+  ],
+  "physical_width_m": 2.0,
+  "physical_width_cm": 200.0,
+  "millimeters_per_texel_at_2k": 0.9766,
+  "physical_scale_source": "https://api.polyhaven.com/info/seaside_rock",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "76138bd5bf25cf37f3f8b8902152fc84cac575f454523ae60d56e0c2f85c81f8",
+  "provider_files_sha256": "61e68b126bf59ea552a94e6242aed7331570d416c299c1ebf4a103db807ed311",
+  "blend_role": "base",
+  "serves": [
+    "U3"
+  ],
+  "intended_use": "Dark weathered seaside rock for the splash/wet zone at the cliff toe.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/seaside_rock/seaside_rock_diff_2k.jpg",
+      "bytes": 3883057,
+      "md5": "f70bd6084c9b634daaea40b0cee34c20",
+      "sha256": "a0e01ad03110a84046c0e7ee611cd6d20bf11a9001e96dfa6e92ac6b59989d83",
+      "publisher_md5": "f70bd6084c9b634daaea40b0cee34c20",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/seaside_rock/seaside_rock_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/seaside_rock/seaside_rock_nor_dx_2k.jpg",
+      "bytes": 4498016,
+      "md5": "88807a365f217ddc76c47b9fac6cbaef",
+      "sha256": "9a664744cc7c45382173bdf270b174b1c4e739372a560b8b3151cf3b750dda2f",
+      "publisher_md5": "88807a365f217ddc76c47b9fac6cbaef",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/seaside_rock/seaside_rock_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/seaside_rock/seaside_rock_rough_2k.jpg",
+      "bytes": 1681507,
+      "md5": "08323a44503ccc4c1b922396455881cc",
+      "sha256": "21841d3cb5cc7fe7958c7b1edf099449bb10600c5fe667728b70de13d63ab62e",
+      "publisher_md5": "08323a44503ccc4c1b922396455881cc",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/seaside_rock/seaside_rock_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/seaside_rock/seaside_rock_disp_2k.jpg",
+      "bytes": 870843,
+      "md5": "fa1a33f9adda55d3cb96754c5ae5bf1d",
+      "sha256": "8610c998b66eaf6bf2a3bf905e469b4824a480236723ef660ab7ed7209f9a2e7",
+      "publisher_md5": "fa1a33f9adda55d3cb96754c5ae5bf1d",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/seaside_rock/seaside_rock_disp_2k.jpg",
+      "role": "linear height (8-bit JPG), for height-lerp layer blending only",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

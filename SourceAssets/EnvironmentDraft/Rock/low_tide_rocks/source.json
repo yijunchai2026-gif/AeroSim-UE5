@@ -1,0 +1,81 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "low_tide_rocks",
+  "asset_page": "https://polyhaven.com/a/low_tide_rocks",
+  "name": "Low Tide Rocks",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Dimitrios Savva": "All"
+  },
+  "physical_dimensions_mm": [
+    2170.0000762939453,
+    2170.0000762939453
+  ],
+  "physical_width_m": 2.17,
+  "physical_width_cm": 217.0,
+  "millimeters_per_texel_at_2k": 1.0596,
+  "physical_scale_source": "https://api.polyhaven.com/info/low_tide_rocks",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "fbfd4c433748595bbdf424bb4c13c34a1afc210ab4732f7de8e0d1149edce06c",
+  "provider_files_sha256": "f5bd98e2fd38e94bf82ad6fdee0ca7928667fd1616edb59b4694c11faf9e4c4b",
+  "blend_role": "base",
+  "serves": [
+    "U3"
+  ],
+  "intended_use": "Tidal rocky sand/gravel for the intertidal band below the cliff.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/low_tide_rocks/low_tide_rocks_diff_2k.jpg",
+      "bytes": 4495241,
+      "md5": "ce6c0bfcd799ce6ec884d90413c990d3",
+      "sha256": "69c2f628ac3802a55df5c39776bdb9ba0c7d1d8e98c91ef904133c5f203e73fc",
+      "publisher_md5": "ce6c0bfcd799ce6ec884d90413c990d3",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/low_tide_rocks/low_tide_rocks_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/low_tide_rocks/low_tide_rocks_nor_dx_2k.jpg",
+      "bytes": 5938947,
+      "md5": "71b49a3b686e935bb463ccd669aa8af3",
+      "sha256": "c8575e89d73c29991b76d59e83f16db9a05ae2be76aa92fac2750204e52d990b",
+      "publisher_md5": "71b49a3b686e935bb463ccd669aa8af3",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/low_tide_rocks/low_tide_rocks_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/low_tide_rocks/low_tide_rocks_rough_2k.jpg",
+      "bytes": 3529087,
+      "md5": "26e0a7c2e01b1893671f5cf82a00c2aa",
+      "sha256": "e51a9729fecf207f8810347a77cf163a5e8f2f80847bb71b69a39aab68bac066",
+      "publisher_md5": "26e0a7c2e01b1893671f5cf82a00c2aa",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/low_tide_rocks/low_tide_rocks_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Rock/low_tide_rocks/low_tide_rocks_disp_2k.jpg",
+      "bytes": 1681586,
+      "md5": "e41145fa0bf079d8fc390e2057a8a650",
+      "sha256": "32cec0c89a9d4c8ac627bc356c42f24e60679404a8bbdcf7d7b1812d972d9492",
+      "publisher_md5": "e41145fa0bf079d8fc390e2057a8a650",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/low_tide_rocks/low_tide_rocks_disp_2k.jpg",
+      "role": "linear height (8-bit JPG), for height-lerp layer blending only",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

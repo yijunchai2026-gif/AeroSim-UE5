@@ -1,0 +1,81 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "rocky_trail_02",
+  "asset_page": "https://polyhaven.com/a/rocky_trail_02",
+  "name": "Rocky Trail 02",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Amal Kumar": "All"
+  },
+  "physical_dimensions_mm": [
+    2000,
+    2000
+  ],
+  "physical_width_m": 2.0,
+  "physical_width_cm": 200.0,
+  "millimeters_per_texel_at_2k": 0.9766,
+  "physical_scale_source": "https://api.polyhaven.com/info/rocky_trail_02",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "27ca8b87bd0c36a70363961d73dad2a93cdab26be978df6520cc058dbbc67c2b",
+  "provider_files_sha256": "47c11829c8680b8eae51fe089ba440c9e4b367bd8fb50849de1fde4e839e9e4e",
+  "blend_role": "base",
+  "serves": [
+    "U5"
+  ],
+  "intended_use": "Bare compacted dirt/trail soil for trails and worn launch access.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/rocky_trail_02/rocky_trail_02_diff_2k.jpg",
+      "bytes": 3513677,
+      "md5": "0abbf536f374cf50a65c45d5fedee241",
+      "sha256": "d755ac6c70729afce6bb78b9a265d16bdf599ece64f4f079d681433e77bb24a9",
+      "publisher_md5": "0abbf536f374cf50a65c45d5fedee241",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rocky_trail_02/rocky_trail_02_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/rocky_trail_02/rocky_trail_02_nor_dx_2k.jpg",
+      "bytes": 5694993,
+      "md5": "c33a604e94e7afc5aec3f9650eeb2356",
+      "sha256": "e80007f68c73263c2390e19ee5daee536956a765e1a4f18689181f89a4cb9d95",
+      "publisher_md5": "c33a604e94e7afc5aec3f9650eeb2356",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rocky_trail_02/rocky_trail_02_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/rocky_trail_02/rocky_trail_02_rough_2k.jpg",
+      "bytes": 2247881,
+      "md5": "4fcf5e8f897f9c4135a946743bb7ff63",
+      "sha256": "0aa89f1c148dead8b98b0d63b30aabfa12f6ae49fcf4ece6aa11818dec95ae22",
+      "publisher_md5": "4fcf5e8f897f9c4135a946743bb7ff63",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rocky_trail_02/rocky_trail_02_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/rocky_trail_02/rocky_trail_02_disp_2k.jpg",
+      "bytes": 1748845,
+      "md5": "ff69286c8184185db80145380d328ac0",
+      "sha256": "9c97808021d2a764c417d4a08f1bd2e8599dd4b560df9e1217eacca5148ccd7a",
+      "publisher_md5": "ff69286c8184185db80145380d328ac0",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rocky_trail_02/rocky_trail_02_disp_2k.jpg",
+      "role": "linear height (8-bit JPG), for height-lerp layer blending only",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

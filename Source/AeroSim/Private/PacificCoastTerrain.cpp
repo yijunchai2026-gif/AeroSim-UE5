@@ -32,22 +32,11 @@ struct FRidgeNode final
     float Width;
 };
 
-float RidgeSegment(const FVector2D& Point, const FRidgeNode& A, const FRidgeNode& B)
-{
-    const FVector2D Direction = B.Position - A.Position;
-    const float T = FMath::Clamp(static_cast<float>(FVector2D::DotProduct(Point - A.Position, Direction) / Direction.SizeSquared()), 0.0F, 1.0F);
-    const FVector2D Center = FMath::Lerp(A.Position, B.Position, T);
-    const float Distance = static_cast<float>((Point - Center).Size());
-    // An 18 m rounded crest transitions into a long shoulder, not a Gaussian dome or a razor edge.
-    const float RoundedDistance = FMath::Sqrt(Distance * Distance + 1800.0F * 1800.0F) - 1800.0F;
-    const float Profile = FMath::Pow(FMath::Clamp(1.0F - RoundedDistance / FMath::Lerp(A.Width, B.Width, T), 0.0F, 1.0F), 1.25F);
-    return FMath::Lerp(A.Height, B.Height, T) * Profile;
-}
-
 float JoinRidge(float A, float B)
 {
     // Smooth only the seam between neighboring shoulders; the ridge network stays connected.
-    constexpr float SeamHeight = 700.0F;
+    // A 30 m blend rounds the valley floors where neighbouring ridge flanks meet (no crease).
+    constexpr float SeamHeight = 3000.0F;
     const float H = FMath::Clamp(.5F + .5F * (A - B) / SeamHeight, 0.0F, 1.0F);
     return FMath::Lerp(B, A, H) + SeamHeight * H * (1.0F - H);
 }
@@ -74,13 +63,30 @@ float CoastY(const int32 Row)
     return FMath::Sign(T) * (Magnitude <= .6F ? Magnitude * 100000.0F : 60000.0F + (Magnitude - .6F) * 400000.0F);
 }
 
+float CoastalErosion(const float Y)
+{
+    const float Centers[] = {-128000,-47000,-19000,19000,54000,112000};
+    const float Widths[] = {18000,16000,12500,15000,12000,22000};
+    const float Depths[] = {4200,4700,5400,4200,3500,4800};
+    float Depth=0;
+    for(int32 Bay=0;Bay<UE_ARRAY_COUNT(Centers);++Bay)
+        Depth=FMath::Max(Depth,Depths[Bay]*Smooth(1.0F-FMath::Abs(Y-Centers[Bay])/Widths[Bay]));
+    return Depth;
+}
+
 float CliffOutcrop(const float Y, const float Depth)
 {
     // Unequal gently dipping beds form supported shelves instead of one smooth bow with vertical ribs.
     const float Thresholds[] = {.09F, .27F, .46F, .69F, .85F};
     const float Widths[] = {.035F, .025F, .045F, .04F, .03F};
     const float Thickness[] = {270.0F, 510.0F, 390.0F, 660.0F, 340.0F};
-    float Outcrop = Depth * 1500.0F;
+    const float Collapse=CoastalErosion(Y)/5400.0F;
+    // Low eroded coves have a wide supported rubble apron; intact headlands retain a steeper face.
+    float Outcrop = Depth * 1500.0F + Collapse * 5500.0F * Smooth(Depth/.30F);
+    // A continuous rubble/talus foot slopes through the waterline everywhere, so the sea meets a
+    // supported apron rather than a vertical wall; its reach varies irregularly along the coast.
+    const float TalusReach = 2100.0F + 1300.0F * Noise(Y, 4400.0F, 9300.0F) + 600.0F * Noise(Y, -2600.0F, 3100.0F);
+    Outcrop += TalusReach * Smooth((Depth - .30F) / .50F);
     for (int32 Bed = 0; Bed < UE_ARRAY_COUNT(Thresholds); ++Bed)
     {
         const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F);
@@ -92,54 +98,188 @@ float CliffOutcrop(const float Y, const float Depth)
         + 180.0F * Noise(Y + 5000.0F, Depth * 18000.0F, 650.0F);
     return Outcrop + Interior * Blocks;
 }
+
+// --- Bay Area ridge network (DEV-TERRAIN U6) -------------------------------------------------
+// Compositional controls inspired by Santa Cruz Mountains / Diablo Range structure: one broad,
+// rounded main crest, unequal descending spurs, lower receding back ridgelines separated by
+// saddles, rolling foothill knolls, and branching V-section gullies cut into every flank.
+float RoundRidge(const FVector2D& Point, const FRidgeNode& A, const FRidgeNode& B, const float Crest)
+{
+    const FVector2D Direction = B.Position - A.Position;
+    const float T = FMath::Clamp(static_cast<float>(FVector2D::DotProduct(Point - A.Position, Direction) / Direction.SizeSquared()), 0.0F, 1.0F);
+    const float Distance = static_cast<float>((Point - FMath::Lerp(A.Position, B.Position, T)).Size());
+    const float Rounded = FMath::Sqrt(Distance * Distance + Crest * Crest) - Crest;
+    const float S = FMath::Clamp(1.0F - Rounded / FMath::Lerp(A.Width, B.Width, T), 0.0F, 1.0F);
+    // Convex shoulders near the crest and a long concave footslope; no cone or knife edge.
+    return FMath::Lerp(A.Height, B.Height, T) * (.6F * S * S * (3.0F - 2.0F * S) + .4F * FMath::Pow(S, 1.8F));
+}
+
+struct FChain final { const FRidgeNode* Nodes; int32 Count; };
+const FRidgeNode MainCrest[] = {
+    {FVector2D(-186000,-170000), 9000, 50000}, {FVector2D(-161000,-88000), 20500, 50000},
+    {FVector2D(-147000,-46000), 24200, 52000}, {FVector2D(-138000,-12000), 25600, 53000},
+    {FVector2D(-131000,36000), 22400, 50000}, {FVector2D(-121000,108000), 14000, 50000},
+    {FVector2D(-133000,172000), 7000, 46000}};
+const FRidgeNode SpurA[] = {{FVector2D(-155000,-66000),17000,30000},{FVector2D(-112000,-96000),9800,27000},{FVector2D(-72000,-126000),2500,22000}};
+const FRidgeNode SpurB[] = {{FVector2D(-140000,-26000),22000,30000},{FVector2D(-108000,-40000),13200,26000},{FVector2D(-74000,-55000),4200,22000}};
+const FRidgeNode SpurC[] = {{FVector2D(-133000,30000),16500,29000},{FVector2D(-100000,62000),10400,26000},{FVector2D(-66000,104000),2800,23000}};
+const FRidgeNode SpurD[] = {{FVector2D(-123000,100000),12500,27000},{FVector2D(-96000,140000),6400,24000},{FVector2D(-70000,168000),1200,21000}};
+const FRidgeNode BackRidge[] = {
+    {FVector2D(-205000,-150000),8500,36000},{FVector2D(-196000,-60000),13500,38000},{FVector2D(-208000,10000),11000,36000},
+    {FVector2D(-198000,80000),15500,38000},{FVector2D(-206000,160000),9000,34000}};
+const FRidgeNode SaddleA[] = {{FVector2D(-150000,-60000),15000,26000},{FVector2D(-196000,-60000),12000,26000}};
+const FRidgeNode SaddleB[] = {{FVector2D(-127000,70000),15500,26000},{FVector2D(-198000,80000),13500,26000}};
+const FChain RidgeChains[] = {{MainCrest,7},{SpurA,3},{SpurB,3},{SpurC,3},{SpurD,3},{BackRidge,5},{SaddleA,2},{SaddleB,2}};
+constexpr int32 GulliedChains = 6; // main crest, four spurs and the back ridge carry gully systems
+const FRidgeNode Knolls[][2] = {
+    {{FVector2D(-78000,-18000),3600,21000},{FVector2D(-69000,-13000),2880,21000}},
+    {{FVector2D(-62000,42000),2700,18000},{FVector2D(-53000,47000),2160,18000}},
+    {{FVector2D(-90000,82000),4200,22000},{FVector2D(-81000,87000),3360,22000}},
+    {{FVector2D(-56000,-88000),2200,17000},{FVector2D(-47000,-83000),1760,17000}}};
+
+struct FGully final { FRidgeNode A, B; FVector2D Min, Max; };
+const TArray<FGully>& GullyNetwork()
+{
+    // Deterministic table built once: each flank segment receives trunk gullies that start just
+    // below the crest, deepen mid-slope and fade into the footslope, each joined by a tributary.
+    static const TArray<FGully> Table = []
+    {
+        TArray<FGully> Out;
+        FRandomStream Random(7041);
+        auto Add = [&Out](const FRidgeNode& A, const FRidgeNode& B)
+        {
+            const double Margin = FMath::Max(A.Width, B.Width);
+            Out.Add({A, B, FVector2D(FMath::Min(A.Position.X, B.Position.X) - Margin, FMath::Min(A.Position.Y, B.Position.Y) - Margin),
+                FVector2D(FMath::Max(A.Position.X, B.Position.X) + Margin, FMath::Max(A.Position.Y, B.Position.Y) + Margin)});
+        };
+        for (int32 ChainIndex = 0; ChainIndex < GulliedChains; ++ChainIndex)
+        {
+            const FChain& Chain = RidgeChains[ChainIndex];
+            for (int32 Node = 0; Node + 1 < Chain.Count; ++Node)
+            {
+                const FRidgeNode& A = Chain.Nodes[Node];
+                const FRidgeNode& B = Chain.Nodes[Node + 1];
+                const FVector2D Along = (B.Position - A.Position).GetSafeNormal();
+                const int32 Count = FMath::Max(1, static_cast<int32>((B.Position - A.Position).Size() / 19000.0));
+                for (int32 Index = 0; Index < Count; ++Index)
+                {
+                    const float T = (Index + .5F + Random.FRandRange(-.25F, .25F)) / Count;
+                    const FVector2D Crest = FMath::Lerp(A.Position, B.Position, T);
+                    const float Height = FMath::Lerp(A.Height, B.Height, T), Width = FMath::Lerp(A.Width, B.Width, T);
+                    for (int32 Side = -1; Side <= 1; Side += 2)
+                    {
+                        if (Random.FRand() < .12F) continue;
+                        const float Angle = FMath::Atan2(static_cast<float>(-Along.X * Side), static_cast<float>(Along.Y * Side)) + Random.FRandRange(-.35F, .35F);
+                        const FVector2D Normal(FMath::Cos(Angle), FMath::Sin(Angle));
+                        const FVector2D Head = Crest + Normal * (Width * .10F);
+                        const float Length = Width * Random.FRandRange(.6F, .95F);
+                        const float GullyWidth = Random.FRandRange(.17F, .24F) * Width;
+                        const float Depth = FMath::Min(FMath::Clamp(Height * Random.FRandRange(.11F, .17F), 600.0F, 3400.0F), .24F * GullyWidth);
+                        const FVector2D Mid = Head + Normal * (Length * .5F), Mouth = Head + Normal * Length;
+                        Add({Head, 0, GullyWidth * .6F}, {Mid, Depth, GullyWidth});
+                        Add({Mid, Depth, GullyWidth}, {Mouth, 0, GullyWidth * 1.2F});
+                        const float TributaryAngle = Angle + Side * (Random.FRand() < .5F ? -1.0F : 1.0F) * Random.FRandRange(.6F, .9F);
+                        const float TributaryLength = Length * Random.FRandRange(.3F, .45F);
+                        const FVector2D TributaryHead = Mid - FVector2D(FMath::Cos(TributaryAngle), FMath::Sin(TributaryAngle)) * TributaryLength;
+                        Add({TributaryHead, 0, GullyWidth * .45F}, {Mid, Depth * .65F, GullyWidth * .7F});
+                    }
+                }
+            }
+        }
+        return Out;
+    }();
+    return Table;
+}
+
+float GullyIncision(const FVector2D& Point)
+{
+    float Incision = 0;
+    for (const FGully& Gully : GullyNetwork())
+    {
+        if (Point.X < Gully.Min.X || Point.Y < Gully.Min.Y || Point.X > Gully.Max.X || Point.Y > Gully.Max.Y) continue;
+        const FVector2D Direction = Gully.B.Position - Gully.A.Position;
+        const float T = FMath::Clamp(static_cast<float>(FVector2D::DotProduct(Point - Gully.A.Position, Direction) / Direction.SizeSquared()), 0.0F, 1.0F);
+        const float Distance = static_cast<float>((Point - FMath::Lerp(Gully.A.Position, Gully.B.Position, T)).Size());
+        // The V floor is rounded over ~12 m so the channel has a natural thalweg, not a mesh crease.
+        const float Floor = FMath::Sqrt(Distance * Distance + 1200.0F * 1200.0F) - 1200.0F;
+        const float S = FMath::Clamp(1.0F - Floor / FMath::Lerp(Gully.A.Width, Gully.B.Width, T), 0.0F, 1.0F);
+        // V-section relief carried by real geometry, not a normal map.
+        Incision = FMath::Max(Incision, FMath::Lerp(Gully.A.Height, Gully.B.Height, T) * S * FMath::Sqrt(S) );
+    }
+    return Incision;
+}
+
+// Distant receding ridgelines beyond the playable land (3–9 km west). They rise from below sea
+// level behind the land collar so no channel of sea separates them, and grow taller with distance.
+constexpr float RangeEast = -232000.0F, RangeWest = -900000.0F, RangeHalfY = 760000.0F;
+const FRidgeNode RangeNear[] = {{FVector2D(-330000,-520000),14000,90000},{FVector2D(-310000,-210000),26000,95000},{FVector2D(-345000,60000),21000,90000},{FVector2D(-320000,330000),28000,95000},{FVector2D(-350000,600000),15000,90000}};
+const FRidgeNode RangeMid[] = {{FVector2D(-470000,-640000),26000,120000},{FVector2D(-455000,-300000),39000,125000},{FVector2D(-490000,-20000),33000,120000},{FVector2D(-460000,260000),42000,125000},{FVector2D(-480000,640000),27000,120000}};
+const FRidgeNode RangeFar[] = {{FVector2D(-640000,-700000),38000,150000},{FVector2D(-620000,-380000),52000,160000},{FVector2D(-660000,-60000),47000,150000},{FVector2D(-630000,300000),56000,160000},{FVector2D(-650000,700000),40000,150000}};
+
+float DistantRangeHeight(const float X, const float Y)
+{
+    const float Edge = FMath::Min(FMath::Min(RangeEast - X, X - RangeWest), RangeHalfY - FMath::Abs(Y));
+    const float Interior = Smooth(Edge / 90000.0F);
+    const FVector2D Point(X + 9000.0F * Noise(X, Y, 120000.0F), Y + 12000.0F * Noise(X + 5000.0F, Y, 140000.0F));
+    float Range = 0;
+    for (const FRidgeNode* Chain : {RangeNear, RangeMid, RangeFar})
+        for (int32 Node = 0; Node < 4; ++Node)
+        {
+            const float Ridge = RoundRidge(Point, Chain[Node], Chain[Node + 1], 6000.0F);
+            constexpr float Seam = 2500.0F;
+            const float H = FMath::Clamp(.5F + .5F * (Range - Ridge) / Seam, 0.0F, 1.0F);
+            Range = FMath::Lerp(Ridge, Range, H) + Seam * H * (1.0F - H);
+        }
+    Range = Range * (1.0F + .12F * Noise(X, Y, 60000.0F)) + 900.0F * Noise(X, Y, 33000.0F);
+    return FMath::Lerp(SubmergedRim, FMath::Max(Range, 0.0F), Interior);
+}
 }
 
 float APacificCoastGraybox::GetCliffEdgeX(const float Y)
 {
     // Several non-repeating spatial frequencies produce coves and projecting headlands.
-    return 20000.0F + 3800.0F * CoastalTerrain::Noise(Y, 12730.0F, 7200.0F)
+    const float Headland=20000.0F + 3800.0F * CoastalTerrain::Noise(Y, 12730.0F, 7200.0F)
         + 1600.0F * CoastalTerrain::Noise(Y, -7300.0F, 1900.0F)
         + 2600.0F * FMath::Sin(Y / 14500.0F);
+    return FMath::Max(14500.0F,Headland-1500.0F*CoastalTerrain::CoastalErosion(Y)/5400.0F);
 }
 
 float APacificCoastGraybox::GetCoastalLandHeight(const float X, const float Y)
 {
     using namespace CoastalTerrain;
-    // The complete ridge must descend to the submerged perimeter over a broad shoulder.
-    // A 380–400 m collar compressed a ~350 m elevation change into a steep artificial end wall.
-    const float Interior = Smooth(FMath::Min((X - West) / 65000.0F, (North - FMath::Abs(Y)) / 65000.0F));
+    // The complete ridge descends to the submerged perimeter over a broad shoulder. The collar's
+    // waterline is displaced by low-frequency noise (vanishing at the outer boundary) so the
+    // north, south and west shores are irregular instead of ruler-straight.
+    float WestDistance = X - West, NorthDistance = North - FMath::Abs(Y);
+    const float YSide = Y < 0 ? -1.0F : 1.0F;
+    WestDistance += (9000.0F * Noise(Y, 3100.0F, 52000.0F) + 3500.0F * Noise(Y, -4100.0F, 17000.0F)) * FMath::Clamp(WestDistance / 15000.0F, 0.0F, 1.0F);
+    NorthDistance += (10000.0F * Noise(X, 9100.0F * YSide, 47000.0F) + 3500.0F * Noise(X, -5300.0F * YSide, 15000.0F)) * FMath::Clamp(NorthDistance / 15000.0F, 0.0F, 1.0F);
+    const float Interior = Smooth(FMath::Min(WestDistance, NorthDistance) / 56000.0F);
     const float RouteDistance = FMath::Max(FMath::Max(-X - 23000.0F, FMath::Abs(Y) - 17000.0F), 0.0F);
     const float Rise = Smooth(RouteDistance / 24000.0F);
-    // Interprets Sierra Azul / Mount Umunhum's connected ridge-and-ravine structure at slice scale.
-    // These are compositional controls, not surveyed coordinates or a geographic reconstruction.
-    const FRidgeNode Backbone[] = {
-        {FVector2D(-183000, -162000), 9500, 56000},
-        {FVector2D(-158000, -82000), 17800, 52000},
-        {FVector2D(-139000, -24000), 25000, 55000},
-        {FVector2D(-132000, 35000), 17400, 49000},
-        {FVector2D(-119000, 112000), 12600, 54000},
-        {FVector2D(-131000, 176000), 6500, 48000}
-    };
-    const FRidgeNode Spurs[][3] = {
-        {{FVector2D(-153000,-65000),19400,34000}, {FVector2D(-106000,-99000),10900,30000}, {FVector2D(-59000,-127000),2600,23000}},
-        {{FVector2D(-139000,-24000),25000,34000}, {FVector2D(-103000,-42000),14800,27000}, {FVector2D(-58000,-62000),2900,22000}},
-        {{FVector2D(-132000,35000),17400,33000}, {FVector2D(-96000,71000),10600,28000}, {FVector2D(-58000,117000),3000,25000}}
-    };
     const FVector2D Point(X + 1800.0F * Noise(X, Y, 43000.0F), Y + 2400.0F * Noise(X + 13000.0F, Y, 51000.0F));
     float Mountain = 0;
-    for (int32 Index = 0; Index < UE_ARRAY_COUNT(Backbone) - 1; ++Index)
-        Mountain = JoinRidge(Mountain, RidgeSegment(Point, Backbone[Index], Backbone[Index + 1]));
-    for (const auto& Branch : Spurs)
-        for (int32 Index = 0; Index < 2; ++Index)
-            Mountain = JoinRidge(Mountain, RidgeSegment(Point, Branch[Index], Branch[Index + 1]));
-    const float MountainWeight = Smooth(Mountain / 7000.0F);
-    // Low-amplitude coherent surface relief leaves the designed drainage hierarchy readable.
-    Mountain += MountainWeight * (240.0F * Noise(X, Y, 16000.0F) + 70.0F * Noise(X, Y, 6300.0F));
-    const float Hills = 650.0F + 700.0F * Noise(X, Y, 26000.0F) + 100.0F * Noise(X, Y, 7500.0F);
+    for (int32 ChainIndex = 0; ChainIndex < UE_ARRAY_COUNT(RidgeChains); ++ChainIndex)
+    {
+        const FChain& Chain = RidgeChains[ChainIndex];
+        for (int32 Node = 0; Node + 1 < Chain.Count; ++Node)
+            Mountain = JoinRidge(Mountain, RoundRidge(Point, Chain.Nodes[Node], Chain.Nodes[Node + 1], ChainIndex == 0 ? 3500.0F : 2600.0F));
+    }
+    for (const auto& Knoll : Knolls)
+        Mountain = JoinRidge(Mountain, RoundRidge(Point, Knoll[0], Knoll[1], 3000.0F));
+    // Branching gullies remain subordinate to the ridge mass they cut.
+    Mountain -= FMath::Min(GullyIncision(Point), Mountain * .42F);
+    // Only broad (170 m) coherent undulation; no short-wavelength ripple over the slopes.
+    Mountain += Smooth(Mountain / 7000.0F) * 260.0F * Noise(X, Y, 17000.0F);
+    const float Hills = 650.0F + 700.0F * Noise(X, Y, 26000.0F) + 60.0F * Noise(X, Y, 9500.0F);
     const float LandHeight = FMath::Lerp(SubmergedRim, Rise * FMath::Max(0.0F, Hills + Mountain), Interior);
+    // Inland worksite, routes and trails (X <= 105 m) keep their existing supported grade.
+    // Only the outer coastal apron descends into unequal coves between surviving high sea headlands.
+    const float CoastBlend=Smooth((X-10500.0F)/FMath::Max(1000.0F,GetCliffEdgeX(Y)-10500.0F));
+    const float CoastHeight=LandHeight-CoastalErosion(Y)*CoastBlend*Interior;
     // A shallow seasonal swale gives the short woodland bridge an actual crossing to span.
     // Its 16 m bank-to-bank width spans several near-field samples; both bridge landings remain at grade.
-    return LandHeight - 180.0F * ChannelWeight(X, Y);
+    return CoastHeight - 180.0F * ChannelWeight(X, Y);
 }
 
 float APacificCoastGraybox::GetCoastalShoreX(float Y)
@@ -185,36 +325,102 @@ float APacificCoastGraybox::GetCoastalShoreX(float Y)
     return FMath::Lerp(EdgeA, EdgeB, Alpha) + CliffOutcrop(Y, TargetDepth);
 }
 
+namespace CoastalTerrain
+{
+float FlightAndBridgeClearance(const float X, const float Y)
+{
+    // Protect the actual takeoff/route corridor; its edges blend into the surrounding woodland.
+    const float FlightClearance = FMath::Max(FMath::Max(-X - 8000.0F, X - 12500.0F), FMath::Abs(Y) - 5500.0F);
+    const FVector2D Bridge = BridgeCoordinates(X, Y);
+    const float BridgeClearance = FMath::Max(FMath::Abs(Bridge.X) - 2100.0F, FMath::Abs(Bridge.Y) - 300.0F);
+    return Smooth(FlightClearance / 4500.0F) * Smooth(BridgeClearance / 350.0F);
+}
+}
+
+FCoastHabitatSample FPacificCoastHabitat::Sample(const float X, const float Y)
+{
+    using namespace CoastalTerrain;
+    FCoastHabitatSample Result;
+    if (!FMath::IsFinite(X) || !FMath::IsFinite(Y) || X < West || FMath::Abs(Y) > North) return Result;
+    const float Edge = APacificCoastGraybox::GetCliffEdgeX(Y);
+    if (X > Edge) return Result;
+    auto Height = [](float SX, float SY) { return APacificCoastGraybox::GetCoastalLandHeight(SX, SY); };
+    const float H = Height(X, Y);
+    if (H < APacificCoastGraybox::SeaLevelCm + 300.0F) return Result;
+    // Local slope (12 m) decides rock; aspect uses a broader 60 m gradient so it follows landforms,
+    // not individual mesh facets. Two-scale concavity marks gully floors and swales.
+    constexpr float Near = 1200.0F, Ring = 3000.0F, Broad = 6000.0F, Wide = 12000.0F;
+    const float NX = (Height(X + Near, Y) - Height(X - Near, Y)) / (2.0F * Near);
+    const float NY = (Height(X, Y + Near) - Height(X, Y - Near)) / (2.0F * Near);
+    const float BW = Height(X - Broad, Y), BE = Height(X + Broad, Y), BS = Height(X, Y - Broad), BN = Height(X, Y + Broad);
+    const float WW = Height(X - Wide, Y), WE = Height(X + Wide, Y), WS = Height(X, Y - Wide), WN = Height(X, Y + Wide);
+    Result.Grade = FMath::Sqrt(NX * NX + NY * NY);
+    const FVector2D BroadGradient((BE - BW) / (2.0F * Broad), (BN - BS) / (2.0F * Broad));
+    const float BroadGrade = static_cast<float>(BroadGradient.Size());
+    // Scene convention (shared with GetCoastalVegetationCover since v4): +Y is north and the ocean
+    // side (+X) stands in for California's west. A slope faces its downhill direction; south and
+    // south-west (ocean-ward) aspects are the dry, sun-exposed ones.
+    const FVector2D SunFacing = FVector2D(.45F, -.89F).GetSafeNormal();
+    const FVector2D Facing = BroadGrade > 1e-4F ? -BroadGradient / BroadGrade : FVector2D::ZeroVector;
+    Result.SunExposure = static_cast<float>(FVector2D::DotProduct(Facing, SunFacing)) * Smooth(BroadGrade / .14F);
+    // Compare against a 30 m ring mean rather than the single centre height, so crossing a channel
+    // thalweg does not flip the classification within one mesh cell.
+    const float Centre = .25F * (Height(X - Ring, Y) + Height(X + Ring, Y) + Height(X, Y - Ring) + Height(X, Y + Ring));
+    const float Concavity = .5F * (.25F * (BW + BE + BS + BN) - Centre) + .5F * (.25F * (WW + WE + WS + WN) - Centre);
+    Result.Drainage = Smooth((Concavity + 100.0F) / 1500.0F);
+    // Two irregular noise octaves displace every threshold so transitions are broad and patchy,
+    // never contour bands or a sawtooth along mesh rows.
+    const float Patch = .55F * Noise(X, Y + 3000.0F, 9000.0F) + .3F * Noise(X - 7000.0F, Y, 3100.0F);
+    float Rock = Smooth((Result.Grade - .58F + .14F * Patch) / .42F);
+    // Moisture index: shade and drainage favour woodland; ocean bluffs are wind-pruned grassland.
+    const float Bluff = Smooth((X - (Edge - 5000.0F)) / 3500.0F);
+    const float Moisture = .48F - .42F * Result.SunExposure + .62F * Result.Drainage + .2F * Patch - .35F * Bluff;
+    float Woodland = Smooth((Moisture - .5F) / .45F) * FlightAndBridgeClearance(X, Y);
+    float Sheltered = Smooth((Moisture - .18F) / .42F) * (1.0F - Woodland);
+    const float Shore = Smooth((X - (Edge - 700.0F)) / 700.0F) + (1.0F - Smooth((H - APacificCoastGraybox::SeaLevelCm - 300.0F) / 600.0F));
+    const float Land = 1.0F - FMath::Clamp(Shore, 0.0F, 1.0F);
+    Rock *= Land;
+    const float Soil = Land - Rock;
+    Result.Woodland = Soil * Woodland;
+    Result.ShelteredGrass = Soil * Sheltered;
+    Result.ExposedGrass = FMath::Max(0.0F, Soil - Result.Woodland - Result.ShelteredGrass);
+    Result.Rock = Rock;
+    Result.Shore = 1.0F - Land;
+    const float Weights[] = {Result.ExposedGrass, Result.ShelteredGrass, Result.Woodland, Result.Rock, Result.Shore};
+    int32 Best = 0;
+    for (int32 Index = 1; Index < UE_ARRAY_COUNT(Weights); ++Index) if (Weights[Index] > Weights[Best]) Best = Index;
+    Result.Class = static_cast<ECoastHabitatClass>(Best);
+    return Result;
+}
+
+ECoastHabitatClass FPacificCoastHabitat::GetHabitatClass(const float X, const float Y)
+{
+    return Sample(X, Y).Class;
+}
+
+FLinearColor FPacificCoastHabitat::GetGroundVertexColor(const float X, const float Y)
+{
+    const FCoastHabitatSample Habitat = Sample(X, Y);
+    // The exposed bed of the seasonal swale reads as damp woodland earth.
+    const float Bed = .9F * CoastalTerrain::ChannelWeight(X, Y);
+    return FLinearColor(Habitat.ExposedGrass * (1.0F - Bed), Habitat.ShelteredGrass * (1.0F - Bed),
+        FMath::Lerp(Habitat.Woodland, 1.0F - Habitat.Rock - Habitat.Shore, Bed), 1.0F);
+}
+
+float FPacificCoastHabitat::GetDistantRangeHeight(const float X, const float Y)
+{
+    return CoastalTerrain::DistantRangeHeight(X, Y);
+}
+
 float APacificCoastGraybox::GetCoastalVegetationCover(const float X, const float Y)
 {
     using namespace CoastalTerrain;
     if (!FMath::IsFinite(X) || !FMath::IsFinite(Y) || X < West || FMath::Abs(Y) > North || X > GetCliffEdgeX(Y)) return 0;
-    const float Height = GetCoastalLandHeight(X, Y);
-    if (Height < SeaLevelCm + 300.0F) return 0;
-    constexpr float SampleDistance = 6000.0F;
-    const float WestHeight = GetCoastalLandHeight(X - SampleDistance, Y);
-    const float EastHeight = GetCoastalLandHeight(X + SampleDistance, Y);
-    const float SouthHeight = GetCoastalLandHeight(X, Y - SampleDistance);
-    const float NorthHeight = GetCoastalLandHeight(X, Y + SampleDistance);
-    const float DX = (EastHeight - WestHeight) / (2.0F * SampleDistance);
-    const float DY = (NorthHeight - SouthHeight) / (2.0F * SampleDistance);
-    const float Grade = FMath::Sqrt(DX * DX + DY * DY);
-    // Positive concavity marks drainage/tributary floors rather than arbitrary horizontal height bands.
-    const float Concavity = .25F * (WestHeight + EastHeight + SouthHeight + NorthHeight) - Height;
-    const float Drainage = Smooth((Concavity + 40.0F) / 460.0F);
-    // In this northern-hemisphere-inspired setting north-facing shoulders are less exposed to midday sun.
-    const float Shade = FMath::Clamp(.5F - .5F * DY / FMath::Max(Grade, .06F), 0.0F, 1.0F);
-    const float RockyExposure = Smooth((Grade - .55F) / .55F) * .22F;
-    const float SummitExposure = Smooth((Height - 21000.0F) / 6000.0F) * .15F;
-    float Cover = .12F + .44F * Shade + .34F * Drainage - RockyExposure - SummitExposure;
-    Cover += .07F * Noise(X, Y, 12000.0F);
-    // Protect the actual takeoff/route corridor; its edges blend into the surrounding woodland.
-    const float FlightClearance = FMath::Max(FMath::Max(-X - 8000.0F, X - 12500.0F), FMath::Abs(Y) - 5500.0F);
-    Cover *= Smooth(FlightClearance / 4500.0F);
-    const FVector2D Bridge = BridgeCoordinates(X, Y);
-    const float BridgeClearance = FMath::Max(FMath::Abs(Bridge.X) - 2100.0F, FMath::Abs(Bridge.Y) - 300.0F);
-    Cover *= Smooth(BridgeClearance / 350.0F);
-    return FMath::Clamp(Cover, 0.0F, 1.0F);
+    // Coverage derives from the same habitat field as the ground material, so trees, shrubs and
+    // ground surfaces agree: woodland cover plus partial cover on sheltered grass.
+    const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(X, Y);
+    const float Cover = Habitat.Woodland + .45F * Habitat.ShelteredGrass + .1F * Habitat.ExposedGrass;
+    return FMath::Clamp(Cover * FlightAndBridgeClearance(X, Y), 0.0F, 1.0F);
 }
 
 void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
@@ -229,10 +435,8 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
     auto Vertex = [&Vertices, &UV, &CoverColors](FVector Position)
     {
         UV.Add(FVector2D(Position.X / 4000.0F, Position.Y / 4000.0F));
-        const float Cover=APacificCoastGraybox::GetCoastalVegetationCover(Position.X,Position.Y);
-        const FLinearColor Vegetated = FMath::Lerp(FLinearColor(1.08F,.86F,.55F),FLinearColor(.25F,.48F,.31F),Cover);
-        const float ExposedBed = .9F * ChannelWeight(Position.X, Position.Y);
-        CoverColors.Add(FMath::Lerp(Vegetated, FLinearColor(.95F,.50F,.23F), ExposedBed));
+        // Habitat weights drive the ground material layers (see FPacificCoastHabitat).
+        CoverColors.Add(FPacificCoastHabitat::GetGroundVertexColor(Position.X, Position.Y));
         return Vertices.Add(Position);
     };
     auto Triangle = [&Triangles](int32 A, int32 B, int32 C, int32 Group)
@@ -332,6 +536,49 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
         Mesh->SetMaterial(0, Material);
         Mesh->SetCastShadow(true);
         CoastalColorParts.Add(Mesh); CoastalPartColors.Add(Colors[Group]);
+        ++GeneratedPrimitiveCount;
+    }
+
+    // Distant receding ridgelines (3–9 km): a separate low-density shell that starts below sea level
+    // under the west collar and rises westward, giving layered skylines for atmospheric haze.
+    {
+        constexpr int32 RangeColumns = 141, RangeRows = 161;
+        TArray<FVector> RangeVertices, RangeNormals;
+        TArray<FVector2D> RangeUV;
+        TArray<FLinearColor> RangeColors;
+        TArray<int32> RangeIndices;
+        for (int32 Row = 0; Row < RangeRows; ++Row)
+            for (int32 Column = 0; Column < RangeColumns; ++Column)
+            {
+                const float X = FMath::Lerp(RangeEast + 2000.0F, RangeWest, Column / static_cast<float>(RangeColumns - 1));
+                const float Y = FMath::Lerp(-RangeHalfY, RangeHalfY, Row / static_cast<float>(RangeRows - 1));
+                const float Z = DistantRangeHeight(X, Y);
+                const float GX = (DistantRangeHeight(X + 3000.0F, Y) - DistantRangeHeight(X - 3000.0F, Y)) / 6000.0F;
+                const float GY = (DistantRangeHeight(X, Y + 3000.0F) - DistantRangeHeight(X, Y - 3000.0F)) / 6000.0F;
+                RangeVertices.Add(FVector(X, Y, Z));
+                RangeNormals.Add(FVector(-GX, -GY, 1.0F).GetSafeNormal());
+                RangeUV.Add(FVector2D(X / 4000.0F, Y / 4000.0F));
+                // Same aspect rule as the land habitat: dry grass on sun-facing slopes, dark cover on shaded ones.
+                const float Grade = FMath::Sqrt(GX * GX + GY * GY);
+                const float Facing = Grade > 1e-4F ? (-GX * .45F + GY * .89F) / Grade : 0.0F;
+                const float Shade = Smooth(.5F + .5F * Facing + .2F * Noise(X, Y, 40000.0F)) * Smooth(Grade / .1F);
+                const float Rock = Smooth((Grade - .65F) / .3F);
+                RangeColors.Add(FLinearColor((1.0F - Shade) * (1.0F - Rock), .35F * Shade * (1.0F - Rock), .65F * Shade * (1.0F - Rock), 1.0F));
+            }
+        for (int32 Row = 0; Row < RangeRows - 1; ++Row)
+            for (int32 Column = 0; Column < RangeColumns - 1; ++Column)
+            {
+                const int32 A = Row * RangeColumns + Column, B = A + 1, C = A + RangeColumns, D = C + 1;
+                RangeIndices.Append({A, C, B, B, C, D});
+            }
+        UProceduralMeshComponent* Range = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("CoastalDistantRange"));
+        Range->SetupAttachment(Root);
+        Range->bUseAsyncCooking = true;
+        Range->SetCollisionProfileName(TEXT("BlockAll"));
+        Range->CreateMeshSection_LinearColor(0, RangeVertices, RangeIndices, RangeNormals, RangeUV, RangeColors, TArray<FProcMeshTangent>(), true);
+        Range->SetMaterial(0, Material);
+        Range->SetCastShadow(true);
+        CoastalColorParts.Add(Range); CoastalPartColors.Add(FLinearColor(.16F,.17F,.10F));
         ++GeneratedPrimitiveCount;
     }
 

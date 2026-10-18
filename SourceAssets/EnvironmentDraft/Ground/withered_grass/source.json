@@ -1,0 +1,82 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "withered_grass",
+  "asset_page": "https://polyhaven.com/a/withered_grass",
+  "name": "Withered Grass",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Charlotte Baglioni": "All"
+  },
+  "physical_dimensions_mm": [
+    1999.9996423721313,
+    1999.9996423721313
+  ],
+  "physical_width_m": 2.0,
+  "physical_width_cm": 200.0,
+  "millimeters_per_texel_at_2k": 0.9766,
+  "physical_scale_source": "https://api.polyhaven.com/info/withered_grass",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "8953e1fdeb8bc82da7010f28c226c400ca839b231f88240a98ec0d5c626c3dd5",
+  "provider_files_sha256": "2e4cffdb00dd75a7929baf27b76283e26993fdfb7c4d3bb2ab8344dc7748ffb2",
+  "blend_role": "base",
+  "serves": [
+    "U5",
+    "U6"
+  ],
+  "intended_use": "Dry golden grassland ground for sun-facing California hill slopes and launch surroundings.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/withered_grass/withered_grass_diff_2k.jpg",
+      "bytes": 4632786,
+      "md5": "503d5c7262c46351e5b0acdcc90dd30b",
+      "sha256": "0cf0fca68cbf4277199a2b9b7b3a8013357e4087247b1367f86d4a53b4fafa7e",
+      "publisher_md5": "503d5c7262c46351e5b0acdcc90dd30b",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/withered_grass/withered_grass_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/withered_grass/withered_grass_nor_dx_2k.jpg",
+      "bytes": 6200213,
+      "md5": "bafa7de23f1d210bf4a6546a6b84f44c",
+      "sha256": "ce7acf1b8436562d8edaa06bd79b56c724632a755041c414ce40093303753951",
+      "publisher_md5": "bafa7de23f1d210bf4a6546a6b84f44c",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/withered_grass/withered_grass_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/withered_grass/withered_grass_rough_2k.jpg",
+      "bytes": 3666367,
+      "md5": "5c065d1438f6d74ec9c67bf8051430fd",
+      "sha256": "86adb8d6f24d0a38eb96c6b625f2dd027b805f59af46fe2a05ffe29f633e33c8",
+      "publisher_md5": "5c065d1438f6d74ec9c67bf8051430fd",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/withered_grass/withered_grass_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/withered_grass/withered_grass_disp_2k.jpg",
+      "bytes": 2432965,
+      "md5": "79a099429fb43c8557d223ba4fed887b",
+      "sha256": "2e9ade0a66c6d6b9990ce19ead20b155e1aed7969e4e86f8210fc7595dd2983d",
+      "publisher_md5": "79a099429fb43c8557d223ba4fed887b",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/withered_grass/withered_grass_disp_2k.jpg",
+      "role": "linear height (8-bit JPG), for height-lerp layer blending only",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

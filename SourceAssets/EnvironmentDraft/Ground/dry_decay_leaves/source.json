@@ -1,0 +1,82 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "dry_decay_leaves",
+  "asset_page": "https://polyhaven.com/a/dry_decay_leaves",
+  "name": "Dry Decay Leaves",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Amal Kumar": "All"
+  },
+  "physical_dimensions_mm": [
+    2000,
+    2000
+  ],
+  "physical_width_m": 2.0,
+  "physical_width_cm": 200.0,
+  "millimeters_per_texel_at_2k": 0.9766,
+  "physical_scale_source": "https://api.polyhaven.com/info/dry_decay_leaves",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "28caea584dab804ab2b7e0e34f22f6674d04562000ee08bec19981863e4e605b",
+  "provider_files_sha256": "8284eac8569196fa54a27b19890f9d51b205feb4ae1977229ba3040b0b664c05",
+  "blend_role": "base",
+  "serves": [
+    "U5",
+    "U6"
+  ],
+  "intended_use": "Oak leaf litter for shaded oak woodland in canyons and north-facing slopes.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/dry_decay_leaves/dry_decay_leaves_diff_2k.jpg",
+      "bytes": 2856071,
+      "md5": "922abbf4d0910b1557e13695306c3f7d",
+      "sha256": "4dc7dde86f3db0df3566ca0ae77390000e979db31fbdc861796d2e516e6ad04e",
+      "publisher_md5": "922abbf4d0910b1557e13695306c3f7d",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dry_decay_leaves/dry_decay_leaves_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/dry_decay_leaves/dry_decay_leaves_nor_dx_2k.jpg",
+      "bytes": 3925748,
+      "md5": "02f119aef570195b8f1bea303f97ea55",
+      "sha256": "a9a007a758cb126fd8f0e9e411e0c62e3c8a3bbf950d8dc7823108058975bd70",
+      "publisher_md5": "02f119aef570195b8f1bea303f97ea55",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dry_decay_leaves/dry_decay_leaves_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/dry_decay_leaves/dry_decay_leaves_rough_2k.jpg",
+      "bytes": 1962109,
+      "md5": "68ad9d61963e5c0349887b71be162f84",
+      "sha256": "13024199e2f90d1a43733a1a599386b4a4a7778a0affcc310430629de6a623e7",
+      "publisher_md5": "68ad9d61963e5c0349887b71be162f84",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dry_decay_leaves/dry_decay_leaves_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/dry_decay_leaves/dry_decay_leaves_disp_2k.jpg",
+      "bytes": 1191385,
+      "md5": "f60637cb8d8b4941aece306b5fc45c9c",
+      "sha256": "cd2461f31eeeb6b360bc9dcdcb745d56b3cb489992c344b7142ef9e672e8ecbb",
+      "publisher_md5": "f60637cb8d8b4941aece306b5fc45c9c",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dry_decay_leaves/dry_decay_leaves_disp_2k.jpg",
+      "role": "linear height (8-bit JPG), for height-lerp layer blending only",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

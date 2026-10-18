@@ -1,0 +1,82 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "dry_ground_rocks",
+  "asset_page": "https://polyhaven.com/a/dry_ground_rocks",
+  "name": "Dry Ground Rocks",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Rob Tuytel": "All"
+  },
+  "physical_dimensions_mm": [
+    4000,
+    4000
+  ],
+  "physical_width_m": 4.0,
+  "physical_width_cm": 400.0,
+  "millimeters_per_texel_at_2k": 1.9531,
+  "physical_scale_source": "https://api.polyhaven.com/info/dry_ground_rocks",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "86d94a1ea62f493e91025cc59d9ac10668c8250d8eb85028a8c6e31510d5246e",
+  "provider_files_sha256": "a079a232342a472f3f1bc81637127dcff233f49ed0cf69a42b02d8abad1928ea",
+  "blend_role": "base",
+  "serves": [
+    "U5",
+    "U6"
+  ],
+  "intended_use": "Chaparral soil: dry brown soil with small stones beneath scrub on steep slopes.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/dry_ground_rocks/dry_ground_rocks_diff_2k.jpg",
+      "bytes": 3428360,
+      "md5": "3106a1157ea4c6823b78494988ac0269",
+      "sha256": "ebfb8b98b48a4fcafac354d1e206944824c549e93ea6d977f69664f0dc3dbb6a",
+      "publisher_md5": "3106a1157ea4c6823b78494988ac0269",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dry_ground_rocks/dry_ground_rocks_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/dry_ground_rocks/dry_ground_rocks_nor_dx_2k.jpg",
+      "bytes": 5426178,
+      "md5": "8907b86aed5000d0a40e41f49580ad53",
+      "sha256": "af1c800442a5541597ceab75c8133b9561ce64a66755cb5f9a6a5fe4417ec4cd",
+      "publisher_md5": "8907b86aed5000d0a40e41f49580ad53",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dry_ground_rocks/dry_ground_rocks_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/dry_ground_rocks/dry_ground_rocks_rough_2k.jpg",
+      "bytes": 1890402,
+      "md5": "5a461a436095cbe54cbd1de156bdc164",
+      "sha256": "261aa42d1626d7b71675d918239f4b2be10d40c00bd9f954273a5aba4a19baaf",
+      "publisher_md5": "5a461a436095cbe54cbd1de156bdc164",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dry_ground_rocks/dry_ground_rocks_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/dry_ground_rocks/dry_ground_rocks_disp_2k.jpg",
+      "bytes": 868001,
+      "md5": "a9c72cb0108f1ac54b611798cddc1422",
+      "sha256": "a0fea34701a09a6d073768ac35d3b979e7ec7befb1fdc83976cd15f8eaeca63e",
+      "publisher_md5": "a9c72cb0108f1ac54b611798cddc1422",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/dry_ground_rocks/dry_ground_rocks_disp_2k.jpg",
+      "role": "linear height (8-bit JPG), for height-lerp layer blending only",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

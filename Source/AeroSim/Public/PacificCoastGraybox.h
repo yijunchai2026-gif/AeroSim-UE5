@@ -19,6 +19,43 @@ class UStaticMesh;
 class UStaticMeshComponent;
 enum class EFlightPhase : uint8;
 
+// DEV-TERRAIN begin (RD-08 terrain owner): habitat classification shared with DEV-FLORA / materials.
+/** Dominant ground habitat; soft weights are in FCoastHabitatSample for broad, irregular transitions. */
+enum class ECoastHabitatClass : uint8
+{
+    ExposedGrass,    // sun-facing (south/south-west) convex slopes: golden dry annual grass
+    ShelteredGrass,  // transitional, partly shaded or moister grass/forb ground
+    Woodland,        // north-facing shoulders and gully floors: oak/bay/chaparral ground with litter
+    SteepRock,       // locally steep faces and spurs: exposed rock and thin soil
+    CliffShore       // sea cliff rim, cliff face, submerged ground or outside the land
+};
+
+struct AEROSIM_API FCoastHabitatSample
+{
+    ECoastHabitatClass Class = ECoastHabitatClass::CliffShore;
+    /** Soft weights; ExposedGrass + ShelteredGrass + Woodland + Rock + Shore == 1. */
+    float ExposedGrass = 0.0F;
+    float ShelteredGrass = 0.0F;
+    float Woodland = 0.0F;
+    float Rock = 0.0F;
+    float Shore = 1.0F;
+    float Grade = 0.0F;        // local rise/run over ~12 m
+    float SunExposure = 0.0F;  // -1 fully shaded aspect .. +1 sun-facing aspect (0 on flats)
+    float Drainage = 0.0F;     // 0 convex ridge/shoulder .. 1 concave gully/swale floor
+};
+
+/** Deterministic pure functions of world XY (cm, actor space); safe to call from any constructor. */
+struct AEROSIM_API FPacificCoastHabitat
+{
+    static FCoastHabitatSample Sample(float X, float Y);
+    static ECoastHabitatClass GetHabitatClass(float X, float Y);
+    /** Ground vertex colour: R exposed grass, G sheltered grass, B woodland; rock/shore = 1-R-G-B. */
+    static FLinearColor GetGroundVertexColor(float X, float Y);
+    /** Height of the distant receding ridgelines mesh west of the land (not part of the playable land). */
+    static float GetDistantRangeHeight(float X, float Y);
+};
+// DEV-TERRAIN end
+
 /** Pure geometry and route contract for the 1 km x 1 km Phase 1 training area. */
 struct AEROSIM_API FPacificCoastGrayboxContract final
 {

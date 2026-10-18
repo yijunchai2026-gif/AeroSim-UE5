@@ -1,0 +1,607 @@
+{
+  "schema": "aerosim.environment-source-index/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "lane": "RD-02 ART-SURFACE",
+  "generated_utc": "2026-10-18T09:37:30.821136+00:00",
+  "total_bytes": 173940915,
+  "spec": "docs/designs/surface-asset-spec.md",
+  "assets": [
+    {
+      "asset_id": "withered_grass",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Charlotte Baglioni": "All"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Ground/withered_grass/source.json",
+      "physical_width_m": 2.0,
+      "blend_role": "base",
+      "serves": [
+        "U5",
+        "U6"
+      ],
+      "bytes": 16932331,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/withered_grass/withered_grass_diff_2k.jpg",
+          "sha256": "0cf0fca68cbf4277199a2b9b7b3a8013357e4087247b1367f86d4a53b4fafa7e",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/withered_grass/withered_grass_nor_dx_2k.jpg",
+          "sha256": "ce7acf1b8436562d8edaa06bd79b56c724632a755041c414ce40093303753951",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/withered_grass/withered_grass_rough_2k.jpg",
+          "sha256": "86adb8d6f24d0a38eb96c6b625f2dd027b805f59af46fe2a05ffe29f633e33c8",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/withered_grass/withered_grass_disp_2k.jpg",
+          "sha256": "2e9ade0a66c6d6b9990ce19ead20b155e1aed7969e4e86f8210fc7595dd2983d",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "sparse_grass",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Amal Kumar": "All"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Ground/sparse_grass/source.json",
+      "physical_width_m": 2.0,
+      "blend_role": "base",
+      "serves": [
+        "U5",
+        "U6"
+      ],
+      "bytes": 13638709,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/sparse_grass/sparse_grass_diff_2k.jpg",
+          "sha256": "3b655de96161164bf2324e136b3409ad8417c9f94750bc008e9c93ee507c2fac",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/sparse_grass/sparse_grass_nor_dx_2k.jpg",
+          "sha256": "333514bb0832a784f40362f16941e1889e078f06776a9162908da1ec2d898677",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/sparse_grass/sparse_grass_rough_2k.jpg",
+          "sha256": "b023f187999956449b5f25df19f4eaae1c891f474e0a599b23d986118fe706d7",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/sparse_grass/sparse_grass_disp_2k.jpg",
+          "sha256": "84301f04bb98bb87a2101bd6923142d17d070a97227f01c55aa3a383ec823297",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "rocky_trail_02",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Amal Kumar": "All"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Ground/rocky_trail_02/source.json",
+      "physical_width_m": 2.0,
+      "blend_role": "base",
+      "serves": [
+        "U5"
+      ],
+      "bytes": 13205396,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/rocky_trail_02/rocky_trail_02_diff_2k.jpg",
+          "sha256": "d755ac6c70729afce6bb78b9a265d16bdf599ece64f4f079d681433e77bb24a9",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/rocky_trail_02/rocky_trail_02_nor_dx_2k.jpg",
+          "sha256": "e80007f68c73263c2390e19ee5daee536956a765e1a4f18689181f89a4cb9d95",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/rocky_trail_02/rocky_trail_02_rough_2k.jpg",
+          "sha256": "0aa89f1c148dead8b98b0d63b30aabfa12f6ae49fcf4ece6aa11818dec95ae22",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/rocky_trail_02/rocky_trail_02_disp_2k.jpg",
+          "sha256": "9c97808021d2a764c417d4a08f1bd2e8599dd4b560df9e1217eacca5148ccd7a",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "dry_ground_rocks",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Rob Tuytel": "All"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Ground/dry_ground_rocks/source.json",
+      "physical_width_m": 4.0,
+      "blend_role": "base",
+      "serves": [
+        "U5",
+        "U6"
+      ],
+      "bytes": 11612941,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/dry_ground_rocks/dry_ground_rocks_diff_2k.jpg",
+          "sha256": "ebfb8b98b48a4fcafac354d1e206944824c549e93ea6d977f69664f0dc3dbb6a",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/dry_ground_rocks/dry_ground_rocks_nor_dx_2k.jpg",
+          "sha256": "af1c800442a5541597ceab75c8133b9561ce64a66755cb5f9a6a5fe4417ec4cd",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/dry_ground_rocks/dry_ground_rocks_rough_2k.jpg",
+          "sha256": "261aa42d1626d7b71675d918239f4b2be10d40c00bd9f954273a5aba4a19baaf",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/dry_ground_rocks/dry_ground_rocks_disp_2k.jpg",
+          "sha256": "a0fea34701a09a6d073768ac35d3b979e7ec7befb1fdc83976cd15f8eaeca63e",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "forest_leaves_04",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Rob Tuytel": "All"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Ground/forest_leaves_04/source.json",
+      "physical_width_m": 1.5,
+      "blend_role": "base",
+      "serves": [
+        "U5"
+      ],
+      "bytes": 5390636,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/forest_leaves_04/forest_leaves_04_diff_2k.jpg",
+          "sha256": "a4f964eb32909ef9b41dbf4000bde142995711b7b755850f6523eb4d99c4a5d4",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/forest_leaves_04/forest_leaves_04_nor_dx_2k.jpg",
+          "sha256": "151d2b52a2764b747dc253757053cd11af3591d7184addb0b1402bc2becfb0b6",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/forest_leaves_04/forest_leaves_04_rough_2k.jpg",
+          "sha256": "80db3af88b964a24fbe3f9e2c1284c5d8426e51a0b776d8f1fca5a4e0fdd8b2f",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/forest_leaves_04/forest_leaves_04_disp_2k.jpg",
+          "sha256": "cfca13ba1645f66ef675592bfad553330845d96d0ebbf634b689459f111b8216",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "dry_decay_leaves",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Amal Kumar": "All"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Ground/dry_decay_leaves/source.json",
+      "physical_width_m": 2.0,
+      "blend_role": "base",
+      "serves": [
+        "U5",
+        "U6"
+      ],
+      "bytes": 9935313,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/dry_decay_leaves/dry_decay_leaves_diff_2k.jpg",
+          "sha256": "4dc7dde86f3db0df3566ca0ae77390000e979db31fbdc861796d2e516e6ad04e",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/dry_decay_leaves/dry_decay_leaves_nor_dx_2k.jpg",
+          "sha256": "a9a007a758cb126fd8f0e9e411e0c62e3c8a3bbf950d8dc7823108058975bd70",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/dry_decay_leaves/dry_decay_leaves_rough_2k.jpg",
+          "sha256": "13024199e2f90d1a43733a1a599386b4a4a7778a0affcc310430629de6a623e7",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/dry_decay_leaves/dry_decay_leaves_disp_2k.jpg",
+          "sha256": "cd2461f31eeeb6b360bc9dcdcb745d56b3cb489992c344b7142ef9e672e8ecbb",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "dirt",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Charlotte Baglioni": "All"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Ground/dirt/source.json",
+      "physical_width_m": 2.0,
+      "blend_role": "detail",
+      "serves": [
+        "U5"
+      ],
+      "bytes": 5864312,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/dirt/dirt_nor_dx_2k.jpg",
+          "sha256": "50f56472147f593d8b62d71bf91a454b73674112dd3da94a43ebc5906e311dc4",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/dirt/dirt_rough_2k.jpg",
+          "sha256": "a17048230e1a86fc874b381360f6a821df1f6b0174ca7f85a59596c4290080fa",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "aerial_grass_rock",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Rob Tuytel": "All"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Ground/aerial_grass_rock/source.json",
+      "physical_width_m": 15.0,
+      "blend_role": "macro",
+      "serves": [
+        "U5",
+        "U6"
+      ],
+      "bytes": 7999507,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/aerial_grass_rock/aerial_grass_rock_diff_2k.jpg",
+          "sha256": "1a2ddfa4652adbe00447b940c40019d46f4b88245bc1b341cdf622c2110b7bc5",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/aerial_grass_rock/aerial_grass_rock_nor_dx_2k.jpg",
+          "sha256": "2522704b40a81e0da84b024ba170834e34d0226fc9b15c679f69a56bb91dddb9",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/aerial_grass_rock/aerial_grass_rock_rough_2k.jpg",
+          "sha256": "fc0fff40e3378f2f54d225db6e3e566a8563bb2c143eef0f09b543c9d4698776",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "worn_rock_natural_01",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Rob Tuytel": "Processing",
+        "Dimitrios Savva": "Photography"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Rock/worn_rock_natural_01/source.json",
+      "physical_width_m": 2.0,
+      "blend_role": "base",
+      "serves": [
+        "U6",
+        "U3"
+      ],
+      "bytes": 9817876,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/worn_rock_natural_01/worn_rock_natural_01_diff_2k.jpg",
+          "sha256": "084e528a8b63684cf6cd9c9c1d44cef32a8f4c9e8404394a4a1a40c70cbf000d",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/worn_rock_natural_01/worn_rock_natural_01_nor_dx_2k.jpg",
+          "sha256": "e76ced931974d30ea9fe9869ece624ded020f90ca6e2d69e920adb53cc478b3c",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/worn_rock_natural_01/worn_rock_natural_01_rough_2k.jpg",
+          "sha256": "1aac2cf72392f1207b5dbf880cbe0ef58d4c7eecd9dadc12640f031670969395",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/worn_rock_natural_01/worn_rock_natural_01_disp_2k.jpg",
+          "sha256": "39f2680f1c09926cd6350e4e3e39d6e203c2394708a97559c4ae6536dcbb10ea",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "rock_face_03",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Dario Barresi": "Photography",
+        "Rico Cilliers": "Processing"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Rock/rock_face_03/source.json",
+      "physical_width_m": 2.7,
+      "blend_role": "base",
+      "serves": [
+        "U6"
+      ],
+      "bytes": 11676630,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/rock_face_03/rock_face_03_diff_2k.jpg",
+          "sha256": "644ee79df7ffbf5f6afc330b64dd3f33794bab8820915fe61ffe0c88ecfd7ece",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/rock_face_03/rock_face_03_nor_dx_2k.jpg",
+          "sha256": "83b039065bff5de79ca55674c59361152d808fe3779498e5c2ee0725c1172faa",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/rock_face_03/rock_face_03_rough_2k.jpg",
+          "sha256": "9ca3e9e196685f702328f24d66f039b72f5330fc35cf2a2c265cfa50a7916301",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/rock_face_03/rock_face_03_disp_2k.jpg",
+          "sha256": "5d24ec5a7f4f7333bcf9c158f63d0059d9a3ba234eeff7570a5f6cf2f4522cd5",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "seaside_rock",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Dimitrios Savva": "All"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Rock/seaside_rock/source.json",
+      "physical_width_m": 2.0,
+      "blend_role": "base",
+      "serves": [
+        "U3"
+      ],
+      "bytes": 10933423,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/seaside_rock/seaside_rock_diff_2k.jpg",
+          "sha256": "a0e01ad03110a84046c0e7ee611cd6d20bf11a9001e96dfa6e92ac6b59989d83",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/seaside_rock/seaside_rock_nor_dx_2k.jpg",
+          "sha256": "9a664744cc7c45382173bdf270b174b1c4e739372a560b8b3151cf3b750dda2f",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/seaside_rock/seaside_rock_rough_2k.jpg",
+          "sha256": "21841d3cb5cc7fe7958c7b1edf099449bb10600c5fe667728b70de13d63ab62e",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/seaside_rock/seaside_rock_disp_2k.jpg",
+          "sha256": "8610c998b66eaf6bf2a3bf905e469b4824a480236723ef660ab7ed7209f9a2e7",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "low_tide_rocks",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Dimitrios Savva": "All"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Rock/low_tide_rocks/source.json",
+      "physical_width_m": 2.17,
+      "blend_role": "base",
+      "serves": [
+        "U3"
+      ],
+      "bytes": 15644861,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/low_tide_rocks/low_tide_rocks_diff_2k.jpg",
+          "sha256": "69c2f628ac3802a55df5c39776bdb9ba0c7d1d8e98c91ef904133c5f203e73fc",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/low_tide_rocks/low_tide_rocks_nor_dx_2k.jpg",
+          "sha256": "c8575e89d73c29991b76d59e83f16db9a05ae2be76aa92fac2750204e52d990b",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/low_tide_rocks/low_tide_rocks_rough_2k.jpg",
+          "sha256": "e51a9729fecf207f8810347a77cf163a5e8f2f80847bb71b69a39aab68bac066",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Rock/low_tide_rocks/low_tide_rocks_disp_2k.jpg",
+          "sha256": "32cec0c89a9d4c8ac627bc356c42f24e60679404a8bbdcf7d7b1812d972d9492",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "damp_beach_sand",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Dimitrios Savva": "All"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Ground/damp_beach_sand/source.json",
+      "physical_width_m": 2.0,
+      "blend_role": "base",
+      "serves": [
+        "U3"
+      ],
+      "bytes": 10277710,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/damp_beach_sand/damp_beach_sand_diff_2k.jpg",
+          "sha256": "d87190deb69254dea4722cb5a017b98f3e022185a9d67ddb53d1576e5416ddf8",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/damp_beach_sand/damp_beach_sand_nor_dx_2k.jpg",
+          "sha256": "4b1d36baac631862827efdefd0e500d11010ecfd9d600c17a0200698d62c76f8",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/damp_beach_sand/damp_beach_sand_rough_2k.jpg",
+          "sha256": "9b96ef8971f7899dcaaa371b058eb6a855d2018ce4c73c03d309d2e457564d69",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/damp_beach_sand/damp_beach_sand_disp_2k.jpg",
+          "sha256": "5df930cbbc00815a7b55320a034d7d486fa4f7be1801b714214327832162fb7b",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "clean_pebbles",
+      "provider": "Poly Haven",
+      "license": "CC0-1.0",
+      "authors": {
+        "Dario Barresi": "Processing ",
+        "Charlotte Baglioni": "Photography"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Ground/clean_pebbles/source.json",
+      "physical_width_m": 2.0,
+      "blend_role": "base",
+      "serves": [
+        "U3"
+      ],
+      "bytes": 12263213,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/clean_pebbles/clean_pebbles_diff_2k.jpg",
+          "sha256": "c895ca99e4dceb9d307acd0a9b502b06936f37382e032a0681c8bf14ff405904",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/clean_pebbles/clean_pebbles_nor_dx_2k.jpg",
+          "sha256": "969aba5d3500b698c5bc5e4765a4b4e7957d343bb2ceb9d5f02d8ba90ad33220",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/clean_pebbles/clean_pebbles_rough_2k.jpg",
+          "sha256": "c1b5f444f1f7c7d833be4394c261449c34d4a95394fa34f522662550cce7a35f",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Ground/clean_pebbles/clean_pebbles_disp_2k.jpg",
+          "sha256": "952d415f4cce08d8afcdf2ca74eef4cbee3304d0583e787fbf4a7742b3708452",
+          "license": "CC0-1.0"
+        }
+      ]
+    },
+    {
+      "asset_id": "Foam002",
+      "provider": "ambientCG",
+      "license": "CC0-1.0",
+      "authors": {
+        "Lennart Demes (ambientCG)": "All"
+      },
+      "receipt": "SourceAssets/EnvironmentDraft/Water/Foam002/source.json",
+      "physical_width_m": null,
+      "blend_role": "detail",
+      "serves": [
+        "U3"
+      ],
+      "bytes": 18748057,
+      "sources": [
+        {
+          "path": "SourceAssets/EnvironmentDraft/Water/Foam002/Foam002_2K-JPG_Color.jpg",
+          "sha256": "4df4472006755ade7ff74f44c648e5e1eb214f6f8d330c387bd425c3a1a5ad64",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Water/Foam002/Foam002_2K-JPG_NormalDX.jpg",
+          "sha256": "104fc90c4e490acc85afdee0113141ed1005cd50e81b21a3f009782d04ceb5fa",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Water/Foam002/Foam002_2K-JPG_Roughness.jpg",
+          "sha256": "28325b8666d10b4edd0d7be71ec446caa1ace0fd06364f9a4604f6a58acc5a4f",
+          "license": "CC0-1.0"
+        },
+        {
+          "path": "SourceAssets/EnvironmentDraft/Water/Foam002/Foam002_2K-JPG_Opacity.jpg",
+          "sha256": "591b4fe2d69bd7e7c6f6ace830e338b841b809808e06dac3c69ed0936c4780aa",
+          "license": "CC0-1.0"
+        }
+      ]
+    }
+  ],
+  "engine_references": [
+    {
+      "engine_relative_path": "Plugins/Experimental/Water/Content/Textures/Normals/T_Water_TilingNormal_Waves_02.uasset",
+      "package_path": "/Water/Textures/Normals/T_Water_TilingNormal_Waves_02",
+      "role": "mid-scale swell/chop normal",
+      "engine": "Unreal Engine 5.8.3 (Build.version Changelist 58210709)",
+      "license": "Unreal Engine EULA engine content; NOT CC0; referenced in-engine, not copied into SourceAssets",
+      "bytes": 1163138,
+      "sha256": "a4d7b83278bea8bd2831081704e6ffa21834c611116faf8ef2fa97127b98481d"
+    },
+    {
+      "engine_relative_path": "Plugins/Experimental/Water/Content/Textures/Normals/T_Water_TilingNormal_With_Height_02_Softened.uasset",
+      "package_path": "/Water/Textures/Normals/T_Water_TilingNormal_With_Height_02_Softened",
+      "role": "large-scale soft wave normal",
+      "engine": "Unreal Engine 5.8.3 (Build.version Changelist 58210709)",
+      "license": "Unreal Engine EULA engine content; NOT CC0; referenced in-engine, not copied into SourceAssets",
+      "bytes": 1994802,
+      "sha256": "4365c821a4edbfe40ae596971484bb4481bc3d7c1ec4035bd3756b86d09176db"
+    },
+    {
+      "engine_relative_path": "Content/Functions/Engine_MaterialFunctions02/ExampleContent/Textures/water_n.uasset",
+      "package_path": "/Engine/Functions/Engine_MaterialFunctions02/ExampleContent/Textures/water_n",
+      "role": "fine ripple normal (already in v8 draft)",
+      "engine": "Unreal Engine 5.8.3 (Build.version Changelist 58210709)",
+      "license": "Unreal Engine EULA engine content; NOT CC0; referenced in-engine, not copied into SourceAssets",
+      "bytes": 477668,
+      "sha256": "3af9519401f7febc3719e31417c36b66d383a65384ef54ee00c36f238ad4f63b"
+    },
+    {
+      "engine_relative_path": "Plugins/Experimental/Water/Content/Textures/Foam/T_WaterFlow_01_Foam_Tiled.uasset",
+      "package_path": "/Water/Textures/Foam/T_WaterFlow_01_Foam_Tiled",
+      "role": "engine alternative foam mask",
+      "engine": "Unreal Engine 5.8.3 (Build.version Changelist 58210709)",
+      "license": "Unreal Engine EULA engine content; NOT CC0; referenced in-engine, not copied into SourceAssets",
+      "bytes": 7293260,
+      "sha256": "ea7989a2c23e77e183d6131069dc8f3951640ef16c0815a93971737542b4490e"
+    },
+    {
+      "engine_relative_path": "Plugins/Experimental/Water/Content/Textures/Foam/T_WaterFlow_01_Foam_Tiled_N.uasset",
+      "package_path": "/Water/Textures/Foam/T_WaterFlow_01_Foam_Tiled_N",
+      "role": "engine alternative foam normal",
+      "engine": "Unreal Engine 5.8.3 (Build.version Changelist 58210709)",
+      "license": "Unreal Engine EULA engine content; NOT CC0; referenced in-engine, not copied into SourceAssets",
+      "bytes": 3882993,
+      "sha256": "25da0a2f2be645bf83c5703d9eb589e50dbaf5054cf0769718c1db98f8e77670"
+    }
+  ]
+}

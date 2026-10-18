@@ -1,0 +1,82 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "Poly Haven",
+  "asset_id": "sparse_grass",
+  "asset_page": "https://polyhaven.com/a/sparse_grass",
+  "name": "Sparse Grass",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Amal Kumar": "All"
+  },
+  "physical_dimensions_mm": [
+    2000,
+    2000
+  ],
+  "physical_width_m": 2.0,
+  "physical_width_cm": 200.0,
+  "millimeters_per_texel_at_2k": 0.9766,
+  "physical_scale_source": "https://api.polyhaven.com/info/sparse_grass",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json (dimensions in millimetres)",
+  "provider_info_sha256": "0b2986151f6bd1abcee3fb2b6ac0d7e21be4c11a19e130c8576930c43e4b675a",
+  "provider_files_sha256": "385455d28cb04effb36e7775527b88b1e637b3dbf228b0cf37474aa4ae05b54b",
+  "blend_role": "base",
+  "serves": [
+    "U5",
+    "U6"
+  ],
+  "intended_use": "Green-brown grass/soil for shaded slopes, swales and drainage lines.",
+  "limits": "Published CC0 PBR scan. Site identity (not a Bay Area capture), geometry, collision and visual suitability are not verified. No engine asset imported, no material applied, no visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/sparse_grass/sparse_grass_diff_2k.jpg",
+      "bytes": 3733797,
+      "md5": "b181e9c61bae87c1bb9b14eecd767d65",
+      "sha256": "3b655de96161164bf2324e136b3409ad8417c9f94750bc008e9c93ee507c2fac",
+      "publisher_md5": "b181e9c61bae87c1bb9b14eecd767d65",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/sparse_grass/sparse_grass_diff_2k.jpg",
+      "role": "sRGB base color",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/sparse_grass/sparse_grass_nor_dx_2k.jpg",
+      "bytes": 5862886,
+      "md5": "61bd9f973de0f3322b42184302120873",
+      "sha256": "333514bb0832a784f40362f16941e1889e078f06776a9162908da1ec2d898677",
+      "publisher_md5": "61bd9f973de0f3322b42184302120873",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/sparse_grass/sparse_grass_nor_dx_2k.jpg",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/sparse_grass/sparse_grass_rough_2k.jpg",
+      "bytes": 1729786,
+      "md5": "446cbe6254b1b210de44ef7c53da6204",
+      "sha256": "b023f187999956449b5f25df19f4eaae1c891f474e0a599b23d986118fe706d7",
+      "publisher_md5": "446cbe6254b1b210de44ef7c53da6204",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/sparse_grass/sparse_grass_rough_2k.jpg",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Ground/sparse_grass/sparse_grass_disp_2k.jpg",
+      "bytes": 2312240,
+      "md5": "eee6c221c24fa7825cea74df55be6a91",
+      "sha256": "84301f04bb98bb87a2101bd6923142d17d070a97227f01c55aa3a383ec823297",
+      "publisher_md5": "eee6c221c24fa7825cea74df55be6a91",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/sparse_grass/sparse_grass_disp_2k.jpg",
+      "role": "linear height (8-bit JPG), for height-lerp layer blending only",
+      "source_resolution": "2k",
+      "license": "CC0-1.0"
+    }
+  ]
+}

@@ -43,7 +43,7 @@ bool FCoastalContinuityTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Bridge spans a real seasonal drainage bed"), FMath::IsNearlyEqual(APacificCoastGraybox::GetCoastalLandHeight(-9000,8500),-180.0F,1.0F));
     for(int32 Side=-1;Side<=1;Side+=2)
         TestTrue(TEXT("Both bridge landings stay at grade"), FMath::Abs(APacificCoastGraybox::GetCoastalLandHeight(-9000+Side*1300*.9510565F,8500+Side*1300*.309017F))<1);
-    for(float Y:{-53000.0F,23700.0F,89123.0F})
+    for(float Y:{-53000.0F,-31000.0F,-19000.0F,19000.0F,23700.0F,54000.0F,89123.0F})
     {
         const double Shore=APacificCoastGraybox::GetCoastalShoreX(Y);double Error=BIG_NUMBER;
         for(auto* Mesh:Meshes)
@@ -67,6 +67,7 @@ bool FCoastalContinuityTest::RunTest(const FString& Parameters)
     }
     float MinX = BIG_NUMBER, MaxAbsY = 0, MountainHeight = 0, MaximumMountainGrade = 0;
     float NorthernRidgeHeight = 0, SouthernRidgeHeight = 0, ForegroundSpurHeight = 0;
+    float LowestCoastalRim=BIG_NUMBER, HighestCoastalRim=-BIG_NUMBER;
     FVector MainSummitLocation = FVector::ZeroVector;
     FVector MaximumGradeLocation = FVector::ZeroVector;
     int32 PeripheralVertices = 0, UnsupportedPeripheralVertices = 0, SharedHeightMismatches = 0;
@@ -78,6 +79,12 @@ bool FCoastalContinuityTest::RunTest(const FString& Parameters)
         if (P.Y > 75000 && P.X < -70000) NorthernRidgeHeight = FMath::Max(NorthernRidgeHeight, static_cast<float>(P.Z));
         if (P.Y < -105000 && P.X < -70000) SouthernRidgeHeight = FMath::Max(SouthernRidgeHeight, static_cast<float>(P.Z));
         if (P.X > -100000 && P.X < -60000) ForegroundSpurHeight = FMath::Max(ForegroundSpurHeight, static_cast<float>(P.Z));
+        if(FMath::Abs(P.Y)<60000 && FMath::IsNearlyEqual(static_cast<float>(P.X),APacificCoastGraybox::GetCliffEdgeX(P.Y),.1F)
+            && FMath::IsNearlyEqual(static_cast<float>(P.Z),APacificCoastGraybox::GetCoastalLandHeight(P.X,P.Y),.1F))
+        {
+            LowestCoastalRim=FMath::Min(LowestCoastalRim,static_cast<float>(P.Z));
+            HighestCoastalRim=FMath::Max(HighestCoastalRim,static_cast<float>(P.Z));
+        }
         if (P.X < -40000 && P.Z > 1000)
         {
             const float DX = (APacificCoastGraybox::GetCoastalLandHeight(P.X + 500, P.Y) - APacificCoastGraybox::GetCoastalLandHeight(P.X - 500, P.Y)) / 1000.0F;
@@ -98,6 +105,8 @@ bool FCoastalContinuityTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("North/south extensions remain subordinate to the main summit"), MountainHeight > NorthernRidgeHeight + 4000 && MountainHeight > SouthernRidgeHeight + 4000);
     TestTrue(TEXT("Foreground diagonal spurs form a lower terrain layer"), ForegroundSpurHeight > 4000 && ForegroundSpurHeight < MountainHeight - 4000);
     TestTrue(TEXT("Sampled mountain shoulders avoid near-vertical noise columns"), MaximumMountainGrade < 1.25F);
+    TestTrue(TEXT("Actual coastal rim contains low eroded coves and surviving high headlands rather than an equal-height wall"),
+        LowestCoastalRim<-4000 && HighestCoastalRim>-1500 && HighestCoastalRim-LowestCoastalRim>4000);
     TestTrue(TEXT("Peripheral shoreline geometry was sampled"), PeripheralVertices > 1000);
     TestEqual(TEXT("No exposed west/north/south edge terminates above sea"), UnsupportedPeripheralVertices, 0);
     TestEqual(TEXT("Visible foothills and mountains use the shared land height function"), SharedHeightMismatches, 0);
@@ -118,6 +127,7 @@ bool FCoastalContinuityTest::RunTest(const FString& Parameters)
     AddInfo(FString::Printf(TEXT("Steepest sampled mountain shoulder: %s"), *MaximumGradeLocation.ToString()));
     AddInfo(FString::Printf(TEXT("Umunhum-inspired hierarchy: summit %s; north %.0f; south %.0f; foreground spur %.0f cm"), *MainSummitLocation.ToString(), NorthernRidgeHeight, SouthernRidgeHeight, ForegroundSpurHeight));
     AddInfo(FString::Printf(TEXT("Shared vegetation cover sampled range %.3f–%.3f"), MinimumCover, MaximumCover));
+    AddInfo(FString::Printf(TEXT("Actual coastal rim variation %.0f to %.0f cm"),LowestCoastalRim,HighestCoastalRim));
     return true;
 }
 #endif

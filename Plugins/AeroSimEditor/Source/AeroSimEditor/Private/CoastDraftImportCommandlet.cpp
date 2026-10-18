@@ -62,7 +62,26 @@ const FSource Sources[] = {
     {TEXT("PineTree01/pine_tree_01_bark_rough_1k.png"), TEXT("T_CoastBark_Roughness"), ETextureRole::Roughness},
     {TEXT("GravelDraft/basecolor.jpg"), TEXT("T_CoastGravel_BaseColor"), ETextureRole::Color},
     {TEXT("GravelDraft/normal.jpg"), TEXT("T_CoastGravel_Normal"), ETextureRole::Normal},
-    {TEXT("GravelDraft/roughness.jpg"), TEXT("T_CoastGravel_Roughness"), ETextureRole::Roughness}
+    {TEXT("GravelDraft/roughness.jpg"), TEXT("T_CoastGravel_Roughness"), ETextureRole::Roughness},
+    // Surface v2 (ART-SURFACE, CC0 Poly Haven, true physical tile sizes in comments).
+    {TEXT("Ground/withered_grass/withered_grass_diff_2k.jpg"), TEXT("T_CoastWitheredGrass_BaseColor"), ETextureRole::Color},     // 16, 2.0 m
+    {TEXT("Ground/withered_grass/withered_grass_nor_dx_2k.jpg"), TEXT("T_CoastWitheredGrass_Normal"), ETextureRole::Normal},
+    {TEXT("Ground/withered_grass/withered_grass_rough_2k.jpg"), TEXT("T_CoastWitheredGrass_Roughness"), ETextureRole::Roughness},
+    {TEXT("Ground/sparse_grass/sparse_grass_diff_2k.jpg"), TEXT("T_CoastSparseGrass_BaseColor"), ETextureRole::Color},           // 19, 2.0 m
+    {TEXT("Ground/sparse_grass/sparse_grass_nor_dx_2k.jpg"), TEXT("T_CoastSparseGrass_Normal"), ETextureRole::Normal},
+    {TEXT("Ground/sparse_grass/sparse_grass_rough_2k.jpg"), TEXT("T_CoastSparseGrass_Roughness"), ETextureRole::Roughness},
+    {TEXT("Ground/dry_decay_leaves/dry_decay_leaves_diff_2k.jpg"), TEXT("T_CoastLeafLitter_BaseColor"), ETextureRole::Color},    // 22, 2.0 m
+    {TEXT("Ground/dry_decay_leaves/dry_decay_leaves_nor_dx_2k.jpg"), TEXT("T_CoastLeafLitter_Normal"), ETextureRole::Normal},
+    {TEXT("Ground/dry_decay_leaves/dry_decay_leaves_rough_2k.jpg"), TEXT("T_CoastLeafLitter_Roughness"), ETextureRole::Roughness},
+    {TEXT("Ground/dry_ground_rocks/dry_ground_rocks_diff_2k.jpg"), TEXT("T_CoastStonyGround_BaseColor"), ETextureRole::Color},   // 25, 4.0 m
+    {TEXT("Ground/dry_ground_rocks/dry_ground_rocks_nor_dx_2k.jpg"), TEXT("T_CoastStonyGround_Normal"), ETextureRole::Normal},
+    {TEXT("Ground/dry_ground_rocks/dry_ground_rocks_rough_2k.jpg"), TEXT("T_CoastStonyGround_Roughness"), ETextureRole::Roughness},
+    {TEXT("Ground/dirt/dirt_nor_dx_2k.jpg"), TEXT("T_CoastDetailDirt_Normal"), ETextureRole::Normal},                            // 28, detail
+    {TEXT("Ground/dirt/dirt_rough_2k.jpg"), TEXT("T_CoastDetailDirt_Roughness"), ETextureRole::Roughness},
+    {TEXT("Ground/aerial_grass_rock/aerial_grass_rock_diff_2k.jpg"), TEXT("T_CoastMacroGrassRock_BaseColor"), ETextureRole::Color}, // 30, macro
+    {TEXT("Ground/rocky_trail_02/rocky_trail_02_diff_2k.jpg"), TEXT("T_CoastEarthTrail_BaseColor"), ETextureRole::Color},        // 31, 2.0 m
+    {TEXT("Ground/rocky_trail_02/rocky_trail_02_nor_dx_2k.jpg"), TEXT("T_CoastEarthTrail_Normal"), ETextureRole::Normal},
+    {TEXT("Ground/rocky_trail_02/rocky_trail_02_rough_2k.jpg"), TEXT("T_CoastEarthTrail_Roughness"), ETextureRole::Roughness}
 };
 
 bool SaveDraft(UObject* Asset)
@@ -124,6 +143,90 @@ UMaterialExpressionMaterialFunctionCall* Project(UMaterial* Material, UMaterialF
         || !UMaterialEditingLibrary::ConnectMaterialExpressions(Object, TEXT(""), Call, TEXT("TextureObject"))
         || !UMaterialEditingLibrary::ConnectMaterialExpressions(Size, TEXT(""), Call, TEXT("TextureSize"))) return nullptr;
     return Call;
+}
+
+// Every terrain-following surface shares one land function (DEV-TERRAIN U5/U6).
+// Terrain UVs are world cm / 4000, so UTiling = 4000 / physical tile size in cm. Base layers use the
+// published physical size (never stretched); habitat weights arrive in vertex colour from
+// FPacificCoastHabitat (R exposed grass, G sheltered grass, B woodland, rock = 1 - R - G - B).
+struct FLandSurface { UMaterialExpression* Color; UMaterialExpression* Normal; UMaterialExpression* Rough; };
+namespace LandCode
+{
+// Shared HLSL prefix: height-blended habitat weights. Diffuse luminance acts as the blend height
+// so grass/litter/stone boundaries break along real texture structure, never a straight band.
+const TCHAR* Weights = TEXT(
+    "float3 L=float3(.30,.59,.11);"
+    "float3 w3=saturate(VC.rgb); float4 w=float4(w3,saturate(1-w3.r-w3.g-w3.b));"
+    "w/=max(dot(w,1),1e-3);"
+    "float macro=saturate(dot(M1,L)*2.2);"
+    "float swap=smoothstep(.35,.65,macro+.25*(dot(M2,L)*2-0.5));"
+    "float3 EC=lerp(ED,E2D,swap), SC=lerp(SD,S2D,1-swap);"
+    "float4 h=float4(dot(EC,L),dot(SC,L),dot(WD,L),dot(RD,L));"
+    "float4 hw=w+h*.45*saturate(w*4);"
+    "float top=max(max(hw.x,hw.y),max(hw.z,hw.w))-.22;"
+    "float4 b=max(hw-top,0); b/=max(dot(b,1),1e-4);"
+    "float nearFade=1-smoothstep(300.0,1500.0,D);"
+    "float farFade=smoothstep(6000.0,25000.0,D);");
+}
+FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Textures)
+{
+    auto UV=[Material](float PhysicalCm){auto* C=Node<UMaterialExpressionTextureCoordinate>(Material);C->UTiling=C->VTiling=4000.0F/PhysicalCm;return C;};
+    // Rotated, non-commensurate tiling for anti-repetition and the 0.37 m detail layer.
+    auto Rotated=[Material](float PhysicalCm,float Radians)
+    {
+        auto* Base=Node<UMaterialExpressionTextureCoordinate>(Material);
+        auto* R=Node<UMaterialExpressionCustom>(Material);R->OutputType=CMOT_Float2;
+        R->Code=FString::Printf(TEXT("float c=%f,s=%f; return float2(c*UV.x-s*UV.y,s*UV.x+c*UV.y)*%f+float2(.37,.61);"),FMath::Cos(Radians),FMath::Sin(Radians),4000.0F/PhysicalCm);
+        FCustomInput In;In.InputName=TEXT("UV");In.Input.Connect(0,Base);R->Inputs.Add(In);return R;
+    };
+    auto Shared=[](UMaterialExpressionTextureSampleParameter2D* S){S->SamplerSource=SSM_Wrap_WorldGroupSettings;return S;};
+    auto Col=[&](int32 Index,const TCHAR* Name,UMaterialExpression* C){return Shared(Sample(Material,Textures[Index],Name,C,SAMPLERTYPE_Color));};
+    auto Nor=[&](int32 Index,const TCHAR* Name,UMaterialExpression* C){return Shared(Sample(Material,Textures[Index],Name,C,SAMPLERTYPE_Normal));};
+    auto Rgh=[&](int32 Index,const TCHAR* Name,UMaterialExpression* C){return Shared(Sample(Material,Textures[Index],Name,C,SAMPLERTYPE_LinearGrayscale));};
+    UMaterialExpression* Grass=UV(200.0F);UMaterialExpression* Stone=UV(400.0F);
+    UMaterialExpression* Grass2=Rotated(273.0F,.61F);
+    UMaterialExpression* Detail=UV(50.0F);UMaterialExpression* Detail2=Rotated(37.0F,FMath::DegreesToRadians(37.0F));
+    struct FIn{const TCHAR* Name;UMaterialExpression* Node;};
+    const TArray<FIn> Inputs={
+        {TEXT("ED"),Col(16,TEXT("ExposedGrassColor"),Grass)},{TEXT("EN"),Nor(17,TEXT("ExposedGrassNormal"),Grass)},{TEXT("ER"),Rgh(18,TEXT("ExposedGrassRoughness"),Grass)},
+        {TEXT("E2D"),Col(16,TEXT("ExposedGrassColorB"),Grass2)},
+        {TEXT("SD"),Col(19,TEXT("ShelteredGrassColor"),Grass)},{TEXT("SN"),Nor(20,TEXT("ShelteredGrassNormal"),Grass)},{TEXT("SR"),Rgh(21,TEXT("ShelteredGrassRoughness"),Grass)},
+        {TEXT("S2D"),Col(19,TEXT("ShelteredGrassColorB"),Grass2)},
+        {TEXT("WD"),Col(22,TEXT("WoodlandLitterColor"),Grass)},{TEXT("WN"),Nor(23,TEXT("WoodlandLitterNormal"),Grass)},{TEXT("WR"),Rgh(24,TEXT("WoodlandLitterRoughness"),Grass)},
+        {TEXT("RD"),Col(25,TEXT("StonyGroundColor"),Stone)},{TEXT("RN"),Nor(26,TEXT("StonyGroundNormal"),Stone)},{TEXT("RR"),Rgh(27,TEXT("StonyGroundRoughness"),Stone)},
+        {TEXT("DN"),Nor(28,TEXT("DetailNormal"),Detail)},{TEXT("DR"),Rgh(29,TEXT("DetailRoughness"),Detail)},
+        {TEXT("DN2"),Nor(28,TEXT("DetailNormalB"),Detail2)},{TEXT("DR2"),Rgh(29,TEXT("DetailRoughnessB"),Detail2)},
+        // Macro modulation only (albedo/roughness): 50 m aerial scan plus the legacy 90 m terrain scan,
+        // non-commensurate so neither repeat is legible. No macro normal (the stretched 90 m normal
+        // produced the 5-10 m "dune ripple" reported by QA).
+        {TEXT("M1"),Col(30,TEXT("MacroVariation"),UV(5000.0F))},
+        {TEXT("M2"),Col(0,TEXT("LandBaseColorTexture"),UV(9000.0F))}};
+    auto* Cover=Node<UMaterialExpressionVertexColor>(Material);
+    auto* Depth=Node<UMaterialExpressionPixelDepth>(Material);
+    auto Make=[&](ECustomMaterialOutputType Type,const FString& Body)
+    {
+        auto* C=Node<UMaterialExpressionCustom>(Material);C->OutputType=Type;C->Code=FString(LandCode::Weights)+Body;
+        for(const FIn& In:Inputs){FCustomInput Item;Item.InputName=In.Name;Item.Input.Connect(0,In.Node);C->Inputs.Add(Item);}
+        FCustomInput V;V.InputName=TEXT("VC");V.Input.Connect(0,Cover);C->Inputs.Add(V);
+        FCustomInput DIn;DIn.InputName=TEXT("D");DIn.Input.Connect(0,Depth);C->Inputs.Add(DIn);
+        return C;
+    };
+    // Habitat colour grading keeps sun-facing grass golden and woodland ground darker/cooler.
+    auto* Color=Make(CMOT_Float3,TEXT(
+        "float3 c=EC*b.x*float3(1.10,1.00,.78)+SC*b.y*float3(.92,.96,.80)+WD*b.z*float3(.70,.66,.58)+RD*b.w;"
+        "float m1=clamp(dot(M1,L)/.30,.65,1.35), m2=clamp(dot(M2,L)/.28,.75,1.25);"
+        "c*=lerp(1,m1*m2,.5+.25*farFade);"
+        "return c;"));
+    auto* Normal=Make(CMOT_Float3,TEXT(
+        "float3 n=EN*b.x+SN*b.y+WN*b.z+RN*b.w; n.xy*=lerp(1,.35,farFade);"
+        "float2 d=(DN.xy*.55+DN2.xy*.45)*nearFade*.8;"
+        "return normalize(float3(n.xy+d,n.z));"));
+    auto* Rough=Make(CMOT_Float1,TEXT(
+        "float r=ER.r*b.x+SR.r*b.y+WR.r*b.z+RR.r*b.w;"
+        "r*=lerp(1,(DR.r+DR2.r)*.67,nearFade*.5);"
+        "r=lerp(r,r*clamp(.85+.3*dot(M1,L),.8,1.15),.6);"
+        "return saturate(r);"));
+    return {Color,Normal,Rough};
 }
 
 bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32 Base, int32 Normal, int32 Roughness,
@@ -192,27 +295,55 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
     bConnected &= UMaterialEditingLibrary::ConnectMaterialExpressions(RoughnessExpression, RoughnessOutput, RoughnessProduct, TEXT("A"));
     RoughnessProduct->B.Connect(0, RoughnessFactor);
     UMaterialExpression* SurfaceColor=ColorProduct;
-    if(FString(Name).Contains(TEXT("Ground")))
-    {
-        auto* Cover=Node<UMaterialExpressionVertexColor>(Material);
-        auto* CoverProduct=Node<UMaterialExpressionMultiply>(Material);
-        CoverProduct->A.Connect(0,ColorProduct);CoverProduct->B.Connect(0,Cover);SurfaceColor=CoverProduct;
-    }
     UMaterialExpression* SurfaceNormal=NormalExpression;UMaterialExpression* SurfaceRoughness=RoughnessProduct;
     FString SurfaceNormalOutput=NormalOutput;
+    if(FString(Name).Contains(TEXT("Ground")))
+    {
+        const FLandSurface Land=BuildLandSurface(Material,Textures);
+        auto* TintLand=Node<UMaterialExpressionMultiply>(Material);TintLand->A.Connect(0,Land.Color);TintLand->B.Connect(0,Tint);
+        auto* RoughLand=Node<UMaterialExpressionMultiply>(Material);RoughLand->A.Connect(0,Land.Rough);RoughLand->B.Connect(0,RoughnessFactor);
+        SurfaceColor=TintLand;SurfaceNormal=Land.Normal;SurfaceRoughness=RoughLand;SurfaceNormalOutput=TEXT("");
+    }
     if(FString(Name).Contains(TEXT("Gravel")))
     {
+        // Launch apron keeps the fine sandy gravel; trails (PathEarth=1, set per component at runtime)
+        // become a compacted earth path. The worn core meets the habitat ground through a
+        // height-blended, irregular shoulder driven by vertex alpha rather than a flat strip edge.
         auto* Mask=Node<UMaterialExpressionVertexColor>(Material);
-        auto* LandUV=Node<UMaterialExpressionTextureCoordinate>(Material);LandUV->UTiling=4000.0F/9000.0F;LandUV->VTiling=4000.0F/9000.0F;
-        auto* LandColor=Sample(Material,Textures[0],TEXT("LandBaseColorTexture"),LandUV,SAMPLERTYPE_Color);
-        auto* LandNormal=Sample(Material,Textures[1],TEXT("LandNormalTexture"),LandUV,SAMPLERTYPE_Normal);
-        auto* LandRough=Sample(Material,Textures[2],TEXT("LandRoughnessTexture"),LandUV,SAMPLERTYPE_LinearGrayscale);
-        auto* LandTint=Node<UMaterialExpressionMultiply>(Material);LandTint->A.Connect(0,LandColor);LandTint->B.Connect(0,Mask);
-        auto* Blend=Node<UMaterialExpressionLinearInterpolate>(Material);Blend->A.Connect(0,LandTint);Blend->B.Connect(0,ColorProduct);Blend->Alpha.Connect(4,Mask);SurfaceColor=Blend;
-        auto* BlendNormal=Node<UMaterialExpressionLinearInterpolate>(Material);BlendNormal->A.Connect(0,LandNormal);BlendNormal->B.Connect(0,NormalExpression);BlendNormal->Alpha.Connect(4,Mask);
+        const FLandSurface Land=BuildLandSurface(Material,Textures);
+        auto* TrailUV=Node<UMaterialExpressionTextureCoordinate>(Material);TrailUV->UTiling=TrailUV->VTiling=4000.0F/200.0F;
+        auto* TrailColor=Sample(Material,Textures[31],TEXT("TrailColor"),TrailUV,SAMPLERTYPE_Color);TrailColor->SamplerSource=SSM_Wrap_WorldGroupSettings;
+        auto* TrailNormal=Sample(Material,Textures[32],TEXT("TrailNormal"),TrailUV,SAMPLERTYPE_Normal);TrailNormal->SamplerSource=SSM_Wrap_WorldGroupSettings;
+        auto* TrailRough=Sample(Material,Textures[33],TEXT("TrailRoughness"),TrailUV,SAMPLERTYPE_LinearGrayscale);TrailRough->SamplerSource=SSM_Wrap_WorldGroupSettings;
+        auto* PathEarth=Node<UMaterialExpressionScalarParameter>(Material);PathEarth->ParameterName=TEXT("PathEarth");PathEarth->DefaultValue=0.0F;
+        auto* Core=Node<UMaterialExpressionCustom>(Material);Core->OutputType=CMOT_Float4;
+        // Core alpha is height-biased by the core texture inside the transition (irregular edge).
+        Core->Code=TEXT("float3 L=float3(.3,.59,.11); float3 c=lerp(G,T*float3(.92,.86,.80),P); float hgt=dot(c,L)*1.6;"
+            "float a=saturate((A*1.35-.18)+(hgt-.5)*.55*saturate(A*(1-A)*4)); return float4(c,a);");
+        auto In=[](UMaterialExpressionCustom* C,const TCHAR* N,UMaterialExpression* E,int32 Out){FCustomInput I;I.InputName=N;I.Input.Connect(Out,E);C->Inputs.Add(I);};
+        In(Core,TEXT("G"),ColorProduct,0);In(Core,TEXT("T"),TrailColor,0);In(Core,TEXT("P"),PathEarth,0);In(Core,TEXT("A"),Mask,4);
+        auto* CoreColor=Node<UMaterialExpressionCustom>(Material);CoreColor->OutputType=CMOT_Float3;CoreColor->Code=TEXT("return V.rgb;");In(CoreColor,TEXT("V"),Core,0);
+        auto* CoreAlpha=Node<UMaterialExpressionCustom>(Material);CoreAlpha->OutputType=CMOT_Float1;CoreAlpha->Code=TEXT("return V.a;");In(CoreAlpha,TEXT("V"),Core,0);
+        // Trampled shoulder: the land beside the core is slightly darker and smoother (worn grass).
+        auto* Worn=Node<UMaterialExpressionCustom>(Material);Worn->OutputType=CMOT_Float3;
+        Worn->Code=TEXT("float s=saturate(1-abs(A-.3)*3.0)*(.35+.65*P); return C*lerp(1,.78,s);");
+        In(Worn,TEXT("C"),Land.Color,0);In(Worn,TEXT("A"),Mask,4);In(Worn,TEXT("P"),PathEarth,0);
+        auto* Blend=Node<UMaterialExpressionLinearInterpolate>(Material);Blend->A.Connect(0,Worn);Blend->B.Connect(0,CoreColor);Blend->Alpha.Connect(0,CoreAlpha);SurfaceColor=Blend;
+        auto* CoreNormal=Node<UMaterialExpressionLinearInterpolate>(Material);CoreNormal->A.Connect(0,NormalExpression);CoreNormal->B.Connect(0,TrailNormal);CoreNormal->Alpha.Connect(0,PathEarth);
+        auto* BlendNormal=Node<UMaterialExpressionLinearInterpolate>(Material);BlendNormal->A.Connect(0,Land.Normal);BlendNormal->B.Connect(0,CoreNormal);BlendNormal->Alpha.Connect(0,CoreAlpha);
         auto* Unit=Node<UMaterialExpressionNormalize>(Material);Unit->VectorInput.Connect(0,BlendNormal);SurfaceNormal=Unit;SurfaceNormalOutput=TEXT("");
-        auto* LandRoughProduct=Node<UMaterialExpressionMultiply>(Material);LandRoughProduct->A.Connect(1,LandRough);LandRoughProduct->B.Connect(0,RoughnessFactor);
-        auto* BlendRough=Node<UMaterialExpressionLinearInterpolate>(Material);BlendRough->A.Connect(0,LandRoughProduct);BlendRough->B.Connect(0,RoughnessProduct);BlendRough->Alpha.Connect(4,Mask);SurfaceRoughness=BlendRough;
+        auto* CoreRough=Node<UMaterialExpressionLinearInterpolate>(Material);CoreRough->A.Connect(0,RoughnessProduct);CoreRough->B.Connect(1,TrailRough);CoreRough->Alpha.Connect(0,PathEarth);
+        auto* LandRoughProduct=Node<UMaterialExpressionMultiply>(Material);LandRoughProduct->A.Connect(0,Land.Rough);LandRoughProduct->B.Connect(0,RoughnessFactor);
+        auto* BlendRough=Node<UMaterialExpressionLinearInterpolate>(Material);BlendRough->A.Connect(0,LandRoughProduct);BlendRough->B.Connect(0,CoreRough);BlendRough->Alpha.Connect(0,CoreAlpha);SurfaceRoughness=BlendRough;
+    }
+    if(bWorldProjection)
+    {
+        auto* World=Node<UMaterialExpressionWorldPosition>(Material);
+        auto* Wet=Node<UMaterialExpressionCustom>(Material);Wet->OutputType=CMOT_Float1;
+        Wet->Code=TEXT("return 1.0-smoothstep(-6480.0,-6180.0,P.z);");FCustomInput Pos;Pos.InputName=TEXT("P");Pos.Input.Connect(0,World);Wet->Inputs.Add(Pos);
+        auto* WetColor=Node<UMaterialExpressionMultiply>(Material);WetColor->A.Connect(0,SurfaceColor);WetColor->ConstB=.44F;
+        auto* ColorBlend=Node<UMaterialExpressionLinearInterpolate>(Material);ColorBlend->A.Connect(0,SurfaceColor);ColorBlend->B.Connect(0,WetColor);ColorBlend->Alpha.Connect(0,Wet);SurfaceColor=ColorBlend;
+        auto* WetRough=Node<UMaterialExpressionLinearInterpolate>(Material);WetRough->A.Connect(0,SurfaceRoughness);WetRough->ConstB=.24F;WetRough->Alpha.Connect(0,Wet);SurfaceRoughness=WetRough;
     }
     bConnected &= UMaterialEditingLibrary::ConnectMaterialProperty(SurfaceColor, TEXT(""), MP_BaseColor);
     bConnected &= UMaterialEditingLibrary::ConnectMaterialProperty(SurfaceRoughness, TEXT(""), MP_Roughness);
@@ -397,6 +528,6 @@ int32 UCoastDraftImportCommandlet::Main(const FString& Params)
     const bool bWater = BuildWaterMaterial(WaterNormal);
     const bool bGravel=BuildMaterial(TEXT("M_CoastGravelDraft"),Textures,13,14,15,-1,false,4000.0F/253.0F,WorldAlignedTexture,WorldAlignedNormal);
     if (!(bGround && bRock && bNeedles && bBark && bWater && bGravel)) return 7;
-    UE_LOG(LogTemp, Display, TEXT("COAST_DRAFT_IMPORT_PASS textures=16 materials=6 state=DRAFT_NOT_USER_CONFIRMED"));
+    UE_LOG(LogTemp, Display, TEXT("COAST_DRAFT_IMPORT_PASS textures=34 materials=6 state=DRAFT_NOT_USER_CONFIRMED"));
     return 0;
 }
