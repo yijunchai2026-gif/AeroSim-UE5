@@ -558,8 +558,8 @@ UStaticMesh* BuildMesh(const FName Name, const TArray<FLod>& Lods, TArray<int32>
         Pointers.Add(&Description);
     }
     UStaticMesh* Mesh = NewObject<UStaticMesh>(GetTransientPackage(), Name, RF_Transient);
-    Mesh->GetStaticMaterials().Add(FStaticMaterial(nullptr, TEXT("Bark"), TEXT("Bark")));
-    Mesh->GetStaticMaterials().Add(FStaticMaterial(nullptr, TEXT("Foliage"), TEXT("Foliage")));
+    Mesh->GetStaticMaterials().Add(FStaticMaterial(nullptr, FName(TEXT("Bark"))));
+    Mesh->GetStaticMaterials().Add(FStaticMaterial(nullptr, FName(TEXT("Foliage"))));
     UStaticMesh::FBuildMeshDescriptionsParams Params;
     Params.bFastBuild = true; Params.bCommitMeshDescription = false; Params.bMarkPackageDirty = false; Params.bBuildSimpleCollision = false;
     Params.bAllowCpuAccess = false;

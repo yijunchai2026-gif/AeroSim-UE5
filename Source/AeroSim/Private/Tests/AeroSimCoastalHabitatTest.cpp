@@ -144,6 +144,7 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
             UTexture* Texture = nullptr;
             TestTrue(FString::Printf(TEXT("%s uses %s"), Layer.Key, Layer.Value), Ground->GetTextureParameterValue(FMaterialParameterInfo(Layer.Key), Texture) && Texture && Texture->GetFName() == Layer.Value);
         }
+#if WITH_EDITOR
         if (FApp::CanEverRender())
         {
             FMaterialResource* Resource = Ground->GetMaterial()->GetMaterialResource(GMaxRHIShaderPlatform);
@@ -155,6 +156,9 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
             }
         }
         else AddInfo(TEXT("Ground shader compile check NOT_RUN under NullRHI"));
+#else
+        AddInfo(TEXT("Ground shader compile check NOT_RUN outside editor builds"));
+#endif
     }
     AddInfo(FString::Printf(TEXT("Habitat coverage of %d land samples: exposed %d sheltered %d woodland %d rock %d"), LandSamples, Counts[0], Counts[1], Counts[2], Counts[3]));
     AddInfo(FString::Printf(TEXT("Habitat 5 m step max %.3f at (%.0f, %.0f); >0.15 in %d of %d cells; woodland mean sun %.3f shade %.3f"),
