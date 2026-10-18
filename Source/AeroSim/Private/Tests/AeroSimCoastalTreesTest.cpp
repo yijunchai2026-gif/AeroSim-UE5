@@ -147,8 +147,10 @@ bool FCoastalTreePlacementTest::RunTest(const FString& Parameters)
     for (const FArchetype& A : Archetypes)
     {
         const auto* Batch = CoastalTreeTest::FindBatch(Coast, A.Name);
-        if (!TestNotNull(TEXT("Each archetype is one instanced component"), Batch)) continue;
-        Instances += Batch->GetInstanceCount();
+        const auto* FarBatch = CoastalTreeTest::FindBatch(Coast, FName(*(A.Name.ToString() + TEXT("Far"))));
+        if (!TestNotNull(TEXT("Each archetype has a near instanced component"), Batch) || !TestNotNull(TEXT("Each archetype has a far instanced component"), FarBatch)) continue;
+        TestTrue(TEXT("Far woodland never renders LOD0"), FarBatch->bOverrideMinLOD && FarBatch->MinLOD >= 1);
+        Instances += Batch->GetInstanceCount() + FarBatch->GetInstanceCount();
         TestEqual(TEXT("Visual tree instances never cook collision"), Batch->GetCollisionEnabled(), ECollisionEnabled::NoCollision);
         TestTrue(TEXT("Bark and foliage material slots"), Batch->GetNumMaterials() == 2);
     }
@@ -177,7 +179,8 @@ bool FCoastalTreePlacementTest::RunTest(const FString& Parameters)
     {
         TestFalse(TEXT("Collision proxies never render"), ProxyBatch->IsVisible());
         TestEqual(TEXT("Trunk proxies block collision"), ProxyBatch->GetCollisionEnabled(), ECollisionEnabled::QueryAndPhysics);
-        TestTrue(TEXT("Every overstory tree has at least two trunk collision segments"), ProxyBatch->GetInstanceCount() >= 2 * (Layout.NearOverstoryTrees));
+        TestTrue(TEXT("Every near overstory tree has at least two trunk collision segments"), ProxyBatch->GetInstanceCount() >= 2 * (Layout.NearOverstoryTrees));
+        AddInfo(FString::Printf(TEXT("FLORA_COLLISION proxies=%d near_overstory=%d"), ProxyBatch->GetInstanceCount(), Layout.NearOverstoryTrees));
     }
     return true;
 }
@@ -240,6 +243,17 @@ bool FCoastalTreeCorridorTest::RunTest(const FString& Parameters)
     for (const FPlacedTree& Tree : Layout.Trees)
         if (Tree.bCorridorFlank)
             TestTrue(TEXT("Corridor flank trees have a raised crown base"), Archetypes[Tree.Archetype].LowestFoliageNearStem * Tree.Scale >= 450);
+    // Suggested `corridor` review pose: 3 m inside the mouth, 2.5 m above ground, looking down the run.
+    {
+        const FCorridorSample* Mouth = Layout.Corridor.FindByPredicate([](const FCorridorSample& S) { return S.Distance >= 300; });
+        const FCorridorSample* Ahead = Layout.Corridor.FindByPredicate([](const FCorridorSample& S) { return S.Distance >= 2400; });
+        if (Mouth && Ahead)
+        {
+            const FVector2D Look = (Ahead->Point - Mouth->Point).GetSafeNormal();
+            AddInfo(FString::Printf(TEXT("FLORA_CORRIDOR_POSE location=(%.0f,%.0f,%.0f) pitch=-3 yaw=%.1f"), Mouth->Point.X, Mouth->Point.Y,
+                APacificCoastGraybox::GetCoastalLandHeight(Mouth->Point.X, Mouth->Point.Y) + 250.0F, FMath::RadiansToDegrees(FMath::Atan2(Look.Y, Look.X))));
+        }
+    }
     // The entry is visible from the fixed `forest` review pose.
     FVector Camera; FRotator Rotation;
     if (TestTrue(TEXT("Forest review pose resolves"), AAeroSimGameMode::ResolveReviewView(TEXT("forest"), 8, Camera, Rotation)))

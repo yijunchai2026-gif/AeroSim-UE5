@@ -105,7 +105,7 @@ bool FCoastalFloraFrustumBudgetTest::RunTest(const FString& Parameters)
 {
     const APacificCoastGraybox* Coast = GetDefault<APacificCoastGraybox>();
     if (!TestNotNull(TEXT("Generated coast exists"), Coast)) return false;
-    const TCHAR* Views[] = {TEXT("forest"), TEXT("overview"), TEXT("mountain"), TEXT("bridge"), TEXT("launch-low"), TEXT("ground")};
+    const TCHAR* Views[] = {TEXT("forest"), TEXT("overview"), TEXT("mountain"), TEXT("bridge"), TEXT("launch-low"), TEXT("ground"), TEXT("cliff")};
     for (const TCHAR* View : Views)
     {
         const CoastalFloraBudget::FViewBudget Budget = CoastalFloraBudget::Measure(Coast, View);

@@ -31,10 +31,10 @@ void APacificCoastGraybox::BuildCoastalHabitat()
     const FKind Kinds[] = {
         {TEXT("CoastalFloraUnderstoryFernA"), FernA.Object, 1.3F, 2.0F, 4000, 5500, true, 40},
         {TEXT("CoastalFloraUnderstoryFernB"), FernB.Object, 1.4F, 2.0F, 5000, 7000, true, 40},
-        {TEXT("CoastalFloraUnderstoryBrushA"), BrushA.Object, 2.0F, 3.4F, 4500, 6000, true, 60},
-        {TEXT("CoastalFloraUnderstoryBrushB"), BrushB.Object, 2.0F, 3.0F, 7000, 9000, true, 60},
-        {TEXT("CoastalFloraUnderstoryShrubA"), ShrubA.Object, 2.4F, 3.8F, 6000, 8000, true, 60},
-        {TEXT("CoastalFloraUnderstoryShrubB"), ShrubB.Object, 2.4F, 3.6F, 6000, 8000, true, 60},
+        {TEXT("CoastalFloraUnderstoryBrushA"), BrushA.Object, 2.0F, 3.4F, 4500, 6000, true, 140},
+        {TEXT("CoastalFloraUnderstoryBrushB"), BrushB.Object, 2.0F, 3.0F, 7000, 9000, true, 140},
+        {TEXT("CoastalFloraUnderstoryShrubA"), ShrubA.Object, 2.4F, 3.8F, 6000, 8000, true, 120},
+        {TEXT("CoastalFloraUnderstoryShrubB"), ShrubB.Object, 2.4F, 3.6F, 6000, 8000, true, 120},
         {TEXT("CoastalFloraGroundGrassTall"), GrassTall.Object, 1.6F, 2.8F, 2500, 3500, false, -400},
         {TEXT("CoastalFloraGroundGrassSmall"), GrassSmall.Object, 2.0F, 3.4F, 2200, 3000, false, -400}};
     constexpr int32 KindCount = UE_ARRAY_COUNT(Kinds);
@@ -91,6 +91,27 @@ void APacificCoastGraybox::BuildCoastalHabitat()
             const float Scale = FMath::Lerp(K.MinScale, K.MaxScale, ScaleRoll);
             const FVector Base(P.X, P.Y, GetCoastalLandHeight(P.X, P.Y) - 3.0F);
             Instances[Kind].Add(FTransform(FRotator(0, Yaw, 0), Base, FVector(Scale)));
+        }
+    // Near-camera ground cover around the launch worksite and route plateau (deferred to
+    // DEV-FLORA by DEV-TERRAIN): dense tufts within ~25 m thinning out to 60 m, kept off the
+    // apron/mat, the access path, trails and boardwalk; species follow the habitat weights.
+    FRandomStream Ground(77113);
+    constexpr float GrassCell = 115.0F;
+    for (float GX = -6000; GX < 6000; GX += GrassCell)
+        for (float GY = -6000; GY < 6000; GY += GrassCell)
+        {
+            const FVector2D P(GX + Ground.FRandRange(0, GrassCell), GY + Ground.FRandRange(0, GrassCell));
+            const float Roll = Ground.FRand(), Pick = Ground.FRand(), ScaleRoll = Ground.FRand(), Yaw = Ground.FRandRange(0, 360);
+            const float Distance = P.Size();
+            if (Distance > 6000 || Distance < 950) continue; // keep the 14 x 12 m work surface clear
+            if (Roll > FMath::Lerp(.80F, .18F, FMath::Clamp((Distance - 2500.0F) / 3500.0F, 0.0F, 1.0F))) continue;
+            if (P.X > GetCliffEdgeX(P.Y) - 400 || IsWalkway(P, 160)) continue;
+            const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(P.X, P.Y);
+            if (Habitat.Rock + Habitat.Shore > .4F) continue;
+            const int32 Kind = Pick < Habitat.ExposedGrass * .8F ? 6 : 7;
+            const FKind& K = Kinds[Kind];
+            if (!K.Mesh) continue;
+            Instances[Kind].Add(FTransform(FRotator(0, Yaw, 0), FVector(P.X, P.Y, GetCoastalLandHeight(P.X, P.Y) - 2.0F), FVector(FMath::Lerp(K.MinScale, K.MaxScale, ScaleRoll))));
         }
     int32 Total = 0;
     for (int32 Kind = 0; Kind < KindCount; ++Kind)

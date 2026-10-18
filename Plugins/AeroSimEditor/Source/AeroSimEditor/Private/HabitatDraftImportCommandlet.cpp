@@ -56,24 +56,28 @@ const FHabitatTextureSource Textures[] = {
     {TEXT("FloraDraft/pine_bark/pine_bark_diff_2k.jpg"), TEXT("T_FloraPineBark_BaseColor"), ERole::Color},
     {TEXT("FloraDraft/pine_bark/pine_bark_nor_dx_2k.jpg"), TEXT("T_FloraPineBark_Normal"), ERole::Normal},
     {TEXT("FloraDraft/pine_bark/pine_bark_rough_2k.jpg"), TEXT("T_FloraPineBark_Roughness"), ERole::Gray},
-    {TEXT("FloraDraft/bark_willow_02/bark_willow_02_diff_2k.jpg"), TEXT("T_FloraFirBark_BaseColor"), ERole::Color},
-    {TEXT("FloraDraft/bark_willow_02/bark_willow_02_nor_dx_2k.jpg"), TEXT("T_FloraFirBark_Normal"), ERole::Normal},
-    {TEXT("FloraDraft/bark_willow_02/bark_willow_02_rough_2k.jpg"), TEXT("T_FloraFirBark_Roughness"), ERole::Gray},
+    // Douglas-fir: ambientCG Bark014 (photogrammetry, tagged fir) supersedes the bark_willow_02 stand-in.
+    {TEXT("FloraDraft/Bark014/Bark014_2K-JPG_Color.jpg"), TEXT("T_FloraFirBark_BaseColor"), ERole::Color},
+    {TEXT("FloraDraft/Bark014/Bark014_2K-JPG_NormalDX.jpg"), TEXT("T_FloraFirBark_Normal"), ERole::Normal},
+    {TEXT("FloraDraft/Bark014/Bark014_2K-JPG_Roughness.jpg"), TEXT("T_FloraFirBark_Roughness"), ERole::Gray},
     {TEXT("FloraDraft/jolcham_oak_bark_01/jolcham_oak_bark_01_diff_1k.jpg"), TEXT("T_FloraOakBark_BaseColor"), ERole::Color},
     {TEXT("FloraDraft/jolcham_oak_bark_01/jolcham_oak_bark_01_nor_dx_1k.jpg"), TEXT("T_FloraOakBark_Normal"), ERole::Normal},
     {TEXT("FloraDraft/jolcham_oak_bark_01/jolcham_oak_bark_01_rough_1k.jpg"), TEXT("T_FloraOakBark_Roughness"), ERole::Gray},
-    {TEXT("FloraDraft/pine_tree_01/pine_tree_01_twig_diff_2k.jpg"), TEXT("T_FloraPineTwig_BaseColor"), ERole::Color},
-    {TEXT("FloraDraft/pine_tree_01/pine_tree_01_twig_alpha_2k.jpg"), TEXT("T_FloraPineTwig_Alpha"), ERole::Alpha},
-    {TEXT("FloraDraft/pine_tree_01/pine_tree_01_twig_nor_dx_2k.jpg"), TEXT("T_FloraPineTwig_Normal"), ERole::Normal},
-    {TEXT("FloraDraft/pine_tree_01/pine_tree_01_twig_rough_2k.jpg"), TEXT("T_FloraPineTwig_Roughness"), ERole::Gray},
-    {TEXT("FloraDraft/fir_tree_01/fir_tree_01_twig_diff_2k.jpg"), TEXT("T_FloraFirTwig_BaseColor"), ERole::Color},
-    {TEXT("FloraDraft/fir_tree_01/fir_tree_01_twig_alpha_2k.jpg"), TEXT("T_FloraFirTwig_Alpha"), ERole::Alpha},
-    {TEXT("FloraDraft/fir_tree_01/fir_tree_01_twig_nor_dx_2k.jpg"), TEXT("T_FloraFirTwig_Normal"), ERole::Normal},
-    {TEXT("FloraDraft/fir_tree_01/fir_tree_01_twig_rough_2k.jpg"), TEXT("T_FloraFirTwig_Roughness"), ERole::Gray},
-    {TEXT("FloraDraft/island_tree_02/island_tree_02_leaves_diff_2k.jpg"), TEXT("T_FloraOakLeaf_BaseColor"), ERole::Color},
-    {TEXT("FloraDraft/island_tree_02/island_tree_02_leaves_alpha_2k.jpg"), TEXT("T_FloraOakLeaf_Alpha"), ERole::Alpha},
-    {TEXT("FloraDraft/island_tree_02/island_tree_02_leaves_nor_dx_2k.jpg"), TEXT("T_FloraOakLeaf_Normal"), ERole::Normal},
-    {TEXT("FloraDraft/island_tree_02/island_tree_02_leaves_rough_2k.jpg"), TEXT("T_FloraOakLeaf_Roughness"), ERole::Gray},
+    // Monterey pine: ART-FLORA T_PineClumpCards (dense composites of the real pine_tree_01 sprigs).
+    {TEXT("FloraDraft/Derived/T_PineClumpCards_BaseColor.png"), TEXT("T_FloraPineTwig_BaseColor"), ERole::Color},
+    {TEXT("FloraDraft/Derived/T_PineClumpCards_Alpha.png"), TEXT("T_FloraPineTwig_Alpha"), ERole::Alpha},
+    {TEXT("FloraDraft/Derived/T_PineClumpCards_Normal.png"), TEXT("T_FloraPineTwig_Normal"), ERole::Normal},
+    {TEXT("FloraDraft/Derived/T_PineClumpCards_Roughness.png"), TEXT("T_FloraPineTwig_Roughness"), ERole::Gray},
+    // Douglas-fir sprays: ambientCG LeafSet019 (three dense conifer sprays).
+    {TEXT("FloraDraft/LeafSet019/LeafSet019_2K-JPG_Color.jpg"), TEXT("T_FloraFirTwig_BaseColor"), ERole::Color},
+    {TEXT("FloraDraft/LeafSet019/LeafSet019_2K-JPG_Opacity.jpg"), TEXT("T_FloraFirTwig_Alpha"), ERole::Alpha},
+    {TEXT("FloraDraft/LeafSet019/LeafSet019_2K-JPG_NormalDX.jpg"), TEXT("T_FloraFirTwig_Normal"), ERole::Normal},
+    {TEXT("FloraDraft/LeafSet019/LeafSet019_2K-JPG_Roughness.jpg"), TEXT("T_FloraFirTwig_Roughness"), ERole::Gray},
+    // Coast live oak: twig cards composited from ambientCG LeafSet024 (acquire_coast_habitat.py --derive-oak).
+    {TEXT("HabitatDraft/OakTwigCards/basecolor.png"), TEXT("T_FloraOakLeaf_BaseColor"), ERole::Color},
+    {TEXT("HabitatDraft/OakTwigCards/alpha.png"), TEXT("T_FloraOakLeaf_Alpha"), ERole::Alpha},
+    {TEXT("HabitatDraft/OakTwigCards/normal.png"), TEXT("T_FloraOakLeaf_Normal"), ERole::Normal},
+    {TEXT("HabitatDraft/OakTwigCards/roughness.png"), TEXT("T_FloraOakLeaf_Roughness"), ERole::Gray},
     {TEXT("FloraDraft/fern_02/textures/fern_02_diff_1k.jpg"), TEXT("T_FloraFern_BaseColor"), ERole::Color},
     {TEXT("FloraDraft/fern_02/fern_02_alpha_1k.jpg"), TEXT("T_FloraFern_Alpha"), ERole::Alpha},
     {TEXT("FloraDraft/fern_02/fern_02_nor_dx_1k.jpg"), TEXT("T_FloraFern_Normal"), ERole::Normal},
@@ -109,7 +113,7 @@ UMaterialExpressionTextureSampleParameter2D* Sample(UMaterial* M,UTexture2D* Tex
 // Shared deterministic wind: broad gust plus small flutter, weighted by vertex colour G
 // (0 on trunks, 1 at branch tips). The same field drives bark and foliage so cards stay attached.
 const TCHAR* WindCode=TEXT("float ph=dot(P.xy,float2(.0011,.0007));float g=sin(T*.9+ph)*.65+sin(T*2.3+ph*2.1)*.35;"
-    "float f=sin(T*5.1+dot(P.xyz,float3(.031,.021,.017)));return float3(.82,.57,0)*(g*W*6.0)+float3(0,0,1)*(f*W*W*2.0);");
+    "float f=sin(T*5.1+dot(P.xyz,float3(.031,.021,.017)));return float3(.82,.57,0)*(g*W*2.5)+float3(0,0,1)*(f*W*W*.5);");
 
 UMaterial* Begin(const TCHAR* Name,bool& bNew)
 {
@@ -263,7 +267,7 @@ int32 UHabitatDraftImportCommandlet::Main(const FString& Params)
     UMaterial* OakLeaves=Foliage(TEXT("M_FloraOakLeavesDraft"),T(TEXT("T_FloraOakLeaf_BaseColor")),T(TEXT("T_FloraOakLeaf_Alpha")),T(TEXT("T_FloraOakLeaf_Normal")),T(TEXT("T_FloraOakLeaf_Roughness")),0,.36F,FLinearColor(.52F,.62F,.46F));
     // Douglas-fir proxy bark is tinted warmer (+red), per the ART-FLORA spec.
     UMaterial* PineBark=Bark(TEXT("M_FloraPineBarkDraft"),T(TEXT("T_FloraPineBark_BaseColor")),T(TEXT("T_FloraPineBark_Normal")),T(TEXT("T_FloraPineBark_Roughness")),FLinearColor(.62F,.55F,.50F));
-    UMaterial* FirBark=Bark(TEXT("M_FloraFirBarkDraft"),T(TEXT("T_FloraFirBark_BaseColor")),T(TEXT("T_FloraFirBark_Normal")),T(TEXT("T_FloraFirBark_Roughness")),FLinearColor(.40F,.34F,.30F));
+    UMaterial* FirBark=Bark(TEXT("M_FloraFirBarkDraft"),T(TEXT("T_FloraFirBark_BaseColor")),T(TEXT("T_FloraFirBark_Normal")),T(TEXT("T_FloraFirBark_Roughness")),FLinearColor(.45F,.42F,.40F));
     UMaterial* OakBark=Bark(TEXT("M_FloraOakBarkDraft"),T(TEXT("T_FloraOakBark_BaseColor")),T(TEXT("T_FloraOakBark_Normal")),T(TEXT("T_FloraOakBark_Roughness")),FLinearColor(.70F,.68F,.66F));
     if(!(Grass&&Shrub&&Fern&&Rooibos&&PineNeedles&&FirNeedles&&OakLeaves&&PineBark&&FirBark&&OakBark))return 5;
     const TPair<const TCHAR*,UMaterial*> Meshes[]={{TEXT("SM_CoastGrassSmallDraft"),Grass},{TEXT("SM_CoastGrassTallDraft"),Grass},{TEXT("SM_CoastGrassTinyDraft"),Grass},
