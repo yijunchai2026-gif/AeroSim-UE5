@@ -1,0 +1,69 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "acquired_utc": "2026-10-18T07:51:06.820409+00:00",
+  "asset_id": "grass_ground",
+  "asset_page": "https://polyhaven.com/a/grass_ground",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "authors": {
+    "Charlotte Baglioni": "All"
+  },
+  "physical_dimensions_mm": [
+    2509.999990463257,
+    2509.999990463257
+  ],
+  "physical_width_cm": 250.99999904632568,
+  "physical_scale_source": "https://api.polyhaven.com/info/grass_ground",
+  "physical_scale_unit_source": "https://api.polyhaven.com/api-docs/swagger.json",
+  "millimeters_per_texel_at_2k": 1.2255859328433871,
+  "provider_info_sha256": "0dc2c2614056dd79dbf706e1a0df488c218650a8f580d1a133015abaaf805717",
+  "provider_files_sha256": "e049952d1319f043149032ac708ea9de66c17a6b3feb1ced5931fa41fa980393",
+  "intended_use": "Candidate fine dry grass/soil detail for draft terrain surfaces, tiled at measured 2.51m width.",
+  "limits": "Source is a published grass/soil PBR texture. Capture technique, site identity, engineering compaction, and suitability for the final Pacific Coast scene are not independently verified. No engine asset imported, no material applied, and no visual acceptance claimed.",
+  "proposed_engine_assets": [
+    "T_CoastGrassGround_BaseColor",
+    "T_CoastGrassGround_Normal",
+    "T_CoastGrassGround_Roughness",
+    "M_CoastGroundDraft"
+  ],
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/GrassGroundDraft/basecolor.jpg",
+      "sha256": "4272bddc71a7fa659d1deeb13a9df8c42e68a5ac8cde7523187e4a081e028258",
+      "bytes": 3787330,
+      "publisher_md5": "fd97f2402677e6686b2d9159fc3a4256",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/grass_ground/grass_ground_diff_2k.jpg",
+      "asset": "https://polyhaven.com/a/grass_ground",
+      "license": "CC0-1.0",
+      "role": "sRGB base color",
+      "source_resolution": "2k"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/GrassGroundDraft/normal.jpg",
+      "sha256": "53f05a571694d521031f36eddbb405771252a0eeffc772ad7b6f4086b9f9cf43",
+      "bytes": 5976142,
+      "publisher_md5": "f9ad5cd4c2027e8e095eba28c9670335",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/grass_ground/grass_ground_nor_dx_2k.jpg",
+      "asset": "https://polyhaven.com/a/grass_ground",
+      "license": "CC0-1.0",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/GrassGroundDraft/roughness.jpg",
+      "sha256": "afaed95537e894b8054db38c81712a6d9504b05b560274526621d91d5a95fbe7",
+      "bytes": 1525000,
+      "publisher_md5": "0685285b42a7110ce0876f676a2f79c2",
+      "publisher_md5_verified": true,
+      "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/grass_ground/grass_ground_rough_2k.jpg",
+      "asset": "https://polyhaven.com/a/grass_ground",
+      "license": "CC0-1.0",
+      "role": "linear roughness",
+      "source_resolution": "2k"
+    }
+  ]
+}

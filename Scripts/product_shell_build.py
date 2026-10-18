@@ -24,7 +24,7 @@ def source_fingerprint() -> str:
         files += [p for p in (ROOT/folder).rglob('*') if p.is_file() and p.suffix in {'.h', '.cpp', '.cs', '.ini', '.uplugin'}
                   and 'Intermediate' not in p.parts and 'Binaries' not in p.parts]
     files += [p for p in (ROOT/'Content').rglob('*.uasset') if p.is_file()]
-    files += [p for p in (ROOT/'SourceAssets/EnvironmentDraft').rglob('*') if p.is_file() and p.suffix in {'.json','.png','.jpg'}]
+    files += [p for p in (ROOT/'SourceAssets/EnvironmentDraft').rglob('*') if p.is_file() and p.suffix in {'.json','.png','.jpg','.gltf','.bin'}]
     for path in sorted(files):
         digest.update(str(path.relative_to(ROOT)).encode('utf-8') + b'\0')
         digest.update(path.read_bytes())

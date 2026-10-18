@@ -74,13 +74,26 @@ float CoastY(const int32 Row)
     return FMath::Sign(T) * (Magnitude <= .6F ? Magnitude * 100000.0F : 60000.0F + (Magnitude - .6F) * 400000.0F);
 }
 
+float CoastalErosion(const float Y)
+{
+    const float Centers[] = {-128000,-47000,-19000,19000,54000,112000};
+    const float Widths[] = {18000,16000,12500,15000,12000,22000};
+    const float Depths[] = {4200,4700,5400,4200,3500,4800};
+    float Depth=0;
+    for(int32 Bay=0;Bay<UE_ARRAY_COUNT(Centers);++Bay)
+        Depth=FMath::Max(Depth,Depths[Bay]*Smooth(1.0F-FMath::Abs(Y-Centers[Bay])/Widths[Bay]));
+    return Depth;
+}
+
 float CliffOutcrop(const float Y, const float Depth)
 {
     // Unequal gently dipping beds form supported shelves instead of one smooth bow with vertical ribs.
     const float Thresholds[] = {.09F, .27F, .46F, .69F, .85F};
     const float Widths[] = {.035F, .025F, .045F, .04F, .03F};
     const float Thickness[] = {270.0F, 510.0F, 390.0F, 660.0F, 340.0F};
-    float Outcrop = Depth * 1500.0F;
+    const float Collapse=CoastalErosion(Y)/5400.0F;
+    // Low eroded coves have a wide supported rubble apron; intact headlands retain a steeper face.
+    float Outcrop = Depth * 1500.0F + Collapse * 5500.0F * Smooth(Depth/.30F);
     for (int32 Bed = 0; Bed < UE_ARRAY_COUNT(Thresholds); ++Bed)
     {
         const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F);
@@ -97,9 +110,10 @@ float CliffOutcrop(const float Y, const float Depth)
 float APacificCoastGraybox::GetCliffEdgeX(const float Y)
 {
     // Several non-repeating spatial frequencies produce coves and projecting headlands.
-    return 20000.0F + 3800.0F * CoastalTerrain::Noise(Y, 12730.0F, 7200.0F)
+    const float Headland=20000.0F + 3800.0F * CoastalTerrain::Noise(Y, 12730.0F, 7200.0F)
         + 1600.0F * CoastalTerrain::Noise(Y, -7300.0F, 1900.0F)
         + 2600.0F * FMath::Sin(Y / 14500.0F);
+    return FMath::Max(14500.0F,Headland-1500.0F*CoastalTerrain::CoastalErosion(Y)/5400.0F);
 }
 
 float APacificCoastGraybox::GetCoastalLandHeight(const float X, const float Y)
@@ -132,14 +146,31 @@ float APacificCoastGraybox::GetCoastalLandHeight(const float X, const float Y)
     for (const auto& Branch : Spurs)
         for (int32 Index = 0; Index < 2; ++Index)
             Mountain = JoinRidge(Mountain, RidgeSegment(Point, Branch[Index], Branch[Index + 1]));
+    // Tributaries join before descending to the foothills; broad cuts break the planar triangular shoulders.
+    // Depths taper to zero at their lower ends and remain subordinate to the existing ridge mass.
+    const FRidgeNode Drainages[][4] = {
+        {{FVector2D(-121000,-8000),800,10000},{FVector2D(-98000,8000),2300,12500},{FVector2D(-66000,16000),1600,16000},{FVector2D(-36000,27000),0,19000}},
+        {{FVector2D(-130000,-70000),900,10000},{FVector2D(-95000,-64000),2100,12500},{FVector2D(-62000,-30000),1400,15500},{FVector2D(-33000,-18000),0,18000}}
+    };
+    float Incision=0;
+    for(const auto& Channel:Drainages)
+        for(int32 Segment=0;Segment<3;++Segment)
+            Incision=FMath::Max(Incision,RidgeSegment(Point,Channel[Segment],Channel[Segment+1]));
+    const FRidgeNode TributaryHead{FVector2D(-124000,48000),900,10000};
+    Incision=FMath::Max(Incision,RidgeSegment(Point,TributaryHead,Drainages[0][1]));
+    Mountain-=FMath::Min(Incision,Mountain*.33F);
     const float MountainWeight = Smooth(Mountain / 7000.0F);
     // Low-amplitude coherent surface relief leaves the designed drainage hierarchy readable.
     Mountain += MountainWeight * (240.0F * Noise(X, Y, 16000.0F) + 70.0F * Noise(X, Y, 6300.0F));
     const float Hills = 650.0F + 700.0F * Noise(X, Y, 26000.0F) + 100.0F * Noise(X, Y, 7500.0F);
     const float LandHeight = FMath::Lerp(SubmergedRim, Rise * FMath::Max(0.0F, Hills + Mountain), Interior);
+    // Inland worksite, routes and trails (X <= 105 m) keep their existing supported grade.
+    // Only the outer coastal apron descends into unequal coves between surviving high sea headlands.
+    const float CoastBlend=Smooth((X-10500.0F)/FMath::Max(1000.0F,GetCliffEdgeX(Y)-10500.0F));
+    const float CoastHeight=LandHeight-CoastalErosion(Y)*CoastBlend*Interior;
     // A shallow seasonal swale gives the short woodland bridge an actual crossing to span.
     // Its 16 m bank-to-bank width spans several near-field samples; both bridge landings remain at grade.
-    return LandHeight - 180.0F * ChannelWeight(X, Y);
+    return CoastHeight - 180.0F * ChannelWeight(X, Y);
 }
 
 float APacificCoastGraybox::GetCoastalShoreX(float Y)
