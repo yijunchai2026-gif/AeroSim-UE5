@@ -33,7 +33,8 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
     const TCHAR* Names[] = {TEXT("exposed grass"), TEXT("sheltered grass"), TEXT("woodland"), TEXT("steep rock")};
     for (int32 Class = 0; Class < 4; ++Class)
         TestTrue(FString::Printf(TEXT("Habitat class %s covers at least 2%% of the land"), Names[Class]), LandSamples > 0 && Counts[Class] > LandSamples / 50);
-    TestTrue(TEXT("Dry exposed grass remains the most common open-land habitat"), Counts[0] > Counts[3]);
+    TestTrue(TEXT("Golden exposed grass is the dominant habitat (at least 40% of land)"), Counts[0] * 5 >= LandSamples * 2 && Counts[0] > Counts[1] && Counts[0] > Counts[2]);
+    TestTrue(TEXT("Woodland ground stays a minority of the land (under 35%)"), Counts[2] * 100 < LandSamples * 35);
     TestTrue(TEXT("Open sea beyond the cliff is classified as shore"), FPacificCoastHabitat::GetHabitatClass(APacificCoastGraybox::GetCliffEdgeX(0) + 5000, 0) == ECoastHabitatClass::CliffShore);
     for (const FVector& Route : FPacificCoastGrayboxContract::GetRoutePoints())
     {
@@ -122,6 +123,28 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
         AddInfo(FString::Printf(TEXT("Distant range top %.0f cm; perimeter max %.0f cm; %d triangles"), Top, PerimeterMax, Section->ProcIndexBuffer.Num() / 3));
     }
     TestTrue(TEXT("Distant receding ridgeline mesh exists"), bRange);
+
+    // Cliff face never overhangs: along every sampled cliff column, X grows monotonically with depth.
+    {
+        TMap<int32, TArray<FVector>> Columns;
+        for (UProceduralMeshComponent* Mesh : Meshes)
+        {
+            if (Mesh->GetFName() != TEXT("CoastalPlateau")) continue;
+            if (const FProcMeshSection* Section = Mesh->GetProcMeshSection(0))
+                for (const FProcMeshVertex& V : Section->ProcVertexBuffer)
+                    if (FMath::Abs(V.Position.Y) < 60000 && V.Position.Z > -14001 && V.Position.X >= APacificCoastGraybox::GetCliffEdgeX(V.Position.Y) - .5)
+                        Columns.FindOrAdd(FMath::RoundToInt(V.Position.Y)).Add(V.Position);
+        }
+        int32 Overhangs = 0, Checked = 0;
+        for (auto& Column : Columns)
+        {
+            Column.Value.Sort([](const FVector& A, const FVector& B) { return A.Z > B.Z; });
+            for (int32 Index = 1; Index < Column.Value.Num(); ++Index, ++Checked)
+                if (Column.Value[Index].X < Column.Value[Index - 1].X - 1.0) ++Overhangs;
+        }
+        TestTrue(TEXT("Cliff columns were sampled"), Checked > 5000);
+        TestEqual(TEXT("Sea cliff has no overhanging step anywhere in the core coast"), Overhangs, 0);
+    }
     for (float DX : {-1000.0F, -500.0F, 0.0F, 500.0F})
     {
         const FCoastHabitatSample W = FPacificCoastHabitat::Sample(WorstStep.X + DX, WorstStep.Y);
@@ -159,6 +182,23 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
 #else
         AddInfo(TEXT("Ground shader compile check NOT_RUN outside editor builds"));
 #endif
+    }
+    // Cliff rock: worn sandstone upper face and fractured lower cliff layer, compiled for the real RHI.
+    for (UProceduralMeshComponent* Mesh : Meshes)
+    {
+        if (Mesh->GetFName() != TEXT("CoastalBedrock")) continue;
+        UMaterialInterface* Rock = Mesh->GetMaterial(0);
+        if (!TestNotNull(TEXT("Cliff uses the imported rock material"), Rock)) break;
+        UTexture* Upper = nullptr; UTexture* LowerFace = nullptr;
+        TestTrue(TEXT("Upper cliff face uses worn_rock_natural_01"), Rock->GetTextureParameterValue(FMaterialParameterInfo(TEXT("BaseColorTexture")), Upper) && Upper && Upper->GetFName() == TEXT("T_CoastWornRock_BaseColor"));
+        TestTrue(TEXT("Lower cliff uses rock_face_03"), Rock->GetTextureParameterValue(FMaterialParameterInfo(TEXT("LowerCliffColor")), LowerFace) && LowerFace && LowerFace->GetFName() == TEXT("T_CoastRockFace_BaseColor"));
+        if (FApp::CanEverRender())
+            if (FMaterialResource* Resource = Rock->GetMaterial()->GetMaterialResource(GMaxRHIShaderPlatform))
+            {
+                Resource->FinishCompilation();
+                for (const FString& Error : Resource->GetCompileErrors()) AddError(FString::Printf(TEXT("Rock shader compile error: %s"), *Error));
+                TestTrue(TEXT("Rock material shader map compiled"), Resource->GetGameThreadShaderMap() != nullptr);
+            }
     }
     AddInfo(FString::Printf(TEXT("Habitat coverage of %d land samples: exposed %d sheltered %d woodland %d rock %d"), LandSamples, Counts[0], Counts[1], Counts[2], Counts[3]));
     AddInfo(FString::Printf(TEXT("Habitat 5 m step max %.3f at (%.0f, %.0f); >0.15 in %d of %d cells; woodland mean sun %.3f shade %.3f"),
