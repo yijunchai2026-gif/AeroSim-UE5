@@ -12,6 +12,7 @@ bool FCoastalContinuityTest::RunTest(const FString& Parameters)
     TMap<uint64, int32> Edges;
     TArray<FVector> Positions;
     int32 TriangleCount = 0;
+    int32 DegenerateTriangles = 0;
     int32 SurfaceParts = 0;
     for (UProceduralMeshComponent* Mesh : Meshes)
     {
@@ -26,6 +27,8 @@ bool FCoastalContinuityTest::RunTest(const FString& Parameters)
         for (int32 Index = 0; Index < Section->ProcIndexBuffer.Num(); Index += 3)
         {
             const uint32 A = Section->ProcIndexBuffer[Index], B = Section->ProcIndexBuffer[Index + 1], C = Section->ProcIndexBuffer[Index + 2];
+            const FVector U=Positions[B]-Positions[A],V=Positions[C]-Positions[A];
+            if(FVector::CrossProduct(U,V).SizeSquared()<1.e-6)++DegenerateTriangles;
             const uint32 Start[] = {A, B, C}, End[] = {B, C, A};
             for (int32 Edge = 0; Edge < 3; ++Edge)
             {
@@ -40,6 +43,7 @@ bool FCoastalContinuityTest::RunTest(const FString& Parameters)
     int32 OpenEdges = 0;
     for (const auto& Edge : Edges) if (Edge.Value != 2) ++OpenEdges;
     TestEqual(TEXT("Every land, cliff, skirt and bottom edge has exactly two incident faces"), OpenEdges, 0);
+    TestEqual(TEXT("Adaptive hero rows introduce no zero-area or collapsed triangles"),DegenerateTriangles,0);
     TestTrue(TEXT("Bridge spans a real seasonal drainage bed"), FMath::IsNearlyEqual(APacificCoastGraybox::GetCoastalLandHeight(-9000,8500),-180.0F,1.0F));
     for(int32 Side=-1;Side<=1;Side+=2)
         TestTrue(TEXT("Both bridge landings stay at grade"), FMath::Abs(APacificCoastGraybox::GetCoastalLandHeight(-9000+Side*1300*.9510565F,8500+Side*1300*.309017F))<1);

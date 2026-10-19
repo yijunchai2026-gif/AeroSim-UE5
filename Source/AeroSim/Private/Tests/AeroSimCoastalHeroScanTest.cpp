@@ -1,6 +1,8 @@
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Misc/AutomationTest.h"
 #include "PacificCoastGraybox.h"
+#include "FlightPawn.h"
+#include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
@@ -86,6 +88,32 @@ bool FCoastalHeroScanTest::RunTest(const FString& Parameters)
     AddInfo(FString::Printf(TEXT("Hero scan fit: %d vertices, %.1f%% visible, %d perimeter (worst %.0f cm), %d near-coplanar; bounds %s"),
         Count, 100.0F * Visible / Count, Perimeter.Num(), WorstPerimeter, Coplanar, *Bounds.ToString()));
 
+    // R6: measure the actual open scan crown, not the old padded support lookup. Its soil edge
+    // must follow real rock with a small burial margin rather than projecting metres into air.
+    float MaximumCrownReach=0,MinimumCrownReach=BIG_NUMBER,MinimumSoil=BIG_NUMBER,MaximumSoil=0;int32 CrownSamples=0;
+    for(float Y=Bounds.Min.Y+200;Y<=Bounds.Max.Y-200;Y+=200)
+    {
+        TArray<FVector> Crossings;
+        for(const auto& Edge:Edges)
+        {
+            if(Edge.Value!=1)continue;
+            const FVector A=Points[int32(Edge.Key>>32)],B=Points[int32(Edge.Key&0xffffffff)];
+            if(Y<FMath::Min(A.Y,B.Y)||Y>FMath::Max(A.Y,B.Y)||FMath::Abs(B.Y-A.Y)<.001)continue;
+            Crossings.Add(FMath::Lerp(A,B,(Y-A.Y)/(B.Y-A.Y)));
+        }
+        if(Crossings.IsEmpty())continue;
+        float Top=-BIG_NUMBER;for(const FVector& P:Crossings)Top=FMath::Max(Top,float(P.Z));
+        float CrownX=-BIG_NUMBER;for(const FVector& P:Crossings)if(P.Z>Top-35)CrownX=FMath::Max(CrownX,float(P.X));
+        const float RimX=APacificCoastGraybox::GetCliffEdgeX(Y),RimZ=APacificCoastGraybox::GetCoastalLandHeight(RimX,Y);
+        const float Reach=RimX-CrownX,Cover=RimZ-Top;++CrownSamples;
+        MinimumCrownReach=FMath::Min(MinimumCrownReach,Reach);MaximumCrownReach=FMath::Max(MaximumCrownReach,Reach);
+        MinimumSoil=FMath::Min(MinimumSoil,Cover);MaximumSoil=FMath::Max(MaximumSoil,Cover);
+    }
+    TestTrue(TEXT("Actual scan crown is measured throughout the hero face"),CrownSamples>=18);
+    TestTrue(TEXT("Soil edge extends only 20-40 cm beyond the real crown, rather than up to 5.7 m"),MinimumCrownReach>=20&&MaximumCrownReach<=40);
+    TestTrue(TEXT("Crown is covered by a thin supported 1.1-1.85 m soil layer"),MinimumSoil>=110&&MaximumSoil<=185);
+    AddInfo(FString::Printf(TEXT("R6 actual crown: %d cuts, reach %.1f..%.1f cm, soil %.1f..%.1f cm"),CrownSamples,MinimumCrownReach,MaximumCrownReach,MinimumSoil,MaximumSoil));
+
     // The rebuilt reach is still the same closed, supported cliff: its rim is above the scan top.
     for (float Y = -20000; Y <= -18000; Y += 250)
         TestTrue(TEXT("Land rim stands above the scan top inside the reach"),
@@ -125,6 +153,35 @@ bool FCoastalHeroScanTest::RunTest(const FString& Parameters)
         TestEqual(TEXT("Nothing is hit behind the closed terrain face"), BehindFace, 0);
         TestTrue(TEXT("The scan itself is what most probes meet"), ScanHits * 10 >= Probes * 4);
         AddInfo(FString::Printf(TEXT("Hero sweep: %d probes, %d on scan, worst sweep/trace gap %.1f cm"), Probes, ScanHits, WorstGap));
+        // Exercise the real Pawn collision root, not only a tiny diagnostic sphere. No input,
+        // controller or flight-model tick is used: this checks the actor's actual swept movement.
+        AFlightPawn* Pawn=GameWorld->SpawnActor<AFlightPawn>(FVector(40000,Bounds.GetCenter().Y,Bounds.Max.Z),FRotator::ZeroRotator,Spawn);
+        if(TestNotNull(TEXT("Actual flight Pawn is available for cap/rock sweeps"),Pawn))
+        {
+            const UBoxComponent* Box=Cast<UBoxComponent>(Pawn->GetRootComponent());
+            TestNotNull(TEXT("Collision root is the actual aircraft box"),Box);
+            int32 PawnProbes=0,PawnMisses=0,PawnPenetration=0,PawnSurfaceMismatch=0;float WorstContactError=0;
+            for(float Y=Bounds.Min.Y+350;Y<=Bounds.Max.Y-350;Y+=550)
+                for(float Z:{float(Bounds.Min.Z+250),float(Bounds.Max.Z-50),float(Bounds.Max.Z+80)})
+                {
+                    ++PawnProbes;const FVector Start(40000,Y,Z),End(10000,Y,Z);
+                    Pawn->SetActorLocation(Start,false,nullptr,ETeleportType::TeleportPhysics);
+                    FHitResult Hit;Pawn->AddActorWorldOffset(End-Start,true,&Hit,ETeleportType::None);
+                    if(!Hit.bBlockingHit){++PawnMisses;continue;}
+                    if(Hit.bStartPenetrating)++PawnPenetration;
+                    FHitResult VisibleContact;FCollisionQueryParams Query(TEXT("PawnContactVisible"),true);Query.AddIgnoredActor(Pawn);
+                    if(!GameWorld->LineTraceSingleByChannel(VisibleContact,FVector(40000,Hit.ImpactPoint.Y,Hit.ImpactPoint.Z),FVector(10000,Hit.ImpactPoint.Y,Hit.ImpactPoint.Z),ECC_Visibility,Query))
+                    {++PawnSurfaceMismatch;continue;}
+                    const float Error=FMath::Abs(float(VisibleContact.ImpactPoint.X-Hit.ImpactPoint.X));WorstContactError=FMath::Max(WorstContactError,Error);
+                    if(Error>3.0F)++PawnSurfaceMismatch;
+                }
+            TestEqual(TEXT("Actual Pawn swept motion always stops on the coast"),PawnMisses,0);
+            TestEqual(TEXT("Actual Pawn does not begin inside the coast"),PawnPenetration,0);
+            TestEqual(TEXT("Actual Pawn contacts the visible rock/cap, not an invisible backing wall"),PawnSurfaceMismatch,0);
+            AddInfo(FString::Printf(TEXT("R6 actual Pawn: %d swept moves, contact/visible error %.2f cm"),PawnProbes,WorstContactError));
+            Pawn->Destroy();
+        }
+
     }
     GameWorld->DestroyWorld(false);
     return true;
