@@ -115,7 +115,8 @@ bool FCoastalTreePlacementTest::RunTest(const FString& Parameters)
                 const double Ground = APacificCoastGraybox::GetCoastalLandHeight(World.X, World.Y);
                 const double BuriedEnd = T.TransformPosition(Local - FVector(0, 0, A.BuriedDepth)).Z;
                 if (Ground < World.Z - .5) ++Floating;
-                if (Ground > World.Z + 45 || Ground < BuriedEnd + 10) ++BuriedTrees;
+                // Uphill burial up to the collar top (~60 cm) still leaves the trunk passing through the surface.
+                if (Ground > World.Z + 60 || Ground < BuriedEnd + 10) ++BuriedTrees;
             }
         if (!A.IsOverstory()) continue;
         const FVector2D P(Tree.Base);
