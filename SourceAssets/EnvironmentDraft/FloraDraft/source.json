@@ -2445,5 +2445,239 @@
         ]
       }
     ]
+  },
+  "derived_r3": {
+    "state": "PROJECT_DERIVED_FROM_CC0_DRAFT",
+    "items": [
+      {
+        "name": "T_LiveOakTwigCards",
+        "seed": 20261021,
+        "sources": [
+          "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet024/LeafSet024_2K-JPG_Opacity.jpg",
+          "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet024/LeafSet024_2K-JPG_Color.jpg",
+          "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet024/LeafSet024_2K-JPG_NormalDX.jpg",
+          "SourceAssets/EnvironmentDraft/FloraDraft/LeafSet024/LeafSet024_2K-JPG_Roughness.jpg",
+          "SourceAssets/EnvironmentDraft/FloraDraft/tree_bark_03/tree_bark_03_diff_2k.jpg"
+        ],
+        "algorithm": "9 real LeafSet024 islands (opacity>0.5, 3px dilation); per-leaf darken/desaturate to olive (upper) or pale (18% undersides), roughness remap 0.55r+0.12 upper / +0.35 under, cupped-leaf dome normal from blurred distance field; seeded alternate placement along a main twig + 7-9 short side twigs (8 radial for C) drawn with tree_bark_03 colour until coverage>=0.42 (0.46 for D) before the border fade; 32px cell-border alpha fade; nearest-colour padding",
+        "cells": {
+          "A_terminal_cluster": [
+            0,
+            0,
+            0.5,
+            0.5
+          ],
+          "B_twig_spray": [
+            0.5,
+            0,
+            1,
+            0.5
+          ],
+          "C_dense_rosette": [
+            0,
+            0.5,
+            0.5,
+            1
+          ],
+          "D_drooping_twig": [
+            0.5,
+            0.5,
+            1,
+            1
+          ]
+        },
+        "cell_world_size_cm": 40,
+        "leaf_length_cm": [
+          3,
+          6
+        ],
+        "alpha_coverage_fraction_gt_0.35": {
+          "A_terminal_cluster": 0.409,
+          "B_twig_spray": 0.375,
+          "C_dense_rosette": 0.42,
+          "D_drooping_twig": 0.351
+        },
+        "files": [
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_LiveOakTwigCards_BaseColor.png",
+            "bytes": 2739068,
+            "md5": "ced5f6d0a778077701919579328554f0",
+            "sha256": "82b595d29bf47cee329e36860cdce119aa2441139869c0b9d6b653ec273e5ded",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_LiveOakTwigCards_Alpha.png",
+            "bytes": 133728,
+            "md5": "460aa446bcb34eef2bbf56db90a19a28",
+            "sha256": "9cb1b33af3725344e7bfc7d083c818dee93a46e55aad9298f348a163499c852f",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_LiveOakTwigCards_Normal.png",
+            "bytes": 2921335,
+            "md5": "be3f2ac3b96bf76d271bc1a23464d344",
+            "sha256": "f5721de77e88a8fc38ece3f92f597454876e0f4dcffb93e7356c4d20090440c1",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_LiveOakTwigCards_Roughness.png",
+            "bytes": 900247,
+            "md5": "9872a5b0797930776c0441923cba4c03",
+            "sha256": "47a8abe17bbbe021b660338ac1b2a45f266f1777a7477447226ebbfbb343b8f4",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          }
+        ]
+      },
+      {
+        "name": "T_ImpostorConiferSapling",
+        "species": "young Monterey pine / Douglas-fir proxy, 2.0 m",
+        "type": "hemi-octahedral impostor",
+        "frames": [
+          4,
+          4
+        ],
+        "frame_px": 512,
+        "frame_world_extent_m": 2.85,
+        "pivot_m": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "direction_from_frame": "g=2*(col+0.5)/4-1, h=2*(row+0.5)/4-1; a=(g+h)/2, b=(g-h)/2; dir_to_camera=normalize(a, b, 1-|a|-|b|) in X,Y,Z-up (row 0 = top of atlas)",
+        "normal_encoding": "world-space unit normal *0.5+0.5, X/Y/Z-up (linear, not tangent space)",
+        "depth_encoding": "0.5 + (point-pivot).dir_to_camera / frame_world_extent_m (per-card constant, linear)",
+        "cards": 75,
+        "card_sources": "Derived/T_PineClumpCards_* or Derived/T_LiveOakTwigCards_* (cells resampled to 256 px)",
+        "files": [
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_ImpostorConiferSapling_BaseColor.png",
+            "bytes": 2682762,
+            "md5": "5ad9da84151919c1c7a0d5b1b39cc47d",
+            "sha256": "d58a2cb8f9b307532d723dc810cbc6c0398ae73ab481de9f607957291fb6fd2e",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_ImpostorConiferSapling_Alpha.png",
+            "bytes": 501339,
+            "md5": "7cdf6268ded1cebab9256fa0fe248ca5",
+            "sha256": "766548c2df8f41bb994ed6aeb15ce76f5a75d091bcf03c491d21919ae0bbbf0c",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_ImpostorConiferSapling_NormalWS.png",
+            "bytes": 2395259,
+            "md5": "ec0b62f473721cd59349b0200b702079",
+            "sha256": "456bed6615ae6fff9a8be11b379fc91bddefb29badd3e01ee7ac21ceb41a361a",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_ImpostorConiferSapling_Depth.png",
+            "bytes": 275327,
+            "md5": "eff7147296b7f318ce618c255e996cd3",
+            "sha256": "38a7822d2404b0ab07a3b7df8ca4a17a03a5381150bc86c750e080f7e7fa39ac",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          }
+        ]
+      },
+      {
+        "name": "T_ImpostorOakSapling",
+        "species": "young coast live oak proxy, 1.6 m",
+        "type": "hemi-octahedral impostor",
+        "frames": [
+          4,
+          4
+        ],
+        "frame_px": 512,
+        "frame_world_extent_m": 1.8728,
+        "pivot_m": [
+          0.0,
+          0.0,
+          0.7285
+        ],
+        "direction_from_frame": "g=2*(col+0.5)/4-1, h=2*(row+0.5)/4-1; a=(g+h)/2, b=(g-h)/2; dir_to_camera=normalize(a, b, 1-|a|-|b|) in X,Y,Z-up (row 0 = top of atlas)",
+        "normal_encoding": "world-space unit normal *0.5+0.5, X/Y/Z-up (linear, not tangent space)",
+        "depth_encoding": "0.5 + (point-pivot).dir_to_camera / frame_world_extent_m (per-card constant, linear)",
+        "cards": 64,
+        "card_sources": "Derived/T_PineClumpCards_* or Derived/T_LiveOakTwigCards_* (cells resampled to 256 px)",
+        "files": [
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_ImpostorOakSapling_BaseColor.png",
+            "bytes": 1875657,
+            "md5": "73e99b4585c6a94422d9a7f01504264e",
+            "sha256": "60e38aa1ec2b0fe1f44252dff96ccc2d5277deba8edbbda551dcee4804cca85b",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_ImpostorOakSapling_Alpha.png",
+            "bytes": 133612,
+            "md5": "a35bb4d7c56590cb83fff9e562e6c296",
+            "sha256": "8ffd8541d4951ddf910461d579936864debba2091ab01a682fdcda48960877cc",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_ImpostorOakSapling_NormalWS.png",
+            "bytes": 2495501,
+            "md5": "22c7bbb286eb4038ee8fede6ff4801f9",
+            "sha256": "52590ea89416de1de246838dc1a8d7d65efab6eaa6f0f71a10f2b1da6a642888",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          },
+          {
+            "path": "SourceAssets/EnvironmentDraft/FloraDraft/Derived/T_ImpostorOakSapling_Depth.png",
+            "bytes": 162175,
+            "md5": "f7b418856dd2f2cd428f598a123b08ab",
+            "sha256": "e0af5a14b88b4e4a49297954f6ff967b3b613e1610629fce14e508b2d4e236d0",
+            "license": "CC0-1.0",
+            "pixels": [
+              2048,
+              2048
+            ]
+          }
+        ]
+      }
+    ]
   }
 }

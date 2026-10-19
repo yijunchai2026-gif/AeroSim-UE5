@@ -256,8 +256,9 @@ def acquire(output: Path) -> dict:
     if manifest["download_bytes"] > MAX_TOTAL_BYTES:
         raise ValueError("Flora download budget exceeded")
     previous = output / "source.json"
-    if previous.exists() and "derived" in json.loads(previous.read_text()):
-        manifest["derived"] = json.loads(previous.read_text())["derived"]
+    for key in ("derived", "derived_r3"):
+        if previous.exists() and key in json.loads(previous.read_text()):
+            manifest[key] = json.loads(previous.read_text())[key]
     (output / "source.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     return manifest
 
@@ -383,6 +384,283 @@ def derive(output: Path) -> list:
     return results
 
 
+def derive_r3(output: Path) -> list:
+    """R3 derived drafts: live-oak twig cards and hemi-octahedral sapling impostors (numpy, scipy, Pillow)."""
+    import math
+    import numpy as np
+    from PIL import Image, ImageDraw
+    from scipy import ndimage
+
+    derived = output / "Derived"
+
+    def arr(path, mode):
+        return np.asarray(Image.open(path).convert(mode), dtype=np.float32) / 255.0
+
+    def save(name, array, mode):
+        path = derived / name
+        Image.fromarray(np.clip(array * 255.0 + 0.5, 0, 255).astype(np.uint8), mode).save(path, optimize=True)
+        data = path.read_bytes()
+        return {"path": CANONICAL_FOLDER + "/Derived/" + name, "bytes": len(data), "md5": hashlib.md5(data).hexdigest(),
+                "sha256": hashlib.sha256(data).hexdigest(), "license": "CC0-1.0", "pixels": list(Image.open(path).size)}
+
+    def pad(rgb, alpha):
+        _, (iy, ix) = ndimage.distance_transform_edt(alpha < 0.02, return_indices=True)
+        return rgb[iy, ix]
+
+    def over(dst_rgba, dst_n, dst_r, x0, y0, rgba, n, r):
+        h, w = rgba.shape[:2]; H, W = dst_rgba.shape[:2]
+        cx0, cy0, cx1, cy1 = max(x0, 0), max(y0, 0), min(x0 + w, W), min(y0 + h, H)
+        if cx1 <= cx0 or cy1 <= cy0:
+            return
+        src = (slice(cy0 - y0, cy1 - y0), slice(cx0 - x0, cx1 - x0)); dst = (slice(cy0, cy1), slice(cx0, cx1))
+        a = rgba[src][..., 3:4]
+        dst_rgba[dst][..., :3] = rgba[src][..., :3] * a + dst_rgba[dst][..., :3] * (1 - a)
+        dst_rgba[dst][..., 3:4] = a + dst_rgba[dst][..., 3:4] * (1 - a)
+        dst_n[dst] = n[src] * a + dst_n[dst] * (1 - a)
+        dst_r[dst] = r[src] * a[..., 0] + dst_r[dst] * (1 - a[..., 0])
+
+    results = []
+    # ---------- (1) Live-oak twig cards from the nine real LeafSet024 leaves ----------
+    seed = DERIVE_SEED + 3
+    rng = np.random.default_rng(seed)
+    src = output / "LeafSet024"
+    la, lc = arr(src / "LeafSet024_2K-JPG_Opacity.jpg", "L"), arr(src / "LeafSet024_2K-JPG_Color.jpg", "RGB")
+    ln, lr = arr(src / "LeafSet024_2K-JPG_NormalDX.jpg", "RGB"), arr(src / "LeafSet024_2K-JPG_Roughness.jpg", "L")
+    labels, count = ndimage.label(la > 0.5)
+    leaves = []
+    for index, box in enumerate(ndimage.find_objects(labels)):
+        keep = ndimage.binary_dilation(labels[box] == index + 1, iterations=3)
+        if keep.sum() < 100000:
+            continue
+        a = la[box] * keep
+        # Live-oak read: darker, more saturated olive upper side; cupped (convex) leaf bent into the normal.
+        dome = ndimage.gaussian_filter(ndimage.distance_transform_edt(a > 0.5), 18)
+        gy, gx = np.gradient(dome)
+        n = ln[box] * 2 - 1
+        n[..., 0] += gx * 0.06; n[..., 1] += gy * 0.06
+        n /= np.linalg.norm(n, axis=2, keepdims=True)
+        # Pre-scale each leaf to 200 px length (cards use 77-140 px) to keep the compositing loop fast.
+        k = 200 / a.shape[0]; size = (max(8, int(a.shape[1] * k)), 200)
+        rs = lambda x, mode: np.asarray(Image.fromarray((np.clip(x, 0, 1) * 255).astype(np.uint8), mode).resize(size, Image.Resampling.LANCZOS), np.float32) / 255
+        leaves.append((rs(a, "L"), rs(lc[box], "RGB"), rs((n + 1) / 2, "RGB"), rs(lr[box], "L")))
+    if len(leaves) != 9:
+        raise ValueError("LeafSet024 topology changed; re-inspect leaf islands")
+    bark = arr(output / "tree_bark_03/tree_bark_03_diff_2k.jpg", "RGB")
+    twig_rgb = np.array([0.30, 0.27, 0.23], np.float32)
+    N, cell = 2048, 1024
+    oak_rgba = np.zeros((N, N, 4), np.float32); oak_n = np.zeros((N, N, 3), np.float32); oak_n[...] = (0.5, 0.5, 1.0); oak_r = np.full((N, N), 0.6, np.float32)
+
+    def leaf_sprite(length_px, angle, underside):
+        a, c, n, r = leaves[int(rng.integers(0, len(leaves)))]
+        scale = length_px / a.shape[0]
+        size = (max(6, int(a.shape[1] * scale)), max(8, int(a.shape[0] * scale)))
+        tone = np.array([0.42, 0.50, 0.30], np.float32) * rng.uniform(0.85, 1.1) if not underside else np.array([0.62, 0.66, 0.50], np.float32)
+        gray = c.mean(axis=2, keepdims=True)
+        col = np.clip((c * 0.35 + gray * 0.65) * tone / max(gray.mean(), 1e-3) * (0.30 if not underside else 0.40), 0, 1)
+        rough = np.clip(r * 0.55 + (0.12 if not underside else 0.35), 0, 1)  # glossy cuticle above, matte felted underside
+        ims = [Image.fromarray((np.dstack([col, a]) * 255).astype(np.uint8), "RGBA"), Image.fromarray((n * 255).astype(np.uint8), "RGB"), Image.fromarray((rough * 255).astype(np.uint8), "L")]
+        ims = [im.resize(size, Image.Resampling.LANCZOS).rotate(angle, resample=Image.Resampling.BICUBIC, expand=True) for im in ims]
+        rgba = np.asarray(ims[0], np.float32) / 255; nn = np.asarray(ims[1], np.float32) / 255; rr = np.asarray(ims[2], np.float32) / 255
+        t = math.radians(angle); vx, vy = nn[..., 0] * 2 - 1, nn[..., 1] * 2 - 1
+        nn = nn.copy(); nn[..., 0] = (vx * math.cos(t) + vy * math.sin(t) + 1) / 2; nn[..., 1] = (-vx * math.sin(t) + vy * math.cos(t) + 1) / 2
+        return rgba, nn, rr
+
+    layouts = ("A_terminal_cluster", "B_twig_spray", "C_dense_rosette", "D_drooping_twig")
+    coverage = {}
+    for ci, name in enumerate(layouts):
+        ox, oy = (ci % 2) * cell, (ci // 2) * cell
+        c_rgba = np.zeros((cell, cell, 4), np.float32); c_n = np.zeros((cell, cell, 3), np.float32); c_n[...] = (0.5, 0.5, 1.0); c_r = np.full((cell, cell), 0.6, np.float32)
+        # Short twigs as polylines (stem base at the card bottom for A/B/D, centre for C).
+        if name == "C_dense_rosette":
+            twigs = [[(512, 512), (512 + math.cos(k) * 200, 512 + math.sin(k) * 200), (512 + math.cos(k + 0.15) * 400, 512 + math.sin(k + 0.15) * 400)]
+                     for k in np.linspace(0, 2 * math.pi, 8, endpoint=False) + rng.uniform(-0.2, 0.2, 8)]
+        else:
+            droop = name == "D_drooping_twig"
+            base = (512 + rng.uniform(-30, 30), 1000)
+            tip = (512 + rng.uniform(-100, 100), 130) if not droop else (260 + rng.uniform(0, 60), 300)
+            mid = ((base[0] + tip[0]) / 2 + rng.uniform(-60, 60) + (220 if droop else 0), (base[1] + tip[1]) / 2 - (260 if droop else 0))
+            main = [base, mid, tip]
+            twigs = [main]
+            sides = 9 if name == "B_twig_spray" else 7
+            for k in range(sides):
+                t0 = 0.22 + 0.73 * k / max(sides - 1, 1)
+                seg = 0 if t0 < 0.5 else 1; f = t0 * 2 - seg
+                sx, sy = main[seg][0] + (main[seg + 1][0] - main[seg][0]) * f, main[seg][1] + (main[seg + 1][1] - main[seg][1]) * f
+                ang = math.radians(-90 + (1 if k % 2 else -1) * rng.uniform(35, 75) + (25 if droop else 0)); L = rng.uniform(180, 320) * (1.15 - 0.4 * t0)
+                sag = 90 if droop else rng.uniform(-20, 20)
+                twigs.append([(sx, sy), (sx + math.cos(ang) * L * 0.55, sy + math.sin(ang) * L * 0.55 + sag * 0.25), (sx + math.cos(ang) * L, sy + math.sin(ang) * L + sag)])
+        twig_layer = Image.new("L", (cell, cell), 0); draw = ImageDraw.Draw(twig_layer)
+        for twig in twigs:
+            for i in range(len(twig) - 1):
+                draw.line([twig[i], twig[i + 1]], fill=255, width=int((14 if twig is twigs[0] else 9) - 3 * i))
+        ta = np.asarray(twig_layer, np.float32) / 255
+        tex = bark[:cell, :cell] * 0.5 + twig_rgb * 0.5
+        c_rgba[..., :3] = tex; c_rgba[..., 3] = ta; c_r[:] = 0.8
+        # Leaves along each twig: alternate, 3-6 cm (77-154 px at 40 cm per cell), denser toward tips.
+        target = 0.46 if name == "D_drooping_twig" else 0.42
+        attempts = 0
+        while (c_rgba[..., 3] > 0.35).mean() < target and attempts < 5000:
+            attempts += 1
+            twig = twigs[int(rng.integers(0, len(twigs)))]
+            t = rng.uniform(0.25 if twig is twigs[0] else 0.1, 1.0) ** 0.6
+            seg = min(int(t * (len(twig) - 1)), len(twig) - 2); f = t * (len(twig) - 1) - seg
+            px = twig[seg][0] + (twig[seg + 1][0] - twig[seg][0]) * f; py = twig[seg][1] + (twig[seg + 1][1] - twig[seg][1]) * f
+            stem_ang = math.degrees(math.atan2(-(twig[seg + 1][1] - twig[seg][1]), twig[seg + 1][0] - twig[seg][0]))
+            angle = stem_ang - 90 + (1 if attempts % 2 else -1) * rng.uniform(25, 70)
+            length = rng.uniform(77, 140)
+            rgba, nn, rr = leaf_sprite(length, angle, underside=rng.random() < 0.18)
+            h, w = rgba.shape[:2]
+            ra = math.radians(angle + 90)
+            cx, cy = px + math.cos(ra) * length * 0.5, py - math.sin(ra) * length * 0.5
+            over(c_rgba, c_n, c_r, int(cx - w / 2), int(cy - h / 2), rgba, nn, rr)
+        ramp = np.clip(np.minimum(np.arange(cell), np.arange(cell)[::-1]) / 32.0, 0, 1)
+        c_rgba[..., 3] *= np.minimum.outer(ramp, ramp)
+        coverage[name] = round(float((c_rgba[..., 3] > 0.35).mean()), 3)
+        oak_rgba[oy:oy + cell, ox:ox + cell] = c_rgba; oak_n[oy:oy + cell, ox:ox + cell] = c_n; oak_r[oy:oy + cell, ox:ox + cell] = c_r
+    a = oak_rgba[..., 3]
+    files = [save("T_LiveOakTwigCards_BaseColor.png", np.dstack([pad(oak_rgba[..., :3], a), a]), "RGBA"), save("T_LiveOakTwigCards_Alpha.png", a, "L"),
+             save("T_LiveOakTwigCards_Normal.png", pad(oak_n, a), "RGB"), save("T_LiveOakTwigCards_Roughness.png", pad(oak_r[..., None], a)[..., 0], "L")]
+    results.append({"name": "T_LiveOakTwigCards", "seed": seed,
+                    "sources": [CANONICAL_FOLDER + "/LeafSet024/LeafSet024_2K-JPG_" + k + ".jpg" for k in ("Opacity", "Color", "NormalDX", "Roughness")] + [CANONICAL_FOLDER + "/tree_bark_03/tree_bark_03_diff_2k.jpg"],
+                    "algorithm": "9 real LeafSet024 islands (opacity>0.5, 3px dilation); per-leaf darken/desaturate to olive (upper) or pale (18% undersides), roughness remap 0.55r+0.12 upper / +0.35 under, cupped-leaf dome normal from blurred distance field; seeded alternate placement along a main twig + 7-9 short side twigs (8 radial for C) drawn with tree_bark_03 colour until coverage>=0.42 (0.46 for D) before the border fade; 32px cell-border alpha fade; nearest-colour padding",
+                    "cells": {"A_terminal_cluster": [0, 0, 0.5, 0.5], "B_twig_spray": [0.5, 0, 1, 0.5], "C_dense_rosette": [0, 0.5, 0.5, 1], "D_drooping_twig": [0.5, 0.5, 1, 1]},
+                    "cell_world_size_cm": 40, "leaf_length_cm": [3, 6], "alpha_coverage_fraction_gt_0.35": coverage, "files": files})
+
+    # ---------- (2) Hemi-octahedral sapling impostors (orthographic software render of card saplings) ----------
+    def render_impostor(cards, stem, frames=4, frame_px=512):
+        pts = np.array([c["center"] for c in cards] + [stem["base"], stem["top"]])
+        pivot = np.array([0.0, 0.0, (pts[:, 2].max()) / 2])
+        extent = 2.0 * max(np.linalg.norm(pts - pivot, axis=1).max() + max(max(c["size"]) for c in cards) / 2, 0.1)
+        ppm = frame_px / extent
+        out_rgba = np.zeros((frames * frame_px, frames * frame_px, 4), np.float32)
+        out_n = np.zeros((frames * frame_px, frames * frame_px, 3), np.float32); out_n[...] = 0.5
+        out_d = np.full((frames * frame_px, frames * frame_px), 0.5, np.float32)
+        for row in range(frames):
+            for col in range(frames):
+                g, h = 2 * (col + 0.5) / frames - 1, 2 * (row + 0.5) / frames - 1
+                ax, ay = (g + h) / 2, (g - h) / 2
+                d = np.array([ax, ay, 1 - abs(ax) - abs(ay)]); d /= np.linalg.norm(d)
+                right = np.cross([0, 0, 1], d); right = right / np.linalg.norm(right) if np.linalg.norm(right) > 1e-4 else np.array([1.0, 0, 0])
+                up = np.cross(d, right)
+                f_rgba = np.zeros((frame_px, frame_px, 4), np.float32); f_n = np.zeros((frame_px, frame_px, 3), np.float32); f_n[...] = 0.5
+                f_d = np.full((frame_px, frame_px), 0.5, np.float32)
+                screen = lambda P: ((P - pivot) @ right * ppm + frame_px / 2, -((P - pivot) @ up) * ppm + frame_px / 2)
+                items = []
+                # Stem: tapered camera-facing quad with cylindrical normals.
+                items.append((float((stem["base"] + stem["top"]) / 2 @ d), "stem", None))
+                for c in cards:
+                    items.append((float(np.asarray(c["center"]) @ d), "card", c))
+                for depth, kind, c in sorted(items, key=lambda x: x[0]):
+                    if kind == "stem":
+                        b, t = np.asarray(stem["base"], float), np.asarray(stem["top"], float)
+                        bx, by = screen(b); tx, ty = screen(t)
+                        steps = int(max(abs(ty - by), abs(tx - bx))) + 1
+                        for k in range(steps):
+                            u = k / max(steps - 1, 1)
+                            x, y = bx + (tx - bx) * u, by + (ty - by) * u
+                            rad = (stem["r0"] * (1 - u) + stem["r1"] * u) * ppm
+                            x0, x1 = int(x - rad), int(x + rad) + 1; yi = int(y)
+                            if 0 <= yi < frame_px and x1 > 0 and x0 < frame_px:
+                                xs = np.arange(max(x0, 0), min(x1, frame_px)); s = np.clip((xs - x) / max(rad, 0.5), -1, 1)
+                                nw = s[:, None] * right + np.sqrt(1 - s ** 2)[:, None] * (d - d[2] * np.array([0, 0, 1.0])) / max(np.linalg.norm(d[:2]), 1e-3)
+                                nw /= np.linalg.norm(nw, axis=1, keepdims=True)
+                                f_rgba[yi, xs, :3] = stem["color"] * (0.55 + 0.45 * np.sqrt(1 - s ** 2))[:, None]; f_rgba[yi, xs, 3] = 1
+                                f_n[yi, xs] = nw * 0.5 + 0.5; f_d[yi, xs] = 0.5 + float((np.array([x, y]) * 0).sum()) + float(((b + (t - b) * u) - pivot) @ d) / extent
+                        continue
+                    U, V = np.asarray(c["U"], float), np.asarray(c["V"], float)
+                    Nf = np.cross(V, U)
+                    flip = 1.0 if Nf @ d >= 0 else -1.0
+                    tex_rgba, tex_n = c["tex"]
+                    th, tw = tex_rgba.shape[:2]
+                    C = np.asarray(c["center"], float); w, hgt = c["size"]
+                    # forward affine: texel (u,v) -> screen
+                    p0 = screen(C - 0.5 * w * U - 0.5 * hgt * V); pu = screen(C + 0.5 * w * U - 0.5 * hgt * V); pv = screen(C - 0.5 * w * U + 0.5 * hgt * V)
+                    M = np.array([[(pu[0] - p0[0]) / tw, (pv[0] - p0[0]) / th, p0[0]], [(pu[1] - p0[1]) / tw, (pv[1] - p0[1]) / th, p0[1]], [0, 0, 1]])
+                    if abs(np.linalg.det(M[:2, :2])) < 1e-6:
+                        continue
+                    inv = np.linalg.inv(M)[:2].ravel()
+                    warp = lambda im: np.asarray(im.transform((frame_px, frame_px), Image.Transform.AFFINE, tuple(inv), resample=Image.Resampling.BILINEAR), np.float32) / 255
+                    rgba = warp(Image.fromarray((tex_rgba * 255).astype(np.uint8), "RGBA"))
+                    tn = warp(Image.fromarray((tex_n * 255).astype(np.uint8), "RGB")) * 2 - 1
+                    world = (tn[..., 0:1] * U + tn[..., 1:2] * V + tn[..., 2:3] * Nf) * flip
+                    world /= np.maximum(np.linalg.norm(world, axis=2, keepdims=True), 1e-4)
+                    a = rgba[..., 3:4] * (rgba[..., 3:4] > 0.35)
+                    shade = 0.75 + 0.25 * flip  # back faces slightly darker (transmission not modelled)
+                    f_rgba[..., :3] = rgba[..., :3] * shade * a + f_rgba[..., :3] * (1 - a)
+                    f_rgba[..., 3:4] = np.maximum(f_rgba[..., 3:4], a)
+                    f_n = world * 0.5 * a + 0.5 * a + f_n * (1 - a)
+                    f_d = np.where(a[..., 0] > 0, 0.5 + float((C - pivot) @ d) / extent, f_d)
+                ys, xs = slice(row * frame_px, (row + 1) * frame_px), slice(col * frame_px, (col + 1) * frame_px)
+                out_rgba[ys, xs] = f_rgba; out_n[ys, xs] = f_n; out_d[ys, xs] = f_d
+        return out_rgba, out_n, out_d, extent, pivot
+
+    def cell_tex(rgba, n, cell_index, cells=2):
+        size = rgba.shape[0] // cells; x0, y0 = (cell_index % cells) * size, (cell_index // cells) * size
+        sub = lambda im: im[y0:y0 + size, x0:x0 + size]
+        small = lambda im: np.asarray(Image.fromarray((sub(im) * 255).astype(np.uint8)).resize((256, 256), Image.Resampling.LANCZOS), np.float32) / 255
+        return small(rgba), small(n)
+
+    pine = (arr(derived / "T_PineClumpCards_BaseColor.png", "RGBA"), arr(derived / "T_PineClumpCards_Normal.png", "RGB"))
+    oak = (oak_rgba * 0 + np.dstack([pad(oak_rgba[..., :3], oak_rgba[..., 3]), oak_rgba[..., 3]]), pad(oak_n, oak_rgba[..., 3]))
+    pine_cells = [cell_tex(*pine, i) for i in range(4)]; oak_cells = [cell_tex(*oak, i) for i in range(4)]
+    srng = np.random.default_rng(DERIVE_SEED + 4)
+
+    def card(center, U, V, size, tex):
+        U = np.asarray(U, float); U /= np.linalg.norm(U); V = np.asarray(V, float); V -= (V @ U) * U; V /= np.linalg.norm(V)
+        return {"center": center, "U": U, "V": V, "size": size, "tex": tex}
+
+    conifer = []
+    height = 2.0
+    for wi, z in enumerate(np.linspace(0.40, 1.80, 6)):
+        L = 0.85 - 0.10 * wi
+        for k in range(6):
+            yaw = k * 2 * math.pi / 6 + wi * 0.6 + srng.uniform(-0.2, 0.2)
+            out = np.array([math.cos(yaw), math.sin(yaw), 0.0]); side = np.cross([0, 0, 1], out)
+            roll = srng.uniform(0.3, 0.9)
+            plane_v = side * math.cos(roll) + np.array([0, 0, 1.0]) * math.sin(roll)
+            # cell C is a horizontal branch spray: card U along the branch, V across it
+            conifer.append(card(list(out * L / 2 + [0, 0, z - 0.05]), out + [0, 0, 0.05], -plane_v, (L, L * 0.6), pine_cells[2]))
+            conifer.append(card(list(out * L * 0.35 + [0, 0, z + 0.05]), out, np.array([0, 0, -1.0]), (L * 0.7, L * 0.45), pine_cells[0]))
+    for k in range(3):
+        yaw = k * math.pi / 3
+        conifer.append(card([0, 0, height - 0.15], [math.cos(yaw), math.sin(yaw), 0], [0, 0, -1], (0.45, 0.6), pine_cells[3]))
+    pine_stem = {"base": np.array([0, 0, 0.0]), "top": np.array([0, 0, height]), "r0": 0.035, "r1": 0.008, "color": np.array([0.33, 0.24, 0.17])}
+
+    oakcards = []
+    for k in range(64):
+        u, v = srng.uniform(0, 2 * math.pi), srng.uniform(-0.4, 1.57)
+        rr = 0.55 * srng.uniform(0.05, 1.0) ** 0.33
+        pos = np.array([math.cos(u) * math.cos(v) * rr, math.sin(u) * math.cos(v) * rr, 1.05 + math.sin(v) * 0.42 * rr / 0.55])
+        out = pos - [0, 0, 0.95]; out /= np.linalg.norm(out)
+        normal = out + srng.normal(0, 0.7, 3) + [0, 0, 0.4]; normal /= np.linalg.norm(normal)
+        helper = np.array([0, 0, 1.0]) if abs(normal[2]) < 0.9 else np.array([1.0, 0, 0])
+        U = np.cross(helper, normal); U /= np.linalg.norm(U)
+        V = np.cross(normal, U)  # U x V = -normal -> front face (V x U) points along normal
+        roll = srng.uniform(0, 2 * math.pi)
+        U, V = U * math.cos(roll) + V * math.sin(roll), -U * math.sin(roll) + V * math.cos(roll)
+        oakcards.append(card(list(pos), U, V, (0.40, 0.40), oak_cells[k % 4]))
+    oak_stem = {"base": np.array([0, 0, 0.0]), "top": np.array([0.05, 0.02, 1.15]), "r0": 0.03, "r1": 0.012, "color": np.array([0.36, 0.34, 0.31])}
+
+    for name, cards, stem, species in (("T_ImpostorConiferSapling", conifer, pine_stem, "young Monterey pine / Douglas-fir proxy, 2.0 m"),
+                                       ("T_ImpostorOakSapling", oakcards, oak_stem, "young coast live oak proxy, 1.6 m")):
+        rgba, nrm, depth, extent, pivot = render_impostor(cards, stem)
+        a = rgba[..., 3]
+        files = [save(name + "_BaseColor.png", np.dstack([pad(rgba[..., :3], a), a]), "RGBA"), save(name + "_Alpha.png", a, "L"),
+                 save(name + "_NormalWS.png", pad(nrm, a), "RGB"), save(name + "_Depth.png", depth, "L")]
+        results.append({"name": name, "species": species, "type": "hemi-octahedral impostor", "frames": [4, 4], "frame_px": 512,
+                        "frame_world_extent_m": round(extent, 4), "pivot_m": [round(float(v), 4) for v in pivot],
+                        "direction_from_frame": "g=2*(col+0.5)/4-1, h=2*(row+0.5)/4-1; a=(g+h)/2, b=(g-h)/2; dir_to_camera=normalize(a, b, 1-|a|-|b|) in X,Y,Z-up (row 0 = top of atlas)",
+                        "normal_encoding": "world-space unit normal *0.5+0.5, X/Y/Z-up (linear, not tangent space)",
+                        "depth_encoding": "0.5 + (point-pivot).dir_to_camera / frame_world_extent_m (per-card constant, linear)",
+                        "cards": len(cards), "card_sources": "Derived/T_PineClumpCards_* or Derived/T_LiveOakTwigCards_* (cells resampled to 256 px)",
+                        "files": files})
+    path = output / "source.json"
+    manifest = json.loads(path.read_text())
+    manifest["derived_r3"] = {"state": "PROJECT_DERIVED_FROM_CC0_DRAFT", "items": results}
+    path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return results
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=ROOT / CANONICAL_FOLDER)
@@ -390,7 +668,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     result = acquire(args.output)
     if args.derive:
-        for item in derive(args.output):
+        for item in derive(args.output) + derive_r3(args.output):
             print(item["name"], item.get("alpha_coverage_fraction_gt_0.35", ""))
     print(json.dumps({"state": result["intake_state"], "files": result["file_count"], "bytes": result["total_bytes"],
                       "meshes": [(m["asset"], sum(x["triangles"] for x in m["meshes"]), len(m["meshes"])) for m in result["meshes"]]}, indent=2))

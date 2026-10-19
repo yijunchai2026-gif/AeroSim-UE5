@@ -119,6 +119,71 @@ The compromise is stated plainly: these are light-green deciduous leaves that th
   - Add 3–5 whorls, each with 3–5 quads using cell C, plus a leader quad pair using cell D or B.
   - Total: 30–60 quads, which comes to under 1k triangles even with 2×2-subdivided bent cards.
 
+## R3 additions (PMO request, 2026-10-18)
+
+All R3 outputs are project-derived drafts built from the CC0 sources above with `python3 Scripts/acquire_coast_flora.py --derive`. Their receipts are in `FloraDraft/source.json` under `derived_r3`.
+
+### R3.1 `Derived/T_LiveOakTwigCards_*`: replaces `HabitatDraft/OakTwigCards`
+
+- **Size and maps:** a 2048² atlas made of 4 cells of 1024². Each cell represents **40 cm**, at about 0.39 mm/texel. Maps:
+  - BaseColor RGBA (alpha in A)
+  - Alpha
+  - Normal (DirectX)
+  - Roughness
+- **Leaves:** only the 9 real `LeafSet024` leaf shapes are used, each scaled to **3–6 cm** (77–140 px). Leaf processing:
+  - Upper sides are darkened and desaturated toward olive; 18% of leaves show a paler underside.
+  - Roughness is about 0.12–0.67, glossy above and matte below.
+  - A cupped-leaf dome is baked into the normal.
+- **Twigs:** leaves sit along short twigs drawn with `tree_bark_03` colour, using seed 20261021.
+- **Cells (UV min–max):**
+
+| Cell | UV | Use |
+|---|---|---|
+| A, terminal cluster | (0,0)–(0.5,0.5) | Crown outer shell |
+| B, twig spray | (0.5,0)–(1,0.5) | Branch ends, crossed pairs |
+| C, dense rosette | (0,0.5)–(0.5,1) | Crown interior; seen from below or above |
+| D, drooping twig | (0.5,0.5)–(1,1) | Lower crown edge and saplings |
+
+- **Coverage:** measured alpha>0.35 coverage per cell is A 0.41, B 0.38, C 0.42, D 0.35 (geometric fractions only, not a visual judgement). Each cell's alpha fades out over the last 32 px at its border. Use an opacity-mask clip of 0.35–0.40, two-sided foliage, and a subsurface colour of about (0.25, 0.30, 0.10).
+
+### R3.2 Sapling impostors (far LOD)
+
+There are two atlases, `Derived/T_ImpostorConiferSapling_*` (2.0 m, built from `T_PineClumpCards`) and `Derived/T_ImpostorOakSapling_*` (1.6 m, built from `T_LiveOakTwigCards`).
+
+- **Layout:** each is a **4×4 hemi-octahedral** atlas of 512 px frames (2048²), produced by an orthographic software render of a card sapling. It is not an Unreal capture.
+- **Maps:**
+  - BaseColor RGBA
+  - Alpha
+  - NormalWS: world-space normal ×0.5+0.5, Z-up, linear
+  - Depth: 0.5 plus the per-card offset toward the camera divided by the frame extent
+- **Frame to view direction:** `g=2*(col+0.5)/4-1`, `h=2*(row+0.5)/4-1`, `a=(g+h)/2`, `b=(g-h)/2`, `dir=normalize(a, b, 1-|a|-|b|)`.
+- **Placement data:** the frame world extent and the pivot (at half height) are recorded per atlas.
+- **Use:**
+  - Use the impostor beyond about 60 m for saplings; for this drone camera, about 40 m is enough.
+  - Use the nearest frame, or blend the 3 nearest frames.
+  - Alpha clip is 0.4.
+- **Limitations:** lighting is not baked. Card back faces are darkened by 0.5 and transmission is not modelled.
+
+### R3.3 Trunk-base litter without per-tree decals (≈4,000 trees)
+
+**Recommended: a tree-position litter mask in the ground material.** It needs no per-tree components.
+
+- **Bake the mask once from the deterministic tree list (the same seed as placement).** Use a world-aligned RG8 texture:
+  - R: conifer litter weight.
+  - G: oak litter weight.
+  - Recommended texture: 1024² over 512 × 512 m (0.5 m/texel), or 2048² for 1 km (still 0.5 m/texel).
+- **Per tree:** `w = saturate(1 - (dist - r_trunk) / R)^1.5`, where `R` is 1.5–2.5 m for pine and 2.0–3.5 m for oak, roughly 0.6× crown radius. Accumulate with `max`.
+- **Edge breakup:**
+  - Blur by 1 texel.
+  - In the material, height-blend against the litter displacement: `layer = saturate((w + (H - 0.5) * 0.6 - 0.35) * 4)`, where H is `forest_leaves_04` displacement for pine and `dry_decay_leaves` displacement for oak.
+  - Use a world-aligned 1.5 m tile (pine) or 2.0 m tile (oak), which gives 0.7–1.0 mm/texel.
+  - Add `PineNeedles001` flecks as a detail layer at about 0.5 m tiling inside the R channel.
+- **Cost:** one texture sample, no extra draws, no z-fighting, and it follows the terrain exactly.
+- **Alternatives:**
+  - The same weight written into a landscape paint layer or habitat-layer weight (equivalent result).
+  - A single HISM of a 16-triangle litter disc mesh with the masked `T_TrunkBaseLitter` material: about 64k triangles for 4,000 instances. The drawbacks are masked overdraw, and the ring cannot conform to slopes over 15°, so it needs a 2–3 cm lift. Use it only if the ground material can't be changed.
+- Don't use one DBuffer decal per tree; at 4,000 trees that means 4,000 components and sorting.
+
 ## 6. Rejected candidates
 
 - Full tree meshes: `pine_tree_01` (17.4M triangles), `fir_tree_01` (7.85M), `tree_small_02` (4.65M), `island_tree_02` (1.76M), `searsia_lucida` (842k), `searsia_burchellii` (1.43M). They are too heavy for 300–400 trees per hectare; only their textures were taken. `jacaranda_tree` was also rejected because it is a non-native purple-flowering ornamental.

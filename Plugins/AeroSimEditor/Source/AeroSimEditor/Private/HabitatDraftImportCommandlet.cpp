@@ -73,11 +73,11 @@ const FHabitatTextureSource Textures[] = {
     {TEXT("FloraDraft/LeafSet019/LeafSet019_2K-JPG_Opacity.jpg"), TEXT("T_FloraFirTwig_Alpha"), ERole::Alpha},
     {TEXT("FloraDraft/LeafSet019/LeafSet019_2K-JPG_NormalDX.jpg"), TEXT("T_FloraFirTwig_Normal"), ERole::Normal},
     {TEXT("FloraDraft/LeafSet019/LeafSet019_2K-JPG_Roughness.jpg"), TEXT("T_FloraFirTwig_Roughness"), ERole::Gray},
-    // Coast live oak: twig cards composited from ambientCG LeafSet024 (acquire_coast_habitat.py --derive-oak).
-    {TEXT("HabitatDraft/OakTwigCards/basecolor.png"), TEXT("T_FloraOakLeaf_BaseColor"), ERole::Color},
-    {TEXT("HabitatDraft/OakTwigCards/alpha.png"), TEXT("T_FloraOakLeaf_Alpha"), ERole::Alpha},
-    {TEXT("HabitatDraft/OakTwigCards/normal.png"), TEXT("T_FloraOakLeaf_Normal"), ERole::Normal},
-    {TEXT("HabitatDraft/OakTwigCards/roughness.png"), TEXT("T_FloraOakLeaf_Roughness"), ERole::Gray},
+    // Coast live oak: ART-FLORA T_LiveOakTwigCards (LeafSet024 leaves at 3-6 cm on twigs, pre-darkened olive).
+    {TEXT("FloraDraft/Derived/T_LiveOakTwigCards_BaseColor.png"), TEXT("T_FloraOakLeaf_BaseColor"), ERole::Color},
+    {TEXT("FloraDraft/Derived/T_LiveOakTwigCards_Alpha.png"), TEXT("T_FloraOakLeaf_Alpha"), ERole::Alpha},
+    {TEXT("FloraDraft/Derived/T_LiveOakTwigCards_Normal.png"), TEXT("T_FloraOakLeaf_Normal"), ERole::Normal},
+    {TEXT("FloraDraft/Derived/T_LiveOakTwigCards_Roughness.png"), TEXT("T_FloraOakLeaf_Roughness"), ERole::Gray},
     {TEXT("FloraDraft/fern_02/textures/fern_02_diff_1k.jpg"), TEXT("T_FloraFern_BaseColor"), ERole::Color},
     {TEXT("FloraDraft/fern_02/fern_02_alpha_1k.jpg"), TEXT("T_FloraFern_Alpha"), ERole::Alpha},
     {TEXT("FloraDraft/fern_02/fern_02_nor_dx_1k.jpg"), TEXT("T_FloraFern_Normal"), ERole::Normal},
@@ -264,7 +264,7 @@ int32 UHabitatDraftImportCommandlet::Main(const FString& Params)
     UMaterial* PineNeedles=Foliage(TEXT("M_FloraPineNeedlesDraft"),T(TEXT("T_FloraPineTwig_BaseColor")),T(TEXT("T_FloraPineTwig_Alpha")),T(TEXT("T_FloraPineTwig_Normal")),T(TEXT("T_FloraPineTwig_Roughness")),0,.36F,FLinearColor(.86F,.95F,.84F));
     UMaterial* FirNeedles=Foliage(TEXT("M_FloraFirNeedlesDraft"),T(TEXT("T_FloraFirTwig_BaseColor")),T(TEXT("T_FloraFirTwig_Alpha")),T(TEXT("T_FloraFirTwig_Normal")),T(TEXT("T_FloraFirTwig_Roughness")),0,.36F,FLinearColor(.62F,.74F,.60F));
     // Live-oak leaves are darker and glossier than the published island_tree_02 scan.
-    UMaterial* OakLeaves=Foliage(TEXT("M_FloraOakLeavesDraft"),T(TEXT("T_FloraOakLeaf_BaseColor")),T(TEXT("T_FloraOakLeaf_Alpha")),T(TEXT("T_FloraOakLeaf_Normal")),T(TEXT("T_FloraOakLeaf_Roughness")),0,.36F,FLinearColor(.52F,.62F,.46F));
+    UMaterial* OakLeaves=Foliage(TEXT("M_FloraOakLeavesDraft"),T(TEXT("T_FloraOakLeaf_BaseColor")),T(TEXT("T_FloraOakLeaf_Alpha")),T(TEXT("T_FloraOakLeaf_Normal")),T(TEXT("T_FloraOakLeaf_Roughness")),0,.38F,FLinearColor(.92F,.95F,.90F));
     // Douglas-fir proxy bark is tinted warmer (+red), per the ART-FLORA spec.
     UMaterial* PineBark=Bark(TEXT("M_FloraPineBarkDraft"),T(TEXT("T_FloraPineBark_BaseColor")),T(TEXT("T_FloraPineBark_Normal")),T(TEXT("T_FloraPineBark_Roughness")),FLinearColor(.62F,.55F,.50F));
     UMaterial* FirBark=Bark(TEXT("M_FloraFirBarkDraft"),T(TEXT("T_FloraFirBark_BaseColor")),T(TEXT("T_FloraFirBark_Normal")),T(TEXT("T_FloraFirBark_Roughness")),FLinearColor(.45F,.42F,.40F));

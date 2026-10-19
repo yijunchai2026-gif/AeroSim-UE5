@@ -7,6 +7,45 @@
 #include "Misc/PackageName.h"
 #include "Misc/Parse.h"
 #include "UObject/ConstructorHelpers.h"
+#include "ProceduralMeshComponent.h"
+
+float APacificCoastGraybox::GetTrainingCorridorWear(const float X, const float Y)
+{
+    const float Distance = CoastFlora::CorridorDistance(FVector2D(X, Y));
+    // 1.6 m trodden centre with a 0.8 m soft shoulder on each side.
+    return 1.0F - FMath::SmoothStep(80.0F, 160.0F, Distance);
+}
+
+FLinearColor APacificCoastGraybox::GetForestLitterMask(const float X, const float Y)
+{
+    using namespace CoastFlora;
+    struct FCells { TMap<FIntPoint, TArray<int32>> Map; };
+    static const FCells Cells = []
+    {
+        FCells Result;
+        const FLayout& Layout = GetLayout();
+        for (int32 Index = 0; Index < Layout.Trees.Num(); ++Index)
+            Result.Map.FindOrAdd(FIntPoint(FMath::FloorToInt(Layout.Trees[Index].Base.X / 500), FMath::FloorToInt(Layout.Trees[Index].Base.Y / 500))).Add(Index);
+        return Result;
+    }();
+    const FLayout& Layout = GetLayout();
+    const TArray<FArchetype>& Archetypes = GetArchetypes();
+    float Conifer = 0, Oak = 0;
+    const FIntPoint Key(FMath::FloorToInt(X / 500), FMath::FloorToInt(Y / 500));
+    for (int32 DX = -1; DX <= 1; ++DX) for (int32 DY = -1; DY <= 1; ++DY)
+        if (const TArray<int32>* Items = Cells.Map.Find(Key + FIntPoint(DX, DY)))
+            for (int32 Item : *Items)
+            {
+                const FPlacedTree& Tree = Layout.Trees[Item];
+                const FArchetype& A = Archetypes[Tree.Archetype];
+                const bool bOak = A.Species == ESpecies::CoastLiveOak;
+                const float Reach = (bOak ? 300.0F : A.Species == ESpecies::Sapling ? 80.0F : 200.0F) * Tree.Scale;
+                const float D = FVector2D::Distance(FVector2D(X, Y), FVector2D(Tree.Base)) - A.CollarRadius * Tree.Scale;
+                const float W = FMath::Pow(FMath::Clamp(1.0F - D / Reach, 0.0F, 1.0F), 1.5F);
+                (bOak ? Oak : Conifer) = FMath::Max(bOak ? Oak : Conifer, W);
+            }
+    return FLinearColor(Conifer, Oak, 0, 1);
+}
 
 // Forest-floor understory for the near stands: sword-fern-like clumps under closed
 // canopy, coyote-brush-like shrubs and dry grass at feathered edges and glades.
@@ -61,8 +100,8 @@ void APacificCoastGraybox::BuildCoastalHabitat()
     FRandomStream Random(55021);
     // ~1 shrub/fern per 10 m² of stand (QA R0 target), grass only where light reaches the floor.
     constexpr float Cell = 300.0F;
-    for (float GX = -31000; GX < 12500; GX += Cell)
-        for (float GY = -28000; GY < 28000; GY += Cell)
+    for (float GX = -45000; GX < 12500; GX += Cell)
+        for (float GY = -41000; GY < 41000; GY += Cell)
         {
             const FVector2D P(GX + Random.FRandRange(0, Cell), GY + Random.FRandRange(0, Cell));
             const float Pick = Random.FRand(), Roll = Random.FRand(), ScaleRoll = Random.FRand(), Yaw = Random.FRandRange(0, 360);
@@ -113,6 +152,57 @@ void APacificCoastGraybox::BuildCoastalHabitat()
             if (!K.Mesh) continue;
             Instances[Kind].Add(FTransform(FRotator(0, Yaw, 0), FVector(P.X, P.Y, GetCoastalLandHeight(P.X, P.Y) - 2.0F), FVector(FMath::Lerp(K.MinScale, K.MaxScale, ScaleRoll))));
         }
+    // Worn corridor floor: a terrain-following path ribbon (1.6 m core, soft 0.8 m shoulders)
+    // down the training lane so the route reads from the `corridor` pose. Same gravel/earth
+    // blend material as the forest trail; vertex alpha 0 at the shoulders, 255 on the core.
+    if (FPackageName::DoesPackageExist(TEXT("/Game/Development/CoastDraft/Materials/M_CoastGravelDraft")))
+    {
+        static ConstructorHelpers::FObjectFinder<UMaterialInterface> Gravel(TEXT("/Game/Development/CoastDraft/Materials/M_CoastGravelDraft.M_CoastGravelDraft"));
+        TArray<FVector> Positions; TArray<int32> Triangles; TArray<FVector> Normals; TArray<FVector2D> UV; TArray<FLinearColor> Colors;
+        const float Offsets[] = {-160, -80, 0, 80, 160};
+        int32 Rows = 0;
+        float Previous = -100;
+        for (const FCorridorSample& Sample : Layout.Corridor)
+        {
+            if (Sample.Distance - Previous < 45.0F) continue;
+            Previous = Sample.Distance;
+            const FVector2D Normal(-Sample.Tangent.Y, Sample.Tangent.X);
+            // The path narrows and wanders slightly so it does not read as a paved strip.
+            const float Wobble = 18.0F * FMath::Sin(Sample.Distance / 900.0F) + 10.0F * FMath::Sin(Sample.Distance / 310.0F + 1.7F);
+            const float Width = .85F + .20F * FMath::Sin(Sample.Distance / 1300.0F + .4F);
+            for (int32 Column = 0; Column < 5; ++Column)
+            {
+                const FVector2D P = Sample.Point + Normal * (Offsets[Column] * Width + Wobble);
+                const bool bCore = Column >= 1 && Column <= 3;
+                Positions.Add(FVector(P.X, P.Y, GetCoastalLandHeight(P.X, P.Y) + (bCore ? .8F : -.2F)));
+                const float DX = (GetCoastalLandHeight(P.X + 10, P.Y) - GetCoastalLandHeight(P.X - 10, P.Y)) / 20;
+                const float DY = (GetCoastalLandHeight(P.X, P.Y + 10) - GetCoastalLandHeight(P.X, P.Y - 10)) / 20;
+                Normals.Add(FVector(-DX, -DY, 1).GetSafeNormal());
+                UV.Add(FVector2D(P.X / 4000.0F, P.Y / 4000.0F));
+                // RGB: the exact habitat ground weights beneath (shoulders vanish into the terrain);
+                // A: worn core (same convention as the forest trail and launch apron).
+                FLinearColor Cover = FPacificCoastHabitat::GetGroundVertexColor(P.X, P.Y);
+                Cover.A = bCore ? (Column == 2 ? 1.0F : .72F) : 0.0F;
+                Colors.Add(Cover);
+            }
+            if (Rows > 0)
+                for (int32 Column = 0; Column < 4; ++Column)
+                {
+                    const int32 A = (Rows - 1) * 5 + Column, B = A + 1, C = A + 5, D = C + 1;
+                    // Upward-facing in Unreal's clockwise convention.
+                    if (FVector::CrossProduct(Positions[C] - Positions[A], Positions[B] - Positions[A]).Z > 0) { Triangles.Append({A, B, C}); Triangles.Append({B, D, C}); }
+                    else { Triangles.Append({A, C, B}); Triangles.Append({B, C, D}); }
+                }
+            ++Rows;
+        }
+        UProceduralMeshComponent* Path = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("CoastalFloraCorridorPath"));
+        Path->SetupAttachment(Root);
+        Path->CreateMeshSection_LinearColor(0, Positions, Triangles, Normals, UV, Colors, TArray<FProcMeshTangent>(), false);
+        Path->SetMaterial(0, Gravel.Object);
+        Path->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        Path->SetCastShadow(false);
+        ++GeneratedPrimitiveCount;
+    }
     int32 Total = 0;
     for (int32 Kind = 0; Kind < KindCount; ++Kind)
     {
