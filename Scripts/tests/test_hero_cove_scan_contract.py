@@ -10,7 +10,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from hero_cove_scan_contract import (HERO_ASSET, HERO_SOURCE, FILES, LOD_COUNTS, parse_lod,
-    validate_sources, freeze_imported_asset, output_action, IMPORT_RECEIPT, import_receipt_contract)
+    validate_sources, freeze_imported_asset, output_action)
 from environment_draft_policy import validate_environment_draft
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -82,25 +82,25 @@ class HeroCoveScanTests(unittest.TestCase):
             self.assertEqual(f.read_bytes(), original)
 
     def import_receipt(self, root, mesh):
-        file = root/IMPORT_RECEIPT; file.parent.mkdir(parents=True)
-        file.write_text(json.dumps(import_receipt_contract(hashlib.sha256(mesh.read_bytes()).hexdigest())))
+        # Engine attestation: the importer logs the SHA-256 of the package it saved.
+        return hashlib.sha256(mesh.read_bytes()).hexdigest()
 
     def test_missing_or_wrong_engine_import_receipt_does_not_bless_same_name(self):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp); _, _, f=self.fixture(root); original=f.read_bytes()
             mesh=root/HERO_ASSET; mesh.parent.mkdir(); mesh.write_bytes(b'unknown-same-name')
             with self.assertRaises(ValueError): freeze_imported_asset(root)
-            self.import_receipt(root, mesh); mesh.write_bytes(b'changed-after-import')
-            with self.assertRaises(ValueError): freeze_imported_asset(root)
+            attested = self.import_receipt(root, mesh); mesh.write_bytes(b'changed-after-import')
+            with self.assertRaises(ValueError): freeze_imported_asset(root, attested)
             self.assertEqual(f.read_bytes(), original)
 
     def test_append_real_asset_preserves_baseline_and_repeat_is_no_op(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); _, baseline, f = self.fixture(root)
             mesh = root/HERO_ASSET; mesh.parent.mkdir(); mesh.write_bytes(b'new-engine-generated-draft')
-            self.import_receipt(root, mesh)
+            attested = self.import_receipt(root, mesh)
             with self.assertRaises(ValueError): output_action(root, baseline)
-            self.assertTrue(freeze_imported_asset(root))
+            self.assertTrue(freeze_imported_asset(root, attested))
             final = json.loads(f.read_text())
             self.assertEqual(final['assets'][:-1], baseline['assets'])
             self.assertEqual(final['sources'][:-6], baseline['sources'])
@@ -120,10 +120,10 @@ class HeroCoveScanTests(unittest.TestCase):
             with tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp); old, _, f = self.fixture(root); original = f.read_bytes()
                 mesh = root/HERO_ASSET; mesh.parent.mkdir(); mesh.write_bytes(b'new')
-                self.import_receipt(root, mesh)
+                attested = self.import_receipt(root, mesh)
                 if bad == 'changed': old.write_bytes(b'user-unreviewed')
                 else: (root/'Content/Unapproved.uasset').write_bytes(b'not-from-this-import')
-                with self.assertRaises(ValueError): freeze_imported_asset(root)
+                with self.assertRaises(ValueError): freeze_imported_asset(root, attested)
                 self.assertEqual(f.read_bytes(), original)
 
     def test_source_hash_changes_or_unlisted_files_rejected(self):

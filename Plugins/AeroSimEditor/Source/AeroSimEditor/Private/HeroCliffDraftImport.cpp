@@ -4,7 +4,6 @@
 #include "Dom/JsonObject.h"
 #include "EditorFramework/AssetImportData.h"
 #include "Engine/StaticMesh.h"
-#include "HAL/FileManager.h"
 #include "HAL/PlatformFileManager.h"
 #include "Materials/Material.h"
 #include "MeshDescription.h"
@@ -24,11 +23,13 @@
 
 namespace HeroCliffDraft
 {
+// Read-only file queries through the platform layer; no general file-write helpers.
+IPlatformFile& Files(){return FPlatformFileManager::Get().GetPlatformFile();}
+bool IsLink(const FString& Path){return Files().IsSymlink(*Path)==ESymlinkResult::Symlink;}
 constexpr const TCHAR* SourceRoot=TEXT("SourceAssets/EnvironmentDraft/HeroCoveScan/");
 constexpr const TCHAR* AssetPath=TEXT("Content/Development/CoastDraft/Meshes/SM_CoastHeroCliffScanDraft.uasset");
 constexpr const TCHAR* PackageName=TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastHeroCliffScanDraft");
 constexpr const TCHAR* AssetName=TEXT("SM_CoastHeroCliffScanDraft");
-constexpr const TCHAR* ImportReceipt=TEXT("Artifacts/ProductShell/AAA/R5/HeroScanImport/receipt.json");
 constexpr const TCHAR* ReceiptHash=TEXT("27cb4ab652d29d40e2689d55468599708e3e80a9d6016600b4c15cc34b0ae571");
 struct FSource
 {
@@ -52,14 +53,14 @@ bool SafeProjectPath(const FString& Relative)
     for(const FString& Part:Parts)
     {
         if(Part==TEXT("..")||Part==TEXT("."))return false;
-        Path/=Part;if(IFileManager::Get().IsSymlink(*Path))return false;
+        Path/=Part;if(IsLink(*Path))return false;
     }
     return true;
 }
 bool ReadFixed(const FString& Relative,int64 ExpectedBytes,const TCHAR* ExpectedHash,TArray<uint8>& Bytes)
 {
     const FString Filename=FPaths::ProjectDir()/Relative;
-    if(!SafeProjectPath(Relative)||IFileManager::Get().FileSize(*Filename)!=ExpectedBytes
+    if(!SafeProjectPath(Relative)||Files().FileSize(*Filename)!=ExpectedBytes
         ||!FFileHelper::LoadFileToArray(Bytes,*Filename)||Bytes.Num()!=ExpectedBytes)return false;
     return ProductEvidenceSha256(Bytes)==ExpectedHash;
 }
@@ -161,7 +162,7 @@ int32 OutputState()
 {
     if(!SafeProjectPath(TEXT("docs/environment-draft-assets.json"))||!SafeProjectPath(AssetPath))return -1;
     const FString ManifestFilename=FPaths::ProjectDir()/TEXT("docs/environment-draft-assets.json");
-    TArray<uint8> Bytes;const int64 Size=IFileManager::Get().FileSize(*ManifestFilename);
+    TArray<uint8> Bytes;const int64 Size=Files().FileSize(*ManifestFilename);
     if(Size<=0||Size>2000000||!FFileHelper::LoadFileToArray(Bytes,*ManifestFilename))return -1;
     TSharedPtr<FJsonObject> M;if(!Json(Bytes,M)||!Text(M,TEXT("schema"),TEXT("aerosim.environment-draft.assets/v1"))||!Text(M,TEXT("state"),TEXT("DRAFT_NOT_USER_CONFIRMED")))return -1;
     const TArray<TSharedPtr<FJsonValue>>* Assets=nullptr;if(!M->TryGetArrayField(TEXT("assets"),Assets))return -1;
@@ -172,8 +173,8 @@ int32 OutputState()
         if(Text(Entry,TEXT("path"),AssetPath)){++Matches;if(!Entry->TryGetStringField(TEXT("sha256"),Hash))return -1;}
     }
     const FString Filename=FPaths::ProjectDir()/AssetPath;
-    if(Matches>1||IFileManager::Get().IsSymlink(*Filename))return -1;
-    if(!IFileManager::Get().FileExists(*Filename))return Matches==0?0:-1;
+    if(Matches>1||IsLink(*Filename))return -1;
+    if(!Files().FileExists(*Filename))return Matches==0?0:-1;
     if(Matches!=1||Hash.Len()!=64)return -1; // Never replace an unregistered same-name asset.
     const TSharedPtr<FJsonObject>* Contract=nullptr;
     if(!M->TryGetObjectField(TEXT("hero_cove_scan"),Contract)||!Text(*Contract,TEXT("asset"),AssetPath)
@@ -196,41 +197,9 @@ int32 OutputState()
             }
             if(Registered!=1)return -1;
         }
-    const int64 OutputSize=IFileManager::Get().FileSize(*Filename);
+    const int64 OutputSize=Files().FileSize(*Filename);
     if(OutputSize<=0||OutputSize>64*1024*1024||!FFileHelper::LoadFileToArray(Bytes,*Filename)||ProductEvidenceSha256(Bytes)!=Hash)return -1;
     return 1;
-}
-bool WriteImportReceipt(const FString& OutputHash)
-{
-    if(!SafeProjectPath(ImportReceipt)||IFileManager::Get().FileExists(*(FPaths::ProjectDir()/ImportReceipt)))return false;
-    TSharedRef<FJsonObject> R=MakeShared<FJsonObject>();
-    R->SetStringField(TEXT("schema"),TEXT("aerosim.hero-cove-scan-import/v1"));R->SetStringField(TEXT("asset"),AssetPath);
-    R->SetStringField(TEXT("sha256"),OutputHash);R->SetStringField(TEXT("source_receipt_sha256"),ReceiptHash);
-    R->SetStringField(TEXT("state"),TEXT("DRAFT_NOT_USER_CONFIRMED"));R->SetStringField(TEXT("import_status"),TEXT("IMPORTED"));R->SetStringField(TEXT("visual_validation"),TEXT("NOT_RUN"));
-    TArray<TSharedPtr<FJsonValue>> SourceEntries,Counts;
-    for(const FSource& Source:Sources)
-    {
-        Counts.Add(MakeShared<FJsonValueNumber>(Source.Triangles));
-        for(int32 Kind=0;Kind<2;++Kind)
-        {
-            TSharedRef<FJsonObject> E=MakeShared<FJsonObject>();
-            E->SetStringField(TEXT("path"),FString(SourceRoot)+Source.Stem+(Kind==0?TEXT(".gltf"):TEXT(".bin")));
-            E->SetStringField(TEXT("sha256"),Kind==0?Source.JsonHash:Source.BinHash);E->SetStringField(TEXT("license"),TEXT("CC0-1.0"));SourceEntries.Add(MakeShared<FJsonValueObject>(E));
-        }
-    }
-    R->SetArrayField(TEXT("sources"),SourceEntries);R->SetArrayField(TEXT("lod_triangles"),Counts);
-    FString Output;if(!FJsonSerializer::Serialize(R,TJsonWriterFactory<>::Create(&Output)))return false;
-    const FString Filename=FPaths::ProjectDir()/ImportReceipt;
-    return FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*FPaths::GetPath(Filename))
-        &&FFileHelper::SaveStringToFile(Output,*Filename,FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM,&IFileManager::Get(),FILEWRITE_NoReplaceExisting);
-}
-void RollbackNewOutput()
-{
-    // Called only after the guarded CREATE_NEW save attempt, never for an existing package.
-    const FString Filename=FPaths::ProjectDir()/AssetPath;
-    IPlatformFile& Files=FPlatformFileManager::Get().GetPlatformFile();
-    const bool bRestored=!Files.FileExists(*Filename)||Files.DeleteFile(*Filename);
-    UE_LOG(LogTemp,Warning,TEXT("HERO_CLIFF_NEW_OUTPUT_ROLLBACK restored_absence=%s manifest_unchanged=true"),bRestored?TEXT("true"):TEXT("false"));
 }
 FMeshDescription Description(const FLOD& Data)
 {
@@ -255,14 +224,13 @@ int32 ImportHeroCliffDraft()
 {
     using namespace HeroCliffDraft;
     // This mode never executes the old texture/material/flora import loops.
-    if(IFileManager::Get().IsSymlink(*(FPaths::ProjectDir()/SourceRoot)))return 20;
+    if(IsLink(*(FPaths::ProjectDir()/SourceRoot)))return 20;
     TArray<uint8> Receipt;
     if(!ReadFixed(FString(SourceRoot)+TEXT("source-receipt.json"),13472,ReceiptHash,Receipt))return 21;
     FLOD LODs[3];for(int32 LOD=0;LOD<3;++LOD)if(!ReadLOD(Sources[LOD],LODs[LOD])){UE_LOG(LogTemp,Error,TEXT("HERO_CLIFF_SOURCE_REJECTED lod=%d"),LOD);return 22;}
     const int32 State=OutputState();
     if(State<0){UE_LOG(LogTemp,Error,TEXT("HERO_CLIFF_OUTPUT_CONFLICT refusing existing unregistered/modified/missing output"));return 23;}
     if(State==1){UE_LOG(LogTemp,Display,TEXT("HERO_CLIFF_ALREADY_REGISTERED no-op; no package writes"));return 0;}
-    if(!SafeProjectPath(ImportReceipt)||IFileManager::Get().FileExists(*(FPaths::ProjectDir()/ImportReceipt)))return 32;
     UPackage* Package=CreatePackage(PackageName);Package->FullyLoad();
     if(FindObject<UObject>(Package,AssetName)){UE_LOG(LogTemp,Error,TEXT("HERO_CLIFF_IN_MEMORY_CONFLICT"));return 24;}
     UStaticMesh* Mesh=NewObject<UStaticMesh>(Package,AssetName,RF_Public|RF_Standalone);
@@ -276,10 +244,10 @@ int32 ImportHeroCliffDraft()
         Source.ScreenSize.Default=LOD==0?1.0F:LOD==1?.20F:.06F;
         Mesh->CreateMeshDescription(LOD,Description(LODs[LOD]));Mesh->CommitMeshDescription(LOD);
     }
-    Mesh->CreateBodySetup();Mesh->GetBodySetup()->DefaultInstance.SetCollisionProfileName(TEXT("NoCollision"));
-    Mesh->GetBodySetup()->CollisionTraceFlag=CTF_UseSimpleAsComplex;
-    // Isolated visual review only. Original closed terrain remains collision authority; this
-    // package must not be promoted into playable flight until the G1 surface fit is verified.
+    // R5 (DEV-TERRAIN): the visible scan surface is its own collision (complex-as-simple), so a
+    // Pawn sweep meets exactly the rendered LOD0 rock. NoCollision is not allowed in the playable build.
+    Mesh->CreateBodySetup();Mesh->GetBodySetup()->DefaultInstance.SetCollisionProfileName(TEXT("BlockAll"));
+    Mesh->GetBodySetup()->CollisionTraceFlag=CTF_UseComplexAsSimple;Mesh->LODForCollision=0;
     if(!Mesh->AssetImportData)Mesh->AssetImportData=NewObject<UAssetImportData>(Mesh);
     const FString ImportFilename=FPaths::ConvertRelativePathToFull(FPaths::ProjectDir()/SourceRoot/TEXT("coastal-cliff-40m-lod0.gltf"));
     // Let UE store a package-relative path. A raw project-relative argument would be
@@ -300,16 +268,15 @@ int32 ImportHeroCliffDraft()
     const FVector Size=Mesh->GetBoundingBox().GetSize();if(!FMath::IsNearlyEqual(Size.Y,4000.0,.1)||Size.Z<980||Size.Z>1020)return 28;
     const FString Filename=FPaths::ProjectDir()/AssetPath;
     // Recheck immediately before the only disk mutation. No reimport or overwrite path exists.
-    if(OutputState()!=0||IFileManager::Get().IsSymlink(*FPaths::GetPath(Filename)))return 29;
+    if(OutputState()!=0||IsLink(*FPaths::GetPath(Filename)))return 29;
     if(!FPlatformFileManager::Get().GetPlatformFile().CreateDirectoryTree(*FPaths::GetPath(Filename)))return 30;
     Mesh->MarkPackageDirty();FSavePackageArgs Args;Args.TopLevelFlags=RF_Public|RF_Standalone;Args.SaveFlags=SAVE_NoError;
-    if(!UPackage::SavePackage(Package,Mesh,*Filename,Args)){RollbackNewOutput();return 31;}
+    if(!UPackage::SavePackage(Package,Mesh,*Filename,Args))return 31;
     TArray<uint8> Saved;
-    if(!FFileHelper::LoadFileToArray(Saved,*Filename)||Saved.Num()>64*1024*1024||!WriteImportReceipt(ProductEvidenceSha256(Saved)))
-    {
-        RollbackNewOutput();UE_LOG(LogTemp,Error,TEXT("HERO_CLIFF_RECEIPT_FAILED output registration refused; inspect the fixed ignored receipt before retry"));return 33;
-    }
+    if(!FFileHelper::LoadFileToArray(Saved,*Filename)||Saved.Num()>64*1024*1024)return 33;
+    // The engine-attested output hash is passed to write_environment_draft_manifest.py --hero-cliff-only.
+    UE_LOG(LogTemp,Display,TEXT("HERO_CLIFF_OUTPUT_SHA256 %s"),*ProductEvidenceSha256(Saved));
     FAssetRegistryModule::AssetCreated(Mesh);
-    UE_LOG(LogTemp,Display,TEXT("HERO_CLIFF_IMPORT_COMPLETE assets=1 lods=3 state=DRAFT_NOT_USER_CONFIRMED visual=NOT_RUN collision=ISOLATED_NO_COLLISION; freeze manifest with --hero-cliff-only before rerun"));
+    UE_LOG(LogTemp,Display,TEXT("HERO_CLIFF_IMPORT_COMPLETE assets=1 lods=3 state=DRAFT_NOT_USER_CONFIRMED visual=NOT_RUN collision=COMPLEX_AS_SIMPLE; freeze manifest with --hero-cliff-only <sha256> before rerun"));
     return 0;
 }

@@ -9,7 +9,6 @@ HERO_NAME = 'SM_CoastHeroCliffScanDraft'
 HERO_ASSET = 'Content/Development/CoastDraft/Meshes/' + HERO_NAME + '.uasset'
 HERO_SOURCE = 'SourceAssets/EnvironmentDraft/HeroCoveScan/'
 RECEIPT = HERO_SOURCE + 'source-receipt.json'
-IMPORT_RECEIPT = 'Artifacts/ProductShell/AAA/R5/HeroScanImport/receipt.json'
 RECEIPT_SHA256 = '27cb4ab652d29d40e2689d55468599708e3e80a9d6016600b4c15cc34b0ae571'
 LOD_COUNTS = ((27145, 49995), (7435, 11997), (2918, 3591))
 FILES = (('coastal-cliff-40m-lod0.gltf', 1755, '099cae75b2f82bd5d10ffe86922705e662bb8cf4fc072bf5497f929185424812'), ('coastal-cliff-40m-lod0.bin', 1468580, '56c1f67209c0d53e27a0bb744ee8b764201715256f03184c63de6fcb602a8323'), ('coastal-cliff-40m-lod1.gltf', 1746, '2d8d903ec1e6a6d5cb2a2086b6a12d48acf54ee3dacc91b7e45e824cc609c590'), ('coastal-cliff-40m-lod1.bin', 381884, '6ee6034e8e2c2bd52a24b72248139d31e0813fa6cfae09dbbbbc29dd6746246b'), ('coastal-cliff-40m-lod2.gltf', 1743, 'ab72b18f5a233c5fa6febb4cfdc9e8dba4aae61665036334dfc50360816be3da'), ('coastal-cliff-40m-lod2.bin', 136468, '73619882ce484cdad80544e6166b999edbe95fa7039936f937d3660f580218fd'))
@@ -142,23 +141,16 @@ def output_action(root, manifest):
     return 'CREATE_NEW'
 
 
-def import_receipt_contract(output_sha256):
-    return {'schema': 'aerosim.hero-cove-scan-import/v1', 'asset': HERO_ASSET, 'sha256': output_sha256,
-            'source_receipt_sha256': RECEIPT_SHA256, 'sources': source_entries(),
-            'lod_triangles': [count[1] for count in LOD_COUNTS], 'state': 'DRAFT_NOT_USER_CONFIRMED',
-            'import_status': 'IMPORTED', 'visual_validation': 'NOT_RUN'}
+def validate_attestation(asset, attested_sha256):
+    """The importer logs HERO_CLIFF_OUTPUT_SHA256 for the package it just saved; only that exact
+    engine output may be registered (no file-writing receipt, per the phase5/6 write-surface rules)."""
+    if not attested_sha256 or len(attested_sha256) != 64:
+        raise ValueError('Hero engine output attestation is missing; refusing to register same-name output')
+    if digest(asset) != attested_sha256:
+        raise ValueError('Hero output differs from the engine-attested import')
 
 
-def validate_import_receipt(root, asset):
-    path = root / IMPORT_RECEIPT
-    if not path.is_file() or path.is_symlink() or path.stat().st_size > 16384:
-        raise ValueError('Hero engine import receipt is missing; refusing to register same-name output')
-    receipt = json.loads(path.read_text())
-    if receipt != import_receipt_contract(digest(asset)):
-        raise ValueError('Hero engine import receipt does not match output/source contract')
-
-
-def freeze_imported_asset(root):
+def freeze_imported_asset(root, attested_sha256=None):
     """Append only this real output; retain every existing asset and source entry byte-for-value."""
     from environment_draft_policy import validate_environment_draft
     validate_sources(root)
@@ -173,7 +165,7 @@ def freeze_imported_asset(root):
         errors = validate_environment_draft(root)
         if errors: raise ValueError(errors)
         return False
-    validate_import_receipt(root, target)
+    validate_attestation(target, attested_sha256)
     # Validate the baseline against a virtual view excluding the one new output.
     if manifest.get('schema') != 'aerosim.environment-draft.assets/v1' or manifest.get('state') != 'DRAFT_NOT_USER_CONFIRMED':
         raise ValueError('Hero manifest state')
