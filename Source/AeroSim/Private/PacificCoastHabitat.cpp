@@ -203,6 +203,41 @@ void APacificCoastGraybox::BuildCoastalHabitat()
         Path->SetCastShadow(false);
         ++GeneratedPrimitiveCount;
     }
+    // Trunk-base litter rings (needles under conifers, leaf litter under oaks): a terrain-aligned
+    // masked disc whose radial alpha fades into the ground. DEV-TERRAIN may also blend the ground
+    // itself via GetForestLitterMask.
+    if (FPackageName::DoesPackageExist(TEXT("/Game/Development/CoastDraft/Materials/M_FloraTrunkLitterDraft")))
+    {
+        static ConstructorHelpers::FObjectFinder<UMaterialInterface> LitterMaterial(TEXT("/Game/Development/CoastDraft/Materials/M_FloraTrunkLitterDraft.M_FloraTrunkLitterDraft"));
+        UHierarchicalInstancedStaticMeshComponent* Litter = CreateDefaultSubobject<UHierarchicalInstancedStaticMeshComponent>(TEXT("CoastalFloraTrunkLitter"));
+        Litter->SetupAttachment(Root);
+        Litter->SetStaticMesh(GetTrunkLitterMesh());
+        Litter->SetMaterial(0, LitterMaterial.Object);
+        Litter->SetMaterial(1, LitterMaterial.Object);
+        Litter->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+        Litter->SetCollisionProfileName(TEXT("NoCollision"));
+        Litter->SetCastShadow(false);
+        Litter->bAffectDistanceFieldLighting = false;
+        Litter->SetCullDistances(6000, 8000);
+        TArray<FTransform> Rings;
+        FRandomStream LitterRandom(91921);
+        for (const FPlacedTree& Tree : Layout.Trees)
+        {
+            const FArchetype& A = Archetypes[Tree.Archetype];
+            if (!Tree.bNearForest || !A.IsOverstory()) continue;
+            const float Radius = (A.Species == ESpecies::CoastLiveOak ? LitterRandom.FRandRange(220, 330) : LitterRandom.FRandRange(150, 240)) * Tree.Scale;
+            const float H = Radius * .5F;
+            const float DX = (GetCoastalLandHeight(Tree.Base.X + H, Tree.Base.Y) - GetCoastalLandHeight(Tree.Base.X - H, Tree.Base.Y)) / (2 * H);
+            const float DY = (GetCoastalLandHeight(Tree.Base.X, Tree.Base.Y + H) - GetCoastalLandHeight(Tree.Base.X, Tree.Base.Y - H)) / (2 * H);
+            const FVector Normal = FVector(-DX, -DY, 1).GetSafeNormal();
+            const FQuat Align = FQuat::FindBetweenNormals(FVector::UpVector, Normal) * FQuat(FVector::UpVector, LitterRandom.FRandRange(0, 2 * PI));
+            const FVector Centre(Tree.Base.X, Tree.Base.Y, GetCoastalLandHeight(Tree.Base.X, Tree.Base.Y) + 2.0F);
+            Rings.Add(FTransform(Align, Centre, FVector(Radius / 100.0F, Radius / 100.0F, 1)));
+        }
+        Litter->AddInstances(Rings, false);
+        Litter->ComponentTags.Add(TEXT("CoastalFloraHabitat"));
+        ++GeneratedPrimitiveCount;
+    }
     int32 Total = 0;
     for (int32 Kind = 0; Kind < KindCount; ++Kind)
     {

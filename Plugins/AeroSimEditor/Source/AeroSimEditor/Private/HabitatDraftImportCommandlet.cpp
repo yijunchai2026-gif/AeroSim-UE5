@@ -88,6 +88,11 @@ const FHabitatTextureSource Textures[] = {
     {TEXT("FloraDraft/wild_rooibos_bush/wild_rooibos_bush_alpha_1k.jpg"), TEXT("T_FloraRooibos_Alpha"), ERole::Alpha},
     {TEXT("FloraDraft/wild_rooibos_bush/wild_rooibos_bush_nor_dx_1k.jpg"), TEXT("T_FloraRooibos_Normal"), ERole::Normal},
     {TEXT("FloraDraft/wild_rooibos_bush/textures/wild_rooibos_bush_arm_1k.jpg"), TEXT("T_FloraRooibos_ARM"), ERole::Masks},
+    // Trunk-base litter ring (ART-FLORA derived from forest_leaves_04, radial alpha fading to 0).
+    {TEXT("FloraDraft/Derived/T_TrunkBaseLitter_BaseColor.png"), TEXT("T_FloraTrunkLitter_BaseColor"), ERole::Color},
+    {TEXT("FloraDraft/Derived/T_TrunkBaseLitter_Alpha.png"), TEXT("T_FloraTrunkLitter_Alpha"), ERole::Alpha},
+    {TEXT("FloraDraft/Derived/T_TrunkBaseLitter_Normal.png"), TEXT("T_FloraTrunkLitter_Normal"), ERole::Normal},
+    {TEXT("FloraDraft/Derived/T_TrunkBaseLitter_Roughness.png"), TEXT("T_FloraTrunkLitter_Roughness"), ERole::Gray},
 };
 
 bool Save(UObject* Object)
@@ -197,6 +202,23 @@ UMaterial* Bark(const TCHAR* Name,UTexture2D* Base,UTexture2D* Normal,UTexture2D
     bOk&=UMaterialEditingLibrary::ConnectMaterialProperty(Wind,TEXT(""),MP_WorldPositionOffset);
     return bOk?Finish(M,bNew,Name):nullptr;
 }
+/** Opaque-masked ground litter ring: one-sided, no WPO, alpha fades the ring into the terrain. */
+UMaterial* GroundLitter(const TCHAR* Name,UTexture2D* Base,UTexture2D* Alpha,UTexture2D* Normal,UTexture2D* Rough)
+{
+    bool bNew=false;UMaterial* M=Begin(Name,bNew);
+    M->BlendMode=BLEND_Masked;M->TwoSided=false;M->SetShadingModel(MSM_DefaultLit);M->OpacityMaskClipValue=.35F;
+    auto* Color=Sample(M,Base,TEXT("BaseColorTexture"),SAMPLERTYPE_Color);
+    auto* Mask=Sample(M,Alpha,TEXT("OpacityTexture"),SAMPLERTYPE_LinearGrayscale);
+    auto* Nrm=Sample(M,Normal,TEXT("NormalTexture"),SAMPLERTYPE_Normal);
+    auto* Rgh=Sample(M,Rough,TEXT("RoughnessTexture"),SAMPLERTYPE_LinearGrayscale);
+    auto* Random=Node<UMaterialExpressionPerInstanceRandom>(M);
+    auto* Surface=Custom(M,TEXT("return C*lerp(.78,1.0,R);"),CMOT_Float3,{{TEXT("C"),Color,0},{TEXT("R"),Random,0}});
+    bool bOk=UMaterialEditingLibrary::ConnectMaterialProperty(Surface,TEXT(""),MP_BaseColor);
+    bOk&=UMaterialEditingLibrary::ConnectMaterialProperty(Nrm,TEXT("RGB"),MP_Normal);
+    bOk&=UMaterialEditingLibrary::ConnectMaterialProperty(Rgh,TEXT("R"),MP_Roughness);
+    bOk&=UMaterialEditingLibrary::ConnectMaterialProperty(Mask,TEXT("R"),MP_OpacityMask);
+    return bOk?Finish(M,bNew,Name):nullptr;
+}
 bool Mesh(const TCHAR* Name,UMaterialInterface* M)
 {
     FString Text;const FString File=FPaths::ProjectDir()/TEXT("SourceAssets/EnvironmentDraft/HabitatDraft/")+(FString(Name)+TEXT(".mesh.json"));
@@ -272,10 +294,11 @@ int32 UHabitatDraftImportCommandlet::Main(const FString& Params)
     UMaterial* PineBark=Bark(TEXT("M_FloraPineBarkDraft"),T(TEXT("T_FloraPineBark_BaseColor")),T(TEXT("T_FloraPineBark_Normal")),T(TEXT("T_FloraPineBark_Roughness")),FLinearColor(.62F,.55F,.50F));
     UMaterial* FirBark=Bark(TEXT("M_FloraFirBarkDraft"),T(TEXT("T_FloraFirBark_BaseColor")),T(TEXT("T_FloraFirBark_Normal")),T(TEXT("T_FloraFirBark_Roughness")),FLinearColor(.45F,.42F,.40F));
     UMaterial* OakBark=Bark(TEXT("M_FloraOakBarkDraft"),T(TEXT("T_FloraOakBark_BaseColor")),T(TEXT("T_FloraOakBark_Normal")),T(TEXT("T_FloraOakBark_Roughness")),FLinearColor(.70F,.68F,.66F));
-    if(!(Grass&&Shrub&&Fern&&Rooibos&&PineNeedles&&FirNeedles&&OakLeaves&&PineBark&&FirBark&&OakBark))return 5;
+    UMaterial* Litter=GroundLitter(TEXT("M_FloraTrunkLitterDraft"),T(TEXT("T_FloraTrunkLitter_BaseColor")),T(TEXT("T_FloraTrunkLitter_Alpha")),T(TEXT("T_FloraTrunkLitter_Normal")),T(TEXT("T_FloraTrunkLitter_Roughness")));
+    if(!(Grass&&Shrub&&Fern&&Rooibos&&PineNeedles&&FirNeedles&&OakLeaves&&PineBark&&FirBark&&OakBark&&Litter))return 5;
     const TPair<const TCHAR*,UMaterial*> Meshes[]={{TEXT("SM_CoastGrassSmallDraft"),Grass},{TEXT("SM_CoastGrassTallDraft"),Grass},{TEXT("SM_CoastGrassTinyDraft"),Grass},
         {TEXT("SM_CoastShrubADraft"),Shrub},{TEXT("SM_CoastShrubBDraft"),Shrub},{TEXT("SM_FloraFernADraft"),Fern},{TEXT("SM_FloraFernBDraft"),Fern},
         {TEXT("SM_FloraRooibosADraft"),Rooibos},{TEXT("SM_FloraRooibosBDraft"),Rooibos}};
     for(const auto& Entry:Meshes)if(!Mesh(Entry.Key,Entry.Value)){UE_LOG(LogTemp,Error,TEXT("HABITAT_MESH_FAILED %s"),Entry.Key);return 6;}
-    UE_LOG(LogTemp,Display,TEXT("HABITAT_IMPORT_COMPLETE textures=%d materials=10 meshes=%d state=DRAFT_NOT_USER_CONFIRMED"),UE_ARRAY_COUNT(Textures),UE_ARRAY_COUNT(Meshes));return 0;
+    UE_LOG(LogTemp,Display,TEXT("HABITAT_IMPORT_COMPLETE textures=%d materials=11 meshes=%d state=DRAFT_NOT_USER_CONFIRMED"),UE_ARRAY_COUNT(Textures),UE_ARRAY_COUNT(Meshes));return 0;
 }
