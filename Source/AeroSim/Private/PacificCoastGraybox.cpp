@@ -181,6 +181,13 @@ APacificCoastGraybox::APacificCoastGraybox()
     WeatherPostProcess->Settings.bOverride_ColorSaturation = true;
     WeatherPostProcess->Settings.bOverride_SceneColorTint = true;
     WeatherPostProcess->Settings.bOverride_VignetteIntensity = true;
+    // DEV-SEASKY: the project sets no dynamic GI, so canopy-shadowed ground received only the
+    // blue sky-light term and no bounce (R5a: beige floor rendered slate blue-grey). Lumen GI
+    // supplies sky occlusion plus warm bounce from sunlit ground/foliage. Procedural meshes have
+    // no mesh distance fields, so this relies on Lumen screen traces; it is a lighting fix,
+    // not a ground tint.
+    WeatherPostProcess->Settings.bOverride_DynamicGlobalIlluminationMethod = true;
+    WeatherPostProcess->Settings.DynamicGlobalIlluminationMethod = EDynamicGlobalIlluminationMethod::Lumen;
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeFinder(TEXT("/Engine/BasicShapes/Cube.Cube"));
     UStaticMesh* CubeMesh = CubeFinder.Object;
@@ -528,10 +535,10 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
         if (Clouds != nullptr)
         {
             // Cloud_GlobalCoverage is an additive bias (engine default -0.2 already reads
-            // as broken cumulus). Clear pushes well below it toward ~10-20% sparse
+            // as broken cumulus). Clear (-0.33) sits below it for ~10-20% sparse (R5a: -0.43 left none)
             // fair-weather cumulus; Overcast/Rain raise it. Wind frozen so the seed-21630
             // comparison baseline does not evolve between captures.
-            Clouds->SetScalarParameterValue(TEXT("Cloud_GlobalCoverage"), -.50F + .90F * State.GetCloudCover());
+            Clouds->SetScalarParameterValue(TEXT("Cloud_GlobalCoverage"), -.40F + .90F * State.GetCloudCover());
             Clouds->SetScalarParameterValue(TEXT("WindMultiplier"), 0.0F);
         }
     }
