@@ -56,19 +56,21 @@ struct AEROSIM_API FPacificCoastHabitat
 };
 // DEV-TERRAIN end
 
-/** Pure geometry and route contract for the 1 km x 1 km Phase 1 training area. */
+/** Geometry and world-space route contract; negative world Z is valid above the coastal sea. */
 struct AEROSIM_API FPacificCoastGrayboxContract final
 {
     static constexpr float WorldSizeCm = 100000.0F;
     static constexpr float WorldHalfExtentCm = WorldSizeCm * 0.5F;
     static constexpr float CoreWidthCm = 30000.0F;
     static constexpr float CoreLengthCm = 50000.0F;
-    static constexpr float TakeoffPadRadiusCm = 1800.0F;
+    static constexpr float TakeoffPadRadiusCm = 90.0F;
     static constexpr float RouteToleranceCm = 2500.0F;
     static constexpr float StandardReferenceHeightCm = 180.0F;
     static constexpr int32 GateCount = 5;
     static constexpr int32 RouteArrowCount = 18;
 
+    /** Fixed land clearing footprint; mission routes never reshape the forest. */
+    static const TArray<FVector>& GetPlateauClearancePoints();
     static const TArray<FVector>& GetRoutePoints();
     static bool IsInsideWorld(const FVector& Point);
     static bool IsGeometryValid();

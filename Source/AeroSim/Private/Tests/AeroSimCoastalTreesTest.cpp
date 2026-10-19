@@ -119,7 +119,7 @@ bool FCoastalTreePlacementTest::RunTest(const FString& Parameters)
             }
         if (!A.IsOverstory()) continue;
         const FVector2D P(Tree.Base);
-        const TArray<FVector>& Route = FPacificCoastGrayboxContract::GetRoutePoints();
+        const TArray<FVector>& Route = FPacificCoastGrayboxContract::GetPlateauClearancePoints();
         for (int32 Segment = 1; Segment < Route.Num(); ++Segment)
         {
             const FVector2D RA(Route[Segment - 1]), RB(Route[Segment]), AB = RB - RA;

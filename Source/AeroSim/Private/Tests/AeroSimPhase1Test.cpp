@@ -113,7 +113,7 @@ bool FAeroSimPhase1CameraResetHudTest::RunTest(const FString& Parameters)
         Input.Throttle = 1.0F;
         Pawn->SetSemanticInput(Input);
         Pawn->Tick(0.05F);
-        TestEqual(TEXT("Pawn leaves grounded state"), Pawn->GetFlightModel().Phase, EFlightPhase::Takeoff);
+        TestEqual(TEXT("Empty runtime world never invents a ground support plane"), Pawn->GetFlightModel().Phase, EFlightPhase::Flight);
         Pawn->ResetFlight();
         TestEqual(TEXT("Reset returns grounded"), Pawn->GetFlightModel().Phase, EFlightPhase::Grounded);
         TestTrue(TEXT("Reset neutralizes input"), Pawn->GetControlInput().IsNeutral());

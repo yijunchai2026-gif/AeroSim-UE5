@@ -57,7 +57,8 @@ struct AEROSIM_API FPhase4TaskDefinition
 {
     GENERATED_BODY()
 
-    static constexpr int32 CurrentVersion = 1;
+    // v2 replaces inland proxy checkpoints with actual coastal/sea/corridor objectives.
+    static constexpr int32 CurrentVersion = 2;
     static constexpr float SafeHalfLengthCm = 25000.0F;
     static constexpr float SafeHalfWidthCm = 15000.0F;
     static constexpr float SafeMaximumAltitudeCm = 2500.0F;
@@ -68,6 +69,7 @@ struct AEROSIM_API FPhase4TaskDefinition
     UPROPERTY(BlueprintReadOnly, Category = "Mission") TArray<FPhase4Checkpoint> Checkpoints;
     UPROPERTY(BlueprintReadOnly, Category = "Mission") float TargetDurationSeconds = 75.0F;
 
+    /** Factory name retained for source compatibility; returns CurrentVersion (v2). */
     static FPhase4TaskDefinition MakePacificCoastV1();
     bool IsValid() const;
     bool IsInsideSafetyVolume(const FVector& Position) const;
@@ -137,8 +139,11 @@ struct AEROSIM_API FPhase4MissionSession
     void EnterPreflight();
     void SetPreflightComplete(bool bInputCentered);
     bool BeginMission();
-    void Observe(float DeltaSeconds, EFlightPhase FlightPhase, const FVector& Position, const FVector& Velocity, const FRotator& Rotation);
+    /** Positions/velocities are resolved WORLD coordinates; completion needs independently queried home support. */
+    void Observe(float DeltaSeconds, EFlightPhase FlightPhase, const FVector& Position, const FVector& Velocity, const FRotator& Rotation, bool bConfirmedHomeSupport = false);
     void ReportCollision(const FVector& Position);
+    void ReleaseCollisionContact() { bCollisionLatched=false; }
+    void ReportWaterContact(const FVector& Position);
     void RequestReturnToHome();
     bool OpenReplay();
     void ConfigureEvidenceState(EPhase4MissionStage EvidenceStage);

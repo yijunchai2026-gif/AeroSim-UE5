@@ -5,6 +5,7 @@
 #include "Engine/World.h"
 #include "FlightHUD.h"
 #include "FlightPawn.h"
+#include "FlightTestWorldSupport.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Misc/AutomationTest.h"
 #include "PacificCoastGraybox.h"
@@ -172,6 +173,7 @@ bool FAeroSimPhase2PauseResumeTest::RunTest(const FString& Parameters)
     static_cast<void>(Parameters);
     UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
     AFlightPawn* Pawn = World != nullptr ? World->SpawnActor<AFlightPawn>() : nullptr;
+    AeroSimTestSupport::AddFloorAndGroundPawn(World,Pawn);
     TestNotNull(TEXT("Pawn spawns"), Pawn);
     if (Pawn != nullptr)
     {

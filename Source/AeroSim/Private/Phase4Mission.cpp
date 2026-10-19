@@ -2,13 +2,14 @@
 
 #include "FlightPawn.h"
 #include "PacificCoastGraybox.h"
+#include "PacificCoastFlora.h"
 #include "Misc/Crc.h"
 
 FPhase4TaskDefinition FPhase4TaskDefinition::MakePacificCoastV1()
 {
     FPhase4TaskDefinition Result;
     const TArray<FVector>& Route = FPacificCoastGrayboxContract::GetRoutePoints();
-    const TCHAR* Labels[] = { TEXT("GRASS / SOIL"), TEXT("TIDAL ROCK"), TEXT("BOARDWALK"), TEXT("LOW WATER"), TEXT("FOREST EDGE") };
+    const TCHAR* Labels[] = { TEXT("GRASS / SOIL"), TEXT("TIDAL ROCK"), TEXT("LOW WATER"), TEXT("FOREST ENTRY"), TEXT("FOREST CORRIDOR") };
     const TCHAR* Shapes[] = { TEXT("CIRCLE 1"), TEXT("DIAMOND 2"), TEXT("SQUARE 3"), TEXT("TRIANGLE 4"), TEXT("HEXAGON 5") };
     for (int32 Index = 0; Index < FPacificCoastGrayboxContract::GateCount; ++Index)
     {
@@ -18,6 +19,8 @@ FPhase4TaskDefinition FPhase4TaskDefinition::MakePacificCoastV1()
         Checkpoint.ShapeCue = Shapes[Index];
         Checkpoint.Position = Route[Index + 1];
         Checkpoint.RadiusCm = FPacificCoastGrayboxContract::RouteToleranceCm;
+        if (Index == 2) Checkpoint.RadiusCm = 500.0F; // sea +4 m cannot count from the old launch-height plane
+        if (Index >= 3) Checkpoint.RadiusCm = 400.0F;
     }
     return Result;
 }
@@ -43,18 +46,35 @@ bool FPhase4TaskDefinition::IsValid() const
 
 bool FPhase4TaskDefinition::IsInsideSafetyVolume(const FVector& Position) const
 {
-    return FMath::Abs(Position.X) <= SafeHalfLengthCm
+    if (Position.ContainsNaN() || Position.Z > SafeMaximumAltitudeCm
+        || Position.Z < APacificCoastGraybox::SeaLevelCm + 100.0F) return false;
+    const bool bCore = FMath::Abs(Position.X) <= SafeHalfLengthCm
         && FMath::Abs(Position.Y) <= SafeHalfWidthCm
-        && Position.Z >= 0.0F
-        && Position.Z <= SafeMaximumAltitudeCm;
+        && Position.Z >= 0.0F;
+    if (bCore) return true;
+    // Narrow bounded coastal inspection band, outside the actual cliff foot, not a giant box.
+    if (FMath::Abs(Position.Y) <= 15000.0F)
+    {
+        const float Shore = APacificCoastGraybox::GetCoastalShoreX(Position.Y);
+        if (Position.X >= Shore + 300.0F && Position.X <= Shore + 8500.0F) return true;
+    }
+    // Existing full forest route, with limited buffer for aircraft/camera recovery.
+    const float Ground = APacificCoastGraybox::GetCoastalLandHeight(Position.X,Position.Y);
+    return Position.Z >= Ground + 50.0F && Position.Z <= Ground + 1500.0F
+        && CoastFlora::CorridorDistance(FVector2D(Position)) <= 1200.0F;
 }
 
 FVector FPhase4TaskDefinition::GetRecoveryPoint(const FVector& Position) const
 {
-    return FVector(
-        FMath::Clamp(Position.X, -SafeHalfLengthCm + 1500.0F, SafeHalfLengthCm - 1500.0F),
-        FMath::Clamp(Position.Y, -SafeHalfWidthCm + 1500.0F, SafeHalfWidthCm - 1500.0F),
-        FMath::Clamp(Position.Z, 300.0F, SafeMaximumAltitudeCm - 300.0F));
+    FVector Best(55,79,500); double Distance=BIG_NUMBER;
+    for (const FVector& Point : FPacificCoastGrayboxContract::GetRoutePoints())
+    {
+        FVector Candidate=Point;
+        if (Point.Z >= 0) Candidate.Z=FMath::Max(Candidate.Z,APacificCoastGraybox::GetCoastalLandHeight(Point.X,Point.Y)+300.0F);
+        if (IsInsideSafetyVolume(Candidate) && FVector::DistSquared(Position,Candidate)<Distance)
+        { Best=Candidate; Distance=FVector::DistSquared(Position,Candidate); }
+    }
+    return Best;
 }
 
 bool FPhase4Score::Equals(const FPhase4Score& Other) const
@@ -122,7 +142,7 @@ bool FPhase4MissionSession::BeginMission()
     return true;
 }
 
-void FPhase4MissionSession::Observe(const float DeltaSeconds, const EFlightPhase FlightPhase, const FVector& Position, const FVector& Velocity, const FRotator& Rotation)
+void FPhase4MissionSession::Observe(const float DeltaSeconds, const EFlightPhase FlightPhase, const FVector& Position, const FVector& Velocity, const FRotator& Rotation, const bool bConfirmedHomeSupport)
 {
     if (Stage < EPhase4MissionStage::Takeoff || Stage > EPhase4MissionStage::Landing || DeltaSeconds <= 0.0F)
     {
@@ -162,17 +182,29 @@ void FPhase4MissionSession::Observe(const float DeltaSeconds, const EFlightPhase
     {
         ObserveCheckpoint(Position);
     }
-    if (Stage == EPhase4MissionStage::ReturnToHome && FVector::Dist2D(Position, FVector::ZeroVector) <= FPacificCoastGrayboxContract::TakeoffPadRadiusCm)
+    if (Stage == EPhase4MissionStage::ReturnToHome && FVector::Dist2D(Position, FVector(55,79,0)) <= 1800.0F)
     {
         Stage = EPhase4MissionStage::Landing;
         Feedback.Headline = TEXT("LAND ON PAD");
         Feedback.RecoveryAction = TEXT("Reduce speed, descend vertically, and keep the horizon level.");
         Feedback.ShapeCue = TEXT("DOWN ARROW + PAD");
     }
-    if (Stage == EPhase4MissionStage::Landing && FlightPhase == EFlightPhase::Grounded)
+    if (Stage == EPhase4MissionStage::Landing && FlightPhase == EFlightPhase::Grounded && bConfirmedHomeSupport
+        && FVector::Dist2D(Position,FVector(55,79,0)) <= FPacificCoastGrayboxContract::TakeoffPadRadiusCm
+        && Velocity.Size()<40.0F)
     {
         CompleteMission();
     }
+}
+
+void FPhase4MissionSession::ReportWaterContact(const FVector& Position)
+{
+    if (Stage < EPhase4MissionStage::Takeoff || Stage > EPhase4MissionStage::Landing) return;
+    Feedback.Incident=EPhase4Incident::UnsafeLanding;
+    Feedback.Headline=TEXT("WATER CONTACT / SAFE PAUSE");
+    Feedback.ShapeCue=TEXT("STOP OCTAGON");
+    Feedback.RecoveryAction=TEXT("Water is not a landing surface. Reset to the launch mat to retry.");
+    Feedback.RecoveryPoint=Task.GetRecoveryPoint(Position);
 }
 
 void FPhase4MissionSession::ObserveCheckpoint(const FVector& Position)
@@ -197,7 +229,9 @@ void FPhase4MissionSession::ObserveCheckpoint(const FVector& Position)
             return;
         }
     }
-    if (Distance <= Expected.RadiusCm)
+    const bool bLowWaterHeight = Expected.Label != TEXT("LOW WATER")
+        || (Position.Z >= APacificCoastGraybox::SeaLevelCm+300 && Position.Z <= APacificCoastGraybox::SeaLevelCm+500);
+    if (Distance <= Expected.RadiusCm && bLowWaterHeight)
     {
         PrecisionSum += FMath::Clamp(1.0F - Distance / Expected.RadiusCm, 0.0F, 1.0F);
         ++NextCheckpointIndex;
@@ -248,7 +282,7 @@ void FPhase4MissionSession::RequestReturnToHome()
         Feedback.Headline = TEXT("RETURN TO HOME");
         Feedback.RecoveryAction = TEXT("Follow the HOME diamond to the takeoff pad.");
         Feedback.ShapeCue = TEXT("HOME DIAMOND");
-        Feedback.RecoveryPoint = FVector::ZeroVector;
+        Feedback.RecoveryPoint = FPacificCoastGrayboxContract::GetRoutePoints()[0];
     }
 }
 
