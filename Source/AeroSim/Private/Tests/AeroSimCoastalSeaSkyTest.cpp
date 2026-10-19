@@ -201,6 +201,22 @@ bool FCoastalWaveSpectrumTest::RunTest(const FString& Parameters)
     auto Count = [](const FString& Code) { int32 N = 0, From = 0; while ((From = Code.Find(TEXT("float th="), ESearchCase::CaseSensitive, ESearchDir::FromStart, From)) != INDEX_NONE) { ++N; ++From; } return N; };
     TestEqual(TEXT("WPO contains every geometric component"), Count(Offset), Geometric);
     TestEqual(TEXT("Normal contains every component"), Count(Normal), Waves.Num());
+    // R5: no component (long swell included) may keep its crest pattern beyond 4 km (normal)
+    // or 6 km (displacement); the far field is distance roughness, not compressed stripes.
+    auto MaxFade = [](const FString& Code)
+    {
+        double Max = 0; int32 From = 0;
+        while ((From = Code.Find(TEXT("1-smoothstep("), ESearchCase::CaseSensitive, ESearchDir::FromStart, From)) != INDEX_NONE)
+        {
+            From += 13; const int32 Comma = Code.Find(TEXT(","), ESearchCase::CaseSensitive, ESearchDir::FromStart, From);
+            const int32 End = Code.Find(TEXT(",dist)"), ESearchCase::CaseSensitive, ESearchDir::FromStart, Comma);
+            if (Comma != INDEX_NONE && End != INDEX_NONE) Max = FMath::Max(Max, FCString::Atod(*Code.Mid(Comma + 1, End - Comma - 1)));
+        }
+        return Max;
+    };
+    AddInfo(FString::Printf(TEXT("Far-field fade end: normal %.0f cm, displacement %.0f cm"), MaxFade(Normal), MaxFade(Offset)));
+    TestTrue(TEXT("Every normal component fades by 4 km"), MaxFade(Normal) > 0 && MaxFade(Normal) <= 400000.0);
+    TestTrue(TEXT("Every displacement component fades by 6 km"), MaxFade(Offset) > 0 && MaxFade(Offset) <= 600000.0);
     TestTrue(TEXT("WPO displaces horizontally and vertically"), Offset.Contains(TEXT("return float3(o,h);")));
     return true;
 }

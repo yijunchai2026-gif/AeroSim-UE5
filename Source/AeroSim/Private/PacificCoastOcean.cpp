@@ -166,8 +166,11 @@ FString EmitWaves(const bool bOffset, const bool bGradient, const bool bSwellOnl
         // Short components fade with distance before they alias into glitter.
         // Analytic normal detail fades at ~30-120 wavelengths: enough slope variance for a bounded
         // sun-glint path (R2 lost it at 15-60), while texture detail fades by 120 m (moire).
-        const float Near = W.WavelengthCm * (bOffset ? 40.0F : 30.0F);
-        const float Far = W.WavelengthCm * (bOffset ? 160.0F : 120.0F);
+        // Far-field cap (R5 player view): beyond ~1.2-4 km every component, including the long
+        // swell, hands over to distance roughness so grazing perspective cannot compress swell
+        // crests into ruler-parallel horizon stripes. Near-shore travelling swell is unchanged.
+        const float Near = FMath::Min(W.WavelengthCm * (bOffset ? 40.0F : 30.0F), bOffset ? 200000.0F : 120000.0F);
+        const float Far = FMath::Min(W.WavelengthCm * (bOffset ? 160.0F : 120.0F), bOffset ? 600000.0F : 400000.0F);
         Code += FString::Printf(TEXT("{float2 d=float2(%s,%s),w=float2(%s,%s),e=float2(%s,%s);"),
             *Num(W.Direction.X), *Num(W.Direction.Y), *Num(D.Warp.X), *Num(D.Warp.Y), *Num(D.Group.X), *Num(D.Group.Y));
         Code += FString::Printf(TEXT("float wa=dot(P.xy,w)*%s+%s; float th=dot(P.xy,d)*%s-T*%s+%s+%s*sin(wa);"),
@@ -268,7 +271,7 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
     case ECoastalWaterShader::Roughness:
         // Inputs R (base), F (foam), P, C. Slightly rougher with distance so the far sea
         // stays calm and the sun path stays a bounded cone rather than silver glitter.
-        return TEXT("float dist=length(P-C); float r=lerp(R,R+.14,smoothstep(3000,120000,dist)); return lerp(r,.62,F);");
+        return TEXT("float dist=length(P-C); float r=lerp(R,R+.14,smoothstep(3000,120000,dist))+.08*smoothstep(150000,500000,dist); return lerp(r,.62,F);");
     case ECoastalWaterShader::RockWetness:
         // For the rock/ground material owner (DEV-TERRAIN): inputs P (world pos), T, A, C.
         // Returns 0..1 wetness: fully wet below still water, a ragged 0.5-2 m splash band
