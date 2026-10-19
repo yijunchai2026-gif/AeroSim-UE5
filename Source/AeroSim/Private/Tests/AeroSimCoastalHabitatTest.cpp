@@ -147,6 +147,26 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
     }
     TestTrue(TEXT("Distant receding ridgeline mesh exists"), bRange);
 
+    // Talus foot: supported blocks rest on the real cliff foot at the waterline; several emerge.
+    for (UProceduralMeshComponent* Mesh : Meshes)
+    {
+        if (Mesh->GetFName() != TEXT("CoastalTalusButtresses")) continue;
+        const FProcMeshSection* Section = Mesh->GetProcMeshSection(0);
+        if (!TestNotNull(TEXT("Talus has geometry"), Section)) break;
+        const int32 Blocks = Section->ProcVertexBuffer.Num() / 16;
+        int32 Emergent = 0, NearWaterline = 0;
+        for (int32 Block = 0; Block < Blocks; ++Block)
+        {
+            const FVector Top = Section->ProcVertexBuffer[Block * 16 + 15].Position;
+            if (Top.Z > APacificCoastGraybox::SeaLevelCm + 100) ++Emergent;
+            if (FMath::Abs(Top.X - APacificCoastGraybox::GetCoastalShoreX(Top.Y)) < 2500) ++NearWaterline;
+        }
+        TestEqual(TEXT("Sixty-four talus blocks"), Blocks, 64);
+        TestTrue(TEXT("At least a quarter of the talus blocks break the sea surface"), Emergent * 4 >= Blocks);
+        TestTrue(TEXT("Talus blocks sit at the actual waterline, not buried behind the cliff"), NearWaterline * 10 >= Blocks * 9);
+        AddInfo(FString::Printf(TEXT("Talus: %d blocks, %d emergent, %d within 25 m of the waterline"), Blocks, Emergent, NearWaterline));
+    }
+
     // Cliff face never overhangs: along every sampled cliff column, X grows monotonically with depth.
     {
         TMap<int32, TArray<FVector>> Columns;

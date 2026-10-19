@@ -79,8 +79,9 @@ float CliffOutcrop(const float Y, const float Depth)
     // Unequal gently dipping beds form supported shelves instead of one smooth bow with vertical ribs.
     const float Thresholds[] = {.09F, .27F, .46F, .69F, .85F};
     // R2: beds are sloping benches (wide transitions, thinner offsets), not stair-step ledges.
-    const float Widths[] = {.085F, .07F, .10F, .09F, .075F};
-    const float Thickness[] = {170.0F, 310.0F, 240.0F, 400.0F, 210.0F};
+    // R3 (QA stair-stepped slabs): broader, thinner benches.
+    const float Widths[] = {.15F, .13F, .17F, .16F, .14F};
+    const float Thickness[] = {120.0F, 220.0F, 170.0F, 280.0F, 150.0F};
     const float Collapse=CoastalErosion(Y)/5400.0F;
     // Low eroded coves have a wide supported rubble apron; intact headlands retain a steeper face.
     float Outcrop = Depth * 1500.0F + Collapse * 5500.0F * Smooth(Depth/.30F);
@@ -623,12 +624,18 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
     TArray<FVector> TalusVertices, TalusNormals;
     TArray<int32> TalusIndices;
     FRandomStream RockRandom(914823);
-    for (int32 Rock = 0; Rock < 32; ++Rock)
+    // R3: 64 unequal blocks; half gather at the eroded cove centres as a supported talus/rubble
+    // foot, several breaking the surface (peaks up to ~19 m above the sea).
+    const float CoveCentres[] = {-47000.0F, -19000.0F, 19000.0F, 54000.0F};
+    for (int32 Rock = 0; Rock < 64; ++Rock)
     {
-        const float Y = RockRandom.FRandRange(-57000.0F, 57000.0F);
+        const float Y = Rock % 2 == 0 ? FMath::Clamp(CoveCentres[(Rock / 2) % 4] + RockRandom.FRandRange(-6500.0F, 6500.0F), -57000.0F, 57000.0F)
+            : RockRandom.FRandRange(-57000.0F, 57000.0F);
         const float Edge = GetCliffEdgeX(Y);
-        const float Radius = RockRandom.FRandRange(650.0F, 1850.0F);
-        const float Peak = RockRandom.FRandRange(-7500.0F, -3900.0F);
+        const float Radius = RockRandom.FRandRange(650.0F, 2100.0F);
+        const float Peak = RockRandom.FRandRange(-7400.0F, -4600.0F);
+        // Blocks sit on the real sloping cliff foot at the waterline (previously buried behind it).
+        const float Foot = GetCoastalShoreX(Y) + RockRandom.FRandRange(-300.0F, 700.0F) - Radius * .3F;
         const int32 BaseIndex = TalusVertices.Num();
         const float Rotation = RockRandom.FRandRange(0.0F, 2.0F * PI);
         TalusVertices.Add(FVector(Edge - 300.0F, Y, -15500.0F));
@@ -637,10 +644,10 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
             {
                 const float Angle = Rotation + Corner * (2.0F * PI / 7.0F);
                 const float R = Radius * RockRandom.FRandRange(.65F, 1.15F) * (Ring == 0 ? 1.0F : .72F);
-                TalusVertices.Add(FVector(Edge + 150.0F + FMath::Cos(Angle) * R, Y + FMath::Sin(Angle) * R * 1.35F,
+                TalusVertices.Add(FVector(Foot + FMath::Cos(Angle) * R, Y + FMath::Sin(Angle) * R * 1.35F,
                     Ring == 0 ? -11100.0F : Peak - RockRandom.FRandRange(900.0F, 1800.0F)));
             }
-        TalusVertices.Add(FVector(Edge + RockRandom.FRandRange(-100.0F, 500.0F), Y + Radius * .2F, Peak));
+        TalusVertices.Add(FVector(Foot + RockRandom.FRandRange(-250.0F, 350.0F), Y + Radius * .2F, Peak));
         for (int32 Corner = 0; Corner < 7; ++Corner)
         {
             const int32 Next = (Corner + 1) % 7;

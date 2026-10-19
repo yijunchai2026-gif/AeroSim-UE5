@@ -227,9 +227,9 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
     struct FIn{const TCHAR* Name;UMaterialExpression* Node;};
     const TArray<FIn> Inputs={
         {TEXT("ED"),Col(16,TEXT("ExposedGrassColor"),Grass)},{TEXT("EN"),Nor(17,TEXT("ExposedGrassNormal"),Grass)},{TEXT("ER"),Rgh(18,TEXT("ExposedGrassRoughness"),Grass)},
-        {TEXT("E2D"),Col(16,TEXT("ExposedGrassColorB"),Grass2)},{TEXT("EF"),Col(16,TEXT("ExposedGrassColorFar"),GrassFar)},{TEXT("EH"),Rgh(40,TEXT("ExposedGrassHeight"),Grass)},
+        {TEXT("E2D"),Col(16,TEXT("ExposedGrassColorB"),Grass2)},{TEXT("E2N"),Nor(17,TEXT("ExposedGrassNormalB"),Grass2)},{TEXT("EF"),Col(16,TEXT("ExposedGrassColorFar"),GrassFar)},{TEXT("EH"),Rgh(40,TEXT("ExposedGrassHeight"),Grass)},
         {TEXT("SD"),Col(19,TEXT("ShelteredGrassColor"),Grass)},{TEXT("SN"),Nor(20,TEXT("ShelteredGrassNormal"),Grass)},{TEXT("SR"),Rgh(21,TEXT("ShelteredGrassRoughness"),Grass)},
-        {TEXT("S2D"),Col(19,TEXT("ShelteredGrassColorB"),Grass2)},{TEXT("SF"),Col(19,TEXT("ShelteredGrassColorFar"),GrassFar)},{TEXT("SH"),Rgh(41,TEXT("ShelteredGrassHeight"),Grass)},
+        {TEXT("S2D"),Col(19,TEXT("ShelteredGrassColorB"),Grass2)},{TEXT("S2N"),Nor(20,TEXT("ShelteredGrassNormalB"),Grass2)},{TEXT("SF"),Col(19,TEXT("ShelteredGrassColorFar"),GrassFar)},{TEXT("SH"),Rgh(41,TEXT("ShelteredGrassHeight"),Grass)},
         {TEXT("WD"),Col(22,TEXT("WoodlandLitterColor"),Grass)},{TEXT("WN"),Nor(23,TEXT("WoodlandLitterNormal"),Grass)},{TEXT("WR"),Rgh(24,TEXT("WoodlandLitterRoughness"),Grass)},
         {TEXT("WF"),Col(22,TEXT("WoodlandLitterColorFar"),GrassFar)},{TEXT("WH"),Rgh(42,TEXT("WoodlandLitterHeight"),Grass)},
         {TEXT("RD"),Col(25,TEXT("StonyGroundColor"),Stone)},{TEXT("RN"),Nor(26,TEXT("StonyGroundNormal"),Stone)},{TEXT("RR"),Rgh(27,TEXT("StonyGroundRoughness"),Stone)},
@@ -265,19 +265,26 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "float3 eT=float3(.28,.22,.12); eT=lerp(eT,float3(.30,.205,.095),smoothstep(.30,.20,mot)); eT=lerp(eT,float3(.135,.13,.065),smoothstep(.66,.76,mot));"
         "float3 sT=lerp(float3(.16,.155,.075),float3(.10,.125,.05),nC);"
         "float3 wT=lerp(float3(.10,.078,.048),float3(.066,.08,.04),nD);"
-        "float3 rT=float3(.22,.19,.15)*(.88+.24*nA);"
-        "float3 e=eT*EC/float3(.419,.297,.196);"
-        "float3 s=sT*SC/float3(.080,.048,.008);"
-        "float3 wl=wT*WC/float3(.173,.076,.035);"
-        "float rl=dot(RC,L)/dot(float3(.306,.178,.080),L); float3 r=rT*lerp(rl.xxx,RC/float3(.306,.178,.080),.35);"
+        // R3: re-centre by luminance with only clamped partial chroma, so a near-zero source channel
+        // (sparse_grass blue mean .008) cannot be amplified into slate-blue; stony ground is a darker
+        // weathered grey-brown (QA: grey-white "salt" patches).
+        "float3 rT=float3(.135,.118,.096)*(.85+.3*nA);"
+        "float3 e=eT*lerp(dot(EC,L)/.31,clamp(EC/float3(.419,.297,.196),.5,1.8),.5);"
+        "float3 s=sT*lerp(dot(SC,L)/.0533,clamp(SC/float3(.080,.048,.008),.6,1.6),.25);"
+        "float3 wl=wT*lerp(dot(WC,L)/.0976,clamp(WC/float3(.173,.076,.035),.6,1.6),.35);"
+        "float3 r=rT*clamp(dot(RC,L)/.2073,.55,1.25);"
         "float3 c=e*b.x+s*b.y+wl*b.z+r*b.w;"
         "float m1=clamp(dot(M1,L)/.13,.65,1.4), m2=clamp(dot(M2,L)/.077,.75,1.3);"
         "c*=lerp(1,m1*m2,.25+.3*(1-fineMix));"
         "c*=1+.24*(float3(nC,nD,nE)-.5);"
         "return min(c,float3(.6,.5,.4));"));
     auto* Normal=Make(CMOT_Float3,TEXT(
-        "float3 n=EN*b.x+SN*b.y+WN*b.z+RN*b.w; n.xy*=lerp(.15,1,normalFade);"
-        "float2 d=(DN.xy*.55+DN2.xy*.45)*nearFade*.8;"
+        // R3: grass normals mix a 1.37x/37 deg second sample by noise (no periodic bands in
+        // lighting_only); detail normal strength is noise-modulated and fades by ~8 m.
+        "float3 en=lerp(EN,E2N,swap), sn=lerp(SN,S2N,1-swap);"
+        "float3 n=en*b.x+sn*b.y+WN*b.z+RN*b.w; n.xy*=lerp(.15,1,normalFade);"
+        "float detailFade=1-smoothstep(200.0,800.0,D);"
+        "float2 d=(DN.xy*lerp(.25,.6,nA)+DN2.xy*lerp(.6,.25,nA))*detailFade*.75;"
         "return normalize(float3(n.xy+d,max(n.z,.2)));"));
     auto* Rough=Make(CMOT_Float1,TEXT(
         "float r=lerp(.86,ER.r,fineMix)*b.x+lerp(.84,SR.r,fineMix)*b.y+lerp(.9,WR.r,fineMix)*b.z+lerp(.8,RR.r,fineMix)*b.w;"
@@ -317,9 +324,10 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
     if (bWorldProjection)
     {
         // Near: worn_rock_natural_01 triplanar at its published 2.0 m; broad structure from cliff_side below.
-        BaseExpression = Project(Material, AlignedTexture, Textures[Base], TEXT("BaseColorTexture"), SAMPLERTYPE_Color, 200.0F);
-        NormalExpression = Project(Material, AlignedNormal, Textures[Normal], TEXT("NormalTexture"), SAMPLERTYPE_Normal, 200.0F);
-        RoughnessExpression = Project(Material, AlignedTexture, Textures[Roughness], TEXT("RoughnessTexture"), SAMPLERTYPE_LinearGrayscale, 200.0F);
+        // R3: used at 3.5 m (spec 2-4 m) so the 65 m face is not read as a fine repeating knit.
+        BaseExpression = Project(Material, AlignedTexture, Textures[Base], TEXT("BaseColorTexture"), SAMPLERTYPE_Color, 350.0F);
+        NormalExpression = Project(Material, AlignedNormal, Textures[Normal], TEXT("NormalTexture"), SAMPLERTYPE_Normal, 350.0F);
+        RoughnessExpression = Project(Material, AlignedTexture, Textures[Roughness], TEXT("RoughnessTexture"), SAMPLERTYPE_LinearGrayscale, 350.0F);
         BaseOutput = NormalOutput = RoughnessOutput = TEXT("XYZ Texture");
         if (!BaseExpression || !NormalExpression || !RoughnessExpression) return false;
         // Retain physical 1.8 m scan detail, with separate broad colour/normal
@@ -342,21 +350,42 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
         // Spec R2: worn sandstone (pulled toward pale tan) forms the upper sea-cliff face; fractured
         // rock_face_03 (published 2.7 m, used at 4 m) takes over on the lower cliff, slumps and talus
         // with a noise-broken boundary ~35-45 m above the sea.
-        auto* FaceColor = Project(Material, AlignedTexture, Textures[37], TEXT("LowerCliffColor"), SAMPLERTYPE_Color, 400.0F);
-        auto* FaceNormal = Project(Material, AlignedNormal, Textures[38], TEXT("LowerCliffNormal"), SAMPLERTYPE_Normal, 400.0F);
-        auto* FaceRough = Project(Material, AlignedTexture, Textures[39], TEXT("LowerCliffRoughness"), SAMPLERTYPE_LinearGrayscale, 400.0F);
-        if (!FaceColor || !FaceNormal || !FaceRough) return false;
+        // R3 (QA fish-scale): rock_face_03 at 7 m and 18.3 m (x2.6), mixed by low-frequency world
+        // noise, so no single few-metre cell repeats; colour carries irregular horizontal strata.
+        auto* FaceColorNear = Project(Material, AlignedTexture, Textures[37], TEXT("LowerCliffColor"), SAMPLERTYPE_Color, 700.0F);
+        auto* FaceNormalNear = Project(Material, AlignedNormal, Textures[38], TEXT("LowerCliffNormal"), SAMPLERTYPE_Normal, 700.0F);
+        auto* FaceRough = Project(Material, AlignedTexture, Textures[39], TEXT("LowerCliffRoughness"), SAMPLERTYPE_LinearGrayscale, 700.0F);
+        auto* FaceColorBroad = Project(Material, AlignedTexture, Textures[37], TEXT("LowerCliffColorBroad"), SAMPLERTYPE_Color, 1830.0F);
+        auto* FaceNormalBroad = Project(Material, AlignedNormal, Textures[38], TEXT("LowerCliffNormalBroad"), SAMPLERTYPE_Normal, 1830.0F);
+        if (!FaceColorNear || !FaceNormalNear || !FaceRough || !FaceColorBroad || !FaceNormalBroad) return false;
         auto* CliffWorld = Node<UMaterialExpressionWorldPosition>(Material);
+        auto* FaceMix = Node<UMaterialExpressionCustom>(Material); FaceMix->OutputType = CMOT_Float1;
+        FaceMix->Code = TEXT("return smoothstep(-.35,.35,sin(P.x*.00071+P.z*.0011+sin(P.y*.00093)*2.3)*.6+sin(P.y*.0016-P.z*.0007)*.4);");
+        { FCustomInput I; I.InputName = TEXT("P"); I.Input.Connect(0, CliffWorld); FaceMix->Inputs.Add(I); }
+        auto* FaceColorMix = Node<UMaterialExpressionLinearInterpolate>(Material);
+        bool bMix = UMaterialEditingLibrary::ConnectMaterialExpressions(FaceColorNear, TEXT("XYZ Texture"), FaceColorMix, TEXT("A"));
+        bMix &= UMaterialEditingLibrary::ConnectMaterialExpressions(FaceColorBroad, TEXT("XYZ Texture"), FaceColorMix, TEXT("B"));
+        FaceColorMix->Alpha.Connect(0, FaceMix);
+        auto* FaceNormalMix = Node<UMaterialExpressionLinearInterpolate>(Material);
+        bMix &= UMaterialEditingLibrary::ConnectMaterialExpressions(FaceNormalNear, TEXT("XYZ Texture"), FaceNormalMix, TEXT("A"));
+        bMix &= UMaterialEditingLibrary::ConnectMaterialExpressions(FaceNormalBroad, TEXT("XYZ Texture"), FaceNormalMix, TEXT("B"));
+        FaceNormalMix->Alpha.Connect(0, FaceMix);
+        auto* Strata = Node<UMaterialExpressionCustom>(Material); Strata->OutputType = CMOT_Float3;
+        Strata->Code = TEXT("float w=P.z+260*sin(P.y*.0009+sin(P.x*.0013)*1.7)+90*sin(P.y*.0041); float b=sin(w/230.0)*.6+sin(w/83.0+1.3)*.4; return C*(1+.16*b);");
+        { FCustomInput I; I.InputName = TEXT("P"); I.Input.Connect(0, CliffWorld); Strata->Inputs.Add(I); }
+        { FCustomInput I; I.InputName = TEXT("C"); I.Input.Connect(0, FaceColorMix); Strata->Inputs.Add(I); }
+        if (!bMix) return false;
+        UMaterialExpression* FaceColor = Strata; UMaterialExpression* FaceNormal = FaceNormalMix;
         auto* Lower = Node<UMaterialExpressionCustom>(Material); Lower->OutputType = CMOT_Float1;
         Lower->Code = TEXT("float n=sin(P.x*.0021+sin(P.y*.0013)*2.1)*.5+sin(P.y*.0047+P.x*.0011)*.5; return 1-smoothstep(-3200.0,-2400.0,P.z+n*500.0);");
         { FCustomInput I; I.InputName = TEXT("P"); I.Input.Connect(0, CliffWorld); Lower->Inputs.Add(I); }
         auto* Tan = Node<UMaterialExpressionMultiply>(Material); Tan->A.Connect(0, BaseExpression);
         auto* TanTint = Node<UMaterialExpressionConstant3Vector>(Material); TanTint->Constant = FLinearColor(1.12F, 1.06F, .92F); Tan->B.Connect(0, TanTint);
         auto* CliffColor = Node<UMaterialExpressionLinearInterpolate>(Material); CliffColor->A.Connect(0, Tan);
-        bool bFace = UMaterialEditingLibrary::ConnectMaterialExpressions(FaceColor, TEXT("XYZ Texture"), CliffColor, TEXT("B"));
+        CliffColor->B.Connect(0, FaceColor); bool bFace = true;
         CliffColor->Alpha.Connect(0, Lower);
         auto* CliffNormal = Node<UMaterialExpressionLinearInterpolate>(Material); CliffNormal->A.Connect(0, NormalExpression);
-        bFace &= UMaterialEditingLibrary::ConnectMaterialExpressions(FaceNormal, TEXT("XYZ Texture"), CliffNormal, TEXT("B"));
+        CliffNormal->B.Connect(0, FaceNormal);
         CliffNormal->Alpha.Connect(0, Lower);
         auto* CliffUnit = Node<UMaterialExpressionNormalize>(Material); CliffUnit->VectorInput.Connect(0, CliffNormal);
         auto* CliffRough = Node<UMaterialExpressionLinearInterpolate>(Material);
