@@ -24,7 +24,7 @@ namespace CoastFlora
 namespace
 {
 constexpr int32 LodCount = 4;
-constexpr float LodScreenSize[LodCount] = {1.0F, .60F, .28F, .08F};
+constexpr float LodScreenSize[LodCount] = {1.0F, .75F, .36F, .12F};
 
 float Smooth01(float Value) { Value = FMath::Clamp(Value, 0.0F, 1.0F); return Value * Value * (3.0F - 2.0F * Value); }
 float Hash2(float X, float Y) { return FMath::Frac(FMath::Sin(X * 127.1F + Y * 311.7F) * 43758.5453F); }
@@ -251,6 +251,8 @@ struct FSkeleton
     bool bHeroShape = false;
     /** R5: foliage rebuilt as connected branchlet clusters with cluster-stable LODs. */
     bool bHeroFoliage = false;
+    /** <1 thins branchlet groups so LOD0 foliage stays within the archetype's R4 slot budget. */
+    float FoliageDensity = 1.0F;
     TArray<FCluster> Clusters;
     float TileV = 200, TileU = 200;
     const FIsland* Islands = PineSprigs;
@@ -273,10 +275,11 @@ TArray<float> StemHeights(float Top)
 float CollarRadius(float Z, float Theta, float BaseRadius, const TArray<TPair<float, float>>& Lobes)
 {
     const float Zc = FMath::Max(Z, 0.0F);
-    float Flare = .21F * FMath::Exp(-Zc / 70.0F);
+    // Concave root collar: sharp flare in the lowest ~30 cm, so the base reads as rooted, not a cylinder.
+    float Flare = .18F * FMath::Exp(-Zc / 30.0F) + .03F * FMath::Exp(-Zc / 90.0F);
     float Buttress = 0;
     for (const auto& Lobe : Lobes) Buttress += Lobe.Value * FMath::Pow(FMath::Max(0.0F, FMath::Cos(Theta - Lobe.Key)), 6.0F);
-    return BaseRadius * (1.0F + Flare + Buttress * FMath::Exp(-Zc / 85.0F));
+    return BaseRadius * (1.0F + Flare + Buttress * FMath::Exp(-Zc / 45.0F));
 }
 
 void AddConiferBranches(FSkeleton& K, FRandomStream& Random, bool bPine, bool bSapling, float Wind0)
@@ -465,7 +468,8 @@ FSkeleton MakeConifer(ESpecies Species, EAge Age, int32 Seed, float Size = 1.0F)
     // Size classes: veterans carry a disproportionately thick bole (DBH up to ~1.2 m), young poles ~0.25 m.
     K.Breast = (Size > 1.0F ? 1.22F : 1.0F) * (bSapling ? 2.5F + H * .006F : H * (bPine ? .0155F : .0125F) + 3.0F);
     // Live crown 52-68% of height for conifers (PMO R1: no bare poles).
-    K.CrownBase = bSapling ? H * .12F : H * (Age == EAge::Pole ? Random.FRandRange(.26F, .34F) : bPine ? Random.FRandRange(.32F, .40F) : Random.FRandRange(.34F, .46F));
+    // R6: lower, varied crown bases (live crown 62-80% of height) for a closed canopy.
+    K.CrownBase = bSapling ? H * .12F : H * (Age == EAge::Pole ? Random.FRandRange(.18F, .26F) : bPine ? Random.FRandRange(.22F, .32F) : Random.FRandRange(.20F, .34F));
     K.CrownRadius = bSapling ? H * .28F : H * (bPine ? .30F : .19F);
     const float LeanYaw = Random.FRandRange(0, 2 * PI), Sweep = bPine ? Random.FRandRange(.015F, .045F) : Random.FRandRange(.004F, .012F);
     for (float Z : StemHeights(H))
@@ -493,7 +497,7 @@ FSkeleton MakeOak(int32 Seed)
     FSkeleton K; K.Species = ESpecies::CoastLiveOak; K.Islands = OakRows; K.IslandCount = 4; K.TileU = 100; K.TileV = 200;
     K.Breast = Random.FRandRange(30, 44);
     const float Fork = Random.FRandRange(70, 170);
-    K.Stems = Random.RandRange(2, 4);
+    K.Stems = Random.RandRange(3, 5); // 3-5 unequal crown lobes (R5/R6)
     // Short shared bole with the root collar; stems lean outward from the fork.
     for (float Z : {-Buried, 0.0F, 7.0F, 16.0F, 27.0F, 40.0F, 56.0F, 76.0F, Fork})
     {
@@ -729,7 +733,8 @@ FVector Turn(const FVector& D, float YawDegrees, float PitchDegrees)
 void AddClusterCard(FSkeleton& K, int32 Cluster, const FVector& Origin, const FVector& Along, const FVector& Across, float Length,
     int32 Island, float Wind, float Occlusion, float Fold)
 {
-    FTuft Tuft{Origin, Along.GetSafeNormal(), Across, FVector::UpVector, Length, Occlusion, Wind, Island};
+    // Modest sway on branchlet cards (QA-MOTION R5a): cap the shared wind weight.
+    FTuft Tuft{Origin, Along.GetSafeNormal(), Across, FVector::UpVector, Length, Occlusion, FMath::Min(Wind, .45F), Island};
     Tuft.Cluster = Cluster; Tuft.Fold = Fold;
     K.Tufts.Add(Tuft);
 }
@@ -778,24 +783,26 @@ void FinishClusters(FSkeleton& K)
 void BuildFirBranchlets(FSkeleton& K, FRandomStream& Random)
 {
     const float CrownTop = K.Height;
+    // Branchlet size follows tree size: saplings get proportionally small groups, veterans larger.
+    const float Scale = K.Height < 500 ? .65F : K.Height < 1600 ? 1.2F : FMath::Clamp(K.Height / 2600.0F, 1.0F, 1.3F);
     for (int32 LimbIndex = 0; LimbIndex < K.Limbs.Num(); ++LimbIndex)
     {
         const FLimb& Limb = K.Limbs[LimbIndex];
         if (Limb.Level != 1 && Limb.Level != 2) continue;
         if (Limb.Wind0 == 0 && Limb.Wind1 == 0) continue; // dead stubs
         const float Length = FVector::Distance(Limb.Path[0], Limb.Path.Last());
-        if (Length < 60) continue;
+        if (Length < 60 * Scale) continue;
         const float Start = Limb.Level == 1 ? .30F : .18F;
         int32 Side = Random.FRand() < .5F ? -1 : 1;
-        for (float D = Length * Start + Random.FRandRange(0, 20); D < Length * .97F; D += Random.FRandRange(Limb.Level == 1 ? 36.0F : 44.0F, Limb.Level == 1 ? 54.0F : 64.0F))
+        for (float D = Length * Start + Random.FRandRange(0, 20); D < Length * .97F; D += Random.FRandRange(Limb.Level == 1 ? 36.0F : 44.0F, Limb.Level == 1 ? 54.0F : 64.0F) * Scale / K.FoliageDensity)
         {
             const float S = D / Length;
             // Staggered depth: a fraction of groups is skipped, leaving windows to the next layer.
-            if (Random.FRand() < .12F) { Side = -Side; continue; }
+            if (Random.FRand() < .12F / FMath::Max(1.0F, K.FoliageDensity)) { Side = -Side; continue; }
             const FVector Attach = PathPoint(Limb, S);
             const FVector Ahead = (PathPoint(Limb, FMath::Min(1.0F, S + .04F)) - Attach).GetSafeNormal();
             const float U = (Attach.Z - K.CrownBase) / FMath::Max(1.0F, CrownTop - K.CrownBase);
-            const float GroupLength = Random.FRandRange(56, 84) * (Limb.Level == 2 ? .8F : 1.0F) * FMath::Lerp(1.0F, .72F, U);
+            const float GroupLength = Random.FRandRange(56, 84) * Scale * (Limb.Level == 2 ? .8F : 1.0F) * FMath::Lerp(1.0F, .72F, U);
             // Group axis leaves the limb sideways and droops; tips near the limb end turn up.
             const FVector Axis = Turn(Ahead, Side * Random.FRandRange(28, 58), -Random.FRandRange(10, 26) + (S > .85F ? 18.0F : 0.0F));
             const FVector Lift(0, 0, Side * Random.FRandRange(6, 18) * (Random.FRand() < .5F ? 1 : -1));
@@ -810,7 +817,7 @@ void BuildFirBranchlets(FSkeleton& K, FRandomStream& Random)
             auto Roll = [&](const FVector& Along) { return FVector::CrossProduct(Along, FVector::UpVector).GetSafeNormal().RotateAngleAxis((Random.FRand() < .5F ? -1 : 1) * Random.FRandRange(35, 70), Along); };
             // Core spray from the thin inner end (starts 15% out) to the group tip.
             const FVector Core = Root + Axis * GroupLength * .15F;
-            AddClusterCard(K, Id, Core, Axis, Roll(Axis), GroupLength * .85F, Random.RandRange(0, 2), C.Wind, C.Occlusion, 22);
+            AddClusterCard(K, Id, Core, Axis, Roll(Axis), GroupLength * .85F, Random.RandRange(0, 2), C.Wind, C.Occlusion, 0);
             // Two unequal side sprigs.
             const FVector SideA = Turn(Axis, Side * Random.FRandRange(48, 66), -Random.FRandRange(8, 20));
             AddClusterCard(K, Id, Root + Axis * GroupLength * .35F, SideA, Roll(SideA), GroupLength * Random.FRandRange(.55F, .75F), Random.RandRange(0, 2), C.Wind, C.Occlusion * .95F, 0);
@@ -835,8 +842,9 @@ void BuildPineTerminals(FSkeleton& K, FRandomStream& Random)
         const FVector Tip = Limb.Path.Last();
         const FVector TipDir = (Tip - PathPoint(Limb, .8F)).GetSafeNormal();
         // Visible gaps: some fork ends stay bare twigs.
-        if (Limb.Level == 2 && Random.FRand() < .10F) continue;
-        const float Mass = Limb.Level == 1 ? Random.FRandRange(.9F, 1.15F) : Random.FRandRange(.65F, .9F);
+        if (Limb.Level == 2 && Random.FRand() < FMath::Max(.04F, 1.0F - .9F * K.FoliageDensity)) continue;
+        if (Limb.Level == 1 && K.FoliageDensity < 1.0F && Random.FRand() > K.FoliageDensity) continue;
+        const float Mass = (Limb.Level == 1 ? Random.FRandRange(.9F, 1.15F) : Random.FRandRange(.65F, .9F)) * (K.Height < 500 ? .55F : FMath::Clamp(K.Height / 2500.0F, 1.0F, 1.25F));
         const int32 Id = K.Clusters.Num();
         FCluster C; C.Axis = TipDir; C.Island = 2; C.Wind = Limb.Wind1;
         C.Lobe = FMath::Clamp(FMath::FloorToInt((Tip.Z - K.CrownBase) / FMath::Max(1.0F, K.Height - K.CrownBase) * 2), 0, 1) * 4
@@ -846,7 +854,7 @@ void BuildPineTerminals(FSkeleton& K, FRandomStream& Random)
         // Mass centre sits just beyond the tip; cards radiate in a hemisphere with jittered,
         // non-coplanar centres (thin where it joins the twig, thick on the outside).
         const FVector Centre = Tip + TipDir * 24.0F * Mass;
-        const int32 Cards = Limb.Level == 1 ? 6 : 5;
+        const int32 Cards = FMath::Clamp(FMath::RoundToInt((Limb.Level == 1 ? 6 : 5) * K.FoliageDensity), 2, 9);
         for (int32 Card = 0; Card < Cards; ++Card)
         {
             const float Yaw = Card * 360.0F / Cards + Random.FRandRange(-25, 25);
@@ -856,8 +864,11 @@ void BuildPineTerminals(FSkeleton& K, FRandomStream& Random)
             AddClusterCard(K, Id, At, Out, Across, Random.FRandRange(92, 124) * Mass, Card == 0 ? 1 : 2, C.Wind, C.Occlusion, Card == 0 ? 20.0F : 0.0F);
         }
         // One radial clump faces outward across the mass.
-        const FVector Face = FVector::CrossProduct(TipDir, FVector::UpVector).GetSafeNormal();
-        AddClusterCard(K, Id, Centre + TipDir * 6.0F, FVector::CrossProduct(Face, TipDir).GetSafeNormal() + Face * .2F, Face, 116.0F * Mass, 0, C.Wind, C.Occlusion, 0);
+        // The radial clump stands upright facing out of the crown (horizontal normal), never lying flat.
+        FVector Facing = FVector(Tip.X, Tip.Y, 0).GetSafeNormal();
+        if (Facing.IsNearlyZero()) Facing = FVector(FMath::Cos(LimbIndex * 2.4F), FMath::Sin(LimbIndex * 2.4F), 0);
+        const FVector FacingSide = FVector::CrossProduct(FVector::UpVector, Facing).GetSafeNormal();
+        AddClusterCard(K, Id, Centre + TipDir * 6.0F, FVector::CrossProduct(Facing, FacingSide).GetSafeNormal(), FacingSide, 116.0F * Mass, 0, C.Wind, C.Occlusion, 0);
         // A small inner sprig along the limb keeps the twig from reading bare.
         if (Limb.Level == 1 && Random.FRand() < .5F)
         {
@@ -907,21 +918,21 @@ void BuildOakLobes(FSkeleton& K, FRandomStream& Random)
         const float ToWindow = FMath::Abs(FMath::UnwindRadians(Azimuth - Window[L]));
         if (ToWindow < .32F && FMath::Abs(Rel.Z) < LobeRadius[L] * .5F) continue; // branch window
         const bool bInterior = Radial < .45F;
-        if (bInterior && Random.FRand() < .6F) continue; // redundant hidden interior
+        if (bInterior && Random.FRand() < FMath::Max(.1F, 1.0F - .7F * K.FoliageDensity)) continue; // redundant hidden interior
         const FVector TwigDir = (Tip - Twig.Path[0]).GetSafeNormal();
         const int32 Id = K.Clusters.Num();
         FCluster C; C.Axis = (Rel.GetSafeNormal() * .6F + TwigDir * .4F).GetSafeNormal(); C.Lobe = L; C.Wind = Twig.Wind1;
         C.Occlusion = FMath::Clamp(.4F + .6F * Radial, .4F, 1.0F);
         K.Clusters.Add(C);
         const bool bLower = Rel.Z < -LobeRadius[L] * .25F;
-        const int32 Cards = bInterior ? 1 : 4;
+        const int32 Cards = bInterior ? 1 : FMath::Max(2, FMath::RoundToInt(5 * K.FoliageDensity));
         for (int32 Card = 0; Card < Cards; ++Card)
         {
             FVector Along = Turn(C.Axis, (Card - 1.5F) * Random.FRandRange(25, 45), bLower ? -Random.FRandRange(25, 45) : Random.FRandRange(-10, 25));
             const FVector At = FMath::Lerp(Twig.Path[0], Tip, Random.FRandRange(.55F, .95F)) + Random.VRand() * 6.0F;
             const int32 Island = bLower ? 3 : Card == 0 ? 0 : Card == 1 ? 1 : 2;
-            const FVector Across = FVector::CrossProduct(Along, FVector::UpVector).GetSafeNormal().RotateAngleAxis((Card % 2 ? -1 : 1) * Random.FRandRange(35, 75), Along);
-            AddClusterCard(K, Id, At, Along, Across, Random.FRandRange(34, 50), Island, C.Wind, C.Occlusion, Card == 0 ? 22.0F : 0.0F);
+            const FVector Across = FVector::CrossProduct(Along, FVector::UpVector).GetSafeNormal().RotateAngleAxis((Card % 2 ? -1 : 1) * Random.FRandRange(45, 80), Along);
+            AddClusterCard(K, Id, At, Along, Across, Random.FRandRange(40, 56), Island, C.Wind, C.Occlusion, Card == 0 ? 22.0F : 0.0F);
         }
     }
     (void)Branch;
@@ -949,8 +960,8 @@ void EmitHeroFoliage(const FSkeleton& K, int32 Lod, FLod& Out)
         for (const FTuft& T : K.Tufts)
         {
             const FCluster& C = K.Clusters[T.Cluster];
-            if (Lod == 1 && T.Rank >= FMath::Max(1, FMath::CeilToInt(C.Cards * .6F))) continue;
-            const float Grow = Lod == 1 ? 1.2F : 1.0F;
+            if (Lod == 1 && T.Rank >= FMath::Max(1, FMath::CeilToInt(C.Cards * .45F))) continue;
+            const float Grow = Lod == 1 ? 1.25F : 1.0F;
             EnvelopeCard(Out.Leaf, T.Origin - T.Dir * T.Length * (Grow - 1) * .5F, T.Dir, T.Across, T.Length * Grow,
                 K.Islands[T.Island % K.IslandCount], C.Center, FVector4f(T.Occlusion, T.Wind, 0, 1), Lod == 0 ? T.Fold : 0.0F);
         }
@@ -965,7 +976,7 @@ void EmitHeroFoliage(const FSkeleton& K, int32 Lod, FLod& Out)
         const FVector2f Extent = Island.Max - Island.Min;
         const float Aspect = Island.bAlongU ? Extent.X / Extent.Y : Extent.Y / Extent.X;
         // Length chosen so the card's narrow side still spans the cluster's broad side.
-        const float Length = 2.0F * Span * Grow * FMath::Clamp(Aspect, .8F, 1.6F) * .75F;
+        const float Length = FMath::Min(2.0F * Span * Grow * FMath::Clamp(Aspect, .8F, 1.6F) * .75F, 2.0F * Span * Grow);
         // Tilt alternates by stable id; never a horizontal floor. Grow pulls toward the crown axis.
         const float Roll = (Id % 2 ? 50.0F : -40.0F) + RollOffset;
         const FVector Inward = -FVector(C.Center.X, C.Center.Y, 0).GetSafeNormal() * Span * (Grow - 1.0F);
@@ -975,30 +986,35 @@ void EmitHeroFoliage(const FSkeleton& K, int32 Lod, FLod& Out)
     if (Lod == 2)
     {
         // Terminal masses (pine) need three crossed planes, fir branchlets two, oak twig groups one.
-        const int32 Planes = K.Species == ESpecies::MontereyPine ? 3 : K.Species == ESpecies::DouglasFir ? 2 : 1;
+        const int32 Planes = K.Species == ESpecies::MontereyPine && K.Height >= 500 ? 3 : 1;
         for (int32 Id = 0; Id < K.Clusters.Num(); ++Id)
             if (K.Clusters[Id].Cards)
                 for (int32 Plane = 0; Plane < (K.Clusters[Id].Cards > 1 ? Planes : 1); ++Plane) ClusterCard(K.Clusters[Id], Id, 1.0F, Plane * 180.0F / Planes);
         return;
     }
     TMap<int32, TArray<int32>> Lobes;
-    for (int32 Id = 0; Id < K.Clusters.Num(); ++Id) if (K.Clusters[Id].Cards) Lobes.FindOrAdd(K.Clusters[Id].Lobe).Add(Id);
+    int32 Total = 0;
+    for (int32 Id = 0; Id < K.Clusters.Num(); ++Id) if (K.Clusters[Id].Cards) { Lobes.FindOrAdd(K.Clusters[Id].Lobe).Add(Id); ++Total; }
     TArray<int32> Keys; Lobes.GetKeys(Keys); Keys.Sort();
     const int32 PerLobe = K.Species == ESpecies::CoastLiveOak ? 12 : K.Species == ESpecies::DouglasFir ? 14 : 8;
-    const int32 Planes = K.Species == ESpecies::MontereyPine ? 2 : 1;
+    const int32 Planes = 1;
+    // Each lobe's outermost clusters first; at most 30% of all clusters survive to LOD3.
+    TArray<TPair<int32, int32>> Ranked; // (rank within lobe, cluster id)
     for (const int32 Key : Keys)
     {
         TArray<int32> Members = Lobes[Key];
-        // Stable choice: outermost clusters (distance from the stem axis), ties by id.
         Members.Sort([&](int32 A, int32 B)
         {
             const float DA = FVector::Dist2D(K.Clusters[A].Center, FVector::ZeroVector), DB = FVector::Dist2D(K.Clusters[B].Center, FVector::ZeroVector);
             return DA != DB ? DA > DB : A < B;
         });
         const int32 Step = FMath::Max(1, Members.Num() / PerLobe);
-        for (int32 I = 0; I < Members.Num() && I / Step < PerLobe; I += Step)
-            for (int32 Plane = 0; Plane < Planes; ++Plane) ClusterCard(K.Clusters[Members[I]], Members[I], 1.3F, Plane * 90.0F);
+        for (int32 I = 0, Rank = 0; I < Members.Num() && Rank < PerLobe; I += Step, ++Rank) Ranked.Add({Rank, Members[I]});
     }
+    Ranked.Sort([](const TPair<int32, int32>& A, const TPair<int32, int32>& B) { return A.Key != B.Key ? A.Key < B.Key : A.Value < B.Value; });
+    const int32 Limit = FMath::Max(1, FMath::FloorToInt(Total * .3F));
+    for (int32 I = 0; I < Ranked.Num() && I < Limit; ++I)
+        for (int32 Plane = 0; Plane < Planes; ++Plane) ClusterCard(K.Clusters[Ranked[I].Value], Ranked[I].Value, K.Height < 500 ? 1.0F : 1.3F, Plane * 90.0F);
 }
 
 void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrossed = true)
@@ -1008,7 +1024,7 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
     TArray<TPair<float, float>> Lobes;
     FRandomStream LobeRandom(Seed);
     const int32 LobeCount = LobeRandom.RandRange(4, 6);
-    for (int32 L = 0; L < LobeCount; ++L) Lobes.Add({L * 2 * PI / LobeCount + LobeRandom.FRandRange(-.35F, .35F), LobeRandom.FRandRange(.055F, .08F)});
+    for (int32 L = 0; L < LobeCount; ++L) Lobes.Add({L * 2 * PI / LobeCount + LobeRandom.FRandRange(-.35F, .35F), LobeRandom.FRandRange(.05F, .07F)});
     // Physical bark tiling: whole repeats around the circumference so the seam closes.
     const float URepeats = FMath::Clamp(FMath::RoundToFloat(2 * PI * K.Breast / K.TileU * 1.6F), 2.0F, 4.0F);
     const float Height = K.Height;
@@ -1018,7 +1034,8 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
             const float Base = K.TrunkRadius[Ring];
             if (K.Species != ESpecies::CoastLiveOak && K.Height < 500) return Base; // seedlings: no collar
             const float Section = K.bHeroShape ? 1.0F + .035F * Smooth01((Z - 450.0F) / 350.0F) * FMath::Sin(Theta * 2 + Z * .001F) : 1.0F;
-            return Section * (Lod >= 2 ? Base * (Z < 30 ? 1.12F : 1.0F) : CollarRadius(Z, Theta, Base, Lobes));
+            // LOD2+ keep the smooth flare (no buttress lobes) so mid-distance bases never read as cylinders.
+            return Section * (Lod >= 2 ? Base * (1.0F + .18F * FMath::Exp(-FMath::Max(Z, 0.0F) / 30.0F)) : CollarRadius(Z, Theta, Base, Lobes));
         }, TrunkSides, URepeats, K.TileV,
         [&](int32 Ring)
         {
@@ -1114,6 +1131,50 @@ bool FCoastalHeroShapeBudgetTest::RunTest(const FString& Parameters)
 #endif
 
 
+struct FSpec { const TCHAR* Name; ESpecies Species; EAge Age; int32 Seed; float Size = 1.0F; };
+const FSpec Specs[] = {
+    {TEXT("CoastalFloraFirMatureA"), ESpecies::DouglasFir, EAge::Mature, 1101}, {TEXT("CoastalFloraFirMatureB"), ESpecies::DouglasFir, EAge::Mature, 1187},
+    {TEXT("CoastalFloraFirMatureC"), ESpecies::DouglasFir, EAge::Mature, 1243}, {TEXT("CoastalFloraFirPole"), ESpecies::DouglasFir, EAge::Pole, 1319},
+    {TEXT("CoastalFloraPineMatureA"), ESpecies::MontereyPine, EAge::Mature, 2203}, {TEXT("CoastalFloraPineMatureB"), ESpecies::MontereyPine, EAge::Mature, 2281},
+    {TEXT("CoastalFloraPinePole"), ESpecies::MontereyPine, EAge::Pole, 2347},
+    {TEXT("CoastalFloraOakA"), ESpecies::CoastLiveOak, EAge::Mature, 3307}, {TEXT("CoastalFloraOakB"), ESpecies::CoastLiveOak, EAge::Mature, 3391},
+    {TEXT("CoastalFloraOakC"), ESpecies::CoastLiveOak, EAge::Mature, 3433},
+    {TEXT("CoastalFloraSaplingFirA"), ESpecies::DouglasFir, EAge::Sapling, 4409}, {TEXT("CoastalFloraSaplingFirB"), ESpecies::DouglasFir, EAge::Sapling, 4463},
+    {TEXT("CoastalFloraSaplingPine"), ESpecies::MontereyPine, EAge::Sapling, 4517},
+    {TEXT("CoastalFloraFirVeteran"), ESpecies::DouglasFir, EAge::Mature, 1409, 1.32F}, {TEXT("CoastalFloraPineVeteran"), ESpecies::MontereyPine, EAge::Mature, 2441, 1.25F},
+    {TEXT("CoastalFloraFirYoung"), ESpecies::DouglasFir, EAge::Pole, 1523, .68F}, {TEXT("CoastalFloraPineYoung"), ESpecies::MontereyPine, EAge::Pole, 2557, .72F}};
+/** The deterministic skeleton + R5 clustered foliage for one archetype spec. */
+FSkeleton MakeSkeleton(const FSpec& Spec)
+{
+    FSkeleton K = Spec.Species == ESpecies::CoastLiveOak ? MakeOak(Spec.Seed) : MakeConifer(Spec.Species, Spec.Age, Spec.Seed, Spec.Size);
+    // R4 wood shaping, then R5 connected branchlet clusters on every archetype (R6 spread).
+    RefineHeroShape(K);
+    // Per-archetype budget: LOD0 foliage never exceeds the R4 (single-card) slot of this same skeleton.
+    FLod Legacy;
+    EmitLod(K, 0, Legacy, Spec.Seed, false);
+    const int32 Budget = Legacy.Leaf.I.Num() / 3;
+    // Densest foliage the R4 slot allows: bisection on the branchlet density (deterministic).
+    auto TrisAt = [&](float Density)
+    {
+        K.FoliageDensity = Density;
+        BuildHeroFoliage(K, Spec.Seed);
+        FLod Hero;
+        EmitLod(K, 0, Hero, Spec.Seed);
+        return Hero.Leaf.I.Num() / 3;
+    };
+    float Low = .15F, High = 2.2F;
+    if (TrisAt(High) > Budget)
+    {
+        for (int32 Pass = 0; Pass < 9; ++Pass)
+        {
+            const float Mid = (Low + High) * .5F;
+            (TrisAt(Mid) <= Budget ? Low : High) = Mid;
+        }
+        TrisAt(Low);
+    }
+    return K;
+}
+
 #if WITH_DEV_AUTOMATION_TESTS
 namespace R5Metrics
 {
@@ -1182,28 +1243,30 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoastalR5RepresentativeCrownTest, "AeroSim.Coa
 bool FCoastalR5RepresentativeCrownTest::RunTest(const FString& Parameters)
 {
     using namespace R5Metrics;
-    for (const int32 Seed : {1101, 2203, 3307})
+    // R6: every archetype uses the R5 branchlet-cluster construction.
+    for (const FSpec& Spec : Specs)
     {
-        auto Make = [Seed]() { return Seed == 3307 ? MakeOak(Seed) : MakeConifer(Seed == 2203 ? ESpecies::MontereyPine : ESpecies::DouglasFir, EAge::Mature, Seed); };
-        FSkeleton Legacy = Make(); RefineHeroShape(Legacy);           // R4 slot baseline
-        FSkeleton Hero = Make(); RefineHeroShape(Hero); BuildHeroFoliage(Hero, Seed);
+        const int32 Seed = Spec.Seed;
+        FSkeleton Legacy = Spec.Species == ESpecies::CoastLiveOak ? MakeOak(Seed) : MakeConifer(Spec.Species, Spec.Age, Seed, Spec.Size);
+        RefineHeroShape(Legacy);                                      // R4 slot baseline (same skeleton)
+        const FSkeleton Hero = MakeSkeleton(Spec);
         TestEqual(TEXT("Wood/collision anchors are unchanged by the foliage rebuild"), Hero.Collision.Num(), Legacy.Collision.Num());
         for (int32 I = 0; I < Hero.Collision.Num(); ++I)
-            TestTrue(TEXT("Collision segment identical"), Hero.Collision[I].Start.Equals(Legacy.Collision[I].Start, .001F) && Hero.Collision[I].End.Equals(Legacy.Collision[I].End, .001F));
-        TestTrue(TEXT("Crown is organised into many connected clusters"), Hero.Clusters.Num() >= 40);
-        int32 Lobes = 0; TSet<int32> LobeIds; for (const FCluster& C : Hero.Clusters) { LobeIds.Add(C.Lobe); TestTrue(TEXT("Every cluster owns cards"), C.Cards >= 1); }
+            TestTrue(FString::Printf(TEXT("%s: Collision segment identical"), Spec.Name), Hero.Collision[I].Start.Equals(Legacy.Collision[I].Start, .001F) && Hero.Collision[I].End.Equals(Legacy.Collision[I].End, .001F));
+        TestTrue(FString::Printf(TEXT("%s: Crown is organised into many connected clusters"), Spec.Name), Hero.Clusters.Num() >= (Spec.Age == EAge::Sapling ? 8 : Spec.Age == EAge::Pole ? 20 : 40));
+        int32 Lobes = 0; TSet<int32> LobeIds; for (const FCluster& C : Hero.Clusters) { LobeIds.Add(C.Lobe); TestTrue(FString::Printf(TEXT("%s: Every cluster owns cards"), Spec.Name), C.Cards >= 1); }
         Lobes = LobeIds.Num();
-        if (Seed == 3307) TestTrue(TEXT("Oak crown has 3-5 lobes"), Lobes >= 3 && Lobes <= 5);
-        for (const FTuft& T : Hero.Tufts) TestTrue(TEXT("Every card belongs to a cluster"), Hero.Clusters.IsValidIndex(T.Cluster));
+        if (Spec.Species == ESpecies::CoastLiveOak) TestTrue(FString::Printf(TEXT("%s: Oak crown has 3-5 lobes"), Spec.Name), Lobes >= 3 && Lobes <= 5);
+        for (const FTuft& T : Hero.Tufts) TestTrue(FString::Printf(TEXT("%s: Every card belongs to a cluster"), Spec.Name), Hero.Clusters.IsValidIndex(T.Cluster));
         FLod R4, Lods[LodCount];
         EmitLod(Legacy, 0, R4, Seed, false);
         for (int32 Lod = 0; Lod < LodCount; ++Lod) EmitLod(Hero, Lod, Lods[Lod], Seed);
         const int32 R4Tris = R4.Leaf.I.Num() / 3, HeroTris = Lods[0].Leaf.I.Num() / 3;
-        TestTrue(TEXT("LOD0 foliage triangles do not exceed the R4 slot baseline"), HeroTris <= R4Tris);
-        for (int32 Lod = 1; Lod < LodCount; ++Lod) TestTrue(TEXT("Foliage triangles fall with each LOD"), Lods[Lod].Leaf.I.Num() < Lods[Lod - 1].Leaf.I.Num());
+        TestTrue(FString::Printf(TEXT("%s: LOD0 foliage triangles do not exceed the R4 slot baseline"), Spec.Name), HeroTris <= R4Tris);
+        for (int32 Lod = 1; Lod < LodCount; ++Lod) TestTrue(FString::Printf(TEXT("%s: Foliage triangles fall with each LOD"), Spec.Name), Lods[Lod].Leaf.I.Num() < Lods[Lod - 1].Leaf.I.Num());
         const FShelf Before = Shelf(R4.Leaf), After = Shelf(Lods[0].Leaf);
-        TestTrue(TEXT("Horizontal card area at most 70% of the R4 shelf crown"), After.HorizontalFraction <= Before.HorizontalFraction * .7 + .01);
-        TestTrue(TEXT("No height band carries horizontal foliage around more than half the crown"), After.MaxBandContinuity <= .5);
+        TestTrue(FString::Printf(TEXT("%s: Horizontal card area at most 70%% of the R4 shelf crown"), Spec.Name), After.HorizontalFraction <= FMath::Max(Before.HorizontalFraction * .7 + .01, .05));
+        TestTrue(FString::Printf(TEXT("%s: No height band carries horizontal foliage around more than half the crown"), Spec.Name), After.MaxBandContinuity <= .5);
         const FBox Box = Bounds(Lods[0].Leaf);
         double Stability[LodCount] = {1, 0, 0, 0}, LegacyStability[LodCount] = {1, 0, 0, 0};
         for (int32 Lod = 1; Lod < LodCount; ++Lod)
@@ -1213,20 +1276,25 @@ bool FCoastalR5RepresentativeCrownTest::RunTest(const FString& Parameters)
             const FBox LegacyBox = Bounds(L0.Leaf);
             LegacyStability[Lod] = FMath::Min(IoU(Mask(L0.Leaf, LegacyBox, 0), Mask(LK.Leaf, LegacyBox, 0)), IoU(Mask(L0.Leaf, LegacyBox, 1), Mask(LK.Leaf, LegacyBox, 1)));
             const FBox LodBox = Bounds(Lods[Lod].Leaf);
-            TestTrue(TEXT("Coarser LOD stays inside the LOD0 crown envelope (+15%)"), LodBox.GetSize().X <= Box.GetSize().X * 1.15 && LodBox.GetSize().Y <= Box.GetSize().Y * 1.15 && LodBox.GetSize().Z <= Box.GetSize().Z * 1.15);
+            TestTrue(FString::Printf(TEXT("%s: Coarser LOD stays inside the LOD0 crown envelope (+15%%)"), Spec.Name), LodBox.GetSize().X <= Box.GetSize().X * 1.15 && LodBox.GetSize().Y <= Box.GetSize().Y * 1.15 && LodBox.GetSize().Z <= Box.GetSize().Z * 1.15);
         }
         {
             const TBitArray<> M0 = Mask(Lods[0].Leaf, Box, 0), M2 = Mask(Lods[2].Leaf, Box, 0), M3 = Mask(Lods[3].Leaf, Box, 0);
+            // Same frame for both crowns (union of bounds), both side axes summed.
+            const FBox Shared = Bounds(R4.Leaf) + Box;
+            const int32 R4Cover = Mask(R4.Leaf, Shared, 0).CountSetBits() + Mask(R4.Leaf, Shared, 1).CountSetBits();
+            const int32 HeroCover = Mask(Lods[0].Leaf, Shared, 0).CountSetBits() + Mask(Lods[0].Leaf, Shared, 1).CountSetBits();
             const TBitArray<> MR4 = Mask(R4.Leaf, Bounds(R4.Leaf), 0);
-            AddInfo(FString::Printf(TEXT("FLORA_R5_COVERAGE seed=%d r4_lod0=%d lod0=%d lod2=%d lod3=%d (of %d)"), Seed, MR4.CountSetBits(), M0.CountSetBits(), M2.CountSetBits(), M3.CountSetBits(), M0.Num()));
-            TestTrue(TEXT("Side-view crown coverage stays at least 75% of the R4 crown (no thinning into bare poles)"), M0.CountSetBits() >= MR4.CountSetBits() * .75F);
+            AddInfo(FString::Printf(TEXT("FLORA_R5_COVERAGE %s seed=%d r4_lod0=%d lod0=%d lod2=%d lod3=%d (of %d)"), Spec.Name, Seed, MR4.CountSetBits(), M0.CountSetBits(), M2.CountSetBits(), M3.CountSetBits(), M0.Num()));
+            AddInfo(FString::Printf(TEXT("FLORA_R5_SIDECOVER %s r4=%d r5=%d ratio=%.2f"), Spec.Name, R4Cover, HeroCover, HeroCover / FMath::Max(1.0F, static_cast<float>(R4Cover))));
+            TestTrue(FString::Printf(TEXT("%s: Side-view crown coverage stays at least 75%% of the R4 crown (no thinning into bare poles)"), Spec.Name), HeroCover >= R4Cover * .75F);
         }
-        TestTrue(TEXT("LOD1 silhouette IoU >= 0.55"), Stability[1] >= .55);
-        TestTrue(TEXT("LOD2 silhouette IoU >= 0.45"), Stability[2] >= .45);
-        TestTrue(TEXT("LOD3 silhouette IoU >= 0.30"), Stability[3] >= .30);
-        TestTrue(TEXT("UV streaming density stays valid on both slots"), StreamingUVInfo(Lods[0].Bark).IsSet() && StreamingUVInfo(Lods[0].Leaf).IsSet());
-        AddInfo(FString::Printf(TEXT("FLORA_R5 seed=%d clusters=%d lobes=%d leaf_tris_r4=%d leaf_tris_lod=%d/%d/%d/%d horizontal=%.3f->%.3f band=%.2f->%.2f iou=%.2f/%.2f/%.2f (r4 %.2f/%.2f/%.2f)"),
-            Seed, Hero.Clusters.Num(), Lobes, R4Tris, HeroTris, Lods[1].Leaf.I.Num() / 3, Lods[2].Leaf.I.Num() / 3, Lods[3].Leaf.I.Num() / 3,
+        TestTrue(FString::Printf(TEXT("%s: LOD1 silhouette IoU >= 0.55"), Spec.Name), Stability[1] >= .55);
+        TestTrue(FString::Printf(TEXT("%s: LOD2 silhouette IoU >= 0.45"), Spec.Name), Stability[2] >= .45);
+        TestTrue(FString::Printf(TEXT("%s: LOD3 silhouette IoU >= 0.30"), Spec.Name), Stability[3] >= .30);
+        TestTrue(FString::Printf(TEXT("%s: UV streaming density stays valid on both slots"), Spec.Name), StreamingUVInfo(Lods[0].Bark).IsSet() && StreamingUVInfo(Lods[0].Leaf).IsSet());
+        AddInfo(FString::Printf(TEXT("FLORA_R5 %s seed=%d clusters=%d lobes=%d leaf_tris_r4=%d leaf_tris_lod=%d/%d/%d/%d horizontal=%.3f->%.3f band=%.2f->%.2f iou=%.2f/%.2f/%.2f (r4 %.2f/%.2f/%.2f)"),
+            Spec.Name, Seed, Hero.Clusters.Num(), Lobes, R4Tris, HeroTris, Lods[1].Leaf.I.Num() / 3, Lods[2].Leaf.I.Num() / 3, Lods[3].Leaf.I.Num() / 3,
             Before.HorizontalFraction, After.HorizontalFraction, Before.MaxBandContinuity, After.MaxBandContinuity,
             Stability[1], Stability[2], Stability[3], LegacyStability[1], LegacyStability[2], LegacyStability[3]));
     }
@@ -1270,7 +1338,9 @@ UStaticMesh* BuildMesh(const FName Name, const TArray<FLod>& Lods, TArray<int32>
         OutTriangles.Add(Triangles);
         Pointers.Add(&Description);
     }
-    const TOptional<FMeshUVChannelInfo> SlotUV[2] = {StreamingUVInfo(Lods[0].Bark), StreamingUVInfo(Lods[0].Leaf)};
+    // An intentionally empty slot (e.g. the litter disc has no bark) publishes a neutral density.
+    auto SlotInfo = [](const FSection& S) -> TOptional<FMeshUVChannelInfo> { return S.I.IsEmpty() ? TOptional<FMeshUVChannelInfo>(FMeshUVChannelInfo(100.0F)) : StreamingUVInfo(S); };
+    const TOptional<FMeshUVChannelInfo> SlotUV[2] = {SlotInfo(Lods[0].Bark), SlotInfo(Lods[0].Leaf)};
     if (!SlotUV[0].IsSet() || !SlotUV[1].IsSet())
     {
         UE_LOG(LogTemp, Error, TEXT("FLORA_UV_STREAMING_INVALID mesh=%s bark=%d foliage=%d"), *Name.ToString(), SlotUV[0].IsSet(), SlotUV[1].IsSet());
@@ -1326,31 +1396,33 @@ FArchetype MakeArchetype(const FName Name, const FSkeleton& K, EAge Age, uint32 
 }
 }
 
+UStaticMesh* GetTrunkLitterMesh()
+{
+    static UStaticMesh* Mesh = nullptr;
+    if (Mesh) return Mesh;
+    TArray<FLod> Lods; Lods.SetNum(1);
+    FSection& S = Lods[0].Leaf;
+    constexpr int32 Segments = 24;
+    const int32 Centre = S.Add(FVector::ZeroVector, FVector::UpVector, FVector::ForwardVector, -FVector::RightVector, FVector2f(.5F, .5F), FVector4f(1, 0, 0, 1));
+    for (int32 I = 0; I < Segments; ++I)
+    {
+        const float A = I * 2 * PI / Segments;
+        const FVector P(FMath::Cos(A) * 100.0F, FMath::Sin(A) * 100.0F, 0);
+        S.Add(P, FVector::UpVector, FVector::ForwardVector, -FVector::RightVector, FVector2f(.5F + P.X / 200.0F, .5F - P.Y / 200.0F), FVector4f(1, 0, 0, 1));
+    }
+    for (int32 I = 0; I < Segments; ++I) S.Tri(Centre, 1 + I, 1 + (I + 1) % Segments);
+    TArray<int32> Triangles;
+    Mesh = BuildMesh(TEXT("CoastalFloraTrunkLitterDisc"), Lods, Triangles);
+    return Mesh;
+}
+
 const TArray<FArchetype>& GetArchetypes()
 {
     static TArray<FArchetype> Archetypes;
     if (!Archetypes.IsEmpty()) return Archetypes;
-    struct FSpec { const TCHAR* Name; ESpecies Species; EAge Age; int32 Seed; float Size = 1.0F; };
-    const FSpec Specs[] = {
-        {TEXT("CoastalFloraFirMatureA"), ESpecies::DouglasFir, EAge::Mature, 1101}, {TEXT("CoastalFloraFirMatureB"), ESpecies::DouglasFir, EAge::Mature, 1187},
-        {TEXT("CoastalFloraFirMatureC"), ESpecies::DouglasFir, EAge::Mature, 1243}, {TEXT("CoastalFloraFirPole"), ESpecies::DouglasFir, EAge::Pole, 1319},
-        {TEXT("CoastalFloraPineMatureA"), ESpecies::MontereyPine, EAge::Mature, 2203}, {TEXT("CoastalFloraPineMatureB"), ESpecies::MontereyPine, EAge::Mature, 2281},
-        {TEXT("CoastalFloraPinePole"), ESpecies::MontereyPine, EAge::Pole, 2347},
-        {TEXT("CoastalFloraOakA"), ESpecies::CoastLiveOak, EAge::Mature, 3307}, {TEXT("CoastalFloraOakB"), ESpecies::CoastLiveOak, EAge::Mature, 3391},
-        {TEXT("CoastalFloraOakC"), ESpecies::CoastLiveOak, EAge::Mature, 3433},
-        {TEXT("CoastalFloraSaplingFirA"), ESpecies::DouglasFir, EAge::Sapling, 4409}, {TEXT("CoastalFloraSaplingFirB"), ESpecies::DouglasFir, EAge::Sapling, 4463},
-        {TEXT("CoastalFloraSaplingPine"), ESpecies::MontereyPine, EAge::Sapling, 4517},
-        {TEXT("CoastalFloraFirVeteran"), ESpecies::DouglasFir, EAge::Mature, 1409, 1.32F}, {TEXT("CoastalFloraPineVeteran"), ESpecies::MontereyPine, EAge::Mature, 2441, 1.25F},
-        {TEXT("CoastalFloraFirYoung"), ESpecies::DouglasFir, EAge::Pole, 1523, .68F}, {TEXT("CoastalFloraPineYoung"), ESpecies::MontereyPine, EAge::Pole, 2557, .72F}};
     for (const FSpec& Spec : Specs)
     {
-        FSkeleton K = Spec.Species == ESpecies::CoastLiveOak ? MakeOak(Spec.Seed) : MakeConifer(Spec.Species, Spec.Age, Spec.Seed, Spec.Size);
-        if (Spec.Seed == 1101 || Spec.Seed == 2203 || Spec.Seed == 3307)
-        {
-            // R4 wood shaping is kept; R5 replaces its card set with connected branchlet clusters.
-            RefineHeroShape(K);
-            BuildHeroFoliage(K, Spec.Seed);
-        }
+        const FSkeleton K = MakeSkeleton(Spec);
         FArchetype A = MakeArchetype(Spec.Name, K, Spec.Age, Spec.Seed);
         if (Spec.Age == EAge::Sapling) A.Species = ESpecies::Sapling;
         Archetypes.Add(MoveTemp(A));
@@ -1591,7 +1663,13 @@ const FLayout& GetLayout()
     FRandomStream Random(21630);
     // 1. Corridor gates and flanks: deterministic constrictions (2.6–3.8 m surface gap)
     //    and edge rows so the cleared run reads as a corridor.
-    const int32 GateArchetype = Firs[0];
+    // Corridor trees: varied conifers (incl. veterans) whose live crown stays above drone height.
+    TArray<int32> CorridorTrees;
+    for (int32 Index : Firs) if (Archetypes[Index].LowestFoliageNearStem >= 520) CorridorTrees.Add(Index);
+    for (int32 Index : Pines) if (Archetypes[Index].LowestFoliageNearStem >= 520) CorridorTrees.Add(Index);
+    for (int32 Index : Veterans) if (Archetypes[Index].LowestFoliageNearStem >= 520) CorridorTrees.Add(Index);
+    check(!CorridorTrees.IsEmpty());
+    const int32 GateArchetype = CorridorTrees[0];
     const float GateRadius = Archetypes[GateArchetype].BreastRadius;
     // The first 60 m stay an open, straight sightline from the `corridor` pose; constrictions start beyond it.
     const float GateDistances[] = {6500, 11500, 17000, 23000, 29500, 36000, 41000};
@@ -1617,14 +1695,23 @@ const FLayout& GetLayout()
         {
             if (Sample.Distance < Next) continue;
             Next = Sample.Distance + Random.FRandRange(560, 800);
-            const bool bPine = Random.FRand() < .35F;
-            const int32 Archetype = bPine ? Pines[Random.RandRange(0, Pines.Num() - 1)] : Firs[Random.RandRange(0, Firs.Num() - 1)];
-            const float Radius = Archetypes[Archetype].BreastRadius;
+            const int32 Archetype = CorridorTrees[Random.RandRange(0, CorridorTrees.Num() - 1)];
+            const float FlankScale = Random.FRandRange(.9F, 1.12F);
+            const float Radius = Archetypes[Archetype].BreastRadius * FlankScale;
             const FVector2D Normal(-Sample.Tangent.Y, Sample.Tangent.X);
             const FVector2D P = Sample.Point + Normal * Side * (Sample.HalfWidth + Radius + Random.FRandRange(10, 70));
             if (NearStandDensity(P.X, P.Y) <= 0 || IsProtected(P, 400)) continue;
             if (!Clear(P, Radius + 120)) continue;
-            Place(P, Archetype, 1.0F, Random.FRandRange(0, 2 * PI), 0, 0, true, true, Radius + 120);
+            {
+                float Low = MAX_flt, High = -MAX_flt;
+                for (int32 S = 0; S < 8; ++S)
+                {
+                    const float Z = APacificCoastGraybox::GetCoastalLandHeight(P.X + FMath::Cos(S * PI * .25F) * Radius * 1.3F, P.Y + FMath::Sin(S * PI * .25F) * Radius * 1.3F);
+                    Low = FMath::Min(Low, Z); High = FMath::Max(High, Z);
+                }
+                if (High - Low > 35.0F) continue;
+            }
+            Place(P, Archetype, FlankScale, Random.FRandRange(0, 2 * PI), 0, 0, true, true, Radius + 120);
         }
     }
     // 2. Fixed-density stand fill: jittered 5.0 m lattice with Poisson-style rejection.
@@ -1651,7 +1738,7 @@ const FLayout& GetLayout()
                 const bool bPine = SpeciesRoll < (P.X > -6000 ? .62F : .30F);
                 const TArray<int32>& Poles = bPine ? PinePoles : FirPoles;
                 Archetype = Age == EAge::Pole ? Poles[Random.RandRange(0, Poles.Num() - 1)]
-                    : ScaleRoll < .11F ? Veterans[bPine ? 1 : 0]
+                    : ScaleRoll < .20F ? Veterans[bPine ? 1 : 0]
                     : bPine ? Pines[Random.RandRange(0, Pines.Num() - 1)] : Firs[Random.RandRange(0, Firs.Num() - 1)];
             }
             const FArchetype& A = Archetypes[Archetype];

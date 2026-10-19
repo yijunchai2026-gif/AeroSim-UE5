@@ -68,6 +68,8 @@ struct FLayout
     int32 NearTrees = 0, NearOverstoryTrees = 0, NearOverstoryStems = 0, NearSaplings = 0, DistantTrees = 0;
 };
 
+/** Unit trunk-base litter disc (radius 100 cm, foliage slot 1), built once per process. */
+UStaticMesh* GetTrunkLitterMesh();
 /** Builds the archetype meshes once per process (transient, rooted). */
 const TArray<FArchetype>& GetArchetypes();
 const FLayout& GetLayout();
