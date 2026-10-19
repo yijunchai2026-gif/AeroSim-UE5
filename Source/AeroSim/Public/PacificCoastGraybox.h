@@ -53,6 +53,8 @@ struct AEROSIM_API FPacificCoastHabitat
     static FLinearColor GetGroundVertexColor(float X, float Y);
     /** Height of the distant receding ridgelines mesh west of the land (not part of the playable land). */
     static float GetDistantRangeHeight(float X, float Y);
+    /** X of the closed sea-cliff face at (Y, Z) between its rim and foot (analytic, per coast row). */
+    static float GetCliffFaceX(float Y, float Z);
 };
 // DEV-TERRAIN end
 

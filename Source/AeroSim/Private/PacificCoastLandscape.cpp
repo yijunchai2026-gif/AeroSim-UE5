@@ -39,7 +39,7 @@ void APacificCoastGraybox::BuildCoastalLandscape()
                 || Name == TEXT("CoastalMountainRock") || Name == TEXT("CoastalDistantRange")) Material = Ground.Object;
             else if (Name == TEXT("CoastalBedrock")
                 || Name == TEXT("CoastalFracturedRock") || Name == TEXT("CoastalTalusButtresses")
-                || Name == TEXT("CoastalSubtidalShelf"))
+                || Name == TEXT("CoastalSubtidalShelf") || Name == TEXT("CoastalHeroCliffScan"))
             {
                 Material = Rock.Object;
                 Tint = FLinearColor(.58F,.64F,.68F);
