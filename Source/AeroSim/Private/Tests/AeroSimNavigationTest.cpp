@@ -167,6 +167,12 @@ bool FAeroSimNavigationCounterexampleTest::RunTest(const FString& Parameters)
         TestEqual(TEXT("Fast planar drift on the column records no progress"), Mission.GetGuidanceLegProgressCm(), 0.0F);
         TestEqual(TEXT("Scored C2 by radius does not complete the column"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-05-offshore-descent")));
         TestEqual(TEXT("C2 original radius still scores once its leg is active"), Mission.NextCheckpointIndex, 2);
+        for (float Along = 0; Along <= Descent.GetLength(); Along += 50)
+            Mission.Observe(.05F, EFlightPhase::Flight, Descent.Evaluate(Along), FVector(0, 0, -500), FRotator::ZeroRotator);
+        TestEqual(TEXT("Arriving at C2 still descending at 5 m/s is not accepted (vertical brake window)"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-05-offshore-descent")));
+        TestTrue(TEXT("Brake cue shown inside the vertical brake zone"), Mission.GetCurrentGuidanceTarget().bVerticalBrake);
+        Mission.Observe(.05F, EFlightPhase::Flight, Descent.Path.Last(), FVector(0, 0, -100), FRotator::ZeroRotator);
+        TestEqual(TEXT("Braked vertical arrival completes the column"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-06-alongshore-low-water")));
     }
     {
         // Heading inland before the climb column is complete never advances to the cliff crossing.
@@ -471,6 +477,13 @@ bool FAeroSimNavigationScriptedTraversalTest::RunTest(const FString& Parameters)
     const FPhase4MissionSession& Mission = Mode->GetPhase4Mission();
     if (!TestEqual(TEXT("Mission armed"), Mission.Stage, EPhase4MissionStage::Takeoff)) return false;
     constexpr float Dt = 1.0F / 30.0F;
+    // Commanded vertical speed: proportional near the target, braking-limited (a=500 cm/s^2) far away.
+    auto VerticalCommand = [](const float Dz)
+    {
+        const float Magnitude = FMath::Min3(FMath::Abs(Dz) * 1.5F, FMath::Sqrt(2.0F * 500.0F * FMath::Abs(Dz)), Dz >= 0.0F ? 780.0F : 580.0F);
+        return Dz >= 0.0F ? Magnitude : -Magnitude;
+    };
+    TMap<FName, float> PeakVertical;
     float Time = 0.0F;
     int32 LastLeg = -1;
     float LegStart = 0.0F;
@@ -496,7 +509,7 @@ bool FAeroSimNavigationScriptedTraversalTest::RunTest(const FString& Parameters)
         if (bColumn)
         {
             Desired = (ToEnd * 1.2F).GetClampedToMaxSize(60.0F);
-            VerticalSpeed = FMath::Clamp(static_cast<float>(Guide.GuidePoint.Z - P.Z) * 1.2F, -380.0F, 380.0F);
+            VerticalSpeed = VerticalCommand(static_cast<float>(Guide.GuidePoint.Z - P.Z));
         }
         else
         {
@@ -504,9 +517,10 @@ bool FAeroSimNavigationScriptedTraversalTest::RunTest(const FString& Parameters)
             const float Allowed = FMath::Min(Cruise, 1.1F * static_cast<float>(ToEnd.Size()) + .6F * Leg.MaxAcceptPlanarSpeedCm);
             const FVector2D Aim = ToEnd.Size() < Leg.LookaheadCm ? ToEnd : ToSteer;
             Desired = Aim.GetSafeNormal() * FMath::Min(Allowed, static_cast<float>(Aim.Size()) * 1.2F);
-            VerticalSpeed = FMath::Clamp(static_cast<float>(Guide.Position.Z - P.Z) * 1.2F, -380.0F, 380.0F);
+            VerticalSpeed = VerticalCommand(static_cast<float>(Guide.Position.Z - P.Z));
         }
-        Input.Pitch = Desired.X / 1800.0F; Input.Roll = Desired.Y / 1800.0F; Input.Throttle = VerticalSpeed / 400.0F;
+        Input.Pitch = Desired.X / 1800.0F; Input.Roll = Desired.Y / 1800.0F;
+        Input.Throttle = VerticalSpeed / (VerticalSpeed >= 0.0F ? 800.0F : 600.0F);
         if (Pawn->GetFlightModel().Phase == EFlightPhase::Grounded && Leg.Kind == EPhase4GuideKind::Takeoff) Input = FFlightControlInput(), Input.Throttle = 1.0F;
         if (Leg.Kind == EPhase4GuideKind::Landing)
         {
@@ -517,18 +531,68 @@ bool FAeroSimNavigationScriptedTraversalTest::RunTest(const FString& Parameters)
         Pawn->SetSemanticInput(Input);
         Pawn->Tick(Dt);
         Time += Dt;
+        float& Peak = PeakVertical.FindOrAdd(Leg.LegId);
+        Peak = FMath::Max(Peak, FMath::Abs(static_cast<float>(Pawn->GetFlightModel().Velocity.Z)));
     }
     if (LastLeg >= 0) Timeline += FString::Printf(TEXT(" %s=%.1fs"), *Mission.GetGuidanceRoute()[LastLeg].LegId.ToString(), Time - LegStart);
     AddInfo(FString::Printf(TEXT("scripted traversal sim time %.1f s (mission elapsed %.1f s); stage=%d next=%d collisions=%d boundary=%d missed=%d incident=%d at (%s)"),
         Time, Mission.ElapsedSeconds, static_cast<int32>(Mission.Stage), Mission.NextCheckpointIndex, Mission.Collisions, Mission.BoundaryViolations,
         Mission.MissedCheckpoints, static_cast<int32>(Mission.Feedback.Incident), *Pawn->GetActorLocation().ToString()));
     AddInfo(TEXT("leg durations:") + Timeline);
+    FString Peaks;
+    for (const auto& Pair : PeakVertical) Peaks += FString::Printf(TEXT(" %s=%.0f"), *Pair.Key.ToString(), Pair.Value);
+    AddInfo(TEXT("peak |vertical speed| cm/s:") + Peaks);
     TestEqual(TEXT("Scripted semantic-input traversal reaches Result"), Mission.Stage, EPhase4MissionStage::Result);
     TestEqual(TEXT("All five checkpoints scored"), Mission.NextCheckpointIndex, 5);
     TestEqual(TEXT("No real collision along the guided route"), Mission.Collisions, 0);
     TestEqual(TEXT("Never left the finite safety volume"), Mission.BoundaryViolations, 0);
     TestEqual(TEXT("No shortcut diagnostics"), Mission.MissedCheckpoints, 0);
     TestFalse(TEXT("Never touched water"), Pawn->HasWaterIncident());
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAeroSimVerticalEnvelopeTest, "AeroSim.Flight.Navigation.VerticalEnvelopeSmoothAndSoft",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAeroSimVerticalEnvelopeTest::RunTest(const FString& Parameters)
+{
+    // Pure model (R5 user decision): climb ~8 m/s, descent ~6 m/s, bounded vertical acceleration.
+    FFlightSurfaceContext Air; Air.bHasSupport = false;
+    auto Hover = [] { FFlightModel M; M.Phase = EFlightPhase::Flight; M.Position = FVector(0, 0, 300); return M; };
+    FFlightControlInput Up; Up.Throttle = 1; FFlightControlInput Down; Down.Throttle = -1; const FFlightControlInput Neutral;
+    FFlightModel Climb = Hover(); float PeakAccel = 0, Last = 0;
+    for (int32 I = 0; I < 120; ++I) { Climb.Advance(Up, 1.0F / 30.0F, Air); PeakAccel = FMath::Max(PeakAccel, FMath::Abs(static_cast<float>(Climb.Velocity.Z) - Last) * 30.0F); Last = Climb.Velocity.Z; }
+    AddInfo(FString::Printf(TEXT("full climb after 4 s: %.0f cm/s, peak accel %.0f cm/s^2"), Climb.Velocity.Z, PeakAccel));
+    TestTrue(TEXT("Climb reaches ~8 m/s and never exceeds it"), Climb.Velocity.Z > 760 && Climb.Velocity.Z <= 800.5);
+    TestTrue(TEXT("Vertical acceleration is bounded (smooth ramp)"), PeakAccel <= 701.0F);
+    FFlightModel Descend = Hover(); Descend.Position.Z = 10000;
+    for (int32 I = 0; I < 120; ++I) Descend.Advance(Down, 1.0F / 30.0F, Air);
+    AddInfo(FString::Printf(TEXT("full descent after 4 s: %.0f cm/s"), Descend.Velocity.Z));
+    TestTrue(TEXT("Descent reaches ~6 m/s, slower than climb (vortex-ring margin)"), Descend.Velocity.Z < -560 && Descend.Velocity.Z >= -600.5);
+    const double BrakeFrom = Descend.Position.Z;
+    int32 Frames = 0;
+    while (Descend.Velocity.Z < -100 && Frames < 300) { Descend.Advance(Neutral, 1.0F / 30.0F, Air); ++Frames; }
+    AddInfo(FString::Printf(TEXT("release at 6 m/s: <=1 m/s after %.2f s and %.0f cm"), Frames / 30.0F, BrakeFrom - Descend.Position.Z));
+    TestTrue(TEXT("Released descent brakes below 1 m/s within the 10 m guide brake zone"), BrakeFrom - Descend.Position.Z < 500.0);
+    double MinVz = 0;
+    for (int32 I = 0; I < 60; ++I) { Descend.Advance(Neutral, 1.0F / 30.0F, Air); MinVz = FMath::Min(MinVz, Descend.Velocity.Z); }
+    TestTrue(TEXT("Braking does not overshoot into a climb"), Descend.Velocity.Z <= 0.5 && Descend.Velocity.Z > -50);
+    // A short Ctrl tap near the ground is a gentle nudge, not a twitch.
+    FFlightModel Tap = Hover();
+    for (int32 I = 0; I < 3; ++I) Tap.Advance(Down, 1.0F / 30.0F, Air);
+    float TapPeak = 0;
+    for (int32 I = 0; I < 90; ++I) { TapPeak = FMath::Max(TapPeak, FMath::Abs(static_cast<float>(Tap.Velocity.Z))); Tap.Advance(Neutral, 1.0F / 30.0F, Air); }
+    AddInfo(FString::Printf(TEXT("0.1 s Ctrl tap: peak %.0f cm/s, total drop %.1f cm"), TapPeak, 300.0 - Tap.Position.Z));
+    TestTrue(TEXT("0.1 s tap moves less than 50 cm"), 300.0 - Tap.Position.Z < 50.0 && TapPeak < 100.0F);
+    // Supported landing stays soft: Landing phase descends at its fixed 2.5 m/s, not the 6 m/s envelope.
+    FFlightModel Land = Hover(); Land.Position.Z = 200;
+    FFlightSurfaceContext Ground; Ground.bHasSupport = true; Ground.SupportedModelZCm = 0;
+    float Touchdown = 0; bool bImpact = false;
+    for (int32 I = 0; I < 200 && Land.Phase != EFlightPhase::Grounded; ++I)
+    { Touchdown = Land.Velocity.Z; Land.Advance(Down, 1.0F / 30.0F, Ground); bImpact |= Land.bSupportImpact; }
+    AddInfo(FString::Printf(TEXT("full-Ctrl landing from 2 m: phase %d, last vz %.0f cm/s, impact %d"), static_cast<int32>(Land.Phase), Touchdown, bImpact));
+    TestEqual(TEXT("Full-Ctrl descent onto support becomes a soft Landing, then Grounded"), Land.Phase, EFlightPhase::Grounded);
+    TestFalse(TEXT("No unsafe support impact"), bImpact);
+    TestTrue(TEXT("Touchdown at the soft landing rate"), Touchdown >= -260.0F);
     return true;
 }
 

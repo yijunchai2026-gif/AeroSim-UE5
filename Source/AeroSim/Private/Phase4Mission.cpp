@@ -187,6 +187,8 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
             Leg.AcceptRadiusCm = 100.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F;
             Leg.TrackToleranceCm = 100.0F; Leg.MaxTrackPlanarSpeedCm = 100.0F; Leg.LookaheadCm = 300.0F;
             Leg.MaxAcceptPlanarSpeedCm = 100.0F;
+            // Vertical brake window: ~2x the 6-8 m/s envelope's stopping distance (3.3-5.3 m).
+            Leg.MaxAcceptVerticalSpeedCm = 150.0F; Leg.VerticalBrakeZoneCm = 1000.0F;
         }
         else if (Kind == EPhase4GuideKind::Corridor)
         {
@@ -202,6 +204,7 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
             EPhase4GuideKind::Takeoff, {Home + FVector(0, 0, TakeoffClimbCm)});
         // The takeoff phase overshoots its 3 m hand-over; accept the actual climb-out band.
         Leg.AcceptBelowCm = 40.0F; Leg.AcceptAboveCm = 700.0F; Leg.MaxAcceptPlanarSpeedCm = 200.0F;
+        Leg.MaxAcceptVerticalSpeedCm = 10000.0F; Leg.VerticalBrakeZoneCm = 0.0F;
         Leg.TrackToleranceCm = 150.0F; Leg.MaxTrackPlanarSpeedCm = 200.0F;
     }
     // 2. C1 over the grass/soil worksite (unchanged checkpoint and radius).
@@ -215,6 +218,7 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
         auto& Leg = Add(TEXT("nav-04-cross-cliff-out"), TEXT("guide-offshore-descent-top"), TEXT("CROSS THE CLIFF / BRAKE OFFSHORE BEFORE DESCENDING"),
             EPhase4GuideKind::Transit, {FVector(C2.X, C2.Y, Hout)});
         Leg.AcceptRadiusCm = 150.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F; Leg.MaxAcceptPlanarSpeedCm = 100.0F;
+        Leg.MaxAcceptVerticalSpeedCm = 150.0F;
     }
     // 4. Offshore vertical descent column to C2 (XY locked, slow).
     Add(TEXT("nav-05-offshore-descent"), TEXT("checkpoint-02"), TEXT("DESCEND VERTICALLY / DIAMOND 2 TIDAL ROCK"),
@@ -235,6 +239,8 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
             EPhase4GuideKind::Transit, Curve, 2);
         Leg.AcceptRadiusCm = 150.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F;
         Leg.MaxAcceptPlanarSpeedCm = 100.0F; Leg.TrackToleranceCm = 300.0F;
+        // C3 is 4 m above the sea: brake the descent before it (no overshoot into the water).
+        Leg.MaxAcceptVerticalSpeedCm = 150.0F; Leg.VerticalBrakeZoneCm = 1000.0F;
     }
     // 6. Vertical climb at C3 before any inland heading.
     const FVector2D InEdge(APacificCoastGraybox::GetCliffEdgeX(C3.Y) - CliffInsetCm, C3.Y);
@@ -286,7 +292,7 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
         auto& Leg = Add(TEXT("nav-14-field-return"), TEXT("guide-home-above-mat"), TEXT("RETURN HOME / BRAKE ABOVE THE MAT"),
             EPhase4GuideKind::Transit, {FVector(Mouth, Hhome), HomeAbove});
         Leg.bReturnLeg = true; Leg.AcceptRadiusCm = 100.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F;
-        Leg.MaxAcceptPlanarSpeedCm = 100.0F;
+        Leg.MaxAcceptPlanarSpeedCm = 100.0F; Leg.MaxAcceptVerticalSpeedCm = 150.0F;
     }
     {
         auto& Leg = Add(TEXT("nav-15-land-on-mat"), TEXT("guide-home-mat"), TEXT("LAND VERTICALLY ON THE MAT / BELOW 0.4 M/S"),
@@ -319,7 +325,7 @@ bool FPhase4TaskDefinition::ValidateGuidanceStructure(const TArray<FPhase4Guidan
         LegIds.Add(Leg.LegId); GuideIds.Add(Leg.GuideId);
         if (!Leg.Path[0].Equals(Previous, 1.0)) return Fail(LegIndex, Leg.LegId, 0, Leg.Path[0], TEXT("DISCONTINUOUS"));
         if (Leg.AcceptRadiusCm <= 0 || Leg.AcceptBelowCm <= 0 || Leg.AcceptAboveCm <= 0 || Leg.TrackToleranceCm <= 0
-            || Leg.MaxAcceptPlanarSpeedCm <= 0 || Leg.MaxTrackPlanarSpeedCm <= 0 || Leg.LookaheadCm <= 0)
+            || Leg.MaxAcceptPlanarSpeedCm <= 0 || Leg.MaxAcceptVerticalSpeedCm <= 0 || Leg.MaxTrackPlanarSpeedCm <= 0 || Leg.LookaheadCm <= 0)
             return Fail(LegIndex, Leg.LegId, 0, Previous, TEXT("INVALID_WINDOW"));
         if (Leg.ScoredCheckpointIndex != INDEX_NONE)
         {
@@ -558,7 +564,8 @@ void FPhase4MissionSession::ObserveGuidance(const FVector& Position, const FVect
         && GuidanceProgressCm >= Length - FMath::Max3(Leg.AcceptRadiusCm, Leg.AcceptBelowCm, Leg.AcceptAboveCm) - 50.0F
         && FVector::Dist2D(Position, End) <= Leg.AcceptRadiusCm
         && Rise >= -Leg.AcceptBelowCm && Rise <= Leg.AcceptAboveCm
-        && Planar <= Leg.MaxAcceptPlanarSpeedCm;
+        && Planar <= Leg.MaxAcceptPlanarSpeedCm
+        && FMath::Abs(static_cast<float>(Velocity.Z)) <= Leg.MaxAcceptVerticalSpeedCm;
     if (bAccepted) AdvanceGuidanceLeg();
 }
 
@@ -641,6 +648,11 @@ void FPhase4MissionSession::RefreshGuidance(const FVector& Position)
         Target.GuidePoint = Leg.Path.Last();
         Target.AcceptRadiusCm = Leg.AcceptRadiusCm; Target.AcceptBelowCm = Leg.AcceptBelowCm; Target.AcceptAboveCm = Leg.AcceptAboveCm;
         Target.MaxAcceptPlanarSpeedCm = Leg.MaxAcceptPlanarSpeedCm;
+        Target.MaxAcceptVerticalSpeedCm = Leg.MaxAcceptVerticalSpeedCm;
+        const float HeightToGo = FMath::Abs(static_cast<float>(Leg.Path.Last().Z - Position.Z));
+        Target.bVerticalBrake = Leg.VerticalBrakeZoneCm > 0.0F && HeightToGo <= Leg.VerticalBrakeZoneCm
+            && FVector::Dist2D(Position, Leg.Path.Last()) <= FMath::Max(Leg.TrackToleranceCm, 300.0F);
+        if (Target.bVerticalBrake) Target.Label = FString::Printf(TEXT("BRAKE VERTICAL SPEED / %s"), *Leg.Label);
         Target.ScoredCheckpointIndex = Leg.ScoredCheckpointIndex; Target.ScoredCheckpointId = Leg.ScoredCheckpointId;
         float Distance = 0.0F;
         Leg.Project(Position, GuidanceProgressCm - 200.0F, GuidanceProgressCm + 1000.0F, Distance);

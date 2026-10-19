@@ -169,9 +169,11 @@ void AFlightHUD::DrawHUD()
             : FMath::Abs(Bearing) < 12.0F ? TEXT("AHEAD") : Bearing < 0.0F ? TEXT("LEFT") : TEXT("RIGHT");
         const FLinearColor GuideColor = Guide.bRecovery ? FLinearColor(1.0F, 0.72F, 0.29F) : FLinearColor(0.80F, 0.94F, 1.0F);
         DrawRect(FLinearColor(0.01F, 0.045F, 0.06F, 0.90F), Left, Top + 182.0F, 650.0F, 74.0F);
-        DrawText(FString::Printf(TEXT("GUIDE %d/%d  %s%s\n%s %.0f deg   RANGE %.1f m   HEIGHT %+.1f m   MAX %.1f m/s AT GUIDE\n%s"),
+        DrawText(FString::Printf(TEXT("GUIDE %d/%d  %s%s\n%s %.0f deg   RANGE %.1f m   HEIGHT %+.1f m   AT GUIDE <=%.1f m/s%s\n%s"),
                 Guide.LegIndex + 1, Guide.LegCount, *Guide.GuideId.ToString(), Guide.bRecovery ? TEXT("  [RECOVERY]") : TEXT(""),
-                Turn, FMath::Abs(Bearing), ToGuide.Size() * 0.01F, Delta.Z * 0.01F, Guide.MaxAcceptPlanarSpeedCm * 0.01F, *Guide.Label.Left(80)),
+                Turn, FMath::Abs(Bearing), ToGuide.Size() * 0.01F, Delta.Z * 0.01F, Guide.MaxAcceptPlanarSpeedCm * 0.01F,
+                Guide.MaxAcceptVerticalSpeedCm < 1000.0F ? *FString::Printf(TEXT(" / VERT <=%.1f"), Guide.MaxAcceptVerticalSpeedCm * 0.01F) : TEXT(""),
+                *Guide.Label.Left(80)),
             GuideColor, Left + 12.0F, Top + 192.0F, GEngine->GetSmallFont(), 1.0F, false);
         // Perimeter arrow (top centre, outside the central flight view).
         const FVector2D Centre(Canvas->ClipX * 0.5F, Top + 44.0F);
