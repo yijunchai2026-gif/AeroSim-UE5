@@ -6,6 +6,7 @@
 #include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
+#include "Components/PostProcessComponent.h"
 #include "Components/VolumetricCloudComponent.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -102,7 +103,10 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
                 AddInfo(FString::Printf(TEXT("Cloud engine defaults: coverage %.3f density %.3f; applied density %.3f"), BaseCoverage, BaseDensity, Density));
             }
             TestTrue(TEXT("Clear cloud layer is a shallow fair-weather band"), Clouds->LayerBottomAltitude >= 1.2F && Clouds->LayerHeight <= 2.0F);
-            TestTrue(TEXT("Clear coverage bias is below the engine's broken-cumulus default (-0.2)"), bCoverage && Coverage < -.35F);
+            TestTrue(TEXT("Clear coverage bias is sparse but not empty (engine default -0.2 = broken cumulus)"), bCoverage && Coverage < -.25F && Coverage > -.42F);
+            const auto* Post = SeaSkyTest::Find<UPostProcessComponent>(Coast);
+            TestTrue(TEXT("Dynamic GI (Lumen) supplies sky occlusion and bounce for shaded ground"), Post && Post->Settings.bOverride_DynamicGlobalIlluminationMethod
+                && Post->Settings.DynamicGlobalIlluminationMethod == EDynamicGlobalIlluminationMethod::Lumen);
             TestTrue(TEXT("Cloud evolution frozen for a deterministic baseline"), bWind && Wind == 0.0F);
         }
     }

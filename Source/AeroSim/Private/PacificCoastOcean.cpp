@@ -252,16 +252,23 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
         return EmitWaves(false, false, true) + NoiseHelpers()
             + TEXT("float d=Mask.r*10000; float contact=Mask.g; float shoal=MaskA;")
             + TEXT("float crest=saturate(h/(A*42+1)*.5+.5);")
-            + TEXT("float2 drift=float2(-1,-.30)*T*160;")
+            // Persistent patches translate with a shoreward + longshore current (1.6 m/s; the
+            // longshore part reads as lateral screen motion in cliff views). Gaps move with it.
+            + TEXT("float2 drift=float2(-.75,-.66)*T*160;")
             + TEXT("float cells=noise.f((P.xy+drift)*.0025);")
             + TEXT("float lace=smoothstep(.30,.70,noise.f((P.xy+drift)*.007)*.55+cells*.45);")
-            + TEXT("float gaps=smoothstep(.32,.62,noise.f(float2(P.y*.0011,P.x*.0004)+float2(0,T*.004)));")
+            + TEXT("float gaps=smoothstep(.32,.62,noise.f((P.xy+drift)*float2(.0004,.0011)));")
             + TEXT("float reach=320+1500*crest*contact;")
             + TEXT("float surge=contact*exp(-d/reach)*lace*(.30+.70*gaps)*(.35+.65*crest);")
             + TEXT("float churn=contact*exp(-d/170)*(.45+.55*cells)*(.6+.4*gaps);")
-            + TEXT("float breaker=shoal*smoothstep(.45,.85,crest)*lace*smoothstep(.25,.65,cells)*1.2;")
+            + TEXT("float patches=contact*exp(-d/650)*lace*gaps*.55;")
+            // Beach/shelf surf zone from the interpolated depth mask (survives coarse far mesh):
+            // breaker lines where crests reach < ~9 m depth, whitewater swash in the last ~4 m.
+            + TEXT("float shallow=1-smoothstep(.05,.40,Mask.b);")
+            + TEXT("float breaker=max(shoal,shallow*contact)*smoothstep(.40,.82,crest)*lace*smoothstep(.20,.60,cells)*1.3;")
+            + TEXT("float swash=contact*(1-smoothstep(0,.16,Mask.b))*(.35+.65*crest)*lace*.8;")
             + TEXT("float streak=contact*exp(-d/1400)*smoothstep(.58,.90,noise.f((P.xy+drift)*float2(.0016,.0035)))*.45;")
-            + TEXT("return saturate(surge+churn*.65+breaker+streak);");
+            + TEXT("return saturate(surge+churn*.65+patches+breaker+swash+streak);");
     case ECoastalWaterShader::Scattering:
         // Input Mask. Greener shallows over the platform, deep blue-grey offshore (per cm); a
         // turbid surf-zone term keeps the waterline from reading as clear glass over rock.
