@@ -88,8 +88,17 @@ bool FFlightMissionLandingProofTest::RunTest(const FString& Parameters)
     Mission.Reset();Mission.EnterPreflight();Mission.SetPreflightComplete(true);Mission.BeginMission();
     Mission.Observe(.1F,EFlightPhase::Takeoff,FVector(55,79,400),FVector(0,0,100),FRotator::ZeroRotator);
     for(const auto& Point:Mission.Task.Checkpoints)Mission.Observe(.1F,EFlightPhase::Flight,Point.Position,FVector(500,0,0),FRotator::ZeroRotator);
-    TestEqual(TEXT("All actual objectives still require return"),Mission.Stage,EPhase4MissionStage::ReturnToHome);
-    Mission.Observe(.1F,EFlightPhase::Flight,FVector(55,79,500),FVector(100,0,0),FRotator::ZeroRotator);
+    TestEqual(TEXT("Jumping between objective endpoints scores only the checkpoint whose guide leg is active"),Mission.NextCheckpointIndex,1);
+    // Logic fixture follows the guidance legs in 50 cm steps, not a claim of real input traversal.
+    for(int32 Guard=0;Guard<64 && Mission.Stage!=EPhase4MissionStage::Landing;++Guard)
+    {
+        const int32 LegIndex=Mission.GetGuidanceLegIndex();const FPhase4GuidanceLeg Leg=Mission.GetGuidanceRoute()[LegIndex];
+        for(float Along=0;Along<=Leg.GetLength()+50 && Mission.GetGuidanceLegIndex()==LegIndex && Mission.Stage!=EPhase4MissionStage::Landing;Along+=50)
+            Mission.Observe(.05F,EFlightPhase::Flight,Leg.Evaluate(Along),FVector::ZeroVector,FRotator::ZeroRotator);
+        if(Mission.NextCheckpointIndex==5 && Mission.Stage==EPhase4MissionStage::ReturnToHome && Leg.ScoredCheckpointIndex==4)
+            TestEqual(TEXT("All actual objectives still require return"),Mission.Stage,EPhase4MissionStage::ReturnToHome);
+    }
+    TestEqual(TEXT("Verified return reaches the landing leg"),Mission.Stage,EPhase4MissionStage::Landing);
     Mission.Observe(.1F,EFlightPhase::Grounded,FVector(55,79,11),FVector::ZeroVector,FRotator::ZeroRotator,false);
     TestEqual(TEXT("Unsupported Grounded flag cannot complete"),Mission.Stage,EPhase4MissionStage::Landing);
     Mission.Observe(.1F,EFlightPhase::Grounded,FVector(500,79,11),FVector::ZeroVector,FRotator::ZeroRotator,true);
