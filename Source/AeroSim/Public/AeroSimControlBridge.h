@@ -19,6 +19,7 @@ public:
     virtual void EndPlay(const EEndPlayReason::Type Reason) override;
     virtual void TickComponent(float Delta, ELevelTick Type, FActorComponentTickFunction* Function) override;
 private:
+    friend class FAeroSimControlFlightRollbackTest;
     TSharedRef<FJsonObject> Inspect() const;
     void WriteJson(const FString& Name, const TSharedRef<FJsonObject>& Object) const;
     void Respond(const TSharedRef<FJsonObject>& Object, bool bCache = true);

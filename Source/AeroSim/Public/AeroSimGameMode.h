@@ -61,7 +61,7 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Mission")
     void RequestReturnToHome();
 
-    void ObserveMission(float DeltaSeconds, EFlightPhase FlightPhase, const FVector& Position, const FVector& Velocity, const FRotator& Rotation, bool bCollision);
+    void ObserveMission(float DeltaSeconds, EFlightPhase FlightPhase, const FVector& WorldPosition, const FVector& WorldVelocity, const FRotator& WorldRotation, bool bCollision, bool bConfirmedHomeSupport = false, bool bWaterContact = false);
 
     const FMissionFlow& GetMissionFlow() const { return MissionFlow; }
     const FPhase4MissionSession& GetPhase4Mission() const { return Phase4Mission; }

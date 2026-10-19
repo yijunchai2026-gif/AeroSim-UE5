@@ -61,3 +61,16 @@ R3首批实际进度：两项修复已审查并集成；Mac Editor编译PASS；7
 
 
 R3独立工程批次已完成源码/静态/Python/71项NullRHI Automation/编译/Cook/Package/真实Metal专项及3次冷启动/同包29帧检验；详见tasks/AAA-R3-ENGINEERING_RESULT.md。STAB和矩形水色缺陷按该限定范围VERIFIED_SCOPED；整个海面/植被视觉门未关闭。FLIGHT-02实现、低湾hero源增量、三个代表树形体迭代继续，不在此批收口后停等用户。
+
+
+## R4 / R5 当前事实（2026-10-18）
+
+R3已提交并推送cfa8e16，远端SHA已核对。R4编译/73项Automation/Python82/Cook/Package通过，但实际19帧复审仍为G2 FAIL：水平叶片棚与平滑U形湾槽未关闭，详见tasks/AAA-R4-REVIEW.md。R4完整包/身份/日志已冻结后才进入下一次构建。
+
+R5 Flight工程批次由PMO接管。首次编译的const接口错误已修；完整Automation暴露旧环境路线耦合、空世界Grounded假设及旧边界fixture，失败结果完整保留。交叉审查另发现真实P1：高速横向缓降触地未报事故、active任务触水后R被重启guard拦住；均已修，新增实际Pawn sweep/support/water与带GameMode显式ResetAction测试第二轮PASS。第二轮仍有两个旧fixture遗漏，已补正后重新串行构建；未将局部通过写作整批PASS。
+
+完整航线的引导连接仍未关闭：海面目标与内陆目标不能按直线下降/上升穿过地形，需独立中间引导点与真实输入通路验证。端点安全和纯模型测试不是可飞路线。英雄扫描只完成离线验货，受控导入和碰撞合同见tasks/AAA-R5-HERO-SCAN-PLAN.md，尚未改变产品。
+
+R5第三轮真实结果：78项Automation=76clean+2warning、0failed；非金属NullRHI不代替Metal。新增真实Pawn墙体Sweep/支撑/触水与GameMode任务ResetAction均通过。MCP回滚审查发现新增两状态flag需纳入snapshot，已补源码及双向状态恢复测试，因此78项结果只对应该补丁之前指纹，不提前覆盖当前源码。继续编译/完整回归/打包与实际按键smoke。
+
+R5控制工程批次最终验证：79项Automation（76clean+3warning、0failed）、Python82、10适用静态、编译/Cook/Package、真实Metal专项1clean通过；正常菜单+实际按键完成负高度悬停、触水暂停、R重试，证据已冻结，详见tasks/AAA-R5-CONTROL-RESULT.md。完整五目标导航尚未关闭，不能把越界诊断飞行算完整任务；桌面入口暂不替换。导航源实现与扫描独立导入源在各自隔离泳道继续。

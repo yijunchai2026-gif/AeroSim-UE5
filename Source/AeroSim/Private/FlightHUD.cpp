@@ -115,7 +115,7 @@ void AFlightHUD::DrawHUD()
     if (Data.Phase == EFlightPhase::Paused && !Pawn->IsResumeCountdownActive())
     {
         DrawRect(FLinearColor(0.04F, 0.11F, 0.15F, 0.94F), Left, Canvas->ClipY - Margin.Y - 120.0F, 660.0F, 54.0F);
-        DrawText(TEXT("SAFE PAUSE / INPUT NEUTRAL\nRELEASE CONTROLS, THEN ENTER / SPACE TO RESUME"),
+        DrawText(Data.bWaterContact ? TEXT("WATER CONTACT / SAFE PAUSE\nWATER IS NOT LANDABLE. PRESS R TO RESTART FROM THE MAT.") : TEXT("SAFE PAUSE / INPUT NEUTRAL\nRELEASE CONTROLS, THEN ENTER / SPACE TO RESUME"),
             FLinearColor(1.0F, 0.72F, 0.29F), Left + 12.0F, Canvas->ClipY - Margin.Y - 108.0F, GEngine->GetSmallFont(), 1.0F, false);
     }
 
@@ -144,10 +144,11 @@ void AFlightHUD::DrawHUD()
     // Objective and telemetry stay on the perimeter; the central flight corridor is always unobstructed.
     DrawRect(FLinearColor(0.01F, 0.035F, 0.055F, 0.88F), Left, Top, 500.0F, 170.0F);
     DrawText(
-        FString::Printf(TEXT("AEROSIM / %s\n%s\n%s\n%s  |  %s  |  vFOV %.0f\nALT %.1f m  SPD %.1f m/s  THR %+.2f\n%s 16:30 / SEED %d"),
+        FString::Printf(TEXT("AEROSIM / %s\n%s\n%s\n%s  |  %s  |  vFOV %.0f\nLAUNCH ALT %.1f m  SPD %.1f m/s  THR %+.2f\nSURFACE %s  /  %s  /  SEED %d"),
             MissionStageText(Mission.Stage), *Mission.GetObjectiveText(), *Mission.GetProgressText(),
             FlightPhaseText(Data.Phase), CameraModeText(Data.CameraMode), Pawn->GetVerticalFov(),
-            Data.AltitudeMeters, Data.SpeedMetersPerSecond, Data.Throttle, WeatherText(Environment.Weather), Environment.Seed),
+            Data.AltitudeMeters, Data.SpeedMetersPerSecond, Data.Throttle,
+            *(Data.bSurfaceClearanceValid ? FString::Printf(TEXT("%.1f m"),Data.SurfaceClearanceMeters) : FString(TEXT("NOT MEASURED"))), WeatherText(Environment.Weather), Environment.Seed),
         FLinearColor(0.92F, 0.97F, 1.0F), Left + 14.0F, Top + 12.0F, GEngine->GetSmallFont(), 1.0F, false);
 
     DrawRect(FLinearColor(0.025F, 0.045F, 0.055F, 0.88F), Right, Top, RightWidth, 116.0F);
@@ -165,7 +166,7 @@ void AFlightHUD::DrawHUD()
     {
         DrawRect(FLinearColor(0.04F, 0.11F, 0.15F, 0.96F), Right, Top + 132.0F, RightWidth, 292.0F);
         DrawText(
-            FString::Printf(TEXT("02  PREFLIGHT / READY TO FLY\n\n[%s] INPUT CENTERED\n[%s] CAMERA  %s / vFOV %.0f\n[%s] ENVIRONMENT  %s 16:30\n[%s] DISPLAY  %d x %d / %s\n\n[ ENTER / SPACE ]  ARM & START\nNEXT: HOLD LEFT SHIFT TO TAKE OFF\nW/S Pitch  A/D Roll  Q/E Yaw\nShift/Ctrl Throttle  C Camera  H RTH\nESC/F10 Settings  R Reset"),
+            FString::Printf(TEXT("02  PREFLIGHT / READY TO FLY\n\n[%s] INPUT CENTERED\n[%s] CAMERA  %s / vFOV %.0f\n[%s] ENVIRONMENT  %s 16:30\n[%s] DISPLAY  %d x %d / %s\n\n[ ENTER / SPACE ]  ARM & START\nNEXT: HOLD LEFT SHIFT TO TAKE OFF\nW/S Forward/back  A/D Sideways  Q/E Turn\nShift/Ctrl Rise/descend  Release to hover\nC Camera  H Home guidance  ESC/F10 Settings  R Reset"),
                 Mission.Preflight.bInputCentered ? TEXT("OK") : TEXT("READY"), Mission.Preflight.bCameraChecked ? TEXT("OK") : TEXT("READY"), CameraModeText(Data.CameraMode), Pawn->GetVerticalFov(),
                 Mission.Preflight.bEnvironmentChecked ? TEXT("OK") : TEXT("READY"), WeatherText(Environment.Weather), Mission.Preflight.bQualityChecked ? TEXT("OK") : TEXT("READY"),
                 GameMode->GetAppliedSettings().ResolutionWidth, GameMode->GetAppliedSettings().ResolutionHeight, WindowModeText(GameMode->GetAppliedSettings().WindowMode)),

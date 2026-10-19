@@ -28,6 +28,26 @@ def bridge_tree(root: Path) -> tuple[Path, Path]:
 
 
 class ControlMcpTests(unittest.TestCase):
+    def test_heartbeat_replacement_gap_retries_only_session_read(self):
+        with patch.object(Path,'read_text',side_effect=[FileNotFoundError(),'{"session":"fresh"}']) as read, patch.object(server.time,'sleep') as sleep:
+            self.assertEqual(server.read_session(Path('/fixed-test-bridge')),{'session':'fresh'})
+            self.assertEqual(read.call_count,2)
+            sleep.assert_called_once_with(.005)
+
+    def test_persistent_missing_or_malformed_heartbeat_fails_bounded(self):
+        for error in (FileNotFoundError(),json.JSONDecodeError('bad','{',1)):
+            with patch.object(Path,'read_text',side_effect=error) as read, patch.object(server.time,'sleep') as sleep:
+                with self.assertRaises(type(error)):
+                    server.read_session(Path('/fixed-test-bridge'))
+                self.assertEqual(read.call_count,5)
+                self.assertEqual(sleep.call_count,4)
+
+    def test_heartbeat_permission_failure_is_not_retried(self):
+        with patch.object(Path,'read_text',side_effect=PermissionError()) as read, patch.object(server.time,'sleep') as sleep:
+            with self.assertRaises(PermissionError):server.read_session(Path('/fixed-test-bridge'))
+            self.assertEqual(read.call_count,1)
+            sleep.assert_not_called()
+
     def test_real_stdio_initialize_and_discovery(self):
         client=Client()
         try:

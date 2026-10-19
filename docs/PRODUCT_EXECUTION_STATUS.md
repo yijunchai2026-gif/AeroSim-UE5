@@ -97,3 +97,8 @@ Final objective remains AAA-level Pacific Coast scene and playable experience. A
 ## R3 bounded verification completed — 2026-10-18
 
 Frozen source3c34d3eb6a25bc571ed2b4bd9b55c28a0bdbda0720d147c9bc5b547c6f9a6754. Runtime UV metadata and false exterior shallows fixes passed Editor build, Python79, ten applicable static validators, full NullRHI Automation68clean+3warning/0failed, separate real Metal material Automation1clean, Cook/Package, three cooked cold starts and same-build29-frame MCP evidence. Root/QA actual north/south views no longer show the rectangle; all26slots initialize without former ensure. Details/failed first protocol attempt/remaining limits are in tasks/AAA-R3-ENGINEERING_RESULT.md. Whole task/AAA/flight P0/production performance remain open. Continuous goal stays active; flight, hero-bay and three-archetype work continue in isolated lanes.
+
+
+## 2026-10-18 R5限定工程验证
+
+海岸负高度控制、WorldStatic支撑/Sweep同步、触水显式R重试、MCP两新状态回滚已通过79项Automation、Python82、编译/Cook/Package、真实Metal专项，以及正常菜单实际Slate/EnhancedInput按键smoke。冻结源fingerprint `0b27cbbe38fe6e4398c4895f0f8bdc78dfcbfa9bd277e51d51b2f2fa1d578426`。详见tasks/AAA-R5-CONTROL-RESULT.md。完整五目标导航尚未验证，R4树林/湾槽与当前海面视觉仍FAIL，正式资产与用户确认门不变；本段不覆盖产品最终验收。
