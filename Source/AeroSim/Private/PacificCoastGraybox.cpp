@@ -476,8 +476,9 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
     const float SkyFill[] = {1.0F, .75F, .5F};
     const float Mie[] = {.0034F, .014F, .024F}, MieG[] = {.80F, .62F, .55F}, Aerial[] = {1.6F, 2.6F, 3.2F};
     const float FogFalloff[] = {.20F, .18F, .12F}, FogOpacity[] = {.75F, .95F, 1.0F}, FogStart[] = {250000.0F, 0.0F, 0.0F};
-    const FLinearColor FogColor[] = {FLinearColor(.60F,.66F,.72F), FLinearColor(.30F,.36F,.41F), FLinearColor(.12F,.20F,.28F)};
-    const float LayerDensity[] = {.006F, .03F, .05F}, LayerOffset[] = {200.0F, 1500.0F, 2500.0F}, LayerFalloff[] = {1.2F, .5F, .35F};
+    // Clear horizon haze is warm beige-white at 16:30 (dry coastal aerosol), not neutral grey.
+    const FLinearColor FogColor[] = {FLinearColor(.80F,.72F,.62F), FLinearColor(.30F,.36F,.41F), FLinearColor(.12F,.20F,.28F)};
+    const float LayerDensity[] = {.012F, .03F, .05F}, LayerOffset[] = {200.0F, 1500.0F, 2500.0F}, LayerFalloff[] = {1.2F, .5F, .35F};
     const float CloudBottomKm[] = {1.6F, .7F, .45F}, CloudHeightKm[] = {1.6F, 2.4F, 3.5F};
     const float WaterRoughness[] = {.07F, .11F, .16F}, WaveScale[] = {1.0F, 1.2F, 1.45F};
 
@@ -508,7 +509,7 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
     // illuminance in the fog's directional lobe, so it only tints toward the low SW sun.
     WeatherFog->SetDirectionalInscatteringExponent(5.0F);
     WeatherFog->SetDirectionalInscatteringStartDistance(15000.0F);
-    WeatherFog->SetDirectionalInscatteringColor(W == 0 ? FLinearColor(.75F,.46F,.22F) : FLinearColor(.06F,.06F,.06F));
+    WeatherFog->SetDirectionalInscatteringColor(W == 0 ? FLinearColor(1.0F,.62F,.30F) : FLinearColor(.06F,.06F,.06F));
     WeatherFog->SetSecondFogDensity(LayerDensity[W]);
     WeatherFog->SetSecondFogHeightOffset(LayerOffset[W]);
     WeatherFog->SetSecondFogHeightFalloff(LayerFalloff[W]);

@@ -39,7 +39,7 @@ TArray<FWave> BuildSpectrum()
     // components share a crest line, so the sum never forms one parallel band.
     struct FRow { float Lambda, Amp, Yaw, Q; };
     const FRow Rows[] = {
-        {18600, 26.0F, -158, .30F}, {14100, 22.0F, -178, .30F}, {10700, 18.0F, 166, .32F},
+        {18600, 28.0F, -158, .30F}, {14100, 24.0F, -178, .30F}, {10700, 19.0F, 166, .32F},
         {12300,  9.0F,  132, .28F}, { 7700,  6.0F,  141, .30F},
         { 4600,  9.5F, -128, .45F}, { 3370,  7.0F, -152, .48F}, { 2490,  5.2F, -113, .50F},
         { 1830,  3.8F, -141, .52F}, { 1360,  2.7F, -100, .55F}, { 1010,  1.9F, -160, .55F},
@@ -164,21 +164,25 @@ FString EmitWaves(const bool bOffset, const bool bGradient, const bool bSwellOnl
         if (bSwellOnly && Index >= 5) continue;
         const FDerived D = Derive(W, Index, Spectrum.Num());
         // Short components fade with distance before they alias into glitter.
-        // Normal detail fades at ~15-60 wavelengths so grazing low-altitude views do not moire.
-        const float Near = W.WavelengthCm * (bOffset ? 40.0F : 15.0F);
-        const float Far = W.WavelengthCm * (bOffset ? 160.0F : 60.0F);
+        // Analytic normal detail fades at ~30-120 wavelengths: enough slope variance for a bounded
+        // sun-glint path (R2 lost it at 15-60), while texture detail fades by 120 m (moire).
+        // Far-field cap (R5 player view): beyond ~1.2-4 km every component, including the long
+        // swell, hands over to distance roughness so grazing perspective cannot compress swell
+        // crests into ruler-parallel horizon stripes. Near-shore travelling swell is unchanged.
+        const float Near = FMath::Min(W.WavelengthCm * (bOffset ? 40.0F : 30.0F), bOffset ? 200000.0F : 120000.0F);
+        const float Far = FMath::Min(W.WavelengthCm * (bOffset ? 160.0F : 120.0F), bOffset ? 600000.0F : 400000.0F);
         Code += FString::Printf(TEXT("{float2 d=float2(%s,%s),w=float2(%s,%s),e=float2(%s,%s);"),
             *Num(W.Direction.X), *Num(W.Direction.Y), *Num(D.Warp.X), *Num(D.Warp.Y), *Num(D.Group.X), *Num(D.Group.Y));
         Code += FString::Printf(TEXT("float wa=dot(P.xy,w)*%s+%s; float th=dot(P.xy,d)*%s-T*%s+%s+%s*sin(wa);"),
             *Num(D.WarpK), *Num(W.Phase * 1.7F), *Num(D.K), *Num(W.AngularFrequency), *Num(W.Phase), *Num(D.WarpRad));
-        Code += FString::Printf(TEXT("float ga=dot(P.xy,e)*%s+T*%s+%s; float env=.68+.32*sin(ga);"),
+        Code += FString::Printf(TEXT("float ga=dot(P.xy,e)*%s+T*%s+%s; float env=.55+.45*sin(ga);"),
             *Num(D.GroupK), *Num(D.GroupOmega), *Num(W.Phase * 2.3F));
         const FString Fade = bSwellOnly ? FString(TEXT("1")) : FString::Printf(TEXT("1-smoothstep(%s,%s,dist)"), *Num(Near), *Num(Far));
         Code += FString::Printf(TEXT("float f=%s; float a=A*%s*f;"), *Fade, *Num(W.AmplitudeCm));
         Code += TEXT("h+=a*env*sin(th);");
         if (bOffset) Code += FString::Printf(TEXT("o+=A*%s*f*env*cos(th)*d;"), *Num(D.HorizontalCm));
         if (bGradient)
-            Code += FString::Printf(TEXT("g+=a*(env*cos(th)*(d*%s+%s*cos(wa)*w*%s)+.32*cos(ga)*e*%s*sin(th));"),
+            Code += FString::Printf(TEXT("g+=a*(env*cos(th)*(d*%s+%s*cos(wa)*w*%s)+.45*cos(ga)*e*%s*sin(th));"),
                 *Num(D.K), *Num(D.WarpRad), *Num(D.WarpK), *Num(D.GroupK));
         Code += TEXT("}\n");
     }
@@ -213,7 +217,7 @@ FVector APacificCoastGraybox::GetCoastalOceanDisplacement(const float X, const f
         const float Wa = FVector2D::DotProduct(P, D.Warp) * D.WarpK + W.Phase * 1.7F;
         const float Theta = FVector2D::DotProduct(P, W.Direction) * D.K - TimeSeconds * W.AngularFrequency + W.Phase + D.WarpRad * FMath::Sin(Wa);
         const float Ga = FVector2D::DotProduct(P, D.Group) * D.GroupK + TimeSeconds * D.GroupOmega + W.Phase * 2.3F;
-        const float Envelope = .68F + .32F * FMath::Sin(Ga);
+        const float Envelope = .55F + .45F * FMath::Sin(Ga); // strong groups break long parallel crests
         Result.Z += AmplitudeScale * W.AmplitudeCm * Envelope * FMath::Sin(Theta);
         const FVector2D Offset = W.Direction * (AmplitudeScale * D.HorizontalCm * Envelope * FMath::Cos(Theta));
         Result.X += Offset.X;
@@ -248,15 +252,15 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
         return EmitWaves(false, false, true) + NoiseHelpers()
             + TEXT("float d=Mask.r*10000; float contact=Mask.g; float shoal=MaskA;")
             + TEXT("float crest=saturate(h/(A*42+1)*.5+.5);")
-            + TEXT("float2 drift=float2(-1,-.30)*T*110;")
-            + TEXT("float cells=noise.f((P.xy+drift)*.0045);")
-            + TEXT("float lace=smoothstep(.40,.78,noise.f((P.xy+drift*1.3)*.013)*.6+cells*.4);")
+            + TEXT("float2 drift=float2(-1,-.30)*T*160;")
+            + TEXT("float cells=noise.f((P.xy+drift)*.0025);")
+            + TEXT("float lace=smoothstep(.30,.70,noise.f((P.xy+drift)*.007)*.55+cells*.45);")
             + TEXT("float gaps=smoothstep(.32,.62,noise.f(float2(P.y*.0011,P.x*.0004)+float2(0,T*.004)));")
-            + TEXT("float reach=180+820*crest*contact;")
+            + TEXT("float reach=320+1500*crest*contact;")
             + TEXT("float surge=contact*exp(-d/reach)*lace*(.30+.70*gaps)*(.35+.65*crest);")
-            + TEXT("float churn=contact*exp(-d/80)*(.45+.55*cells)*(.6+.4*gaps);")
-            + TEXT("float breaker=shoal*smoothstep(.55,.88,crest)*lace*smoothstep(.30,.70,cells);")
-            + TEXT("float streak=contact*exp(-d/1400)*smoothstep(.64,.92,noise.f((P.xy+drift*.6)*float2(.0016,.0035)))*.32;")
+            + TEXT("float churn=contact*exp(-d/170)*(.45+.55*cells)*(.6+.4*gaps);")
+            + TEXT("float breaker=shoal*smoothstep(.45,.85,crest)*lace*smoothstep(.25,.65,cells)*1.2;")
+            + TEXT("float streak=contact*exp(-d/1400)*smoothstep(.58,.90,noise.f((P.xy+drift)*float2(.0016,.0035)))*.45;")
             + TEXT("return saturate(surge+churn*.65+breaker+streak);");
     case ECoastalWaterShader::Scattering:
         // Input Mask. Greener shallows over the platform, deep blue-grey offshore (per cm); a
@@ -267,7 +271,7 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
     case ECoastalWaterShader::Roughness:
         // Inputs R (base), F (foam), P, C. Slightly rougher with distance so the far sea
         // stays calm and the sun path stays a bounded cone rather than silver glitter.
-        return TEXT("float dist=length(P-C); float r=lerp(R,R+.10,smoothstep(8000,250000,dist)); return lerp(r,.62,F);");
+        return TEXT("float dist=length(P-C); float r=lerp(R,R+.14,smoothstep(3000,120000,dist))+.08*smoothstep(150000,500000,dist); return lerp(r,.62,F);");
     case ECoastalWaterShader::RockWetness:
         // For the rock/ground material owner (DEV-TERRAIN): inputs P (world pos), T, A, C.
         // Returns 0..1 wetness: fully wet below still water, a ragged 0.5-2 m splash band
