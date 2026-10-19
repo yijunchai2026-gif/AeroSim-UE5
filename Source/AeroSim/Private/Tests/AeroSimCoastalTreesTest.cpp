@@ -178,6 +178,25 @@ bool FCoastalTreePlacementTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Distance coverage bias stays below the clip value"), Leaves->GetScalarParameterValue(FMaterialParameterInfo(TEXT("DistantNeedleCoverage")), Coverage)
             && Coverage > 0 && Coverage < Leaves->GetOpacityMaskClipValue());
     }
+    // Trunk-base litter: one terrain-aligned ring per near overstory tree, never colliding.
+    if (const auto* Litter = CoastalTreeTest::FindBatch(Coast, TEXT("CoastalFloraTrunkLitter")))
+    {
+        TestEqual(TEXT("One litter ring per near overstory tree"), Litter->GetInstanceCount(), Layout.NearOverstoryTrees);
+        TestEqual(TEXT("Litter rings never collide"), Litter->GetCollisionEnabled(), ECollisionEnabled::NoCollision);
+        int32 RingsAbove = 0;
+        for (int32 Index = 0; Index < Litter->GetInstanceCount(); Index += 7)
+        {
+            FTransform T; Litter->GetInstanceTransform(Index, T, false);
+            for (int32 Angle = 0; Angle < 8; ++Angle)
+            {
+                const FVector Edge = T.TransformPosition(FVector(FMath::Cos(Angle * PI / 4) * 70, FMath::Sin(Angle * PI / 4) * 70, 0));
+                if (Edge.Z - APacificCoastGraybox::GetCoastalLandHeight(Edge.X, Edge.Y) > 12) ++RingsAbove;
+            }
+        }
+        TestTrue(TEXT("Litter rings hug the ground (<2% of sampled points >12 cm above it)"), RingsAbove * 50 < Litter->GetInstanceCount() / 7 * 8 + 1);
+        AddInfo(FString::Printf(TEXT("FLORA_LITTER rings=%d floating_samples=%d"), Litter->GetInstanceCount(), RingsAbove));
+    }
+    else AddError(TEXT("Trunk-base litter batch missing (run HabitatDraftImport)"));
     const auto* ProxyBatch = CoastalTreeTest::FindBatch(Coast, TEXT("CoastalTrunkCollisionProxies"));
     if (TestNotNull(TEXT("Trunk collision batch exists"), ProxyBatch))
     {

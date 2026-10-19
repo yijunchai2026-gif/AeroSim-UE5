@@ -1034,7 +1034,8 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
             const float Base = K.TrunkRadius[Ring];
             if (K.Species != ESpecies::CoastLiveOak && K.Height < 500) return Base; // seedlings: no collar
             const float Section = K.bHeroShape ? 1.0F + .035F * Smooth01((Z - 450.0F) / 350.0F) * FMath::Sin(Theta * 2 + Z * .001F) : 1.0F;
-            return Section * (Lod >= 2 ? Base * (Z < 30 ? 1.12F : 1.0F) : CollarRadius(Z, Theta, Base, Lobes));
+            // LOD2+ keep the smooth flare (no buttress lobes) so mid-distance bases never read as cylinders.
+            return Section * (Lod >= 2 ? Base * (1.0F + .18F * FMath::Exp(-FMath::Max(Z, 0.0F) / 30.0F)) : CollarRadius(Z, Theta, Base, Lobes));
         }, TrunkSides, URepeats, K.TileV,
         [&](int32 Ring)
         {
@@ -1337,7 +1338,9 @@ UStaticMesh* BuildMesh(const FName Name, const TArray<FLod>& Lods, TArray<int32>
         OutTriangles.Add(Triangles);
         Pointers.Add(&Description);
     }
-    const TOptional<FMeshUVChannelInfo> SlotUV[2] = {StreamingUVInfo(Lods[0].Bark), StreamingUVInfo(Lods[0].Leaf)};
+    // An intentionally empty slot (e.g. the litter disc has no bark) publishes a neutral density.
+    auto SlotInfo = [](const FSection& S) -> TOptional<FMeshUVChannelInfo> { return S.I.IsEmpty() ? TOptional<FMeshUVChannelInfo>(FMeshUVChannelInfo(100.0F)) : StreamingUVInfo(S); };
+    const TOptional<FMeshUVChannelInfo> SlotUV[2] = {SlotInfo(Lods[0].Bark), SlotInfo(Lods[0].Leaf)};
     if (!SlotUV[0].IsSet() || !SlotUV[1].IsSet())
     {
         UE_LOG(LogTemp, Error, TEXT("FLORA_UV_STREAMING_INVALID mesh=%s bark=%d foliage=%d"), *Name.ToString(), SlotUV[0].IsSet(), SlotUV[1].IsSet());
@@ -1391,6 +1394,26 @@ FArchetype MakeArchetype(const FName Name, const FSkeleton& K, EAge Age, uint32 
     A.Mesh = BuildMesh(Name, Lods, A.LodTriangles);
     return A;
 }
+}
+
+UStaticMesh* GetTrunkLitterMesh()
+{
+    static UStaticMesh* Mesh = nullptr;
+    if (Mesh) return Mesh;
+    TArray<FLod> Lods; Lods.SetNum(1);
+    FSection& S = Lods[0].Leaf;
+    constexpr int32 Segments = 24;
+    const int32 Centre = S.Add(FVector::ZeroVector, FVector::UpVector, FVector::ForwardVector, -FVector::RightVector, FVector2f(.5F, .5F), FVector4f(1, 0, 0, 1));
+    for (int32 I = 0; I < Segments; ++I)
+    {
+        const float A = I * 2 * PI / Segments;
+        const FVector P(FMath::Cos(A) * 100.0F, FMath::Sin(A) * 100.0F, 0);
+        S.Add(P, FVector::UpVector, FVector::ForwardVector, -FVector::RightVector, FVector2f(.5F + P.X / 200.0F, .5F - P.Y / 200.0F), FVector4f(1, 0, 0, 1));
+    }
+    for (int32 I = 0; I < Segments; ++I) S.Tri(Centre, 1 + I, 1 + (I + 1) % Segments);
+    TArray<int32> Triangles;
+    Mesh = BuildMesh(TEXT("CoastalFloraTrunkLitterDisc"), Lods, Triangles);
+    return Mesh;
 }
 
 const TArray<FArchetype>& GetArchetypes()
