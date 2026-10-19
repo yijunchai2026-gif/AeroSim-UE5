@@ -1,0 +1,417 @@
+{
+  "schema": "aerosim.hero-cove-scan-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "asset": "SM_CoastHeroCliffScanDraft",
+  "license": "CC0-1.0",
+  "license_source": "https://polyhaven.com/license",
+  "source_page": "https://polyhaven.com/a/coastal_cliff_01",
+  "provider": {
+    "asset": "coastal_cliff_01",
+    "page": "https://polyhaven.com/a/coastal_cliff_01",
+    "license": "CC0-1.0",
+    "license_source": "https://polyhaven.com/license",
+    "downloaded_bytes": 13210285,
+    "files": [
+      {
+        "file": "coastal_cliff_01_2k.gltf",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/2k/coastal_cliff_01/coastal_cliff_01_2k.gltf",
+        "bytes": 2825,
+        "provider_md5": "b740b84cdc6d7acb5274361b594f5e3a",
+        "sha256": "8e82762ae04616a4c383cf9b91ee42d01852c07445c7b66fcc199fc635024d47"
+      },
+      {
+        "file": "coastal_cliff_01.bin",
+        "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/coastal_cliff_01/coastal_cliff_01.bin",
+        "bytes": 13179840,
+        "provider_md5": "d9f1e368b18c018e158d06ab9d924646",
+        "sha256": "6833dfaf75e0d039e64bc09ad642c4be3361739f20048af32ad50fd8e6471a65"
+      }
+    ]
+  },
+  "source_geometry": {
+    "vertex_count": 238686,
+    "triangle_count": 461824,
+    "gltf_y_up_metre_bounds": {
+      "min": [
+        -45.055580139160156,
+        -0.6500276327133179,
+        -6.205799579620361
+      ],
+      "max": [
+        46.924373626708984,
+        9.675503730773926,
+        4.760909080505371
+      ],
+      "extent": [
+        91.97994995117188,
+        10.325531005859375,
+        10.96670913696289
+      ]
+    },
+    "finite_positions": true,
+    "finite_uv": true,
+    "uv_min": [
+      0.0016474708681926131,
+      0.012683510780334473
+    ],
+    "uv_max": [
+      0.9983196258544922,
+      0.9983544945716858
+    ],
+    "uv_zero_area_triangles": 0,
+    "geometry_zero_area_triangles": 0,
+    "normal_length_minmax": [
+      0.9999158382415771,
+      1.0000810623168945
+    ],
+    "face_normal_disagreement": 21,
+    "area_m2": 1551.23876953125,
+    "area_weighted_front_direction": [
+      -0.02003985270857811,
+      0.18052947521209717,
+      0.5480706691741943
+    ],
+    "raw_topology": {
+      "edges": 700444,
+      "boundary_edges": 15416,
+      "nonmanifold_edges": 0
+    },
+    "position_welded_topology": {
+      "edges": 694015,
+      "boundary_edges": 2558,
+      "nonmanifold_edges": 0
+    },
+    "exact_position_duplicate_vertices": 6494,
+    "boundary_components": [
+      {
+        "vertices": 2558,
+        "closed_loop": true,
+        "min": [
+          -45.055580139160156,
+          -0.6500276327133179,
+          -6.205799579620361
+        ],
+        "max": [
+          46.924373626708984,
+          9.630810737609863,
+          4.492788314819336
+        ]
+      }
+    ],
+    "single_primitive": true,
+    "lod_extension_present": false,
+    "double_sided_material": true,
+    "material_images_not_downloaded": [
+      "textures/coastal_cliff_01_nor_gl_2k.jpg",
+      "textures/coastal_cliff_01_diff_2k.jpg",
+      "textures/coastal_cliff_01_arm_2k.jpg"
+    ]
+  },
+  "crop": {
+    "crop_meters": [
+      -20,
+      20
+    ],
+    "method": "Triangle plane clipping with shared indexed-edge intersections; linearly interpolated positions/UV, normalized interpolated normals; no scale.",
+    "vertices": 113458,
+    "triangles": 220221,
+    "removed_zero_area_triangles": 0,
+    "bounds_min": [
+      -20.0,
+      -0.33416131138801575,
+      -4.9017133712768555
+    ],
+    "bounds_max": [
+      20.0,
+      9.675503730773926,
+      4.760909080505371
+    ]
+  },
+  "simplifier": {
+    "version": "v0.25",
+    "license": "MIT",
+    "files": [
+      {
+        "file": "meshopt_simplifier.cjs",
+        "url": "https://raw.githubusercontent.com/zeux/meshoptimizer/v0.25/js/meshopt_simplifier.js",
+        "bytes": 53114,
+        "sha256": "d1a8e4efccf1dd9d5e6baa229f611bfb2ec43279c789653bce039eb7c06cf5cf"
+      },
+      {
+        "file": "LICENSE.meshoptimizer.md",
+        "url": "https://raw.githubusercontent.com/zeux/meshoptimizer/v0.25/LICENSE.md",
+        "bytes": 1079,
+        "sha256": "e4a26033e3551fb2722888949fbb41e77aee628e8e8f04dcffeee301aa7e5634"
+      },
+      {
+        "file": "README.meshoptimizer-js.md",
+        "url": "https://raw.githubusercontent.com/zeux/meshoptimizer/v0.25/js/README.md",
+        "bytes": 28146,
+        "sha256": "846434c7e4f299f70110a5ccafa7bf767eb1bea524df49856d912567a9d62054"
+      }
+    ]
+  },
+  "simplification": {
+    "tool": "meshoptimizer v0.25 simplifyWithAttributes",
+    "flags": [
+      "LockBorder",
+      "ErrorAbsolute"
+    ],
+    "attribute_layout": "normal XYZ and UV XY",
+    "attribute_weights": [
+      0.25,
+      0.25,
+      0.25,
+      2,
+      2
+    ],
+    "rationale": "Preserve physical open/cut boundaries; penalize normal shading and UV distortion; reuse original clipped vertex attributes without resampling.",
+    "independent_input_each_lod": true,
+    "results": [
+      {
+        "name": "lod0",
+        "target_triangles": 50000,
+        "actual_triangles": 49999,
+        "actual_used_vertices": 27147,
+        "maximum_allowed_error_m": 0.06,
+        "reported_attribute_weighted_error_m": 0.024897228926420212,
+        "elapsed_ms": 155
+      },
+      {
+        "name": "lod1",
+        "target_triangles": 12000,
+        "actual_triangles": 11999,
+        "actual_used_vertices": 7436,
+        "maximum_allowed_error_m": 0.18,
+        "reported_attribute_weighted_error_m": 0.10697279125452042,
+        "elapsed_ms": 90
+      },
+      {
+        "name": "lod2",
+        "target_triangles": 3000,
+        "actual_triangles": 3591,
+        "actual_used_vertices": 2918,
+        "maximum_allowed_error_m": 0.55,
+        "reported_attribute_weighted_error_m": 0.5495026707649231,
+        "elapsed_ms": 89
+      }
+    ]
+  },
+  "doublet_cleanup": [
+    {
+      "name": "lod0",
+      "removed_opposite_identical_index_triangle_pairs": 2,
+      "final_triangles": 49995,
+      "reason": "Collapse doublets: identical three attribute vertices with opposite winding. Remove both redundant coincident faces; no vertex/UV changes."
+    },
+    {
+      "name": "lod1",
+      "removed_opposite_identical_index_triangle_pairs": 1,
+      "final_triangles": 11997,
+      "reason": "Collapse doublets: identical three attribute vertices with opposite winding. Remove both redundant coincident faces; no vertex/UV changes."
+    },
+    {
+      "name": "lod2",
+      "removed_opposite_identical_index_triangle_pairs": 0,
+      "final_triangles": 3591,
+      "reason": "Collapse doublets: identical three attribute vertices with opposite winding. Remove both redundant coincident faces; no vertex/UV changes."
+    }
+  ],
+  "verification": {
+    "metrics": {
+      "crop": {
+        "triangles": 220221,
+        "used_vertices": 113458,
+        "bounds_min": [
+          -20.0,
+          -0.33416131138801575,
+          -4.9017133712768555
+        ],
+        "bounds_max": [
+          20.0,
+          9.675503730773926,
+          4.760909080505371
+        ],
+        "zero_area_geometry_triangles": 0,
+        "zero_area_uv_triangles": 0,
+        "position_welded_boundary_edges": 1801,
+        "position_welded_nonmanifold_edges": 0,
+        "surface_area_m2": 645.5606591526434,
+        "uv_area_per_surface_m2_percentiles_1_50_99": [
+          0.00023584755606762307,
+          0.0004891244473168493,
+          0.0006378335906125232
+        ],
+        "opposed_average_vertex_normal_triangles": 15,
+        "opposed_normal_surface_area_fraction": 2.344117965875775e-05,
+        "finite_attributes": true,
+        "attribute_source": "Exact original clipped values indexed; no vertex movement or UV rewriting."
+      },
+      "lod0": {
+        "triangles": 49995,
+        "used_vertices": 27145,
+        "bounds_min": [
+          -20.0,
+          -0.33416131138801575,
+          -4.9017133712768555
+        ],
+        "bounds_max": [
+          20.0,
+          9.675003051757812,
+          4.760909080505371
+        ],
+        "zero_area_geometry_triangles": 0,
+        "zero_area_uv_triangles": 0,
+        "position_welded_boundary_edges": 1801,
+        "position_welded_nonmanifold_edges": 0,
+        "surface_area_m2": 644.5322779796553,
+        "uv_area_per_surface_m2_percentiles_1_50_99": [
+          0.0001625649690531604,
+          0.000486803402133981,
+          0.0006457966260291498
+        ],
+        "opposed_average_vertex_normal_triangles": 57,
+        "opposed_normal_surface_area_fraction": 0.00017496462875245307,
+        "finite_attributes": true,
+        "attribute_source": "Exact original clipped values indexed; no vertex movement or UV rewriting."
+      },
+      "lod1": {
+        "triangles": 11997,
+        "used_vertices": 7435,
+        "bounds_min": [
+          -20.0,
+          -0.33416131138801575,
+          -4.9017133712768555
+        ],
+        "bounds_max": [
+          20.0,
+          9.642975807189941,
+          4.760909080505371
+        ],
+        "zero_area_geometry_triangles": 0,
+        "zero_area_uv_triangles": 0,
+        "position_welded_boundary_edges": 1801,
+        "position_welded_nonmanifold_edges": 0,
+        "surface_area_m2": 631.7466492737426,
+        "uv_area_per_surface_m2_percentiles_1_50_99": [
+          0.00011444050925391456,
+          0.000495440313662247,
+          0.000659821278693088
+        ],
+        "opposed_average_vertex_normal_triangles": 44,
+        "opposed_normal_surface_area_fraction": 0.0008344236296505561,
+        "finite_attributes": true,
+        "attribute_source": "Exact original clipped values indexed; no vertex movement or UV rewriting."
+      },
+      "lod2": {
+        "triangles": 3591,
+        "used_vertices": 2918,
+        "bounds_min": [
+          -20.0,
+          -0.33416131138801575,
+          -4.9017133712768555
+        ],
+        "bounds_max": [
+          20.0,
+          9.630810737609863,
+          4.726827621459961
+        ],
+        "zero_area_geometry_triangles": 0,
+        "zero_area_uv_triangles": 0,
+        "position_welded_boundary_edges": 1801,
+        "position_welded_nonmanifold_edges": 0,
+        "surface_area_m2": 604.1642164674627,
+        "uv_area_per_surface_m2_percentiles_1_50_99": [
+          3.8110079171608986e-05,
+          0.0005006487561266144,
+          0.0006910583466170602
+        ],
+        "opposed_average_vertex_normal_triangles": 23,
+        "opposed_normal_surface_area_fraction": 0.0003583375207121069,
+        "finite_attributes": true,
+        "attribute_source": "Exact original clipped values indexed; no vertex movement or UV rewriting."
+      }
+    },
+    "error_method": "256 deterministic area-weighted surface samples per direction, exact closest-point distance to all triangles. Sampled distances are not Hausdorff bounds.",
+    "sampled_errors": {
+      "lod0": {
+        "crop_to_lod": {
+          "sample_count": 256,
+          "mean_m": 0.004140510660220577,
+          "p95_m": 0.011548348773257217,
+          "maximum_sampled_m": 0.02270370822753827
+        },
+        "lod_to_crop": {
+          "sample_count": 256,
+          "mean_m": 0.004788911223062316,
+          "p95_m": 0.013609192119235058,
+          "maximum_sampled_m": 0.029507820329584777
+        }
+      },
+      "lod1": {
+        "crop_to_lod": {
+          "sample_count": 256,
+          "mean_m": 0.016970048221221837,
+          "p95_m": 0.04428418348370575,
+          "maximum_sampled_m": 0.08711233414533928
+        },
+        "lod_to_crop": {
+          "sample_count": 256,
+          "mean_m": 0.013821857076887458,
+          "p95_m": 0.03918149821162515,
+          "maximum_sampled_m": 0.060478362617849404
+        }
+      },
+      "lod2": {
+        "crop_to_lod": {
+          "sample_count": 256,
+          "mean_m": 0.04364353711318615,
+          "p95_m": 0.10652115760906411,
+          "maximum_sampled_m": 0.18906248302608325
+        },
+        "lod_to_crop": {
+          "sample_count": 256,
+          "mean_m": 0.0401609318118889,
+          "p95_m": 0.1099048107059277,
+          "maximum_sampled_m": 0.19197326137316092
+        }
+      }
+    }
+  },
+  "exports": [
+    {
+      "name": "lod0",
+      "gltf": "coastal-cliff-40m-lod0.gltf",
+      "bin": "coastal-cliff-40m-lod0.bin",
+      "vertices": 27145,
+      "triangles": 49995,
+      "buffer_bytes": 1468580,
+      "bin_sha256": "56c1f67209c0d53e27a0bb744ee8b764201715256f03184c63de6fcb602a8323",
+      "gltf_sha256": "099cae75b2f82bd5d10ffe86922705e662bb8cf4fc072bf5497f929185424812"
+    },
+    {
+      "name": "lod1",
+      "gltf": "coastal-cliff-40m-lod1.gltf",
+      "bin": "coastal-cliff-40m-lod1.bin",
+      "vertices": 7435,
+      "triangles": 11997,
+      "buffer_bytes": 381884,
+      "bin_sha256": "6ee6034e8e2c2bd52a24b72248139d31e0813fa6cfae09dbbbbc29dd6746246b",
+      "gltf_sha256": "2d8d903ec1e6a6d5cb2a2086b6a12d48acf54ee3dacc91b7e45e824cc609c590"
+    },
+    {
+      "name": "lod2",
+      "gltf": "coastal-cliff-40m-lod2.gltf",
+      "bin": "coastal-cliff-40m-lod2.bin",
+      "vertices": 2918,
+      "triangles": 3591,
+      "buffer_bytes": 136468,
+      "bin_sha256": "73619882ce484cdad80544e6166b999edbe95fa7039936f937d3660f580218fd",
+      "gltf_sha256": "ab72b18f5a233c5fa6febb4cfdc9e8dba4aae61665036334dfc50360816be3da"
+    }
+  ],
+  "conversion": "glTF metres Y-up to UE centimetres: P=(100*z,100*x,100*y), N=(nz,nx,ny), reverse B/C once; UV unchanged",
+  "import_status": "NOT_IMPORTED",
+  "ue_validation": "NOT_RUN",
+  "visual_acceptance": "pending_user"
+}
