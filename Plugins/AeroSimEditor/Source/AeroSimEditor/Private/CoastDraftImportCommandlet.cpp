@@ -501,6 +501,41 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
     return SaveDraft(Material);
 }
 
+// DEV-SEASKY: sparse deterministic cirrus for the sky dome. Unlit translucent; the streak
+// field is procedural HLSL from the runtime sea/sky contract (no texture, no wind/time).
+bool BuildCirrusMaterial()
+{
+    using EShader=APacificCoastGraybox::ECoastalWaterShader;
+    const TCHAR* Name=TEXT("M_CoastCirrusDraft");
+    const FString PackageName=FString(DestinationRoot)+TEXT("Materials/")+Name;
+    UPackage* Package=CreatePackage(*PackageName);Package->FullyLoad();
+    UMaterial* Material=FindObject<UMaterial>(Package,Name);const bool bNew=Material==nullptr;
+    if(bNew)Material=NewObject<UMaterial>(Package,Name,RF_Public|RF_Standalone);
+    if(!Material)return false;
+    Material->PreEditChange(nullptr);if(!ResetDraftExpressions(Material))return false;
+    Material->BlendMode=BLEND_Translucent;Material->TwoSided=true;Material->SetShadingModel(MSM_Unlit);
+    Material->bUseTranslucencyVertexFog=false; // a 50 km dome must not be washed out by height fog
+    auto* World=Node<UMaterialExpressionWorldPosition>(Material);World->WorldPositionShaderOffset=WPT_ExcludeAllShaderOffsets;
+    auto* Camera=Node<UMaterialExpressionCameraPositionWS>(Material);
+    auto* Sun=Node<UMaterialExpressionVectorParameter>(Material);Sun->ParameterName=TEXT("SunDirection");Sun->DefaultValue=FLinearColor(.8F,-.5F,.36F);
+    auto* Field=Node<UMaterialExpressionCustom>(Material);Field->OutputType=CMOT_Float1;
+    Field->Code=APacificCoastGraybox::GetCoastalWaterShaderCode(EShader::Cirrus);Field->Inputs.Reset();
+    auto Input=[](UMaterialExpressionCustom* Expression,const TCHAR* InputName,UMaterialExpression* Value)
+    {FCustomInput Item;Item.InputName=InputName;Item.Input.Connect(0,Value);Expression->Inputs.Add(Item);};
+    Input(Field,TEXT("P"),World);Input(Field,TEXT("C"),Camera);Input(Field,TEXT("S"),Sun);
+    auto* Strength=Node<UMaterialExpressionScalarParameter>(Material);Strength->ParameterName=TEXT("CirrusOpacity");Strength->DefaultValue=.3F;
+    auto* Opacity=Node<UMaterialExpressionMultiply>(Material);Opacity->A.Connect(0,Field);Opacity->B.Connect(0,Strength);
+    auto* Color=Node<UMaterialExpressionVectorParameter>(Material);Color->ParameterName=TEXT("CirrusColor");Color->DefaultValue=FLinearColor(1.8F,1.75F,1.65F);
+    bool Connected=UMaterialEditingLibrary::ConnectMaterialProperty(Color,TEXT(""),MP_EmissiveColor);
+    Connected&=UMaterialEditingLibrary::ConnectMaterialProperty(Opacity,TEXT(""),MP_Opacity);
+    if(!Connected)return false;
+    UMaterialEditingLibrary::LayoutMaterialExpressions(Material);Material->PostEditChange();
+    const TArray<FString> Errors=UMaterialEditingLibrary::RecompileMaterial(Material);
+    for(const FString& Error:Errors)UE_LOG(LogTemp,Error,TEXT("COAST_DRAFT_CIRRUS_ERROR %s"),*Error);
+    if(!Errors.IsEmpty())return false;
+    if(bNew)FAssetRegistryModule::AssetCreated(Material);return SaveDraft(Material);
+}
+
 // Fixed engine path resolved by the commandlet constructor; no runtime path loading.
 UTexture2D* MidWaterNormal=nullptr;
 
@@ -648,8 +683,9 @@ int32 UCoastDraftImportCommandlet::Main(const FString& Params)
     const bool bNeedles = BuildMaterial(TEXT("M_CoastNeedlesDraft"), Textures, 6, 8, 9, 7, false, 1.0F, WorldAlignedTexture, WorldAlignedNormal);
     const bool bBark = BuildMaterial(TEXT("M_CoastBarkDraft"), Textures, 10, 11, 12, -1, false, 1.0F, WorldAlignedTexture, WorldAlignedNormal);
     const bool bWater = BuildWaterMaterial(WaterNormal);
+    const bool bCirrus = BuildCirrusMaterial(); // DEV-SEASKY
     const bool bGravel=BuildMaterial(TEXT("M_CoastGravelDraft"),Textures,13,14,15,-1,false,4000.0F/253.0F,WorldAlignedTexture,WorldAlignedNormal);
-    if (!(bGround && bRock && bNeedles && bBark && bWater && bGravel)) return 7;
-    UE_LOG(LogTemp, Display, TEXT("COAST_DRAFT_IMPORT_PASS textures=48 materials=6 state=DRAFT_NOT_USER_CONFIRMED"));
+    if (!(bGround && bRock && bNeedles && bBark && bWater && bGravel && bCirrus)) return 7;
+    UE_LOG(LogTemp, Display, TEXT("COAST_DRAFT_IMPORT_PASS textures=48 materials=7 state=DRAFT_NOT_USER_CONFIRMED"));
     return 0;
 }

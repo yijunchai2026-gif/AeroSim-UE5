@@ -213,7 +213,7 @@ public:
         float AngularFrequency;   // deep-water dispersion, rad/s
         float Phase;
     };
-    enum class ECoastalWaterShader : uint8 { Offset, Normal, Foam, Scattering, Absorption, Roughness, RockWetness };
+    enum class ECoastalWaterShader : uint8 { Offset, Normal, Foam, Scattering, Absorption, Roughness, RockWetness, Cirrus };
     static const TArray<FCoastalWaveComponent>& GetCoastalWaveSpectrum();
     static FVector GetCoastalOceanDisplacement(float X, float Y, float TimeSeconds, float AmplitudeScale = 1.0F);
     static float GetCoastalSeabedDepthCm(float X, float Y);
@@ -226,5 +226,7 @@ private:
     void ApplyCoastalSky(const FEnvironmentState& State);
     void ApplyCoastalSurfaceWeather(const FEnvironmentState& State);
     float AppliedSurfaceWetness = 0.0F;
+    UPROPERTY(VisibleAnywhere, Category = "Environment")
+    TObjectPtr<UStaticMeshComponent> CoastalCirrusDome;
     // DEV-SEASKY end
 };

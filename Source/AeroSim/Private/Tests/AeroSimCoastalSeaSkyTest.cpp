@@ -6,6 +6,7 @@
 #include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
+#include "Components/PostProcessComponent.h"
 #include "Components/VolumetricCloudComponent.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -102,8 +103,43 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
                 AddInfo(FString::Printf(TEXT("Cloud engine defaults: coverage %.3f density %.3f; applied density %.3f"), BaseCoverage, BaseDensity, Density));
             }
             TestTrue(TEXT("Clear cloud layer is a shallow fair-weather band"), Clouds->LayerBottomAltitude >= 1.2F && Clouds->LayerHeight <= 2.0F);
-            TestTrue(TEXT("Clear coverage bias is below the engine's broken-cumulus default (-0.2)"), bCoverage && Coverage < -.35F);
+            TestTrue(TEXT("Clear coverage bias is sparse but not empty (engine default -0.2 = broken cumulus)"), bCoverage && Coverage < -.25F && Coverage > -.42F);
+            const auto* Post = SeaSkyTest::Find<UPostProcessComponent>(Coast);
+            TestTrue(TEXT("Dynamic GI (Lumen) supplies sky occlusion and bounce for shaded ground"), Post && Post->Settings.bOverride_DynamicGlobalIlluminationMethod
+                && Post->Settings.DynamicGlobalIlluminationMethod == EDynamicGlobalIlluminationMethod::Lumen);
             TestTrue(TEXT("Cloud evolution frozen for a deterministic baseline"), bWind && Wind == 0.0F);
+        }
+    }
+    if (World) World->DestroyWorld(false);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoastalCirrusTest, "AeroSim.Environment.SeaSky.CirrusSparseDeterministic",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FCoastalCirrusTest::RunTest(const FString& Parameters)
+{
+    const FString Code = APacificCoastGraybox::GetCoastalWaterShaderCode(APacificCoastGraybox::ECoastalWaterShader::Cirrus);
+    TestTrue(TEXT("Cirrus field is time-independent (deterministic baseline, no wind)"), !Code.Contains(TEXT("T*"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("*T"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("+T"), ESearchCase::CaseSensitive));
+    TestTrue(TEXT("Cirrus is masked below the horizon and around the sun"), Code.Contains(TEXT("smoothstep(.06,.30,v.z)")) && Code.Contains(TEXT("dot(v,normalize(S))")));
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+    APacificCoastGraybox* Coast = World ? World->SpawnActor<APacificCoastGraybox>() : nullptr;
+    if (TestNotNull(TEXT("Coast spawns"), Coast))
+    {
+        const UStaticMeshComponent* Dome = Cast<UStaticMeshComponent>(SeaSkyTest::FindPart(Coast, TEXT("CoastalCirrusDome")));
+        if (TestNotNull(TEXT("Cirrus dome exists"), Dome))
+        {
+            TestTrue(TEXT("Dome is ~50 km and never collides or shadows"), Dome->Bounds.SphereRadius > 4000000 && Dome->GetCollisionEnabled() == ECollisionEnabled::NoCollision && !Dome->CastShadow);
+            FEnvironmentState State;
+            Coast->ApplyEnvironmentState(State);
+            float Opacity = -1;
+            const bool bMaterial = Dome->GetMaterial(0) && Dome->GetMaterial(0)->GetScalarParameterValue(FMaterialParameterInfo(TEXT("CirrusOpacity")), Opacity);
+            if (TestTrue(TEXT("Cirrus material is imported"), bMaterial))
+            {
+                TestTrue(TEXT("Clear cirrus is subtle and visible"), Dome->IsVisible() && Opacity > 0.0F && Opacity <= .4F);
+                State.SetWeather(EAeroSimWeather::Rain);
+                Coast->ApplyEnvironmentState(State);
+                TestFalse(TEXT("Rain deck hides cirrus"), Dome->IsVisible());
+            }
         }
     }
     if (World) World->DestroyWorld(false);
@@ -355,7 +391,8 @@ bool FCoastalMetalMaterialCompileTest::RunTest(const FString& Parameters)
         TEXT("/Game/Development/CoastDraft/Materials/M_CoastGroundDraft.M_CoastGroundDraft"),
         TEXT("/Game/Development/CoastDraft/Materials/M_CoastRockDraft.M_CoastRockDraft"),
         TEXT("/Game/Development/CoastDraft/Materials/M_CoastGravelDraft.M_CoastGravelDraft"),
-        TEXT("/Engine/EngineSky/VolumetricClouds/m_SimpleVolumetricCloud.m_SimpleVolumetricCloud")};
+        TEXT("/Engine/EngineSky/VolumetricClouds/m_SimpleVolumetricCloud.m_SimpleVolumetricCloud"),
+        TEXT("/Game/Development/CoastDraft/Materials/M_CoastCirrusDraft.M_CoastCirrusDraft")};
     for (const TCHAR* Path : Paths)
     {
         UMaterial* Material = TSoftObjectPtr<UMaterial>(FSoftObjectPath(Path)).LoadSynchronous();

@@ -13,11 +13,11 @@ def main():
         return
     if sys.argv[1:]:raise ValueError('Only --hero-cliff-only <sha256> is supported')
     assets=[{'path':str(p.relative_to(ROOT)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size} for p in sorted((ROOT/'Content/Development/CoastDraft').rglob('*.uasset'))]
-    # CoastDraftImport: 34 textures + 6 materials; HabitatDraftImport: 41 textures + 11 materials + 9 meshes.
+    # CoastDraftImport: 34 textures + 7 materials (incl. DEV-SEASKY cirrus); HabitatDraftImport: 41 textures + 11 materials + 9 meshes.
     # Plus, once imported and attested, the single R5 hero-cove scan mesh (fixed intake contract).
     from hero_cove_scan_contract import HERO_ASSET, source_entries, source_contract
     hero=(ROOT/HERO_ASSET).is_file()
-    if len(assets)!=115+hero:raise ValueError('Expected exactly 89 textures, 17 materials and 9 meshes (+1 hero scan)')
+    if len(assets)!=116+hero:raise ValueError('Expected exactly 89 textures, 18 materials and 9 meshes (+1 hero scan)')
     sources=[{'path':str(p.relative_to(ROOT)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'license':'CC0-1.0'} for p in sorted((ROOT/'SourceAssets/EnvironmentDraft').rglob('*'))
              if p.is_file() and 'HeroCoveScan' not in p.relative_to(ROOT/'SourceAssets/EnvironmentDraft').parts and (p.suffix in ('.png','.jpg','.gltf','.bin') or p.name.endswith('.mesh.json'))]
     manifest={'schema':'aerosim.environment-draft.assets/v1','state':'DRAFT_NOT_USER_CONFIRMED','version':'coast-draft-20261018-r1','source_pages':['https://polyhaven.com/a/pine_tree_01','https://polyhaven.com/a/rocky_terrain_02','https://polyhaven.com/a/cliff_side','https://polyhaven.com/a/sandy_gravel_02',

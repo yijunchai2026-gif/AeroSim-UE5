@@ -41,6 +41,12 @@ constexpr float VelocityResponse = 1.8F;
 constexpr float YawRateDegreesPerSecond = 50.0F;
 constexpr float CommandedTiltDegrees = 18.0F;
 constexpr float CentimetersPerMeter = 100.0F;
+// R5 user decision (2026-10-19): consumer-drone vertical envelope. Descent stays below climb
+// (vortex-ring realism); a bounded vertical acceleration gives smooth start/brake and soft taps.
+constexpr float MaxClimbCmPerSecond = 800.0F;
+constexpr float MaxDescentCmPerSecond = 600.0F;
+constexpr float VerticalResponse = 2.2F;
+constexpr float MaxVerticalAccelerationCmPerSecondSquared = 700.0F;
 }
 
 void FFlightControlInput::Clamp()
@@ -163,8 +169,15 @@ void FFlightModel::Advance(const FFlightControlInput& RawInput, const float Delt
     FVector Horizontal(Input.Pitch,Input.Roll,0);
     Horizontal=Horizontal.GetClampedToMaxSize(1.0F)*AeroSimFlight::CruiseSpeedCmPerSecond;
     FVector TargetVelocity=FRotator(0,Rotation.Yaw,0).RotateVector(Horizontal);
-    TargetVelocity.Z=Input.Throttle*400.0F;
+    TargetVelocity.Z=Input.Throttle*(Input.Throttle>=0.0F ? AeroSimFlight::MaxClimbCmPerSecond : AeroSimFlight::MaxDescentCmPerSecond);
+    const float VerticalTarget=static_cast<float>(TargetVelocity.Z);
+    TargetVelocity.Z=Velocity.Z;
     Velocity = FMath::VInterpTo(Velocity, TargetVelocity, Step, AeroSimFlight::VelocityResponse);
+    // Vertical: first-order response with a bounded acceleration, so full-throttle climbs and
+    // descents ramp and brake smoothly and a short tap moves the aircraft only a few decimetres.
+    const float VerticalAcceleration=FMath::Clamp((VerticalTarget-static_cast<float>(Velocity.Z))*AeroSimFlight::VerticalResponse,
+        -AeroSimFlight::MaxVerticalAccelerationCmPerSecondSquared,AeroSimFlight::MaxVerticalAccelerationCmPerSecondSquared);
+    Velocity.Z+=VerticalAcceleration*Step;
     Position += Velocity * Step;
     if (Surface.bHasSupport && Position.Z < Surface.SupportedModelZCm)
     {
