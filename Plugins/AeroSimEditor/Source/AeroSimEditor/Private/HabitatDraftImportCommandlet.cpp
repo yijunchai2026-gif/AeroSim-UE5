@@ -1,4 +1,6 @@
 #include "HabitatDraftImportCommandlet.h"
+#include "HeroCliffDraftImport.h"
+#include "Misc/Parse.h"
 #include "AssetImportTask.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetToolsModule.h"
@@ -241,6 +243,7 @@ bool Mesh(const TCHAR* Name,UMaterialInterface* M)
 UHabitatDraftImportCommandlet::UHabitatDraftImportCommandlet(){IsClient=false;IsEditor=true;IsServer=false;LogToConsole=true;}
 int32 UHabitatDraftImportCommandlet::Main(const FString& Params)
 {
+    if(FParse::Param(*Params,TEXT("HeroCliffOnly")))return ImportHeroCliffDraft();
     using namespace HabitatDraft;
     auto& Tools=FModuleManager::LoadModuleChecked<FAssetToolsModule>(TEXT("AssetTools"));
     TMap<FString,UTexture2D*> Imported;

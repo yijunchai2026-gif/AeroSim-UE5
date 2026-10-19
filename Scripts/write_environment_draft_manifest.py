@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 """Freeze the fixed development material import after its successful execution."""
-import hashlib,json
+import hashlib,json,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 from environment_draft_policy import validate_environment_draft
 
 def main():
+    if sys.argv[1:] == ['--hero-cliff-only']:
+        from hero_cove_scan_contract import freeze_imported_asset
+        changed=freeze_imported_asset(ROOT)
+        print('Hero scan manifest appended' if changed else 'Hero scan already registered; no changes')
+        return
+    if sys.argv[1:]:raise ValueError('Only --hero-cliff-only is supported')
     assets=[{'path':str(p.relative_to(ROOT)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size} for p in sorted((ROOT/'Content/Development/CoastDraft').rglob('*.uasset'))]
     # CoastDraftImport: 34 textures + 6 materials; HabitatDraftImport: 37 textures + 10 materials + 9 meshes.
     if len(assets)!=110:raise ValueError('Expected exactly 85 textures, 16 materials and 9 meshes')
     sources=[{'path':str(p.relative_to(ROOT)),'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'license':'CC0-1.0'} for p in sorted((ROOT/'SourceAssets/EnvironmentDraft').rglob('*'))
-             if p.is_file() and (p.suffix in ('.png','.jpg','.gltf','.bin') or p.name.endswith('.mesh.json'))]
+             if p.is_file() and 'HeroCoveScan' not in p.relative_to(ROOT/'SourceAssets/EnvironmentDraft').parts and (p.suffix in ('.png','.jpg','.gltf','.bin') or p.name.endswith('.mesh.json'))]
     manifest={'schema':'aerosim.environment-draft.assets/v1','state':'DRAFT_NOT_USER_CONFIRMED','version':'coast-draft-20261018-r1','source_pages':['https://polyhaven.com/a/pine_tree_01','https://polyhaven.com/a/rocky_terrain_02','https://polyhaven.com/a/cliff_side','https://polyhaven.com/a/sandy_gravel_02',
         'https://polyhaven.com/a/withered_grass','https://polyhaven.com/a/sparse_grass','https://polyhaven.com/a/dry_decay_leaves','https://polyhaven.com/a/dry_ground_rocks','https://polyhaven.com/a/dirt','https://polyhaven.com/a/aerial_grass_rock','https://polyhaven.com/a/rocky_trail_02',
         'https://polyhaven.com/a/grass_medium_01','https://polyhaven.com/a/shrub_03','https://polyhaven.com/a/pine_bark','https://polyhaven.com/a/bark_willow_02',
