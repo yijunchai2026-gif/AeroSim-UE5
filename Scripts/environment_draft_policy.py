@@ -2,7 +2,7 @@
 import hashlib,json
 from pathlib import Path
 from hero_cove_scan_contract import HERO_NAME, validate_manifest_contract
-MATERIALS={'M_CoastGroundDraft','M_CoastRockDraft','M_CoastNeedlesDraft','M_CoastBarkDraft','M_CoastWaterDraft','M_CoastGravelDraft'}
+MATERIALS={'M_CoastGroundDraft','M_CoastRockDraft','M_CoastNeedlesDraft','M_CoastBarkDraft','M_CoastWaterDraft','M_CoastGravelDraft','M_CoastCirrusDraft'}
 TEXTURES={f'T_Coast{part}_{channel}' for part in ('Ground','Rock','Needles','Bark','Gravel','WitheredGrass','SparseGrass','LeafLitter','StonyGround','EarthTrail','WornRock','RockFace','Foam') for channel in ('BaseColor','Normal','Roughness')}|{'T_CoastNeedles_Alpha','T_CoastDetailDirt_Normal','T_CoastDetailDirt_Roughness','T_CoastMacroGrassRock_BaseColor','T_CoastWitheredGrass_Height','T_CoastSparseGrass_Height','T_CoastLeafLitter_Height','T_CoastStonyGround_Height','T_CoastFoam_Opacity'}
 # DEV-FLORA habitat/tree intake (HabitatDraftImportCommandlet, fixed whitelist).
 MATERIALS|={'M_CoastDryGrassDraft','M_CoastBroadShrubDraft','M_FloraFernDraft','M_FloraRooibosDraft','M_FloraPineNeedlesDraft','M_FloraFirNeedlesDraft',

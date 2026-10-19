@@ -114,6 +114,38 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoastalCirrusTest, "AeroSim.Environment.SeaSky.CirrusSparseDeterministic",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FCoastalCirrusTest::RunTest(const FString& Parameters)
+{
+    const FString Code = APacificCoastGraybox::GetCoastalWaterShaderCode(APacificCoastGraybox::ECoastalWaterShader::Cirrus);
+    TestTrue(TEXT("Cirrus field is time-independent (deterministic baseline, no wind)"), !Code.Contains(TEXT("T*"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("*T"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("+T"), ESearchCase::CaseSensitive));
+    TestTrue(TEXT("Cirrus is masked below the horizon and around the sun"), Code.Contains(TEXT("smoothstep(.06,.30,v.z)")) && Code.Contains(TEXT("dot(v,normalize(S))")));
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+    APacificCoastGraybox* Coast = World ? World->SpawnActor<APacificCoastGraybox>() : nullptr;
+    if (TestNotNull(TEXT("Coast spawns"), Coast))
+    {
+        const UStaticMeshComponent* Dome = Cast<UStaticMeshComponent>(SeaSkyTest::FindPart(Coast, TEXT("CoastalCirrusDome")));
+        if (TestNotNull(TEXT("Cirrus dome exists"), Dome))
+        {
+            TestTrue(TEXT("Dome is ~50 km and never collides or shadows"), Dome->Bounds.SphereRadius > 4000000 && Dome->GetCollisionEnabled() == ECollisionEnabled::NoCollision && !Dome->CastShadow);
+            FEnvironmentState State;
+            Coast->ApplyEnvironmentState(State);
+            float Opacity = -1;
+            const bool bMaterial = Dome->GetMaterial(0) && Dome->GetMaterial(0)->GetScalarParameterValue(FMaterialParameterInfo(TEXT("CirrusOpacity")), Opacity);
+            if (TestTrue(TEXT("Cirrus material is imported"), bMaterial))
+            {
+                TestTrue(TEXT("Clear cirrus is subtle and visible"), Dome->IsVisible() && Opacity > 0.0F && Opacity <= .4F);
+                State.SetWeather(EAeroSimWeather::Rain);
+                Coast->ApplyEnvironmentState(State);
+                TestFalse(TEXT("Rain deck hides cirrus"), Dome->IsVisible());
+            }
+        }
+    }
+    if (World) World->DestroyWorld(false);
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoastalEnvironmentDeterminismTest, "AeroSim.Environment.SeaSky.WeatherDerivesFromOneState",
     EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FCoastalEnvironmentDeterminismTest::RunTest(const FString& Parameters)
@@ -359,7 +391,8 @@ bool FCoastalMetalMaterialCompileTest::RunTest(const FString& Parameters)
         TEXT("/Game/Development/CoastDraft/Materials/M_CoastGroundDraft.M_CoastGroundDraft"),
         TEXT("/Game/Development/CoastDraft/Materials/M_CoastRockDraft.M_CoastRockDraft"),
         TEXT("/Game/Development/CoastDraft/Materials/M_CoastGravelDraft.M_CoastGravelDraft"),
-        TEXT("/Engine/EngineSky/VolumetricClouds/m_SimpleVolumetricCloud.m_SimpleVolumetricCloud")};
+        TEXT("/Engine/EngineSky/VolumetricClouds/m_SimpleVolumetricCloud.m_SimpleVolumetricCloud"),
+        TEXT("/Game/Development/CoastDraft/Materials/M_CoastCirrusDraft.M_CoastCirrusDraft")};
     for (const TCHAR* Path : Paths)
     {
         UMaterial* Material = TSoftObjectPtr<UMaterial>(FSoftObjectPath(Path)).LoadSynchronous();

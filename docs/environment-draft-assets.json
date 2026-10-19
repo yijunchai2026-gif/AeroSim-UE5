@@ -43,6 +43,11 @@
       "bytes": 17194
     },
     {
+      "path": "Content/Development/CoastDraft/Materials/M_CoastCirrusDraft.uasset",
+      "sha256": "142ee5ae3cef9e0087cb35c3b4242c446d103479318911c7d98cb7fe4593f55b",
+      "bytes": 10144
+    },
+    {
       "path": "Content/Development/CoastDraft/Materials/M_CoastDryGrassDraft.uasset",
       "sha256": "2ed9e1f4bceb52ff76aa5a1b0cd04ec08d51a203e5ba008182b2458a5d6755f2",
       "bytes": 17168

@@ -288,6 +288,21 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("float crest=saturate(h/(A*42+1)*.5+.5);")
             + TEXT("float top=lerp(110,210,crest)+60*(noise.f(P.xy*.004+float2(P.z*.002,0))-.5);")
             + TEXT("return 1-smoothstep(top*.35,top,above);");
+    case ECoastalWaterShader::Cirrus:
+        // Inputs P (dome world pos), C (camera), S (direction toward the sun). Returns 0..1
+        // cirrus coverage: sparse fibrous streaks projected on a ~9 km layer, elongated along a
+        // fixed WSW jet, only above the horizon and never veiling the sun. Time-independent,
+        // so the Clear/seed-21630 baseline is deterministic.
+        return NoiseHelpers()
+            + TEXT("float3 v=normalize(P-C); float up=smoothstep(.06,.30,v.z);")
+            + TEXT("float2 q=v.xy/max(v.z,.06)*9000.0;")
+            + TEXT("float2 jet=float2(.94,.34); float2 r=float2(dot(q,jet),dot(q,float2(-jet.y,jet.x)));")
+            + TEXT("float band=noise.f(float2(r.x*.00012,r.y*.0022));")
+            + TEXT("float wisp=noise.f(float2(r.x*.0009,r.y*.006)+3.1);")
+            + TEXT("float cover=smoothstep(.58,.80,noise.f(q*.00006+7.3));")
+            + TEXT("float streak=smoothstep(.45,.85,band*.7+wisp*.3)*cover;")
+            + TEXT("float sun=1-smoothstep(.975,.995,dot(v,normalize(S)));")
+            + TEXT("return saturate(streak*up*sun);");
     default:
         return TEXT("return 0;");
     }
