@@ -145,3 +145,16 @@ RTH 是导航 leg 切换，不是自动飞行；保留真实输入、速度和�
 ### 打包 smoke 按键参考（不按 Q/E，机头保持 +X；W=+X S=−X D=+Y A=−Y，Shift 升 Ctrl 降）
 
 Enter、Enter → Shift ≈1 s 起飞 → W 穿 C1 → W+A ≈9.5 s 至崖上点 → W ≈3.5 s，提前约 10 m 松开，制动到 <1 m/s → Ctrl ≈9 s（HEIGHT 剩约 −3 m 时松开，出现 BRAKE 提示，VERT ≤1.5 时接受）→ D 略带 W 沿岸到 C3 停稳 → Shift ≈8 s（剩约 4 m 松开）→ S ≈3 s → S ≈19 s 到林口（<6 m/s）→ A+S 进入 C4 → 跟箭头走廊到 C5 → D+W 反向、出口 → W+D ≈9 s 到 mat 上方停稳 → Ctrl 至落地，出 Result。MCP Inspect 观察 `guide_leg_id/guide_progress_cm`。
+
+## R6a 真实输入发现后的接受窗拆分（2026-10-19）
+
+**PMO 发现**（打包 R6a，integration `445ed8f`）：闭环真实按键驱动 25 s 到达 C1 与 nav-03 引导点 (16806,-12000,350)，之后在其 1–2 m 内以 1–4 m/s 绕行 6.5 分钟仍未完成该段。复核：该点当时窗口为 R300 ±150、无实际速度限制，样本本应满足；卡住的直接原因是**进度窗**——进度只在 `[progress-2 m, progress+10 m]` 内、且偏离直线 ≤6 m 时增长，驾驶员早段偏出管道后在终点附近重新入管，进度落后 >10 m，再也追不上。另有驱动器阻尼不足。按合同"可依据实际操控试验调整并记录"，本批（DEV-FLIGHT，合入 integration `2e1c600` 之后）调整：
+
+- **按类型拆分接受**：Transit/转向点（nav-02 C1、03、08、09）改为 pass-through：平面 ≤600 cm 且高度 ±200 cm，**或**在 ±200 cm 高度内、2×半径内越过过引导点、垂直于该段末段平面方向的门平面；无速度要求。Corridor 段（nav-10..13）沿折线 pass-through：在 150 cm 管道内到达折线末端（R150 ±150），无速度要求。
+- **安全门不变**：起飞柱、nav-04 离岸下降柱顶（R150 ±75，平面 ≤100、竖直 ≤150 cm/s）、nav-05 下降柱底 C2、nav-06 终点 C3/爬升柱底、nav-07 爬升柱顶、nav-14 mat 上方（R100 ±75，≤100/≤150）与 nav-15 落地保持原紧窗与竖直制动窗。计分规则、未来检查点诊断、恢复/触水/碰撞/暂停规则未变。
+- **Transit 进度追赶**：只对直线 Transit 段，若有界窗内不在管道，则在 `[progress, L]` 上再投影，回到 ≤6 m 管道即续接进度（直线无自交，不能借此跳过竖直或走廊安全门）；Column 与 Corridor 仍为有界窗。
+- HUD 显示 `PASS THROUGH 6 m / +-2 m` 或 `STOP 1.5 m / +-0.8 m <=1.0 m/s VERT <=1.5`；MCP Inspect 新增只读 `guide_pass_through`、`guide_accept_radius_cm`、`guide_accept_height_cm`、`guide_accept_planar_speed_cm`、`guide_accept_vertical_speed_cm`。
+
+新增反例：偏离 nav-03 管道 15 m 飞行不记进度；在终点 1.5 m 处以 3 m/s 绕行（复现 R6a）→ 完成；以 17 m/s、侧偏 4 m 穿过 C1 → 越门完成且 C1 按原半径计分；nav-04 下降柱顶以 5 m/s 经过 → 不完成。
+
+**实测**（合入 terrain R6 后 shore 微调，航线 1176 m）：逐米真实碰撞 1201 样本、0 失败段；脚本语义输入全程 Result、5/5、碰撞/越界/漏检/触水均 0，**111.5 s**（R5b 113.1 s）：起飞 1.1、C1 2.8、内陆到崖 10.0、越崖制动 6.6、下降柱 10.7、沿岸 C3 7.4、爬升柱 9.4、回崖 3.4、田野到林口 20.0、C4 3.6、走廊 9.6、反向 10.0、出口 3.3、返场 12.2、落地 1.3 s。真实按键全程与 60–90 s 仍 NOT_RUN；按键参考同 R5b，转向点无需停稳，只在 BRAKE/STOP 提示处制动。

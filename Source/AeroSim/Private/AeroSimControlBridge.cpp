@@ -211,6 +211,11 @@ TSharedRef<FJsonObject> UAeroSimControlBridge::Inspect() const
         State->SetStringField(TEXT("guide_leg_id"),Guide.LegId.ToString());
         State->SetStringField(TEXT("guide_id"),Guide.GuideId.ToString());
         State->SetBoolField(TEXT("guide_recovery"),Guide.bRecovery);
+        State->SetBoolField(TEXT("guide_pass_through"),Guide.bPassThrough);
+        State->SetNumberField(TEXT("guide_accept_radius_cm"),Guide.AcceptRadiusCm);
+        State->SetNumberField(TEXT("guide_accept_height_cm"),FMath::Max(Guide.AcceptBelowCm,Guide.AcceptAboveCm));
+        State->SetNumberField(TEXT("guide_accept_planar_speed_cm"),Guide.MaxAcceptPlanarSpeedCm);
+        State->SetNumberField(TEXT("guide_accept_vertical_speed_cm"),Guide.MaxAcceptVerticalSpeedCm);
         State->SetNumberField(TEXT("guide_progress_cm"),Mission.GetGuidanceLegProgressCm());
         VectorFields(State,TEXT("guide_target_cm"),Guide.Position);
         VectorFields(State,TEXT("guide_point_cm"),Guide.GuidePoint);

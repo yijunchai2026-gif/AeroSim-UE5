@@ -192,8 +192,18 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
         }
         else if (Kind == EPhase4GuideKind::Corridor)
         {
-            Leg.AcceptRadiusCm = 150.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F;
-            Leg.TrackToleranceCm = 150.0F; Leg.LookaheadCm = 600.0F; Leg.MaxAcceptPlanarSpeedCm = 600.0F;
+            // Pass-through along the polyline (R6a real-input finding): reach the end of the verified
+            // polyline inside the corridor tube; no speed window.
+            Leg.AcceptRadiusCm = 150.0F; Leg.AcceptBelowCm = 150.0F; Leg.AcceptAboveCm = 150.0F;
+            Leg.TrackToleranceCm = 150.0F; Leg.LookaheadCm = 600.0F; Leg.MaxAcceptPlanarSpeedCm = 10000.0F;
+            Leg.bPassThrough = true;
+        }
+        else if (Kind == EPhase4GuideKind::Transit)
+        {
+            // Mid-air transit/turn points are pass-through gates (>=6 m planar, +-2 m, or crossing the
+            // gate plane), no speed requirement. Safety brake points override this below.
+            Leg.AcceptRadiusCm = 600.0F; Leg.AcceptBelowCm = 200.0F; Leg.AcceptAboveCm = 200.0F;
+            Leg.MaxAcceptPlanarSpeedCm = 10000.0F; Leg.bPassThrough = true;
         }
         return Leg;
     };
@@ -218,7 +228,7 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
         auto& Leg = Add(TEXT("nav-04-cross-cliff-out"), TEXT("guide-offshore-descent-top"), TEXT("CROSS THE CLIFF / BRAKE OFFSHORE BEFORE DESCENDING"),
             EPhase4GuideKind::Transit, {FVector(C2.X, C2.Y, Hout)});
         Leg.AcceptRadiusCm = 150.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F; Leg.MaxAcceptPlanarSpeedCm = 100.0F;
-        Leg.MaxAcceptVerticalSpeedCm = 150.0F;
+        Leg.MaxAcceptVerticalSpeedCm = 150.0F; Leg.bPassThrough = false; // safety gate: descent column top
     }
     // 4. Offshore vertical descent column to C2 (XY locked, slow).
     Add(TEXT("nav-05-offshore-descent"), TEXT("checkpoint-02"), TEXT("DESCEND VERTICALLY / DIAMOND 2 TIDAL ROCK"),
@@ -237,7 +247,7 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
         }
         auto& Leg = Add(TEXT("nav-06-alongshore-low-water"), TEXT("checkpoint-03"), TEXT("FOLLOW THE SHORE LOW / SQUARE 3 LOW WATER"),
             EPhase4GuideKind::Transit, Curve, 2);
-        Leg.AcceptRadiusCm = 150.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F;
+        Leg.AcceptRadiusCm = 150.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F; Leg.bPassThrough = false; // C3 = climb column bottom
         Leg.MaxAcceptPlanarSpeedCm = 100.0F; Leg.TrackToleranceCm = 300.0F;
         // C3 is 4 m above the sea: brake the descent before it (no overshoot into the water).
         Leg.MaxAcceptVerticalSpeedCm = 150.0F; Leg.VerticalBrakeZoneCm = 1000.0F;
@@ -251,7 +261,6 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
     {
         auto& Leg = Add(TEXT("nav-07-sea-climb"), TEXT("guide-sea-climb-top"), TEXT("CLIMB VERTICALLY BEFORE TURNING INLAND"),
             EPhase4GuideKind::VerticalAscent, {FVector(C3.X, C3.Y, Hin)});
-        Leg.MaxAcceptPlanarSpeedCm = 300.0F;
     }
     // 7. Back over the cliff, then across the open field to the forest mouth.
     Add(TEXT("nav-08-cross-cliff-in"), TEXT("guide-above-cliff-in"), TEXT("CROSS ABOVE THE CLIFF / HOLD ALTITUDE"),
@@ -260,7 +269,6 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
     {
         auto& Leg = Add(TEXT("nav-09-field-to-forest-mouth"), TEXT("guide-forest-mouth-approach"), TEXT("OPEN FIELD / SLOW DOWN AT THE FOREST MOUTH"),
             EPhase4GuideKind::Transit, {MouthApproach});
-        Leg.MaxAcceptPlanarSpeedCm = 600.0F;
     }
     // 8. Corridor: entry (C4), polyline follow to C5 along CoastFlora::GetLayout().Corridor.
     Add(TEXT("nav-10-forest-entry"), TEXT("checkpoint-04"), TEXT("TRIANGLE 4 / FOREST ENTRY / LOW AND SLOW"),
@@ -291,7 +299,8 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
     {
         auto& Leg = Add(TEXT("nav-14-field-return"), TEXT("guide-home-above-mat"), TEXT("RETURN HOME / BRAKE ABOVE THE MAT"),
             EPhase4GuideKind::Transit, {FVector(Mouth, Hhome), HomeAbove});
-        Leg.bReturnLeg = true; Leg.AcceptRadiusCm = 100.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F;
+        Leg.bReturnLeg = true; Leg.bPassThrough = false; // safety gate: landing column top
+        Leg.AcceptRadiusCm = 100.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F;
         Leg.MaxAcceptPlanarSpeedCm = 100.0F; Leg.MaxAcceptVerticalSpeedCm = 150.0F;
     }
     {
@@ -535,6 +544,15 @@ void FPhase4MissionSession::ObserveGuidance(const FVector& Position, const FVect
     const float Along = Leg.Project(Position, GuidanceProgressCm - 200.0F, GuidanceProgressCm + 1000.0F, Distance);
     if (Distance <= Leg.TrackToleranceCm && Planar <= Leg.MaxTrackPlanarSpeedCm)
         GuidanceProgressCm = FMath::Max(GuidanceProgressCm, Along);
+    else if (Leg.Kind == EPhase4GuideKind::Transit && Planar <= Leg.MaxTrackPlanarSpeedCm)
+    {
+        // R6a: a pilot who left the transit tube and rejoins it further along (a straight verified
+        // segment, no loops) must not be stranded behind a 10 m window. Columns and corridor keep
+        // the bounded window, so vertical/corridor safety gates still cannot be skipped.
+        float Rejoin = 0.0F;
+        const float RejoinAlong = Leg.Project(Position, GuidanceProgressCm, Leg.GetLength(), Rejoin);
+        if (Rejoin <= Leg.TrackToleranceCm) GuidanceProgressCm = FMath::Max(GuidanceProgressCm, RejoinAlong);
+    }
 
     if (Stage == EPhase4MissionStage::Inspection)
     {
@@ -560,12 +578,25 @@ void FPhase4MissionSession::ObserveGuidance(const FVector& Position, const FVect
     const float Rise = static_cast<float>(Position.Z - End.Z);
     const float Length = Leg.GetLength();
     const bool bScored = Leg.ScoredCheckpointIndex == INDEX_NONE || NextCheckpointIndex > Leg.ScoredCheckpointIndex;
-    const bool bAccepted = bScored
-        && GuidanceProgressCm >= Length - FMath::Max3(Leg.AcceptRadiusCm, Leg.AcceptBelowCm, Leg.AcceptAboveCm) - 50.0F
-        && FVector::Dist2D(Position, End) <= Leg.AcceptRadiusCm
-        && Rise >= -Leg.AcceptBelowCm && Rise <= Leg.AcceptAboveCm
-        && Planar <= Leg.MaxAcceptPlanarSpeedCm
-        && FMath::Abs(static_cast<float>(Velocity.Z)) <= Leg.MaxAcceptVerticalSpeedCm;
+    const bool bHeight = Rise >= -Leg.AcceptBelowCm && Rise <= Leg.AcceptAboveCm;
+    const bool bProgress = GuidanceProgressCm >= Length - FMath::Max3(Leg.AcceptRadiusCm, Leg.AcceptBelowCm, Leg.AcceptAboveCm) - 50.0F;
+    bool bAccepted = false;
+    if (Leg.bPassThrough)
+    {
+        // Inside the window, or across the gate plane through the guide point (perpendicular to the
+        // leg's last planar direction) within 2x the radius; no speed requirement.
+        const FVector2D Last = Leg.Path.Num() > 1 ? FVector2D(End - Leg.Path[Leg.Path.Num() - 2]) : FVector2D::ZeroVector;
+        const bool bCrossed = Last.SizeSquared() > 1.0 && FVector2D::DotProduct(FVector2D(Position - End), Last.GetSafeNormal()) >= 0.0
+            && FVector::Dist2D(Position, End) <= 2.0F * Leg.AcceptRadiusCm;
+        bAccepted = bScored && bProgress && bHeight && (FVector::Dist2D(Position, End) <= Leg.AcceptRadiusCm || bCrossed);
+    }
+    else
+    {
+        bAccepted = bScored && bProgress && bHeight
+            && FVector::Dist2D(Position, End) <= Leg.AcceptRadiusCm
+            && Planar <= Leg.MaxAcceptPlanarSpeedCm
+            && FMath::Abs(static_cast<float>(Velocity.Z)) <= Leg.MaxAcceptVerticalSpeedCm;
+    }
     if (bAccepted) AdvanceGuidanceLeg();
 }
 
@@ -649,6 +680,7 @@ void FPhase4MissionSession::RefreshGuidance(const FVector& Position)
         Target.AcceptRadiusCm = Leg.AcceptRadiusCm; Target.AcceptBelowCm = Leg.AcceptBelowCm; Target.AcceptAboveCm = Leg.AcceptAboveCm;
         Target.MaxAcceptPlanarSpeedCm = Leg.MaxAcceptPlanarSpeedCm;
         Target.MaxAcceptVerticalSpeedCm = Leg.MaxAcceptVerticalSpeedCm;
+        Target.bPassThrough = Leg.bPassThrough;
         const float HeightToGo = FMath::Abs(static_cast<float>(Leg.Path.Last().Z - Position.Z));
         Target.bVerticalBrake = Leg.VerticalBrakeZoneCm > 0.0F && HeightToGo <= Leg.VerticalBrakeZoneCm
             && FVector::Dist2D(Position, Leg.Path.Last()) <= FMath::Max(Leg.TrackToleranceCm, 300.0F);
