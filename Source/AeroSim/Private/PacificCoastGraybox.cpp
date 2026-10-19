@@ -28,15 +28,17 @@ bool IsCoastalCourseDebugEnabled()
 #endif
 }
 
-const TArray<FVector> RoutePoints = {
-    FVector(0.0F, 0.0F, 100.0F),
-    FVector(1800.0F, 0.0F, 400.0F),
-    FVector(4000.0F, -1200.0F, 600.0F),
-    FVector(6500.0F, -500.0F, 700.0F),
-    FVector(9000.0F, 2000.0F, 700.0F),
-    FVector(6500.0F, 4000.0F, 600.0F),
-    FVector(0.0F, 0.0F, 100.0F)
-};
+// World positions, shared by mission and environment clearance. The first slice traverses
+// a representative corridor segment; full corridor traversal has its own safety/regression gate.
+const TArray<FVector> RoutePoints = []
+{
+    const FVector Home(55,79,APacificCoastGraybox::GetCoastalLandHeight(55,79)+1.8F);
+    return TArray<FVector>{Home, FVector(4500,0,500),
+        FVector(APacificCoastGraybox::GetCoastalShoreX(-12000)+2500,-12000,APacificCoastGraybox::SeaLevelCm+1200),
+        FVector(APacificCoastGraybox::GetCoastalShoreX(-6000)+3500,-6000,APacificCoastGraybox::SeaLevelCm+400),
+        FVector(-15500,-6600,APacificCoastGraybox::GetCoastalLandHeight(-15500,-6600)+250),
+        FVector(-17600,-10600,APacificCoastGraybox::GetCoastalLandHeight(-17600,-10600)+250), Home};
+}();
 
 constexpr FLinearColor LandA(0.12F, 0.28F, 0.10F);
 constexpr FLinearColor LandB(0.16F, 0.36F, 0.13F);
@@ -72,14 +74,14 @@ bool FPacificCoastGrayboxContract::IsInsideWorld(const FVector& Point)
 {
     return FMath::Abs(Point.X) <= WorldHalfExtentCm
         && FMath::Abs(Point.Y) <= WorldHalfExtentCm
-        && Point.Z >= 0.0F;
+        && Point.Z >= APacificCoastGraybox::SeaLevelCm + 100.0F;
 }
 
 bool FPacificCoastGrayboxContract::IsGeometryValid()
 {
     if (RoutePoints.Num() != GateCount + 2
         || !RoutePoints[0].Equals(RoutePoints.Last())
-        || RoutePoints[0].Size2D() > TakeoffPadRadiusCm)
+        || FVector::Dist2D(RoutePoints[0],FVector(55,79,0)) > TakeoffPadRadiusCm)
     {
         return false;
     }

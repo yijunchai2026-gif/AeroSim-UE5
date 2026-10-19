@@ -8,6 +8,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/LocalPlayer.h"
+#include "Engine/World.h"
+#include "CollisionQueryParams.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerController.h"
@@ -19,6 +21,8 @@
 #include "InputModifiers.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Misc/CoreDelegates.h"
+#include "PacificCoastGraybox.h"
+#include "ProceduralMeshComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogAeroSimInput, Log, All);
@@ -29,17 +33,13 @@ namespace AeroSimFlight
 constexpr float TakeoffThreshold = 0.55F;
 constexpr float LandingThreshold = -0.55F;
 constexpr float FlightAltitudeCm = 300.0F;
-constexpr float LandingEntryAltitudeCm = 600.0F;
+constexpr float LandingEntryAltitudeCm = 45.0F;
 constexpr float TakeoffAccelerationCmPerSecondSquared = 900.0F;
 constexpr float LandingDescentCmPerSecond = 250.0F;
 constexpr float CruiseSpeedCmPerSecond = 1800.0F;
-constexpr float MinimumFlightSpeedCmPerSecond = 500.0F;
 constexpr float VelocityResponse = 1.8F;
-constexpr float PitchRateDegreesPerSecond = 40.0F;
-constexpr float RollRateDegreesPerSecond = 65.0F;
 constexpr float YawRateDegreesPerSecond = 50.0F;
-constexpr float MaximumPitchDegrees = 60.0F;
-constexpr float MaximumRollDegrees = 75.0F;
+constexpr float CommandedTiltDegrees = 18.0F;
 constexpr float CentimetersPerMeter = 100.0F;
 }
 
@@ -67,7 +67,7 @@ bool FFlightControlInput::IsNeutral() const
         && FMath::IsNearlyZero(Throttle);
 }
 
-void FFlightModel::Advance(const FFlightControlInput& RawInput, const float DeltaSeconds)
+void FFlightModel::Advance(const FFlightControlInput& RawInput, const float DeltaSeconds, const FFlightSurfaceContext& Surface)
 {
     if (Phase == EFlightPhase::Paused || DeltaSeconds <= 0.0F)
     {
@@ -75,30 +75,35 @@ void FFlightModel::Advance(const FFlightControlInput& RawInput, const float Delt
     }
 
     FFlightControlInput Input = RawInput;
+    bSupportImpact = false;
     Input.Clamp();
     const float Step = FMath::Min(DeltaSeconds, 0.1F);
 
     if (Phase == EFlightPhase::Grounded)
     {
-        Position.Z = 0.0F;
-        Velocity = FVector::ZeroVector;
-        Rotation.Roll = 0.0F;
-        Rotation.Pitch = 0.0F;
-        if (Input.Throttle >= AeroSimFlight::TakeoffThreshold)
+        if (!Surface.bHasSupport || FMath::Abs(Position.Z-Surface.SupportedModelZCm)>2.0F)
         {
-            Phase = EFlightPhase::Takeoff;
+            Phase = EFlightPhase::Flight;
         }
-        return;
+        else
+        {
+            Position.Z = Surface.SupportedModelZCm;
+            Velocity = FVector::ZeroVector;
+            Rotation.Roll = 0.0F;
+            Rotation.Pitch = 0.0F;
+            if (Input.Throttle >= AeroSimFlight::TakeoffThreshold)
+            {
+                TakeoffSurfaceZCm = Surface.SupportedModelZCm;
+                Phase = EFlightPhase::Takeoff;
+            }
+            return;
+        }
     }
 
-    Rotation.Pitch = FMath::Clamp(
-        Rotation.Pitch + Input.Pitch * AeroSimFlight::PitchRateDegreesPerSecond * Step,
-        -AeroSimFlight::MaximumPitchDegrees,
-        AeroSimFlight::MaximumPitchDegrees);
-    Rotation.Roll = FMath::Clamp(
-        Rotation.Roll + Input.Roll * AeroSimFlight::RollRateDegreesPerSecond * Step,
-        -AeroSimFlight::MaximumRollDegrees,
-        AeroSimFlight::MaximumRollDegrees);
+    // Generic assisted quad: command translation and auto-level when released. This is
+    // an explicit prototype control model, not a named aircraft's aerodynamic simulation.
+    Rotation.Pitch = FMath::FInterpTo(Rotation.Pitch,-Input.Pitch*AeroSimFlight::CommandedTiltDegrees,Step,AeroSimFlight::VelocityResponse);
+    Rotation.Roll = FMath::FInterpTo(Rotation.Roll,Input.Roll*AeroSimFlight::CommandedTiltDegrees,Step,AeroSimFlight::VelocityResponse);
     Rotation.Yaw = FRotator::NormalizeAxis(
         Rotation.Yaw + Input.Yaw * AeroSimFlight::YawRateDegreesPerSecond * Step);
 
@@ -106,9 +111,15 @@ void FFlightModel::Advance(const FFlightControlInput& RawInput, const float Delt
     {
         Velocity.Z += AeroSimFlight::TakeoffAccelerationCmPerSecondSquared
             * FMath::Max(Input.Throttle, 0.25F) * Step;
-        Velocity.X = FMath::FInterpTo(Velocity.X, AeroSimFlight::MinimumFlightSpeedCmPerSecond, Step, AeroSimFlight::VelocityResponse);
-        Position += Rotation.RotateVector(Velocity) * Step;
-        if (Position.Z >= AeroSimFlight::FlightAltitudeCm)
+        Velocity.X = FMath::FInterpTo(Velocity.X, 0.0F, Step, AeroSimFlight::VelocityResponse);
+        Velocity.Y = FMath::FInterpTo(Velocity.Y, 0.0F, Step, AeroSimFlight::VelocityResponse);
+        Position += Velocity * Step;
+        if (Surface.bHasSupport && Position.Z < Surface.SupportedModelZCm)
+        {
+            Position.Z = Surface.SupportedModelZCm;
+            Velocity.Z = FMath::Max(Velocity.Z, 0.0F);
+        }
+        if (Position.Z - TakeoffSurfaceZCm >= AeroSimFlight::FlightAltitudeCm)
         {
             Phase = EFlightPhase::Flight;
         }
@@ -116,39 +127,57 @@ void FFlightModel::Advance(const FFlightControlInput& RawInput, const float Delt
     }
 
     if (Phase == EFlightPhase::Flight
-        && Input.Throttle <= AeroSimFlight::LandingThreshold
-        && Position.Z <= AeroSimFlight::LandingEntryAltitudeCm)
+        && Surface.bHasSupport
+        && (Input.Throttle <= AeroSimFlight::LandingThreshold || Velocity.Z < -1.0F)
+        && Velocity.Size2D()<=40.0F && FMath::Abs(Rotation.Pitch)<=8.0F && FMath::Abs(Rotation.Roll)<=8.0F
+        && Position.Z - Surface.SupportedModelZCm <= AeroSimFlight::LandingEntryAltitudeCm + FMath::Max(0.0F,-static_cast<float>(Velocity.Z))*Step)
     {
         Phase = EFlightPhase::Landing;
     }
 
     if (Phase == EFlightPhase::Landing)
     {
-        const float TargetForwardSpeed = AeroSimFlight::MinimumFlightSpeedCmPerSecond * 0.5F;
-        Velocity.X = FMath::FInterpTo(Velocity.X, TargetForwardSpeed, Step, AeroSimFlight::VelocityResponse);
-        Velocity.Y = 0.0F;
-        Velocity.Z = -AeroSimFlight::LandingDescentCmPerSecond;
-        Position += Rotation.RotateVector(FVector(Velocity.X, 0.0F, 0.0F)) * Step;
-        Position.Z += Velocity.Z * Step;
-        if (Position.Z <= 0.0F)
+        if (!Surface.bHasSupport || Input.Throttle > 0.2F || Velocity.Size2D()>40.0F
+            || FMath::Abs(Rotation.Pitch)>8.0F || FMath::Abs(Rotation.Roll)>8.0F)
         {
-            Position.Z = 0.0F;
-            Velocity = FVector::ZeroVector;
-            Rotation.Pitch = 0.0F;
-            Rotation.Roll = 0.0F;
-            Phase = EFlightPhase::Grounded;
+            Phase = EFlightPhase::Flight;
         }
-        return;
+        else
+        {
+            Velocity.X = FMath::FInterpTo(Velocity.X, 0.0F, Step, AeroSimFlight::VelocityResponse);
+            Velocity.Y = FMath::FInterpTo(Velocity.Y, 0.0F, Step, AeroSimFlight::VelocityResponse);
+            Velocity.Z = -AeroSimFlight::LandingDescentCmPerSecond;
+            Position += Velocity * Step;
+            if (Position.Z <= Surface.SupportedModelZCm)
+            {
+                Position.Z = Surface.SupportedModelZCm;
+                Velocity = FVector::ZeroVector;
+                Rotation.Pitch = 0.0F;
+                Rotation.Roll = 0.0F;
+                Phase = EFlightPhase::Grounded;
+            }
+            return;
+        }
     }
 
-    const float TargetSpeed = FMath::Lerp(
-        AeroSimFlight::MinimumFlightSpeedCmPerSecond,
-        AeroSimFlight::CruiseSpeedCmPerSecond,
-        (Input.Throttle + 1.0F) * 0.5F);
-    const FVector TargetVelocity = Rotation.Vector() * TargetSpeed;
+    FVector Horizontal(Input.Pitch,Input.Roll,0);
+    Horizontal=Horizontal.GetClampedToMaxSize(1.0F)*AeroSimFlight::CruiseSpeedCmPerSecond;
+    FVector TargetVelocity=FRotator(0,Rotation.Yaw,0).RotateVector(Horizontal);
+    TargetVelocity.Z=Input.Throttle*400.0F;
     Velocity = FMath::VInterpTo(Velocity, TargetVelocity, Step, AeroSimFlight::VelocityResponse);
     Position += Velocity * Step;
-    Position.Z = FMath::Max(Position.Z, 0.0F);
+    if (Surface.bHasSupport && Position.Z < Surface.SupportedModelZCm)
+    {
+        bSupportImpact = Velocity.Z < -100.0F;
+        Position.Z = Surface.SupportedModelZCm;
+        Velocity.Z = FMath::Max(Velocity.Z, 0.0F);
+    }
+}
+
+void FFlightModel::ResolveMovement(const FVector& ResolvedPosition, const FVector& ResolvedVelocity)
+{
+    Position = ResolvedPosition;
+    Velocity = ResolvedVelocity;
 }
 
 void FFlightModel::Pause()
@@ -175,6 +204,8 @@ void FFlightModel::Reset()
     Position = FVector::ZeroVector;
     Velocity = FVector::ZeroVector;
     Rotation = FRotator::ZeroRotator;
+    TakeoffSurfaceZCm = 0.0F;
+    bSupportImpact = false;
 }
 
 AFlightPawn::AFlightPawn()
@@ -488,7 +519,14 @@ void AFlightPawn::Tick(const float DeltaSeconds)
     }
     AdvanceResumeCountdown(DeltaSeconds);
     if (FlightModel.Phase == EFlightPhase::Paused) return;
-    FlightModel.Advance(ControlInput, DeltaSeconds);
+    const FVector BeforeMovement = GetActorLocation();
+    const FFlightSurfaceContext Surface = QuerySurface(BeforeMovement);
+    FlightModel.bSupportImpact=false;
+    if (!bCollisionHold || !ControlInput.IsNeutral())
+    {
+        bCollisionHold=false;
+        FlightModel.Advance(ControlInput, DeltaSeconds, Surface);
+    }
     GimbalController.Advance(DeltaSeconds);
     if (GimbalCamera != nullptr)
     {
@@ -509,21 +547,104 @@ void AFlightPawn::Tick(const float DeltaSeconds)
             Propellers[Index]->AddLocalRotation(FRotator(0.0F, (RotorIndex % 2 == 0 ? 1.0F : -1.0F) * 1080.0F * DeltaSeconds, 0.0F));
         }
     }
-    RecordTrace(DeltaSeconds);
     ApplyFov();
     FHitResult MovementHit;
     SetActorLocationAndRotation(
         InitialTransform.TransformPosition(FlightModel.Position),
         InitialTransform.TransformRotation(FlightModel.Rotation.Quaternion()),
         true, &MovementHit, ETeleportType::None);
+    // The sweep, not its unachieved requested destination, owns simulation, trace and scoring.
+    FVector ResolvedVelocity = FlightModel.Velocity;
+    const bool bContact = MovementHit.bBlockingHit || FlightModel.bSupportImpact;
+    if (bContact)
+    {
+        bCollisionHold=true;
+        ResolvedVelocity = FVector::ZeroVector;
+        NeutralizeInput();
+    }
+    const FVector ResolvedWorld = GetActorLocation();
+    FlightModel.ResolveMovement(WorldToModelPosition(ResolvedWorld), ResolvedVelocity);
+    const bool bWaterContact = IsOverWater(ResolvedWorld)
+        && ResolvedWorld.Z - GetFootDepthCm() <= APacificCoastGraybox::SeaLevelCm + 2.0F;
+    RecordTrace(DeltaSeconds);
+    if (bWaterContact)
+    {
+        bWaterIncidentLatched = true;
+        FlightModel.Velocity = FVector::ZeroVector;
+        SetSafePaused(true);
+    }
+    else if (FlightModel.bSupportImpact) SetSafePaused(true);
     if (AAeroSimGameMode* GameMode = GetWorld() != nullptr ? GetWorld()->GetAuthGameMode<AAeroSimGameMode>() : nullptr)
     {
-        GameMode->ObserveMission(DeltaSeconds, FlightModel.Phase, FlightModel.Position, FlightModel.Velocity, FlightModel.Rotation, MovementHit.bBlockingHit);
-        if (MovementHit.bBlockingHit)
-        {
-            NeutralizeInput();
-        }
+        GameMode->ObserveMission(DeltaSeconds, FlightModel.Phase, ResolvedWorld,
+            InitialTransform.TransformVectorNoScale(FlightModel.Velocity), GetActorRotation(), bContact,
+            IsSupportedOnLaunchMat(), bWaterContact);
     }
+}
+
+float AFlightPawn::GetFootDepthCm() const
+{
+    double Lowest = 0;
+    for (const UStaticMeshComponent* Support : LandingSupports)
+        if (Support && Support->GetStaticMesh())
+            Lowest = FMath::Min(Lowest, Support->CalcBounds(Support->GetRelativeTransform()).GetBox().Min.Z);
+    return static_cast<float>(-Lowest + .3);
+}
+
+bool AFlightPawn::IsOverWater(const FVector& WorldOrigin) const
+{
+    return WorldOrigin.X > APacificCoastGraybox::GetCoastalShoreX(WorldOrigin.Y) + 30.0F;
+}
+
+FFlightSurfaceContext AFlightPawn::QuerySurface(const FVector& WorldOrigin) const
+{
+    FFlightSurfaceContext Result;
+    Result.bHasSupport = false;
+    if (!GetWorld()) return Result;
+    FCollisionQueryParams Query(SCENE_QUERY_STAT(AeroSimFlightSupport), false, this);
+    const FCollisionObjectQueryParams Objects(ECC_WorldStatic);
+    const float FootDepth = GetFootDepthCm();
+    float Highest = -BIG_NUMBER, Lowest = BIG_NUMBER;
+    // The thin flexible mat is intentionally visual-only; read its actual centre plane,
+    // and only accept it when solid terrain underneath has already been hit.
+    const AAeroSimGameMode* Mode=GetWorld()->GetAuthGameMode<AAeroSimGameMode>();
+    const APacificCoastGraybox* Coast=Mode ? Mode->GetEnvironmentActor() : nullptr;
+    UProceduralMeshComponent* Mat=Coast ? Cast<UProceduralMeshComponent>(Coast->GetDefaultSubobjectByName(TEXT("CoastalLaunchMat"))) : nullptr;
+    const FProcMeshSection* MatSection=Mat ? Mat->GetProcMeshSection(0) : nullptr;
+    // Corners bound the landing footprint, including the actual four support feet.
+    const FVector Offsets[] = {FVector(0,0,0), FVector(16,14,0), FVector(16,-14,0), FVector(-16,14,0), FVector(-16,-14,0)};
+    for (const FVector& Offset : Offsets)
+    {
+        const FVector Point = WorldOrigin + FRotator(0, GetActorRotation().Yaw, 0).RotateVector(Offset);
+        FHitResult Hit;
+        if (!GetWorld()->LineTraceSingleByObjectType(Hit, Point + FVector(0,0,20), Point - FVector(0,0,800), Objects, Query)
+            || Hit.ImpactNormal.Z < .8F) return Result;
+        // Water cannot inherit a distant seabed as an aircraft landing support.
+        if (IsOverWater(Point) && Hit.ImpactPoint.Z <= APacificCoastGraybox::SeaLevelCm + 5.0F) return Result;
+        float Height=static_cast<float>(Hit.ImpactPoint.Z);
+        if (MatSection && MatSection->ProcVertexBuffer.Num()>0 && FVector::Dist2D(Point,FVector(55,79,0))<90.0F)
+        {
+            const float MatZ=static_cast<float>(Mat->GetComponentTransform().TransformPosition(MatSection->ProcVertexBuffer[0].Position).Z);
+            if (MatZ>=Height && MatZ-Height<5.0F) Height=MatZ;
+        }
+        Highest = FMath::Max(Highest, Height);
+        Lowest = FMath::Min(Lowest, Height);
+    }
+    if (Highest - Lowest > 8.0F) return Result;
+    Result.bHasSupport = true;
+    Result.SupportedModelZCm = static_cast<float>(WorldToModelPosition(FVector(WorldOrigin.X,WorldOrigin.Y,Highest + FootDepth)).Z);
+    return Result;
+}
+
+bool AFlightPawn::IsSupportedOnLaunchMat() const
+{
+    if (bWaterIncidentLatched || FlightModel.Phase != EFlightPhase::Grounded || !ControlInput.IsNeutral()) return false;
+    const FVector World = GetActorLocation();
+    if (FVector::Dist2D(World, FVector(55,79,0)) > FPacificCoastGrayboxContract::TakeoffPadRadiusCm - 22.0F
+        || FMath::Abs(GetActorRotation().Pitch) > 8 || FMath::Abs(GetActorRotation().Roll) > 8) return false;
+    const FFlightSurfaceContext Support = QuerySurface(World);
+    return Support.bHasSupport && FMath::Abs(FlightModel.Position.Z - Support.SupportedModelZCm) <= 2.0F
+        && FlightModel.Velocity.Size() < 40.0F;
 }
 
 void AFlightPawn::PawnClientRestart()
@@ -668,6 +789,8 @@ void AFlightPawn::SetSafePaused(const bool bPaused)
     }
     else
     {
+        // A water incident cannot be resumed into continued underwater movement; reset is explicit.
+        if (bWaterIncidentLatched) return;
         if (PlayerController != nullptr)
         {
             PlayerController->SetPause(false);
@@ -901,6 +1024,8 @@ void AFlightPawn::ConfigureReviewFlightState(const float AltitudeCm, const float
 
 void AFlightPawn::ResetFlight()
 {
+    bWaterIncidentLatched = false;
+    bCollisionHold = false;
     NeutralizeInput();
     ResumeCountdownSeconds = 0.0F;
     bResumeRequested = false;
@@ -939,9 +1064,21 @@ FFlightHudData AFlightPawn::GetHudData() const
     Data.Phase = FlightModel.Phase;
     Data.CameraMode = CameraMode;
     Data.AltitudeMeters = FlightModel.Position.Z / AeroSimFlight::CentimetersPerMeter;
+    const FFlightSurfaceContext Surface=QuerySurface(GetActorLocation());
+    if (IsOverWater(GetActorLocation()))
+    {
+        Data.bSurfaceClearanceValid=true;
+        Data.SurfaceClearanceMeters=FMath::Max(0.0F,static_cast<float>(GetActorLocation().Z-GetFootDepthCm()-APacificCoastGraybox::SeaLevelCm))*.01F;
+    }
+    else if (Surface.bHasSupport)
+    {
+        Data.bSurfaceClearanceValid=true;
+        Data.SurfaceClearanceMeters=FMath::Max(0.0F,static_cast<float>(FlightModel.Position.Z-Surface.SupportedModelZCm))*.01F;
+    }
     Data.SpeedMetersPerSecond = FlightModel.Velocity.Size() / AeroSimFlight::CentimetersPerMeter;
     Data.Throttle = ControlInput.Throttle;
     Data.bInputNeutral = IsPhysicalInputNeutral();
+    Data.bWaterContact = bWaterIncidentLatched;
     Data.AircraftName = AircraftDefinition.DisplayName;
     Data.AssetStatus = TEXT("BLOCKED_ASSET / GENERIC PROXY");
     Data.GimbalPitchDegrees = GimbalController.PitchDegrees;
@@ -1020,6 +1157,12 @@ void AFlightPawn::HandlePause(const FInputActionValue& Value)
 
 void AFlightPawn::HandleReset(const FInputActionValue& Value)
 {
+    if (Value.Get<bool>() && bWaterIncidentLatched && IsProductFlightPage())
+    {
+        if (AAeroSimGameMode* Mode=GetWorld()->GetAuthGameMode<AAeroSimGameMode>()) Mode->RestartProductMission();
+        else ResetFlight();
+        return;
+    }
     if (Value.Get<bool>() && IsGameplayInputAllowed())
     {
         ResetFlight();

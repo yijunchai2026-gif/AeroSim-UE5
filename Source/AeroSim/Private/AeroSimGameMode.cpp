@@ -389,7 +389,9 @@ void AAeroSimGameMode::ObserveMission(
     const FVector& Position,
     const FVector& Velocity,
     const FRotator& Rotation,
-    const bool bCollision)
+    const bool bCollision,
+    const bool bConfirmedHomeSupport,
+    const bool bWaterContact)
 {
     if (bEvidenceStateLocked)
     {
@@ -399,7 +401,9 @@ void AAeroSimGameMode::ObserveMission(
     {
         Phase4Mission.ReportCollision(Position);
     }
-    Phase4Mission.Observe(DeltaSeconds, FlightPhase, Position, Velocity, Rotation);
+    else Phase4Mission.ReleaseCollisionContact();
+    Phase4Mission.Observe(DeltaSeconds, FlightPhase, Position, Velocity, Rotation, bConfirmedHomeSupport);
+    if (bWaterContact) Phase4Mission.ReportWaterContact(Position);
     if (Phase4Mission.Stage == EPhase4MissionStage::Result && MissionFlow.State == EAeroSimMissionState::Flight)
     {
         MissionFlow.Transition(EAeroSimMissionState::Result);
