@@ -67,3 +67,58 @@ RTH 是导航 leg 切换，不是自动飞行；保留真实输入、速度和�
 集成源码已把原七点土地开敞 footprint 冻结为 `GetPlateauClearancePoints()`：`(0,0,100),(1800,0,400),(4000,-1200,600),(6500,-500,700),(9000,2000,700),(6500,4000,600),(0,0,100)`。`Trees.cpp::IsProtected` 改读该接口；实际任务 `GetRoutePoints()` 的海上/林间点专供飞行，不再间接生成全林 26 m 避让带。这是职责解耦，不是以删除植被解决飞行问题；原土地/接地环境断言保留，只更新其读到的正确 footprint 来源。
 
 后续必须在相同 flora 几何/seed 下比较解耦前后 **全部已放置树** 的稳定顺序、archetype、Base、Scale、Yaw、LeanPitch、LeanYaw、near/flank 标志及对应实例 transform，生成可复跑 digest；报具体差异实例。单比 count、密度下限、HISM数量或漂亮截图不能证明没有重新撒树。把“任务引导/计分点变化”和“冻结 plateau footprint”做对照测试：仅改变任务路点，layout digest 必须不变。真实 digest 对比当前仍 **NOT_RUN**，本作者本轮只写此文档，没有运行引擎或修改源/资产。
+
+## R5 NAV 实施（DEV-FLIGHT，2026-10-18）
+
+分支 `aime/coast-aaa-flight`，在合入 integration `f52d913` 之后实现。只改 `Phase4Mission.{h,cpp}`、`FlightHUD.cpp`（只读引导面板/箭头）、`AeroSimControlBridge.cpp`（Inspect 只读引导字段）与测试；**未改** FlightPawn、GameMode、PacificCoastGraybox.h、地形/植被/海洋代码。五个计分检查点的 id/顺序/数量/半径/LOW WATER 高度窗不变；任务版本仍为 v2。
+
+### 接口
+
+- `EPhase4GuideKind`：Takeoff/Transit/VerticalDescent/VerticalAscent/Corridor/Landing/Hold。
+- `FPhase4GuidanceLeg`：稳定 `LegId`/`GuideId`、WORLD 折线 `Path`（`Path[0]`=上一段终点）、终点接受窗（平面半径、下/上高度、平面速度上限）、沿段跟踪容差与跟踪速度上限、lookahead、可选 `ScoredCheckpointIndex/Id`、`bReturnLeg`。
+- `FPhase4TaskDefinition::BuildGuidanceRoute()`（确定性，`BeginMission` 时构建，`Reset` 清空）与 `ValidateGuidanceStructure()`（id 唯一、连续、计分顺序/身份、竖直柱 XY 锁定、每 ≤100 cm 样本在原有限安全体内，输出首个失败 leg/距离/XYZ/原因；`BeginMission` 失败即拒绝开始）。
+- `FPhase4MissionSession::GetCurrentGuidanceTarget()`：唯一只读输出（steer 点、guide 点、窗口、剩余距离、`bRecovery/bHold`）。HUD 箭头/距离/高度差、`Feedback.RecoveryPoint`、碰撞/漏检/未完成 RTH/边界/触水反馈均读它。
+
+### 引导拓扑（WORLD cm；Home=(55,79,1.8) 为 mat 面）
+
+| leg_id | 类型 / 计分 | 终点 | 接受窗 |
+|---|---|---|---|
+| nav-01-takeoff-column | Takeoff | (55,79,321.8) | R100，-40/+700（起飞相位过冲），≤200 cm/s |
+| nav-02-grass-soil | Transit / C1 | (4500,0,500) | R300 ±150 |
+| nav-03-inland-to-cliff | Transit | (Edge(-12000)-800=16806,-12000,350) | R300 ±150 |
+| nav-04-cross-cliff-out | Transit（越崖保持高度） | (23867,-12000,350) | R150 ±75，**≤100 cm/s 后才下降** |
+| nav-05-offshore-descent | VerticalDescent / C2 | (23867,-12000,-5300) | 轴偏≤100、跟踪≤100 cm/s、R100 ±75 ≤100 |
+| nav-06-alongshore-low-water | Transit / C3 | 24 节点 `Shore(Y)+offset`，Y -12000→-6000，Z -5300→-6100，终点 C3 (25493,-6000,-6100) | 跟踪≤300，R150 ±75 ≤100 |
+| nav-07-sea-climb | VerticalAscent | (25493,-6000,350) | 轴偏≤100、≤100 cm/s |
+| nav-08-cross-cliff-in | Transit | (Edge(-6000)-800=19765,-6000,350) | R300 ±150 |
+| nav-09-field-to-forest-mouth | Transit | (-14950,-5313,350)=C4−入口切线×1400 | R300 ±150 ≤600 |
+| nav-10-forest-entry | Corridor / C4 | (-15500,-6600,250) | R150 ±75 ≤600，跟踪≤150 |
+| nav-11-corridor-follow | Corridor / C5 | `CoastFlora::GetLayout().Corridor` d∈(0,4522] 实际样本，Z=地表+250，终点 C5 (-17600,-10600,250) | 跟踪≤150 |
+| nav-12-corridor-reverse | Corridor / 返航 | 同折线反向至 C4 | R150 ±75 ≤600 |
+| nav-13-forest-exit | Corridor / 返航 | (-14950,-5313,350) | R150 ±75 ≤600 |
+| nav-14-field-return | Transit / 返航 | (55,79,350) | R100 ±75 **≤100 cm/s** |
+| nav-15-land-on-mat | Landing / 返航 | (55,79,1.8) | 完成仍为原规则：Grounded+实际 mat 支撑+pad 半径+<40 cm/s |
+
+巡航高度由沿段解析地形 +300+50 求得（当前地面≈0 → 350），再由真实碰撞验证；不对海上点套用延伸的 `GetCoastalLandHeight`。
+
+### 状态规则
+
+- 进度只来自 GameMode 收到的 sweep 解决后实际位姿，在 `[progress-2 m, progress+10 m]` 弧长窗内投影，且需在跟踪容差/跟踪速度内；不能靠接近同折线后段或未来检查点跳进度。
+- 计分：只有当前 leg 拥有的检查点按原半径/高度窗判定；进入未来检查点半径只记 MissedCheckpoint 诊断（不计分、不移动引导）。计分 leg 需"已计分 + 终点接受窗"才完成，故 C2 原 25 m 半径计分不会提前结束下降柱。
+- `Paused` 相位、碰撞接触帧、触水 incident 均不推进；触水后引导为 Hold（无箭头），仅显式 R 复位；`Reset` 清空引导，`BeginMission` 重建。
+- 边界：恢复锚点取当前已验证 leg 上的点（最近点/当前进度/leg 终点），并用保守解析地形（崖顶延伸到 shore+3 m）+300 cm 检查直线连接；不通过则 Hold"受控停止/缓慢爬升"。只有回到安全体且重新进入当前 leg 跟踪容差才清除 incident。
+- RTH（第五点计分后自动或 H）= 切换到第一条返航 leg（nav-12），不是自动飞行；第五点前 H 仍 ROUTE INCOMPLETE 且不换 leg。Landing 阶段只在 nav-15 激活后开始。
+
+### 验证（本批实际运行）
+
+- `AeroSim.Flight.Navigation.PerMetreRouteClearsRealCollision`：生成真实 Graybox（地形/崖/树干代理 WorldStatic）和真实 Pawn；Pawn 盒 (16,14,5)，按偏航不变外接盒+18°倾斜 (21.3,21.3,9.9) 扫掠，脚深 9.07 cm。15 段 + C5 过冲缓冲段共 1186 m、1212 个 ≤100 cm 样本，**0 段失败**：transit/竖直全向 ≥300 cm 且脚底净空 ≥300；低水最小脚到水 391 cm；corridor 段脚底 241 cm（150–400 带）且侧向 ≥50 cm；mat 段 sweep 清晰且有真实支撑。首轮失败只有校验器本身把 mat 面当作原点（起飞/落地段 sweep 初始穿地），已改为原点不低于着陆原点；未加任何局部绕行点、未放宽安全体、未改植被。可见树冠（非碰撞）诊断 0 个样本。
+- `AeroSim.Flight.Navigation.ScriptedSemanticInputTraversal`：带真实 GameMode 的菜单启动任务，脚本控制律只写 `SetSemanticInput` 到真实 Pawn，实际 Tick/sweep/触水/着陆支撑：完成 Result，5/5、碰撞 0、越界 0、漏检 0、未触水，**仿真时长 126.0 s**（下降柱 15.3 s、爬升柱 17.4 s、田野横越 20.6 s）。这是工程可达性 fixture，不是玩家/真实输入 PASS。
+- `GuidanceContractKeepsFiveCheckpoints`、`CounterexamplesNeverSkipSafetyGates`：五点不变、稳定 id、未爬升即向内陆、下降前高速漂移、反向接回、暂停/碰撞/触水/Reset、边界锚点与单一输出一致、未完成 RTH。
+
+### 时长冲突（需 PMO/产品裁决）
+
+现模型平面 18 m/s、竖直 4 m/s；必要竖直量约 113 m（≥28 s），水平约 1000 m（≥55 s），加上合同要求的 ≤1 m/s 制动点，脚本最优约 126 s，超出 60–90 s。按合同不删低水目标、不提速、不瞬移；需由产品决定调整目标时长或检查点高度。
+
+### 仍为 NOT_RUN
+
+打包后菜单进入的真实按键全路线、60–90 s、HUD 引导可读性、树冠/栏杆视觉与碰撞代理差异的正常视角复核、目标平台性能。

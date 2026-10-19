@@ -90,7 +90,7 @@ void AFlightHUD::DrawHUD()
     // Native CommonUI owns all product menu pages; Canvas is only a flight perimeter layer.
     if (GameMode != nullptr && GameMode->GetProductPage() != EProductPage::Flight) return;
     FPhase4MissionSession FallbackMission;
-    FallbackMission.Reset();
+    if (GameMode == nullptr) FallbackMission.Reset();
     const FPhase4MissionSession& Mission = GameMode != nullptr ? GameMode->GetPhase4Mission() : FallbackMission;
 
     if (Environment.Weather == EAeroSimWeather::Rain)
@@ -155,6 +155,44 @@ void AFlightHUD::DrawHUD()
     DrawText(
         FString::Printf(TEXT("TRAINING AIRCRAFT\n%s\n%s\nBUILD %s"), *Data.AircraftName, *Data.AssetStatus, *Data.BuildId),
         FLinearColor::White, Right + 14.0F, Top + 12.0F, GEngine->GetSmallFont(), 1.0F, false);
+
+    // DEV-FLIGHT: one navigation source (Mission.GetCurrentGuidanceTarget) for the arrow, range,
+    // height delta and recovery; never a direct arrow to a later checkpoint across cliff or forest.
+    const FPhase4GuidanceTarget& Guide = Mission.GetCurrentGuidanceTarget();
+    if (Guide.IsValid() && Mission.Stage >= EPhase4MissionStage::Takeoff && Mission.Stage <= EPhase4MissionStage::Landing)
+    {
+        const FVector Delta = Guide.Position - Pawn->GetActorLocation();
+        const FVector ToGuide = Guide.GuidePoint - Pawn->GetActorLocation();
+        const float Bearing = FRotator::NormalizeAxis(static_cast<float>(Delta.Rotation().Yaw) - static_cast<float>(Pawn->GetActorRotation().Yaw));
+        const bool bVertical = Delta.Size2D() < 150.0;
+        const TCHAR* Turn = Guide.bHold ? TEXT("HOLD") : bVertical ? (Delta.Z < 0 ? TEXT("DOWN") : TEXT("UP"))
+            : FMath::Abs(Bearing) < 12.0F ? TEXT("AHEAD") : Bearing < 0.0F ? TEXT("LEFT") : TEXT("RIGHT");
+        const FLinearColor GuideColor = Guide.bRecovery ? FLinearColor(1.0F, 0.72F, 0.29F) : FLinearColor(0.80F, 0.94F, 1.0F);
+        DrawRect(FLinearColor(0.01F, 0.045F, 0.06F, 0.90F), Left, Top + 182.0F, 650.0F, 74.0F);
+        DrawText(FString::Printf(TEXT("GUIDE %d/%d  %s%s\n%s %.0f deg   RANGE %.1f m   HEIGHT %+.1f m   MAX %.1f m/s AT GUIDE\n%s"),
+                Guide.LegIndex + 1, Guide.LegCount, *Guide.GuideId.ToString(), Guide.bRecovery ? TEXT("  [RECOVERY]") : TEXT(""),
+                Turn, FMath::Abs(Bearing), ToGuide.Size() * 0.01F, Delta.Z * 0.01F, Guide.MaxAcceptPlanarSpeedCm * 0.01F, *Guide.Label.Left(80)),
+            GuideColor, Left + 12.0F, Top + 192.0F, GEngine->GetSmallFont(), 1.0F, false);
+        // Perimeter arrow (top centre, outside the central flight view).
+        const FVector2D Centre(Canvas->ClipX * 0.5F, Top + 44.0F);
+        if (!Guide.bHold && !bVertical)
+        {
+            const float Radians = FMath::DegreesToRadians(Bearing);
+            const FVector2D Direction(FMath::Sin(Radians), -FMath::Cos(Radians));
+            const FVector2D Tip = Centre + Direction * 30.0F, Tail = Centre - Direction * 30.0F;
+            const FVector2D Side(-Direction.Y, Direction.X);
+            DrawLine(Tail.X, Tail.Y, Tip.X, Tip.Y, GuideColor, 3.0F);
+            DrawLine(Tip.X, Tip.Y, Tip.X - Direction.X * 14.0F + Side.X * 10.0F, Tip.Y - Direction.Y * 14.0F + Side.Y * 10.0F, GuideColor, 3.0F);
+            DrawLine(Tip.X, Tip.Y, Tip.X - Direction.X * 14.0F - Side.X * 10.0F, Tip.Y - Direction.Y * 14.0F - Side.Y * 10.0F, GuideColor, 3.0F);
+        }
+        else if (!Guide.bHold)
+        {
+            const float Sign = Delta.Z < 0 ? 1.0F : -1.0F;
+            DrawLine(Centre.X, Centre.Y - Sign * 30.0F, Centre.X, Centre.Y + Sign * 30.0F, GuideColor, 3.0F);
+            DrawLine(Centre.X, Centre.Y + Sign * 30.0F, Centre.X - 10.0F, Centre.Y + Sign * 16.0F, GuideColor, 3.0F);
+            DrawLine(Centre.X, Centre.Y + Sign * 30.0F, Centre.X + 10.0F, Centre.Y + Sign * 16.0F, GuideColor, 3.0F);
+        }
+    }
 
     if (Mission.Stage == EPhase4MissionStage::Hangar)
     {

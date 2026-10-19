@@ -52,6 +52,59 @@ struct AEROSIM_API FPhase4Checkpoint
     UPROPERTY(BlueprintReadOnly, Category = "Mission") float RadiusCm = 2500.0F;
 };
 
+// DEV-FLIGHT navigation contract (docs/tasks/AAA-R5-NAVIGATION-GAP.md). Guidance is a
+// separate layer: it never scores, never moves the Pawn and never changes the five
+// checkpoints' identity, order, count, radius or LOW WATER height window.
+enum class EPhase4GuideKind : uint8 { Takeoff, Transit, VerticalDescent, VerticalAscent, Corridor, Landing, Hold };
+
+/** One manually flown navigation leg: an ordered WORLD polyline ending at its guide point. */
+struct AEROSIM_API FPhase4GuidanceLeg
+{
+    FName LegId;                 // stable, e.g. "nav-05-offshore-descent"
+    FName GuideId;               // stable id of the leg's end guide point
+    FString Label;
+    EPhase4GuideKind Kind = EPhase4GuideKind::Transit;
+    TArray<FVector> Path;        // Path[0] is the previous leg's end; Path.Last() is the guide point
+    float AcceptRadiusCm = 300.0F;          // planar distance to the guide point
+    float AcceptBelowCm = 150.0F;           // allowed origin height below the guide point
+    float AcceptAboveCm = 150.0F;           // allowed origin height above the guide point
+    float MaxAcceptPlanarSpeedCm = 1800.0F; // speed window at the guide point
+    float TrackToleranceCm = 600.0F;        // deviation from the leg that still counts as following it
+    float MaxTrackPlanarSpeedCm = 1800.0F;  // progress only counts at or below this planar speed
+    float LookaheadCm = 1500.0F;            // steer point ahead of the actual projected progress
+    int32 ScoredCheckpointIndex = INDEX_NONE;
+    FName ScoredCheckpointId;
+    bool bReturnLeg = false;
+
+    float GetLength() const;
+    FVector Evaluate(float DistanceCm) const;
+    /** Closest point within [MinCm,MaxCm] of arc length; returns its arc length and 3D distance. */
+    float Project(const FVector& Position, float MinCm, float MaxCm, float& OutDistanceCm) const;
+};
+
+/** The single read-only guidance output consumed by HUD arrow, range/height, feedback and recovery. */
+struct AEROSIM_API FPhase4GuidanceTarget
+{
+    FName LegId;
+    FName GuideId;
+    FString Label;
+    EPhase4GuideKind Kind = EPhase4GuideKind::Hold;
+    FVector Position = FVector::ZeroVector;   // steer point on the verified leg (or recovery anchor)
+    FVector GuidePoint = FVector::ZeroVector; // the leg's end guide point
+    float AcceptRadiusCm = 0.0F;
+    float AcceptBelowCm = 0.0F;
+    float AcceptAboveCm = 0.0F;
+    float MaxAcceptPlanarSpeedCm = 0.0F;
+    float RemainingCm = 0.0F;
+    int32 LegIndex = INDEX_NONE;
+    int32 LegCount = 0;
+    int32 ScoredCheckpointIndex = INDEX_NONE;
+    FName ScoredCheckpointId;
+    bool bRecovery = false;
+    bool bHold = false;
+    bool IsValid() const { return !LegId.IsNone(); }
+};
+
 USTRUCT(BlueprintType)
 struct AEROSIM_API FPhase4TaskDefinition
 {
@@ -74,6 +127,10 @@ struct AEROSIM_API FPhase4TaskDefinition
     bool IsValid() const;
     bool IsInsideSafetyVolume(const FVector& Position) const;
     FVector GetRecoveryPoint(const FVector& Position) const;
+    /** Deterministic guidance legs between the unchanged five checkpoints (DEV-FLIGHT). */
+    TArray<FPhase4GuidanceLeg> BuildGuidanceRoute() const;
+    /** Structural/safety-volume check sampled every <=100 cm; real collision is a World Automation test. */
+    bool ValidateGuidanceStructure(const TArray<FPhase4GuidanceLeg>& Route, FString& OutFailure) const;
 };
 
 USTRUCT(BlueprintType)
@@ -151,8 +208,20 @@ struct AEROSIM_API FPhase4MissionSession
     FString GetProgressText() const;
     FString GetProgressiveHint() const;
     bool IsRecovering() const { return Feedback.Incident != EPhase4Incident::None; }
+    /** The one current guidance output. Read-only; nothing outside Observe advances it. */
+    const FPhase4GuidanceTarget& GetCurrentGuidanceTarget() const { return CurrentGuidance; }
+    const TArray<FPhase4GuidanceLeg>& GetGuidanceRoute() const { return GuidanceRoute; }
+    int32 GetGuidanceLegIndex() const { return GuidanceLegIndex; }
+    float GetGuidanceLegProgressCm() const { return GuidanceProgressCm; }
 
 private:
+    void ObserveGuidance(const FVector& Position, const FVector& Velocity);
+    void AdvanceGuidanceLeg();
+    void SetRecoveryGuide(const FVector& Position, bool bWater);
+    bool IsOnCurrentLeg(const FVector& Position, float* OutAlongCm = nullptr) const;
+    void RefreshGuidance(const FVector& Position);
+    void ApplyGuidanceFeedback();
+    int32 FindFirstReturnLeg() const;
     void ObserveCheckpoint(const FVector& Position);
     void CompleteMission();
     void BuildScore();
@@ -163,4 +232,11 @@ private:
     float LastSpeedCmPerSecond = 0.0F;
     bool bBoundaryLatched = false;
     bool bCollisionLatched = false;
+    TArray<FPhase4GuidanceLeg> GuidanceRoute;
+    int32 GuidanceLegIndex = 0;
+    float GuidanceProgressCm = 0.0F;
+    bool bRecoveryGuideActive = false;
+    float RecoveryAnchorCm = 0.0F;
+    FPhase4GuidanceTarget CurrentGuidance;
+    FPhase4GuidanceTarget RecoveryGuidance;
 };

@@ -29,13 +29,23 @@ bool FPhase4MissionLoopTest::RunTest(const FString& Parameters)
     Mission.SetPreflightComplete(true);
     TestTrue(TEXT("Complete preflight can start"), Mission.BeginMission());
     Mission.Observe(0.1F, EFlightPhase::Takeoff, FVector(0, 0, 300), FVector(0, 0, 300), FRotator::ZeroRotator);
-    for (const FPhase4Checkpoint& Checkpoint : Mission.Task.Checkpoints)
+    // State-machine fixture follows every guidance leg in 50 cm steps; this is not flown-route evidence.
+    auto WalkLegsUntil = [&Mission](TFunctionRef<bool()> Done)
     {
-        Mission.Observe(0.1F, EFlightPhase::Flight, Checkpoint.Position, FVector(900, 0, 0), FRotator::ZeroRotator);
-    }
+        for (int32 Guard = 0; Guard < 64 && !Done(); ++Guard)
+        {
+            const int32 LegIndex = Mission.GetGuidanceLegIndex();
+            const FPhase4GuidanceLeg Leg = Mission.GetGuidanceRoute()[LegIndex];
+            for (float Along = 0.0F; Along <= Leg.GetLength() + 50.0F && Mission.GetGuidanceLegIndex() == LegIndex && !Done(); Along += 50.0F)
+                Mission.Observe(0.05F, EFlightPhase::Flight, Leg.Evaluate(Along), FVector::ZeroVector, FRotator::ZeroRotator);
+        }
+    };
+    WalkLegsUntil([&Mission] { return Mission.NextCheckpointIndex >= 5; });
     TestEqual(TEXT("All gates trigger RTH"), Mission.Stage, EPhase4MissionStage::ReturnToHome);
     Mission.Observe(0.1F, EFlightPhase::Flight, FVector(0, 0, 500), FVector(300, 0, 0), FRotator::ZeroRotator);
-    TestEqual(TEXT("Home triggers landing"), Mission.Stage, EPhase4MissionStage::Landing);
+    TestEqual(TEXT("Arriving above home without the verified return legs does not start landing"), Mission.Stage, EPhase4MissionStage::ReturnToHome);
+    WalkLegsUntil([&Mission] { return Mission.Stage == EPhase4MissionStage::Landing; });
+    TestEqual(TEXT("Verified return guides lead to landing"), Mission.Stage, EPhase4MissionStage::Landing);
     // A model Grounded flag alone is no longer evidence of landing on the real mat.
     Mission.Observe(0.1F, EFlightPhase::Grounded, FVector(55,79,10.8682F), FVector::ZeroVector, FRotator::ZeroRotator, true);
     TestEqual(TEXT("Landing produces Result"), Mission.Stage, EPhase4MissionStage::Result);
@@ -56,10 +66,16 @@ bool FPhase4RecoveryTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Boundary incident recorded once"), Mission.BoundaryViolations, 1);
     TestTrue(TEXT("Boundary feedback is recoverable"), Mission.Feedback.bRecoverable);
     TestEqual(TEXT("Boundary has non-color shape cue"), Mission.Feedback.ShapeCue, FString(TEXT("INWARD CHEVRONS")));
+    // Recovery is the shared guidance output: an anchor on the verified current leg.
+    TestTrue(TEXT("Boundary selects one shared recovery guide"), Mission.GetCurrentGuidanceTarget().bRecovery
+        && Mission.Feedback.RecoveryPoint.Equals(Mission.GetCurrentGuidanceTarget().Position));
     Mission.Observe(0.1F, EFlightPhase::Flight, FVector(-5000, 0, 500), FVector::ZeroVector, FRotator::ZeroRotator);
-    TestEqual(TEXT("Recovery clears incident"), Mission.Feedback.Incident, EPhase4Incident::None);
+    TestEqual(TEXT("Inside again but off the verified leg keeps recovering"), Mission.Feedback.Incident, EPhase4Incident::Boundary);
+    Mission.Observe(0.1F, EFlightPhase::Flight, Mission.GetCurrentGuidanceTarget().Position, FVector::ZeroVector, FRotator::ZeroRotator);
+    TestEqual(TEXT("Rejoining the verified leg clears incident"), Mission.Feedback.Incident, EPhase4Incident::None);
     Mission.ReportCollision(FVector::ZeroVector);
     TestEqual(TEXT("Collision tracked"), Mission.Collisions, 1);
+    Mission.ReleaseCollisionContact(); // fixture: the actual contact has ended
     Mission.Observe(0.1F, EFlightPhase::Flight, Mission.Task.Checkpoints[2].Position, FVector::ZeroVector, FRotator::ZeroRotator);
     TestTrue(TEXT("Skipping forward gate reports miss"), Mission.MissedCheckpoints > 0);
     TestEqual(TEXT("Progress preserved at expected gate"), Mission.NextCheckpointIndex, 0);

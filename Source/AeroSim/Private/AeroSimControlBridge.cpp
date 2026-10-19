@@ -199,6 +199,22 @@ TSharedRef<FJsonObject> UAeroSimControlBridge::Inspect() const
     State->SetBoolField(TEXT("possessed"),Pawn!=nullptr);
     State->SetBoolField(TEXT("world_paused"),GetWorld() && GetWorld()->IsPaused());
     State->SetStringField(TEXT("page"),Mode?PageLabel(Mode->GetProductPage()):TEXT("Unknown"));
+    if(Mode)
+    {
+        // DEV-FLIGHT: read-only navigation state for real-input smoke evidence; never a write surface.
+        const auto& Mission=Mode->GetPhase4Mission();const auto& Guide=Mission.GetCurrentGuidanceTarget();
+        State->SetNumberField(TEXT("mission_stage"),static_cast<int32>(Mission.Stage));
+        State->SetNumberField(TEXT("next_checkpoint"),Mission.NextCheckpointIndex);
+        State->SetNumberField(TEXT("mission_incident"),static_cast<int32>(Mission.Feedback.Incident));
+        State->SetNumberField(TEXT("guide_leg_index"),Guide.LegIndex);
+        State->SetNumberField(TEXT("guide_leg_count"),Guide.LegCount);
+        State->SetStringField(TEXT("guide_leg_id"),Guide.LegId.ToString());
+        State->SetStringField(TEXT("guide_id"),Guide.GuideId.ToString());
+        State->SetBoolField(TEXT("guide_recovery"),Guide.bRecovery);
+        State->SetNumberField(TEXT("guide_progress_cm"),Mission.GetGuidanceLegProgressCm());
+        VectorFields(State,TEXT("guide_target_cm"),Guide.Position);
+        VectorFields(State,TEXT("guide_point_cm"),Guide.GuidePoint);
+    }
     if(FSlateApplication::IsInitialized())
     {
         const auto Focus=FSlateApplication::Get().GetKeyboardFocusedWidget();
