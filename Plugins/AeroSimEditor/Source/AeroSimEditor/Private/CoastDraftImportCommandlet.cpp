@@ -196,14 +196,15 @@ const TCHAR* Weights = TEXT(
     "float3 WC=lerp(WD,WF2,1-fineMix), RC=lerp(RD,RF2,1-fineMix);"
     "float3 w3=saturate(VC.rgb); float4 w=float4(w3,saturate(1-w3.r-w3.g-w3.b));"
     "float steep=smoothstep(.87,.70,VN.z+(nB-.5)*.10);"
-    "w.w=max(w.w,steep); w/=max(dot(w,1),1e-3);"
+    "w.w=max(w.w,steep); w.z=max(w.z,LIT*.85); w/=max(dot(w,1),1e-3);"
+    "float cliffFace=smoothstep(.55,.32,VN.z);"
     "float4 jitter=float4(nB*.55+nC*.45, nC*.6+nA*.4, nB*.5+nD*.5, nA*.6+nB*.4)-.5;"
     "float4 h=float4(EH.r,SH.r,WH.r,RH.r)-.5;"
     "float4 hw=w+jitter*.62*saturate(w*3+.1)+h*.35*fineMix*saturate(w*4);"
-    "float top=max(max(hw.x,hw.y),max(hw.z,hw.w))-.12;"
+    "float top=max(max(hw.x,hw.y),max(hw.z,hw.w))-.16;"
     "float4 b=max(hw-top,0); b/=max(dot(b,1),1e-4);");
 }
-FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Textures)
+FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Textures, bool bLitterMask, UMaterialFunctionInterface* AlignedTexture)
 {
     auto UV=[Material](float PhysicalCm){auto* C=Node<UMaterialExpressionTextureCoordinate>(Material);C->UTiling=C->VTiling=4000.0F/PhysicalCm;return C;};
     // Rotated, non-commensurate tiling for anti-repetition and the 0.37 m detail layer.
@@ -243,6 +244,17 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         {TEXT("M2"),Col(0,TEXT("LandBaseColorTexture"),UV(40900.0F))}};
     auto* Cover=Node<UMaterialExpressionVertexColor>(Material);
     auto* Depth=Node<UMaterialExpressionPixelDepth>(Material);
+    // R5a: near-vertical cap faces (cove lip, gully walls) would smear the XY-planar ground UVs into
+    // vertical streaks; they take world-aligned triplanar sandstone (same as the cliff) instead.
+    auto Pass=[Material](UMaterialExpression* Call){auto* M=Node<UMaterialExpressionMultiply>(Material);UMaterialEditingLibrary::ConnectMaterialExpressions(Call,TEXT("XYZ Texture"),M,TEXT("A"));M->ConstB=1.0F;return M;};
+    UMaterialExpression* SteepColor=Pass(Project(Material,AlignedTexture,Textures[34],TEXT("SteepFaceColor"),SAMPLERTYPE_Color,350.0F));
+    UMaterialExpression* SteepRough=Pass(Project(Material,AlignedTexture,Textures[36],TEXT("SteepFaceRoughness"),SAMPLERTYPE_LinearGrayscale,350.0F));
+    // Trunk-base litter (DEV-FLORA GetForestLitterMask) arrives as 1 - vertex alpha on terrain;
+    // trail surfaces use their alpha as the worn-core mask, so they read no litter.
+    UMaterialExpression* LitterAlpha=nullptr;
+    if(bLitterMask){auto* Inv=Node<UMaterialExpressionCustom>(Material);Inv->OutputType=CMOT_Float1;Inv->Code=TEXT("return saturate(1-A);");
+        FCustomInput I;I.InputName=TEXT("A");I.Input.Connect(4,Cover);Inv->Inputs.Add(I);LitterAlpha=Inv;}
+    else{auto* Zero=Node<UMaterialExpressionScalarParameter>(Material);Zero->ParameterName=TEXT("NoLitter");Zero->DefaultValue=0.0F;LitterAlpha=Zero;}
     auto* World=Node<UMaterialExpressionWorldPosition>(Material);
     auto* GeometryNormal=Node<UMaterialExpressionVertexNormalWS>(Material);
     auto Make=[&](ECustomMaterialOutputType Type,const FString& Body)
@@ -253,6 +265,9 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         FCustomInput DIn;DIn.InputName=TEXT("D");DIn.Input.Connect(0,Depth);C->Inputs.Add(DIn);
         FCustomInput WIn;WIn.InputName=TEXT("WP");WIn.Input.Connect(0,World);C->Inputs.Add(WIn);
         FCustomInput NIn;NIn.InputName=TEXT("VN");NIn.Input.Connect(0,GeometryNormal);C->Inputs.Add(NIn);
+        FCustomInput TIn;TIn.InputName=TEXT("TRI");TIn.Input.Connect(0,SteepColor);C->Inputs.Add(TIn);
+        FCustomInput TRIn;TRIn.InputName=TEXT("TRR");TRIn.Input.Connect(0,SteepRough);C->Inputs.Add(TRIn);
+        FCustomInput LIn;LIn.InputName=TEXT("LIT");LIn.Input.Connect(0,LitterAlpha);C->Inputs.Add(LIn);
         return C;
     };
     // Palette re-centring: texture / published mean * target (linear). Means measured from the
@@ -264,11 +279,11 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "float mot=nC*.5+nD*.3+nA*.2;"
         "float3 eT=float3(.28,.22,.12); eT=lerp(eT,float3(.30,.205,.095),smoothstep(.30,.20,mot)); eT=lerp(eT,float3(.135,.13,.065),smoothstep(.66,.76,mot));"
         "float3 sT=lerp(float3(.16,.155,.075),float3(.10,.125,.05),nC);"
-        "float3 wT=lerp(float3(.10,.078,.048),float3(.066,.08,.04),nD);"
+        "float3 wT=lerp(lerp(float3(.10,.078,.048),float3(.066,.08,.04),nD),float3(.20,.14,.08)*(.85+.3*nA),LIT);"
         // R3: re-centre by luminance with only clamped partial chroma, so a near-zero source channel
         // (sparse_grass blue mean .008) cannot be amplified into slate-blue; stony ground is a darker
         // weathered grey-brown (QA: grey-white "salt" patches).
-        "float3 rT=float3(.135,.118,.096)*(.85+.3*nA);"
+        "float3 rT=float3(.165,.135,.098)*(.85+.3*nA);"
         "float3 e=eT*lerp(dot(EC,L)/.31,clamp(EC/float3(.419,.297,.196),.5,1.8),.5);"
         "float3 s=sT*lerp(dot(SC,L)/.0533,clamp(SC/float3(.080,.048,.008),.6,1.6),.25);"
         "float3 wl=wT*lerp(dot(WC,L)/.0976,clamp(WC/float3(.173,.076,.035),.6,1.6),.35);"
@@ -277,6 +292,7 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "float m1=clamp(dot(M1,L)/.13,.65,1.4), m2=clamp(dot(M2,L)/.077,.75,1.3);"
         "c*=lerp(1,m1*m2,.25+.3*(1-fineMix));"
         "c*=1+.24*(float3(nC,nD,nE)-.5);"
+        "c=lerp(c,TRI*float3(1.12,1.06,.92),cliffFace);"
         "return min(c,float3(.6,.5,.4));"));
     auto* Normal=Make(CMOT_Float3,TEXT(
         // R3: grass normals mix a 1.37x/37 deg second sample by noise (no periodic bands in
@@ -285,11 +301,13 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "float3 n=en*b.x+sn*b.y+WN*b.z+RN*b.w; n.xy*=lerp(.15,1,normalFade);"
         "float detailFade=1-smoothstep(200.0,800.0,D);"
         "float2 d=(DN.xy*lerp(.25,.6,nA)+DN2.xy*lerp(.6,.25,nA))*detailFade*.75;"
+        "n.xy*=1-cliffFace; d*=1-cliffFace;"
         "return normalize(float3(n.xy+d,max(n.z,.2)));"));
     auto* Rough=Make(CMOT_Float1,TEXT(
         "float r=lerp(.86,ER.r,fineMix)*b.x+lerp(.84,SR.r,fineMix)*b.y+lerp(.9,WR.r,fineMix)*b.z+lerp(.8,RR.r,fineMix)*b.w;"
         "r*=lerp(1,(DR.r+DR2.r)*.67,nearFade*.5);"
         "r*=lerp(.92,1.08,nC);"
+        "r=lerp(r,TRR.r,cliffFace);"
         "return saturate(r);"));
     return {Color,Normal,Rough};
 }
@@ -393,7 +411,19 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
         bFace &= UMaterialEditingLibrary::ConnectMaterialExpressions(FaceRough, TEXT("XYZ Texture"), CliffRough, TEXT("B"));
         CliffRough->Alpha.Connect(0, Lower);
         if (!bFace) return false;
-        BaseExpression = CliffColor; NormalExpression = CliffUnit; RoughnessExpression = CliffRough; RoughnessOutput = TEXT("");
+        // R5a P0 (QA lighting_only: scan face shaded as a flat panel): WorldAlignedNormal returns an
+        // axis-aligned world normal that REPLACES the geometric normal in this world-space material,
+        // erasing the scan's real relief. Re-base the triplanar detail on the interpolated vertex
+        // normal so geometry shading survives and the texture only perturbs it.
+        auto* GeometryNormal = Node<UMaterialExpressionVertexNormalWS>(Material);
+        auto* Rebased = Node<UMaterialExpressionCustom>(Material); Rebased->OutputType = CMOT_Float3;
+        // The flat-texture response of the triplanar blend is the weighted signed axis set; subtracting
+        // that smooth blend (not a hard dominant axis) leaves only the texture perturbation.
+        Rebased->Code = TEXT("float3 w=pow(abs(VN),4.0); w/=max(dot(w,1),1e-4); float3 flat=normalize(sign(VN)*w+1e-5);"
+            "return normalize(VN+(normalize(TN)-flat)*.85);");
+        { FCustomInput I; I.InputName = TEXT("VN"); I.Input.Connect(0, GeometryNormal); Rebased->Inputs.Add(I); }
+        { FCustomInput I; I.InputName = TEXT("TN"); I.Input.Connect(0, CliffUnit); Rebased->Inputs.Add(I); }
+        BaseExpression = CliffColor; NormalExpression = Rebased; RoughnessExpression = CliffRough; RoughnessOutput = TEXT("");
     }
     else
     {
@@ -413,7 +443,7 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
     FString SurfaceNormalOutput=NormalOutput;
     if(FString(Name).Contains(TEXT("Ground")))
     {
-        const FLandSurface Land=BuildLandSurface(Material,Textures);
+        const FLandSurface Land=BuildLandSurface(Material,Textures,true,AlignedTexture);
         auto* TintLand=Node<UMaterialExpressionMultiply>(Material);TintLand->A.Connect(0,Land.Color);TintLand->B.Connect(0,Tint);
         auto* RoughLand=Node<UMaterialExpressionMultiply>(Material);RoughLand->A.Connect(0,Land.Rough);RoughLand->B.Connect(0,RoughnessFactor);
         SurfaceColor=TintLand;SurfaceNormal=Land.Normal;SurfaceRoughness=RoughLand;SurfaceNormalOutput=TEXT("");
@@ -424,7 +454,7 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
         // become a compacted earth path. The worn core meets the habitat ground through a
         // height-blended, irregular shoulder driven by vertex alpha rather than a flat strip edge.
         auto* Mask=Node<UMaterialExpressionVertexColor>(Material);
-        const FLandSurface Land=BuildLandSurface(Material,Textures);
+        const FLandSurface Land=BuildLandSurface(Material,Textures,false,AlignedTexture);
         auto* TrailUV=Node<UMaterialExpressionTextureCoordinate>(Material);TrailUV->UTiling=TrailUV->VTiling=4000.0F/200.0F;
         auto* TrailColor=Sample(Material,Textures[31],TEXT("TrailColor"),TrailUV,SAMPLERTYPE_Color);TrailColor->SamplerSource=SSM_Wrap_WorldGroupSettings;
         auto* TrailNormal=Sample(Material,Textures[32],TEXT("TrailNormal"),TrailUV,SAMPLERTYPE_Normal);TrailNormal->SamplerSource=SSM_Wrap_WorldGroupSettings;

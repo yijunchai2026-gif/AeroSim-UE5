@@ -167,6 +167,24 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
         AddInfo(FString::Printf(TEXT("Talus: %d blocks, %d emergent, %d within 25 m of the waterline"), Blocks, Emergent, NearWaterline));
     }
 
+    // R5a: forest-floor litter (DEV-FLORA trunk mask) reaches the terrain as 1 - vertex alpha.
+    {
+        int32 LitterVertices = 0, OpenLandLitter = 0;
+        for (UProceduralMeshComponent* Mesh : Meshes)
+        {
+            if (Mesh->GetFName() != TEXT("CoastalPlateau")) continue;
+            if (const FProcMeshSection* Section = Mesh->GetProcMeshSection(0))
+                for (const FProcMeshVertex& V : Section->ProcVertexBuffer)
+                {
+                    if (V.Color.A < 160) ++LitterVertices;
+                    if (V.Color.A < 250 && FMath::IsNearlyZero(FPacificCoastHabitat::GetForestLitter(V.Position.X, V.Position.Y))) ++OpenLandLitter;
+                }
+        }
+        TestTrue(TEXT("Forest stands carry trunk-base litter in the ground vertex alpha"), LitterVertices > 200);
+        TestEqual(TEXT("Litter appears only where the flora mask places it"), OpenLandLitter, 0);
+        AddInfo(FString::Printf(TEXT("Litter vertices %d"), LitterVertices));
+    }
+
     // Cliff face never overhangs: along every sampled cliff column, X grows monotonically with depth.
     {
         TMap<int32, TArray<FVector>> Columns;
