@@ -55,6 +55,8 @@ struct AEROSIM_API FPacificCoastHabitat
     static float GetDistantRangeHeight(float X, float Y);
     /** X of the closed sea-cliff face at (Y, Z) between its rim and foot (analytic, per coast row). */
     static float GetCliffFaceX(float Y, float Z);
+    /** 0..1 forest-floor litter weight (DEV-FLORA trunk-base mask), carried as 1 - ground vertex alpha. */
+    static float GetForestLitter(float X, float Y);
 };
 // DEV-TERRAIN end
 

@@ -7,6 +7,8 @@
 #include "PhysicsEngine/BodySetup.h"
 #include "ProceduralMeshComponent.h"
 #include "StaticMeshResources.h"
+#include "Materials/Material.h"
+#include "Materials/MaterialExpressionVertexNormalWS.h"
 
 // DEV-TERRAIN R5: single rigid hero-cove scan fitted to the closed cliff, with matching collision.
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoastalHeroScanTest, "AeroSim.Environment.CoastalTerrain.HeroCoveScanFitAndCollision",
@@ -36,6 +38,29 @@ bool FCoastalHeroScanTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Scan stays inside the single Y=-190 m hero reach"), Bounds.Min.Y >= -21001 && Bounds.Max.Y <= -16999);
     TestEqual(TEXT("Scan collision is enabled for the playable build"), Scan->GetCollisionEnabled(), ECollisionEnabled::QueryAndPhysics);
     TestTrue(TEXT("Scan collision uses its rendered LOD0 triangles"), Mesh->GetBodySetup() && Mesh->GetBodySetup()->CollisionTraceFlag == CTF_UseComplexAsSimple);
+
+    // R5a P0: the scan's real relief must reach shading. (1) Imported normals vary (not flattened);
+    // (2) the world-space rock material re-bases its triplanar normal on the geometric normal.
+    {
+        const FStaticMeshLODResources& Lod = Mesh->GetRenderData()->LODResources[0];
+        const int32 NormalCount = Lod.VertexBuffers.StaticMeshVertexBuffer.GetNumVertices();
+        FVector Mean = FVector::ZeroVector;
+        for (int32 Index = 0; Index < NormalCount; ++Index) Mean += FVector(Lod.VertexBuffers.StaticMeshVertexBuffer.VertexTangentZ(Index));
+        Mean /= FMath::Max(1, NormalCount);
+        double Spread = 0;
+        for (int32 Index = 0; Index < NormalCount; ++Index) Spread += (FVector(Lod.VertexBuffers.StaticMeshVertexBuffer.VertexTangentZ(Index)) - Mean).Size();
+        Spread /= FMath::Max(1, NormalCount);
+        TestTrue(TEXT("Scan LOD0 normals carry real relief (mean deviation > 0.3)"), Spread > .3);
+        AddInfo(FString::Printf(TEXT("Hero scan normals: mean %s, mean deviation %.3f"), *Mean.ToString(), Spread));
+#if WITH_EDITORONLY_DATA
+        const UMaterialInterface* RockMaterial = Scan->GetMaterial(0);
+        bool bRebased = false;
+        if (RockMaterial && RockMaterial->GetMaterial())
+            for (const UMaterialExpression* Expression : RockMaterial->GetMaterial()->GetExpressions())
+                bRebased |= Expression && Expression->IsA<UMaterialExpressionVertexNormalWS>();
+        TestTrue(TEXT("World-space rock material keeps the geometric normal (no flat triplanar replacement)"), bRebased);
+#endif
+    }
 
     // Fit against the actual closed cliff face: perimeter (crop edges) buried, interior visible, no coplanar fight.
     const FStaticMeshLODResources& LOD0 = Mesh->GetRenderData()->LODResources[0];

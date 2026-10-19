@@ -131,7 +131,9 @@ const int16 ScanFace[22][41] = {
 
 float ScanWeight(const float Y)
 {
-    return 1.0F - Smooth((FMath::Abs(Y - ScanY) - ScanHalfWidth) / 600.0F);
+    // R5a: 25 m fade (was 6 m) — the abrupt return to the cove apron made a 6-10 m shadowed side
+    // wall ("knife wedge") at each end of the scan.
+    return 1.0F - Smooth((FMath::Abs(Y - ScanY) - ScanHalfWidth) / 2500.0F);
 }
 
 // Y is world; LocalZ is height above the scan origin (ScanZ).
@@ -426,7 +428,8 @@ float APacificCoastGraybox::GetCoastalLandHeight(const float X, const float Y)
     float WestDistance = X - West, NorthDistance = North - FMath::Abs(Y);
     const float YSide = Y < 0 ? -1.0F : 1.0F;
     WestDistance += (9000.0F * Noise(Y, 3100.0F, 52000.0F) + 3500.0F * Noise(Y, -4100.0F, 17000.0F)) * FMath::Clamp(WestDistance / 15000.0F, 0.0F, 1.0F);
-    NorthDistance += (10000.0F * Noise(X, 9100.0F * YSide, 47000.0F) + 6500.0F * Noise(X, -5300.0F * YSide, 17000.0F) + 2500.0F * Noise(X, 2900.0F * YSide, 6100.0F)) * FMath::Clamp(NorthDistance / 15000.0F, 0.0F, 1.0F);
+    // R5a: stronger, multi-scale displacement (QA: N/S shores still read ruler-straight from 2.5 km).
+    NorthDistance += (19000.0F * Noise(X, 9100.0F * YSide, 47000.0F) + 10000.0F * Noise(X, -5300.0F * YSide, 17000.0F) + 3500.0F * Noise(X, 2900.0F * YSide, 6100.0F)) * FMath::Clamp(NorthDistance / 15000.0F, 0.0F, 1.0F);
     const float Interior = Smooth(FMath::Min(WestDistance, NorthDistance) / 56000.0F);
     const float RouteDistance = FMath::Max(FMath::Max(-X - 23000.0F, FMath::Abs(Y) - 17000.0F), 0.0F);
     const float Rise = Smooth(RouteDistance / 24000.0F);
@@ -582,7 +585,16 @@ FLinearColor FPacificCoastHabitat::GetGroundVertexColor(const float X, const flo
     // The exposed bed of the seasonal swale reads as damp woodland earth.
     const float Bed = .9F * CoastalTerrain::ChannelWeight(X, Y);
     return FLinearColor(Habitat.ExposedGrass * (1.0F - Bed), Habitat.ShelteredGrass * (1.0F - Bed),
-        FMath::Lerp(Habitat.Woodland, 1.0F - Habitat.Rock - Habitat.Shore, Bed), 1.0F);
+        FMath::Lerp(Habitat.Woodland, 1.0F - Habitat.Rock - Habitat.Shore, Bed), 1.0F - GetForestLitter(X, Y));
+}
+
+float FPacificCoastHabitat::GetForestLitter(const float X, const float Y)
+{
+    // DEV-FLORA trunk-base litter (R conifer needles, G oak leaves) from the placed trees; the
+    // ground material reads it as 1 - vertex alpha and height-blends leaf/needle litter.
+    if (!FMath::IsFinite(X) || !FMath::IsFinite(Y) || X > APacificCoastGraybox::GetCliffEdgeX(Y)) return 0.0F;
+    const FLinearColor Litter = APacificCoastGraybox::GetForestLitterMask(X, Y);
+    return FMath::Clamp(FMath::Max(Litter.R, Litter.G), 0.0F, 1.0F);
 }
 
 float FPacificCoastHabitat::GetCliffFaceX(const float Y, const float Z)
