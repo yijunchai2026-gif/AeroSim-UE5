@@ -71,8 +71,16 @@ struct AEROSIM_API FPhase4GuidanceLeg
     float MaxAcceptPlanarSpeedCm = 1800.0F; // speed window at the guide point
     float MaxAcceptVerticalSpeedCm = 10000.0F; // vertical speed window at the guide point
     float VerticalBrakeZoneCm = 0.0F;       // remaining height at which the guide asks to brake vertically
-    float TrackToleranceCm = 600.0F;        // deviation from the leg that still counts as following it
-    float MaxTrackPlanarSpeedCm = 1800.0F;  // progress only counts at or below this planar speed
+    // Safety corridor (R6a redesign): progress = furthest projection onto the leg while the actual
+    // pose is inside this envelope. Widths are per leg and proven clear by the per-metre World test.
+    float SafetyHalfWidthCm = 1500.0F;      // planar distance from the leg
+    float SafetyBelowCm = 200.0F;           // allowed origin height below the leg
+    float SafetyAboveCm = 800.0F;           // allowed origin height above the leg
+    float MaxTrackPlanarSpeedCm = 10000.0F; // progress speed limit (columns only: <=100 cm/s)
+    float EndFunnelHalfWidthCm = 0.0F;      // >0: half-width narrows toward the guide point (e.g. launch site)
+    float EndFunnelSlope = 0.5F;            // extra half-width per cm of distance remaining
+    float GetHalfWidthAt(float DistanceCm) const
+    { return EndFunnelHalfWidthCm > 0.0F ? FMath::Min(SafetyHalfWidthCm, EndFunnelHalfWidthCm + (GetLength() - DistanceCm) * EndFunnelSlope) : SafetyHalfWidthCm; }
     float LookaheadCm = 1500.0F;            // steer point ahead of the actual projected progress
     int32 ScoredCheckpointIndex = INDEX_NONE;
     FName ScoredCheckpointId;
@@ -85,6 +93,12 @@ struct AEROSIM_API FPhase4GuidanceLeg
     FVector Evaluate(float DistanceCm) const;
     /** Closest point within [MinCm,MaxCm] of arc length; returns its arc length and 3D distance. */
     float Project(const FVector& Position, float MinCm, float MaxCm, float& OutDistanceCm) const;
+    /** Planar projection (vertical segments: by height); outputs planar lateral and signed vertical offsets. */
+    float ProjectCorridor(const FVector& Position, float MinCm, float MaxCm, float& OutLateralCm, float& OutVerticalCm) const;
+    bool IsInsideCorridor(float AlongCm, float LateralCm, float VerticalCm) const
+    { return LateralCm <= GetHalfWidthAt(AlongCm) && VerticalCm >= -SafetyBelowCm && VerticalCm <= SafetyAboveCm; }
+    bool IsColumn() const { return Kind == EPhase4GuideKind::Takeoff || Kind == EPhase4GuideKind::Landing
+        || Kind == EPhase4GuideKind::VerticalDescent || Kind == EPhase4GuideKind::VerticalAscent; }
 };
 
 /** The single read-only guidance output consumed by HUD arrow, range/height, feedback and recovery. */
@@ -103,6 +117,8 @@ struct AEROSIM_API FPhase4GuidanceTarget
     float MaxAcceptVerticalSpeedCm = 0.0F;
     bool bVerticalBrake = false;
     bool bPassThrough = false;
+    bool bOffCorridor = false;
+    float SafetyHalfWidthCm = 0.0F;
     float RemainingCm = 0.0F;
     int32 LegIndex = INDEX_NONE;
     int32 LegCount = 0;
@@ -244,6 +260,7 @@ private:
     int32 GuidanceLegIndex = 0;
     float GuidanceProgressCm = 0.0F;
     bool bRecoveryGuideActive = false;
+    bool bOffCorridor = false;
     float RecoveryAnchorCm = 0.0F;
     FPhase4GuidanceTarget CurrentGuidance;
     FPhase4GuidanceTarget RecoveryGuidance;

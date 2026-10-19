@@ -108,15 +108,16 @@ bool FAeroSimNavigationContractTest::RunTest(const FString& Parameters)
     for (const FPhase4GuidanceLeg& Leg : Route)
     {
         if (Leg.ScoredCheckpointIndex != INDEX_NONE) TestEqual(TEXT("Scored legs keep checkpoint order"), Leg.ScoredCheckpointIndex, Scored++);
-        AddInfo(FString::Printf(TEXT("%s guide=%s kind=%d score=%s len=%.0fcm end=(%.0f,%.0f,%.0f) R=%.0f H=-%.0f/+%.0f Vacc<=%.0f track<=%.0f@%.0f"),
+        AddInfo(FString::Printf(TEXT("%s guide=%s kind=%d score=%s len=%.0fcm end=(%.0f,%.0f,%.0f) R=%.0f H=-%.0f/+%.0f Vacc<=%.0f corridor+-%.0f@%.0f band-%.0f/+%.0f %s"),
             *Leg.LegId.ToString(), *Leg.GuideId.ToString(), static_cast<int32>(Leg.Kind), *Leg.ScoredCheckpointId.ToString(), Leg.GetLength(),
             Leg.Path.Last().X, Leg.Path.Last().Y, Leg.Path.Last().Z, Leg.AcceptRadiusCm, Leg.AcceptBelowCm, Leg.AcceptAboveCm,
-            Leg.MaxAcceptPlanarSpeedCm, Leg.TrackToleranceCm, Leg.MaxTrackPlanarSpeedCm));
+            Leg.MaxAcceptPlanarSpeedCm, Leg.SafetyHalfWidthCm, Leg.MaxTrackPlanarSpeedCm, Leg.SafetyBelowCm, Leg.SafetyAboveCm,
+            Leg.bPassThrough ? TEXT("PASS") : TEXT("STOP")));
     }
     TestEqual(TEXT("Five scored legs; intermediate guides never score"), Scored, 5);
     const FPhase4GuidanceLeg& Descent = Route[LegIndexOf(Mission, TEXT("nav-05-offshore-descent"))];
     TestTrue(TEXT("Descent column locks XY at C2"), FVector::Dist2D(Descent.Path[0], Mission.Task.Checkpoints[1].Position) < 1.0);
-    TestTrue(TEXT("Descent column is slow (<=100 cm/s)"), Descent.MaxTrackPlanarSpeedCm <= 100.0F && Descent.TrackToleranceCm <= 100.0F);
+    TestTrue(TEXT("Descent column is slow (<=100 cm/s)"), Descent.MaxTrackPlanarSpeedCm <= 100.0F && Descent.SafetyHalfWidthCm <= 100.0F);
     const FPhase4GuidanceLeg& Brake = Route[LegIndexOf(Mission, TEXT("nav-04-cross-cliff-out"))];
     TestTrue(TEXT("Brake to <=100 cm/s before descending"), Brake.MaxAcceptPlanarSpeedCm <= 100.0F);
     TestTrue(TEXT("Cliff is crossed at a positive altitude, never on a descending chord"), Brake.Path[0].Z >= 0 && FMath::IsNearlyEqual(Brake.Path[0].Z, Brake.Path.Last().Z));
@@ -182,10 +183,12 @@ bool FAeroSimNavigationCounterexampleTest::RunTest(const FString& Parameters)
         const FPhase4GuidanceLeg Transit = Mission.GetGuidanceRoute()[Mission.GetGuidanceLegIndex()];
         TestTrue(TEXT("Transit guide is pass-through (>=6 m, +-2 m, no speed window)"), Transit.bPassThrough
             && Transit.AcceptRadiusCm >= 600.0F && Transit.AcceptBelowCm >= 200.0F && Transit.AcceptAboveCm >= 200.0F);
-        const FVector Side = FVector::CrossProduct(Transit.Path.Last() - Transit.Path[0], FVector::UpVector).GetSafeNormal() * 1500.0F;
+        const FVector Side = FVector::CrossProduct(Transit.Path.Last() - Transit.Path[0], FVector::UpVector).GetSafeNormal() * (Transit.SafetyHalfWidthCm + 1000.0F);
         for (float Along = 0; Along <= Transit.GetLength() - 2000.0F; Along += 50)
             Mission.Observe(.05F, EFlightPhase::Flight, Transit.Evaluate(Along) + Side, FVector(1200, 0, 0), FRotator::ZeroRotator);
-        TestEqual(TEXT("15 m off the tube records no progress"), Mission.GetGuidanceLegProgressCm(), 0.0F);
+        TestEqual(TEXT("Outside the safety corridor records no progress"), Mission.GetGuidanceLegProgressCm(), 0.0F);
+        TestTrue(TEXT("Off-corridor is visible guidance, not a silent stall"), Mission.GetCurrentGuidanceTarget().bOffCorridor
+            && Mission.GetCurrentGuidanceTarget().bRecovery && SingleSource(Mission));
         // Orbit 1-2 m around the guide point at 3 m/s, like the R6a driver.
         for (int32 Step = 0; Step < 40 && Mission.GetCurrentGuidanceTarget().LegId == Transit.LegId; ++Step)
         {
@@ -209,6 +212,59 @@ bool FAeroSimNavigationCounterexampleTest::RunTest(const FString& Parameters)
         }
         TestEqual(TEXT("Flying through C1 at 17 m/s, 4 m to the side, passes the gate"), Cross.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-03-inland-to-cliff")));
         TestEqual(TEXT("C1 scored by its original radius"), Cross.NextCheckpointIndex, 1);
+    }
+    {
+        // R6a redesign: a real-input-like L-shaped and zigzag path inside the open-air safety corridor
+        // completes transit legs; nobody has to hug the centre line.
+        for (int32 Shape = 0; Shape < 2; ++Shape)
+        {
+            FPhase4MissionSession Mission = StartMission();
+            TestTrue(TEXT("Reach the inland-to-cliff transit"), WalkUntil(Mission, TEXT("nav-03-inland-to-cliff")));
+            const FPhase4GuidanceLeg Leg = Mission.GetGuidanceRoute()[Mission.GetGuidanceLegIndex()];
+            const FVector Normal = FVector::CrossProduct(Leg.Path.Last() - Leg.Path[0], FVector::UpVector).GetSafeNormal();
+            const float W = Leg.SafetyHalfWidthCm * .8F, Length = Leg.GetLength();
+            for (float Along = 0; Along <= Length + 200.0F && Mission.GetGuidanceLegIndex() == LegIndexOf(Mission, TEXT("nav-03-inland-to-cliff")); Along += 60)
+            {
+                const float U = Along / Length;
+                // L: drift straight out to 80 % width over the first quarter, run parallel, cut back late.
+                // Zigzag: +-80 % width weave every ~30 m with diagonal corrections and +-1.5 m height.
+                const float Offset = Shape == 0 ? W * FMath::Clamp(FMath::Min(U * 4.0F, (1.0F - U) * 6.0F), 0.0F, 1.0F)
+                    : W * FMath::Sin(Along / 3000.0F * PI);
+                const float Height = Shape == 0 ? 0.0F : 150.0F * FMath::Sin(Along / 1700.0F);
+                Mission.Observe(.05F, EFlightPhase::Flight, Leg.Evaluate(Along) + Normal * Offset + FVector(0, 0, Height),
+                    FVector(1500, 0, 0), FRotator::ZeroRotator);
+            }
+            TestEqual(Shape == 0 ? TEXT("L-shaped path inside the corridor completes the transit") : TEXT("Zigzag path inside the corridor completes the transit"),
+                Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-04-cross-cliff-out")));
+        }
+        {
+            // Exact PMO R6a packaged case: progress 501 cm, then parked at (16823,-12026,339), speed 0.
+            FPhase4MissionSession Parked = StartMission();
+            TestTrue(TEXT("Reach the inland-to-cliff transit"), WalkUntil(Parked, TEXT("nav-03-inland-to-cliff")));
+            const FPhase4GuidanceLeg Leg = Parked.GetGuidanceRoute()[Parked.GetGuidanceLegIndex()];
+            Parked.Observe(.05F, EFlightPhase::Flight, Leg.Evaluate(501.0F), FVector(1500, 0, 0), FRotator::ZeroRotator);
+            Parked.Observe(.05F, EFlightPhase::Flight, FVector(16823, -12026, 339), FVector::ZeroVector, FRotator::ZeroRotator);
+            TestEqual(TEXT("PMO R6a parked pose 17/26/11 cm from the guide completes leg 3"), Parked.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-04-cross-cliff-out")));
+        }
+        // Cutting across the cliff edge: dropping below the transit band over the cliff, or flying the
+        // chord from C1 straight at the offshore descent point, is rejected (no progress, no skip).
+        FPhase4MissionSession Cut = StartMission();
+        TestTrue(TEXT("Reach the cliff crossing"), WalkUntil(Cut, TEXT("nav-04-cross-cliff-out")));
+        const FPhase4GuidanceLeg Cross = Cut.GetGuidanceRoute()[Cut.GetGuidanceLegIndex()];
+        for (float Along = 0; Along <= Cross.GetLength(); Along += 50)
+            Cut.Observe(.05F, EFlightPhase::Flight, Cross.Evaluate(Along) - FVector(0, 0, 1500.0F * Along / Cross.GetLength()), FVector(800, 0, -200), FRotator::ZeroRotator);
+        Cut.Observe(.05F, EFlightPhase::Flight, Cross.Path.Last() - FVector(0, 0, 1500), FVector::ZeroVector, FRotator::ZeroRotator);
+        TestEqual(TEXT("Descending across the cliff edge below the band does not complete the crossing"), Cut.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-04-cross-cliff-out")));
+        TestTrue(TEXT("Below-band cliff crossing shows recovery guidance"), Cut.GetCurrentGuidanceTarget().bOffCorridor || Cut.GetCurrentGuidanceTarget().bRecovery);
+        FPhase4MissionSession Chord = StartMission();
+        TestTrue(TEXT("Reach the inland-to-cliff transit"), WalkUntil(Chord, TEXT("nav-03-inland-to-cliff")));
+        const FVector From = Chord.GetGuidanceRoute()[Chord.GetGuidanceLegIndex()].Path[0];
+        const FVector OffshoreTop = Chord.GetGuidanceRoute()[LegIndexOf(Chord, TEXT("nav-04-cross-cliff-out"))].Path.Last();
+        for (float U = 0; U <= 1.0F; U += .002F)
+            Chord.Observe(.05F, EFlightPhase::Flight, FMath::Lerp(From, OffshoreTop, static_cast<double>(U)), FVector(1500, 0, 0), FRotator::ZeroRotator);
+        for (int32 I = 0; I < 5; ++I) Chord.Observe(.05F, EFlightPhase::Flight, OffshoreTop, FVector::ZeroVector, FRotator::ZeroRotator);
+        TestEqual(TEXT("The C1-to-offshore chord never completes the above-cliff gate"), Chord.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-03-inland-to-cliff")));
+        TestEqual(TEXT("C2 is not scored from a shortcut"), Chord.NextCheckpointIndex, 1);
     }
     {
         // Heading inland before the climb column is complete never advances to the cliff crossing.
@@ -369,6 +425,7 @@ bool FAeroSimNavigationCollisionRouteTest::RunTest(const FString& Parameters)
     {
         FPhase4GuidanceLeg Buffer;
         Buffer.LegId = TEXT("nav-11b-c5-overshoot-buffer"); Buffer.Kind = EPhase4GuideKind::Corridor;
+        Buffer.SafetyHalfWidthCm = 180.0F; Buffer.SafetyBelowCm = 150.0F; Buffer.SafetyAboveCm = 150.0F;
         const FVector C5 = Mission.Task.Checkpoints[4].Position;
         Buffer.Path.Add(C5);
         float StartDistance = -1;
@@ -411,6 +468,30 @@ bool FAeroSimNavigationCollisionRouteTest::RunTest(const FString& Parameters)
         }
         int32 CrownSamples = 0;
         FString FirstCrown;
+        // Declared safety corridor (progress envelope) must itself be clear: every pose a pilot may hold
+        // while progressing keeps a margin from WorldStatic, stays in the safety volume and above water.
+        const float Margin = bSupport ? 0.0F : bCorridor ? 30.0F : 100.0F;
+        const double MinOrigin = FPacificCoastGrayboxContract::GetRoutePoints()[0].Z + Foot + .5;
+        auto EnvelopeClear = [&](const FVector& P, const FVector& Direction, const float HalfWidth, FString* OutReason)
+        {
+            const double Bottom = bSupport ? FMath::Max(P.Z - Leg.SafetyBelowCm, MinOrigin) : P.Z - Leg.SafetyBelowCm;
+            const double Top = P.Z + Leg.SafetyAboveCm;
+            const FVector Centre(P.X, P.Y, (Bottom + Top) * .5);
+            const FVector2D Dir2 = FVector2D(Direction).GetSafeNormal();
+            const FQuat Rotation = Dir2.IsNearlyZero() ? FQuat::Identity : FRotator(0, FMath::RadiansToDegrees(FMath::Atan2(Dir2.Y, Dir2.X)), 0).Quaternion();
+            const FVector Half(Shape.X + 60.0F + Margin, Shape.Y + HalfWidth + Margin, (Top - Bottom) * .5 + Shape.Z + Margin);
+            if (World->OverlapAnyTestByObjectType(Centre, Rotation, Objects, FCollisionShape::MakeBox(Half), Query))
+            { if (OutReason) *OutReason = TEXT("ENVELOPE_HITS_WORLDSTATIC"); return false; }
+            const FVector Across = Rotation.RotateVector(FVector(0, HalfWidth, 0));
+            for (const FVector& Corner : {FVector(P.X, P.Y, Bottom) + Across, FVector(P.X, P.Y, Bottom) - Across, FVector(P.X, P.Y, Top) + Across, FVector(P.X, P.Y, Top) - Across})
+            {
+                if (!Mission.Task.IsInsideSafetyVolume(Corner)) { if (OutReason) *OutReason = TEXT("ENVELOPE_OUTSIDE_SAFETY_VOLUME"); return false; }
+                if (Corner.X > APacificCoastGraybox::GetCoastalShoreX(Corner.Y) + 30.0F && Corner.Z - Foot - APacificCoastGraybox::SeaLevelCm < 100.0F)
+                { if (OutReason) *OutReason = TEXT("ENVELOPE_FOOT_WITHIN_1M_OF_WATER"); return false; }
+            }
+            return true;
+        };
+        float MaxClearWidth = BIG_NUMBER, MinMargin = BIG_NUMBER;
         FString First;
         FVector Previous = Leg.Evaluate(0);
         if (bSupport) Previous.Z = FMath::Max(Previous.Z, FPacificCoastGrayboxContract::GetRoutePoints()[0].Z + Foot + .5);
@@ -444,6 +525,21 @@ bool FAeroSimNavigationCollisionRouteTest::RunTest(const FString& Parameters)
                 }
                 Clear = Lo;
                 Reason = bCorridor ? TEXT("LATERAL_MARGIN_BELOW_50") : TEXT("CLEARANCE_BELOW_300");
+            }
+            const FVector Direction = Leg.Evaluate(FMath::Min(Along + 50.0F, Length)) - Leg.Evaluate(FMath::Max(Along - 50.0F, 0.0F));
+            if (Reason.IsEmpty())
+            {
+                FString Envelope;
+                if (!EnvelopeClear(P, Direction, Leg.GetHalfWidthAt(Along), &Envelope)) Reason = FString::Printf(TEXT("SAFETY_CORRIDOR +-%.0f %s"), Leg.GetHalfWidthAt(Along), *Envelope);
+            }
+            {
+                // Measured maximum clear half-width at this sample (for deriving the per-leg corridor).
+                float Lo = 0, Hi = 3000;
+                if (!EnvelopeClear(P, Direction, Lo, nullptr)) Hi = 0;
+                for (int32 Iteration = 0; Iteration < 9 && Hi > 0; ++Iteration)
+                { const float Mid = (Lo + Hi) * .5F; (EnvelopeClear(P, Direction, Mid, nullptr) ? Lo : Hi) = Mid; }
+                MaxClearWidth = FMath::Min(MaxClearWidth, Lo);
+                MinMargin = FMath::Min(MinMargin, Lo - Leg.GetHalfWidthAt(Along));
             }
             if (Reason.IsEmpty() && Step > 0)
             {
@@ -481,6 +577,9 @@ bool FAeroSimNavigationCollisionRouteTest::RunTest(const FString& Parameters)
             if (!bHit || Support.ImpactNormal.Z < .8 || FMath::Abs(Support.ImpactPoint.Z - Home.Z) > 5.0)
                 First += FString::Printf(TEXT(" NO_REAL_SUPPORT_AT_MAT hit=%d z=%.1f"), bHit, bHit ? Support.ImpactPoint.Z : 0.0);
         }
+        AddInfo(FString::Printf(TEXT("LEG %s corridor+-%.0f%s band-%.0f/+%.0f measured_min_clear_halfwidth=%.0f min_spare=%.0f"), *Leg.LegId.ToString(),
+            Leg.SafetyHalfWidthCm, Leg.EndFunnelHalfWidthCm > 0 ? *FString::Printf(TEXT(" (funnel to +-%.0f)"), Leg.EndFunnelHalfWidthCm) : TEXT(""),
+            Leg.SafetyBelowCm, Leg.SafetyAboveCm, MaxClearWidth, MinMargin));
         AddInfo(FString::Printf(TEXT("LEG %s kind=%d length=%.0fcm samples=%d min_foot_clear=%.0f min_water_clear=%s min_clearance=%s required=%.0f %s visible_crown_samples=%d%s"),
             *Leg.LegId.ToString(), static_cast<int32>(Leg.Kind), Length, Steps + 1, MinFoot,
             MinWater < BIG_NUMBER ? *FString::Printf(TEXT("%.0f"), MinWater) : TEXT("n/a"),
