@@ -1,0 +1,104 @@
+{
+  "schema": "aerosim.environment-source/v1",
+  "state": "DRAFT_NOT_USER_CONFIRMED",
+  "intake_state": "STAGED_NOT_IMPORTED_OR_APPLIED",
+  "provider": "ambientCG",
+  "asset_id": "Foam002",
+  "asset_page": "https://ambientcg.com/view?id=Foam002",
+  "license": "CC0-1.0",
+  "license_source": "https://docs.ambientcg.com/license/",
+  "authors": {
+    "Lennart Demes (ambientCG)": "All"
+  },
+  "provider_tags": [
+    "2",
+    "foam",
+    "ocean",
+    "sea",
+    "soap"
+  ],
+  "physical_size": "not published by provider (dimensionX/Y = 0); see docs/designs/surface-asset-spec.md for the chosen world scale",
+  "archive": {
+    "url": "https://ambientcg.com/get?file=Foam002_2K-JPG.zip",
+    "declared_bytes": 32118035,
+    "bytes": 32118035,
+    "md5": "02d038e2bcba8dee5bd551c3cc82bc80",
+    "sha256": "9a0882264b843890cd289b1f434c25c9735bba60a7d6f4299e03f663dc350b01",
+    "members": [
+      "Foam002.png",
+      "Foam002_2K-JPG.blend",
+      "Foam002_2K-JPG.mtlx",
+      "Foam002_2K-JPG.tres",
+      "Foam002_2K-JPG.usdc",
+      "Foam002_2K-JPG_Color.jpg",
+      "Foam002_2K-JPG_Displacement.jpg",
+      "Foam002_2K-JPG_NormalDX.jpg",
+      "Foam002_2K-JPG_NormalGL.jpg",
+      "Foam002_2K-JPG_Opacity.jpg",
+      "Foam002_2K-JPG_Roughness.jpg"
+    ],
+    "retained": [
+      "Foam002_2K-JPG_Color.jpg",
+      "Foam002_2K-JPG_NormalDX.jpg",
+      "Foam002_2K-JPG_Roughness.jpg",
+      "Foam002_2K-JPG_Opacity.jpg"
+    ]
+  },
+  "provider_api_sha256": "5d68e391d6ec921cc949eecf415ec31b53d1a871d2e095be6ce780220760cf5b",
+  "blend_role": "detail",
+  "serves": [
+    "U3"
+  ],
+  "intended_use": "Broken sea-foam/surf mask, normal and roughness for rock-contact and shallows foam.",
+  "limits": "Provider tags include 'soap'; this is a generic foam surface, not a captured ocean surf sequence. No engine asset imported or visual acceptance claimed.",
+  "sources": [
+    {
+      "path": "SourceAssets/EnvironmentDraft/Water/Foam002/Foam002_2K-JPG_Color.jpg",
+      "bytes": 4497396,
+      "md5": "97715b975f91630ac2873696d8704857",
+      "sha256": "4df4472006755ade7ff74f44c648e5e1eb214f6f8d330c387bd425c3a1a5ad64",
+      "role": "sRGB foam color/mask",
+      "source_resolution": "2k",
+      "url": "https://ambientcg.com/get?file=Foam002_2K-JPG.zip",
+      "zip_member": "Foam002_2K-JPG_Color.jpg",
+      "publisher_md5": "not published",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Water/Foam002/Foam002_2K-JPG_NormalDX.jpg",
+      "bytes": 9096706,
+      "md5": "4838d8d78de6cb0e6e87405ca639c97c",
+      "sha256": "104fc90c4e490acc85afdee0113141ed1005cd50e81b21a3f009782d04ceb5fa",
+      "role": "DirectX tangent-space normal, linear",
+      "source_resolution": "2k",
+      "url": "https://ambientcg.com/get?file=Foam002_2K-JPG.zip",
+      "zip_member": "Foam002_2K-JPG_NormalDX.jpg",
+      "publisher_md5": "not published",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Water/Foam002/Foam002_2K-JPG_Roughness.jpg",
+      "bytes": 2491080,
+      "md5": "ff645033c12acc0f3600c8108c018441",
+      "sha256": "28325b8666d10b4edd0d7be71ec446caa1ace0fd06364f9a4604f6a58acc5a4f",
+      "role": "linear roughness",
+      "source_resolution": "2k",
+      "url": "https://ambientcg.com/get?file=Foam002_2K-JPG.zip",
+      "zip_member": "Foam002_2K-JPG_Roughness.jpg",
+      "publisher_md5": "not published",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/Water/Foam002/Foam002_2K-JPG_Opacity.jpg",
+      "bytes": 2662875,
+      "md5": "9e3ab936cf8127a333a41c9d20aa8c5f",
+      "sha256": "591b4fe2d69bd7e7c6f6ace830e338b841b809808e06dac3c69ed0936c4780aa",
+      "role": "linear foam coverage/opacity mask",
+      "source_resolution": "2k",
+      "url": "https://ambientcg.com/get?file=Foam002_2K-JPG.zip",
+      "zip_member": "Foam002_2K-JPG_Opacity.jpg",
+      "publisher_md5": "not published",
+      "license": "CC0-1.0"
+    }
+  ]
+}

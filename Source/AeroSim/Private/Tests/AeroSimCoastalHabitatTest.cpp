@@ -71,6 +71,29 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Habitat weights never jump by more than 0.45 across a 5 m cell (no sawtooth band edge)"), Steps > 5000 && MaximumStep < .45F);
     TestTrue(TEXT("Fewer than 4% of 5 m cells change any habitat weight by more than 0.15"), LargeSteps * 25 < Steps);
 
+    // R3: principal drainages are real incised valleys (geometry), each with a tributary.
+    {
+        struct FProbe { FVector2D Centre, Along; const TCHAR* Name; };
+        const FProbe Probes[] = {
+            {FVector2D(-100000, 13300), FVector2D(18000, 6000), TEXT("system A trunk")}, {FVector2D(-114000, 0), FVector2D(8000, 19000), TEXT("system A tributary")},
+            {FVector2D(-118000, -65000), FVector2D(20000, -10000), TEXT("system B trunk")}, {FVector2D(-131000, -70000), FVector2D(22000, 12000), TEXT("system B tributary")},
+            {FVector2D(-99000, 96000), FVector2D(18000, 16000), TEXT("system C trunk")}};
+        for (const FProbe& Probe : Probes)
+        {
+            const FVector2D Across = FVector2D(-Probe.Along.Y, Probe.Along.X).GetSafeNormal();
+            float Floor = BIG_NUMBER;
+            for (float Offset = -3000; Offset <= 3000; Offset += 250)
+            {
+                const FVector2D P = Probe.Centre + Across * Offset;
+                Floor = FMath::Min(Floor, APacificCoastGraybox::GetCoastalLandHeight(P.X, P.Y));
+            }
+            const FVector2D L = Probe.Centre - Across * 16000, R = Probe.Centre + Across * 16000;
+            const float Banks = .5F * (APacificCoastGraybox::GetCoastalLandHeight(L.X, L.Y) + APacificCoastGraybox::GetCoastalLandHeight(R.X, R.Y));
+            TestTrue(FString::Printf(TEXT("Drainage %s is incised at least 15 m below its banks"), Probe.Name), Banks - Floor > 1500);
+            AddInfo(FString::Printf(TEXT("Drainage %s depth below banks %.0f cm"), Probe.Name, Banks - Floor));
+        }
+    }
+
     // Bay Area landform: aspect controls habitat on the main ridge flanks.
     float SunWood = 0, ShadeWood = 0; int32 SunCount = 0, ShadeCount = 0;
     for (float X = -200000; X <= -60000; X += 3000)
@@ -123,6 +146,26 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
         AddInfo(FString::Printf(TEXT("Distant range top %.0f cm; perimeter max %.0f cm; %d triangles"), Top, PerimeterMax, Section->ProcIndexBuffer.Num() / 3));
     }
     TestTrue(TEXT("Distant receding ridgeline mesh exists"), bRange);
+
+    // Talus foot: supported blocks rest on the real cliff foot at the waterline; several emerge.
+    for (UProceduralMeshComponent* Mesh : Meshes)
+    {
+        if (Mesh->GetFName() != TEXT("CoastalTalusButtresses")) continue;
+        const FProcMeshSection* Section = Mesh->GetProcMeshSection(0);
+        if (!TestNotNull(TEXT("Talus has geometry"), Section)) break;
+        const int32 Blocks = Section->ProcVertexBuffer.Num() / 16;
+        int32 Emergent = 0, NearWaterline = 0;
+        for (int32 Block = 0; Block < Blocks; ++Block)
+        {
+            const FVector Top = Section->ProcVertexBuffer[Block * 16 + 15].Position;
+            if (Top.Z > APacificCoastGraybox::SeaLevelCm + 100) ++Emergent;
+            if (FMath::Abs(Top.X - APacificCoastGraybox::GetCoastalShoreX(Top.Y)) < 2500) ++NearWaterline;
+        }
+        TestEqual(TEXT("Sixty-four talus blocks"), Blocks, 64);
+        TestTrue(TEXT("At least a quarter of the talus blocks break the sea surface"), Emergent * 4 >= Blocks);
+        TestTrue(TEXT("Talus blocks sit at the actual waterline, not buried behind the cliff"), NearWaterline * 10 >= Blocks * 9);
+        AddInfo(FString::Printf(TEXT("Talus: %d blocks, %d emergent, %d within 25 m of the waterline"), Blocks, Emergent, NearWaterline));
+    }
 
     // Cliff face never overhangs: along every sampled cliff column, X grows monotonically with depth.
     {

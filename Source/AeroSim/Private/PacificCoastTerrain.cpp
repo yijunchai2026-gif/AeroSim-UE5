@@ -3,6 +3,12 @@
 #include "Components/SceneComponent.h"
 #include "Materials/MaterialInterface.h"
 #include "ProceduralMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Misc/CommandLine.h"
+#include "Misc/PackageName.h"
+#include "Misc/Parse.h"
+#include "UObject/ConstructorHelpers.h"
 
 namespace CoastalTerrain
 {
@@ -90,6 +96,55 @@ float HeroBayWeight(const float Y)
     return 1.0F-Smooth((FMath::Abs(Y-HeroBayY)-1600.0F)/900.0F);
 }
 
+// R5 hero-cove scan (Poly Haven coastal_cliff_01, CC0, fixed 40 m crop imported as
+// SM_CoastHeroCliffScanDraft). The scan is placed rigidly (scale 1, no rotation) at this origin;
+// its lowest vertex is 20 cm above still water. A rigid fit to the original sloping cove apron
+// left 0-6% of the scan visible, so inside this single reach the closed cliff face is rebuilt to
+// sit just behind the scan: ScanFace holds, per local (y, z), the X of the closed terrain face,
+// derived offline from the scan's own LOD0 front surface (2.5 m lower envelope, 40 cm margin,
+// perimeter pulled forward so every cut edge is buried, monotone with depth = no overhang).
+constexpr float ScanX = 17520.0F, ScanY = HeroBayY, ScanZ = -6446.6F, ScanHalfWidth = 2000.0F;
+const int16 ScanFace[22][41] = {
+    {536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536},
+    {536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536,536},
+    {536,536,480,428,402,396,387,384,381,376,372,370,370,373,379,385,390,391,394,395,397,398,395,394,394,402,408,420,425,432,441,446,447,448,456,466,475,494,514,536,536},
+    {536,536,426,324,272,260,242,233,227,218,211,208,208,215,227,239,248,268,279,287,296,300,272,257,260,273,286,309,318,332,349,359,361,364,380,398,415,448,492,536,536},
+    {536,536,399,236,160,141,112,98,98,122,143,160,170,186,201,218,248,268,279,287,296,300,272,230,201,184,188,214,228,244,266,282,290,296,318,338,354,397,469,536,536},
+    {536,536,399,202,94,81,80,85,98,122,143,160,170,186,201,218,248,268,279,287,296,300,272,230,201,184,172,171,173,180,200,229,247,258,268,276,283,339,443,536,536},
+    {536,536,399,202,94,81,80,85,98,122,143,160,170,186,201,218,248,268,279,287,296,300,272,230,201,184,172,171,173,180,200,229,247,258,265,266,267,326,437,536,536},
+    {536,536,399,202,80,80,80,85,98,122,143,160,170,186,201,218,248,268,279,287,296,300,272,230,201,184,172,171,173,180,200,227,241,247,250,249,249,313,430,536,536},
+    {536,536,399,197,80,80,80,80,92,122,143,160,170,186,201,218,248,268,279,287,296,300,272,230,201,184,172,171,173,180,197,216,224,227,227,226,227,296,421,536,536},
+    {536,536,399,192,80,80,80,80,80,118,143,160,170,186,201,218,248,268,279,287,296,300,272,230,201,184,172,171,173,180,187,196,200,204,200,197,199,275,410,536,536},
+    {536,536,398,187,80,80,80,80,80,98,137,159,170,186,201,218,248,268,279,287,296,300,272,229,199,177,167,167,170,172,167,169,173,178,170,166,167,249,397,536,536},
+    {536,536,394,178,80,80,80,80,80,80,115,144,159,182,201,218,248,268,279,287,296,300,272,222,186,158,150,151,155,153,144,142,146,151,141,137,138,223,384,536,536},
+    {536,536,386,165,80,80,80,80,80,80,87,121,141,169,197,218,248,268,279,287,296,300,272,214,165,133,125,126,134,134,122,117,119,124,115,110,108,197,370,536,536},
+    {536,536,376,151,80,80,80,80,80,80,80,99,126,156,192,218,248,268,279,287,296,300,272,208,144,110,101,102,112,113,100,93,93,96,89,82,80,170,358,536,536},
+    {536,536,368,140,80,80,80,80,80,80,80,80,112,146,186,218,248,268,279,287,296,300,272,204,130,92,81,81,88,86,80,80,80,80,80,80,80,148,347,536,536},
+    {536,536,360,130,80,80,80,80,80,80,80,80,97,138,177,212,247,268,279,287,296,297,272,203,121,80,80,80,80,80,80,80,80,80,80,80,80,130,337,536,536},
+    {536,536,345,101,80,80,80,80,80,80,80,80,80,117,153,185,222,247,263,271,276,277,261,191,95,80,80,80,80,80,80,80,80,80,80,80,80,96,321,536,536},
+    {536,536,311,80,80,80,80,80,80,80,80,80,80,80,85,113,144,165,190,203,204,203,197,137,80,80,80,80,80,80,80,80,80,80,80,80,80,80,290,536,536},
+    {536,536,268,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,97,84,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,260,536,536},
+    {536,536,243,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,246,536,536},
+    {536,536,237,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,243,536,536},
+    {536,536,236,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,80,242,536,536}
+};
+
+float ScanWeight(const float Y)
+{
+    return 1.0F - Smooth((FMath::Abs(Y - ScanY) - ScanHalfWidth) / 600.0F);
+}
+
+// Y is world; LocalZ is height above the scan origin (ScanZ).
+float ScanFaceLocalX(const float Y, const float LocalZ)
+{
+    const float U = FMath::Clamp((Y - ScanY + ScanHalfWidth) / 100.0F, 0.0F, 40.0F);
+    const float V = FMath::Clamp((LocalZ + 50.0F) / 50.0F, 0.0F, 21.0F);
+    const int32 U0 = FMath::Min(FMath::FloorToInt(U), 39), V0 = FMath::Min(FMath::FloorToInt(V), 20);
+    const float FU = U - U0, FV = V - V0;
+    return FMath::Lerp(FMath::Lerp(static_cast<float>(ScanFace[V0][U0]), static_cast<float>(ScanFace[V0][U0 + 1]), FU),
+        FMath::Lerp(static_cast<float>(ScanFace[V0 + 1][U0]), static_cast<float>(ScanFace[V0 + 1][U0 + 1]), FU), FV);
+}
+
 float HeroBayLandRelief(const float X,const float Y,const float Edge)
 {
     if(X<=Edge-3500.0F || X>Edge)return 0;
@@ -119,8 +174,9 @@ float CliffOutcrop(const float Y, const float Depth)
     // Unequal gently dipping beds form supported shelves instead of one smooth bow with vertical ribs.
     const float Thresholds[] = {.09F, .27F, .46F, .69F, .85F};
     // R2: beds are sloping benches (wide transitions, thinner offsets), not stair-step ledges.
-    const float Widths[] = {.085F, .07F, .10F, .09F, .075F};
-    const float Thickness[] = {170.0F, 310.0F, 240.0F, 400.0F, 210.0F};
+    // R3 (QA stair-stepped slabs): broader, thinner benches.
+    const float Widths[] = {.15F, .13F, .17F, .16F, .14F};
+    const float Thickness[] = {120.0F, 220.0F, 170.0F, 280.0F, 150.0F};
     const float Collapse=CoastalErosion(Y)/5400.0F;
     // Low eroded coves have a wide supported rubble apron; intact headlands retain a steeper face.
     float Outcrop = Depth * 1500.0F + Collapse * 5500.0F * Smooth(Depth/.30F);
@@ -149,7 +205,36 @@ float CliffOutcrop(const float Y, const float Depth)
     const float HeroRock=Hero*(320.0F*NorthernRib*Smooth((Depth-.025F)/.085F)
         +520.0F*SouthernRib*Smooth((Depth-.09F)/.17F)
         +380.0F*RubbleTongue*Smooth((Depth-.055F)/.30F));
-    return Outcrop + Interior * Blocks + HeroRock;
+    return Outcrop + Interior * Blocks + HeroRock * (1.0F - ScanWeight(Y));
+}
+
+// Cliff rows: station 0 is the shared rim vertex. Sixteen stations span rim -> just below still
+// water (fine where the face is seen) and twenty span the submerged foot. Within the scan reach
+// the face follows ScanFace above water and a 0.9:1 talus below the scan base, fading back into
+// the ordinary profile ~8-33 m under water. A running max keeps every row free of overhangs.
+void CliffStations(const float RowY, const FVector& Rim, FVector (&Out)[CliffDepthSteps + 1])
+{
+    constexpr int32 Upper = 16;
+    const float Top = static_cast<float>(Rim.Z);
+    const float Split = Top > APacificCoastGraybox::SeaLevelCm + 300.0F ? APacificCoastGraybox::SeaLevelCm - 200.0F : FMath::Lerp(Top, CliffFoot, .4F);
+    const float Weight = ScanWeight(RowY);
+    Out[0] = Rim;
+    for (int32 Step = 1; Step <= CliffDepthSteps; ++Step)
+    {
+        const float Z = Step <= Upper ? FMath::Lerp(Top, Split, Step / static_cast<float>(Upper))
+            : FMath::Lerp(Split, CliffFoot, (Step - Upper) / static_cast<float>(CliffDepthSteps - Upper));
+        const float Depth = FMath::Clamp((Top - Z) / (Top - CliffFoot), 0.0F, 1.0F);
+        float X = static_cast<float>(Rim.X) + CliffOutcrop(RowY, Depth);
+        if (Weight > 0)
+        {
+            const float Local = Z - ScanZ;
+            const float Base = ScanX + ScanFaceLocalX(RowY, -50.0F);
+            const float Hero = Local >= -50.0F ? ScanX + ScanFaceLocalX(RowY, Local) : Base + (-50.0F - Local) * .9F;
+            const float Fade = 1.0F - Smooth((-50.0F - Local - 800.0F) / 2500.0F);
+            X = FMath::Lerp(X, Hero, Weight * Fade);
+        }
+        Out[Step] = FVector(FMath::Max(X, static_cast<float>(Out[Step - 1].X)), RowY, Z);
+    }
 }
 
 // --- Bay Area ridge network (DEV-TERRAIN U6) -------------------------------------------------
@@ -262,6 +347,38 @@ float GullyIncision(const FVector2D& Point)
     return Incision;
 }
 
+// R3: three principal drainage systems between the spurs, facing the mountain/overview poses. Each
+// trunk deepens mid-slope and fades into the foothills; tributaries join it obliquely from upslope.
+// They are carved deeper than the minor gully network (cap 55% of local relief vs 42%).
+const FRidgeNode MajorA[] = {{FVector2D(-127000,8000),0,9000},{FVector2D(-110000,10000),4600,12000},{FVector2D(-92000,16000),5200,14000},{FVector2D(-72000,22000),3600,15000},{FVector2D(-52000,30000),0,16000}};
+const FRidgeNode MajorA1[] = {{FVector2D(-118000,-9000),0,7000},{FVector2D(-110000,10000),3100,9000}};
+const FRidgeNode MajorA2[] = {{FVector2D(-112000,34000),0,7000},{FVector2D(-92000,16000),3500,10000}};
+const FRidgeNode MajorA3[] = {{FVector2D(-99000,-6000),0,6500},{FVector2D(-80000,19000),2600,9000}};
+const FRidgeNode MajorB[] = {{FVector2D(-148000,-52000),0,9000},{FVector2D(-128000,-60000),4300,12000},{FVector2D(-108000,-70000),5000,14000},{FVector2D(-88000,-80000),3800,15000},{FVector2D(-66000,-92000),0,16000}};
+const FRidgeNode MajorB1[] = {{FVector2D(-142000,-76000),0,7000},{FVector2D(-120000,-64000),3100,9500}};
+const FRidgeNode MajorB2[] = {{FVector2D(-117000,-50000),0,7000},{FVector2D(-100000,-74000),3100,9500}};
+const FRidgeNode MajorC[] = {{FVector2D(-125000,72000),0,8500},{FVector2D(-108000,88000),4100,11500},{FVector2D(-90000,104000),4600,13000},{FVector2D(-70000,120000),0,15000}};
+const FRidgeNode MajorC1[] = {{FVector2D(-113000,108000),0,6500},{FVector2D(-96000,99000),2900,9000}};
+const FChain MajorDrainages[] = {{MajorA,5},{MajorA1,2},{MajorA2,2},{MajorA3,2},{MajorB,5},{MajorB1,2},{MajorB2,2},{MajorC,4},{MajorC1,2}};
+
+float MajorIncision(const FVector2D& Point)
+{
+    float Incision = 0;
+    for (const FChain& Chain : MajorDrainages)
+        for (int32 Node = 0; Node + 1 < Chain.Count; ++Node)
+        {
+            const FRidgeNode& A = Chain.Nodes[Node];
+            const FRidgeNode& B = Chain.Nodes[Node + 1];
+            const FVector2D Direction = B.Position - A.Position;
+            const float T = FMath::Clamp(static_cast<float>(FVector2D::DotProduct(Point - A.Position, Direction) / Direction.SizeSquared()), 0.0F, 1.0F);
+            const float Distance = static_cast<float>((Point - FMath::Lerp(A.Position, B.Position, T)).Size());
+            const float Floor = FMath::Sqrt(Distance * Distance + 1500.0F * 1500.0F) - 1500.0F;
+            const float S = FMath::Clamp(1.0F - Floor / FMath::Lerp(A.Width, B.Width, T), 0.0F, 1.0F);
+            Incision = FMath::Max(Incision, FMath::Lerp(A.Height, B.Height, T) * S * FMath::Sqrt(S));
+        }
+    return Incision;
+}
+
 // Distant receding ridgelines beyond the playable land (3–9 km west). They rise from below sea
 // level behind the land collar so no channel of sea separates them, and grow taller with distance.
 constexpr float RangeEast = -232000.0F, RangeWest = -900000.0F, RangeHalfY = 760000.0F;
@@ -294,7 +411,10 @@ float APacificCoastGraybox::GetCliffEdgeX(const float Y)
     const float Headland=20000.0F + 3800.0F * CoastalTerrain::Noise(Y, 12730.0F, 7200.0F)
         + 1600.0F * CoastalTerrain::Noise(Y, -7300.0F, 1900.0F)
         + 2600.0F * FMath::Sin(Y / 14500.0F);
-    return FMath::Max(14500.0F,Headland-1500.0F*CoastalTerrain::CoastalErosion(Y)/5400.0F);
+    const float Edge = FMath::Max(14500.0F,Headland-1500.0F*CoastalTerrain::CoastalErosion(Y)/5400.0F);
+    // The rim inside the scan reach is the top of the rebuilt closed face behind the scan.
+    using namespace CoastalTerrain;
+    return FMath::Lerp(Edge, ScanX + ScanFaceLocalX(Y, 1000.0F), ScanWeight(Y));
 }
 
 float APacificCoastGraybox::GetCoastalLandHeight(const float X, const float Y)
@@ -321,7 +441,7 @@ float APacificCoastGraybox::GetCoastalLandHeight(const float X, const float Y)
     for (const auto& Knoll : Knolls)
         Mountain = JoinRidge(Mountain, RoundRidge(Point, Knoll[0], Knoll[1], 3000.0F));
     // Branching gullies remain subordinate to the ridge mass they cut.
-    Mountain -= FMath::Min(GullyIncision(Point), Mountain * .42F);
+    Mountain -= FMath::Max(FMath::Min(GullyIncision(Point), Mountain * .42F), FMath::Min(MajorIncision(Point), Mountain * .55F));
     // Only broad (170 m) coherent undulation; no short-wavelength ripple over the slopes.
     Mountain += Smooth(Mountain / 7000.0F) * 260.0F * Noise(X, Y, 17000.0F);
     const float Hills = 650.0F + 700.0F * Noise(X, Y, 26000.0F) + 60.0F * Noise(X, Y, 9500.0F);
@@ -329,7 +449,9 @@ float APacificCoastGraybox::GetCoastalLandHeight(const float X, const float Y)
     // Inland worksite, routes and trails (X <= 105 m) keep their existing supported grade.
     // Only the outer coastal apron descends into unequal coves between surviving high sea headlands.
     const float CoastBlend=Smooth((X-10500.0F)/FMath::Max(1000.0F,GetCliffEdgeX(Y)-10500.0F));
-    const float CoastHeight=LandHeight-CoastalErosion(Y)*CoastBlend*Interior;
+    // Inside the scan reach the cove floor is 6 m shallower so the land cap buries the scan's top edge.
+    const float ScanCentre=1.0F-Smooth((FMath::Abs(Y-ScanY)-1800.0F)/800.0F); // flat: keeps the runnel/bank relief intact
+    const float CoastHeight=LandHeight-(CoastalErosion(Y)-600.0F*ScanCentre)*CoastBlend*Interior;
     // A shallow seasonal swale gives the short woodland bridge an actual crossing to span.
     // Its 16 m bank-to-bank width spans several near-field samples; both bridge landings remain at grade.
     return CoastHeight - 180.0F * ChannelWeight(X, Y) + HeroBayLandRelief(X,Y,GetCliffEdgeX(Y));
@@ -352,18 +474,14 @@ float APacificCoastGraybox::GetCoastalShoreX(float Y)
     const float TopA = GetCoastalLandHeight(EdgeA, YA), TopB = GetCoastalLandHeight(EdgeB, YB);
     const float Alpha = (Y - YA) / (YB - YA);
     const float Top = FMath::Lerp(TopA, TopB, Alpha);
-    const float TargetDepth = FMath::Clamp((Top - SeaLevelCm) / (Top - CliffFoot), 0.0F, 1.0F);
-    const int32 CentralStep = FMath::Clamp(FMath::FloorToInt(TargetDepth * CliffDepthSteps), 0, CliffDepthSteps - 1);
-    auto Point = [](float Edge, float SampleY, float SampleTop, int32 Step)
-    {
-        const float D = Step / static_cast<float>(CliffDepthSteps);
-        return FVector(Edge + CliffOutcrop(SampleY, D), SampleY, FMath::Lerp(SampleTop, CliffFoot, D));
-    };
+    FVector StationsA[CliffDepthSteps + 1], StationsB[CliffDepthSteps + 1];
+    CliffStations(YA, FVector(EdgeA, YA, TopA), StationsA);
+    CliffStations(YB, FVector(EdgeB, YB, TopB), StationsB);
     // Intersect the actual two triangles of the sampled cliff rather than an analytic approximation.
-    for (int32 Step = FMath::Max(0, CentralStep - 2); Step <= FMath::Min(CliffDepthSteps - 1, CentralStep + 2); ++Step)
+    for (int32 Step = 0; Step < CliffDepthSteps; ++Step)
     {
-        const FVector A = Point(EdgeA, YA, TopA, Step), B = Point(EdgeA, YA, TopA, Step + 1);
-        const FVector C = Point(EdgeB, YB, TopB, Step), D = Point(EdgeB, YB, TopB, Step + 1);
+        const FVector A = StationsA[Step], B = StationsA[Step + 1];
+        const FVector C = StationsB[Step], D = StationsB[Step + 1];
         const FVector Faces[][3] = {{A,C,B}, {B,C,D}};
         for (const auto& Face : Faces)
         {
@@ -380,7 +498,8 @@ float APacificCoastGraybox::GetCoastalShoreX(float Y)
             return FMath::Lerp(P.X, Q.X, (Y - P.Y) / (Q.Y - P.Y));
         }
     }
-    return FMath::Lerp(EdgeA, EdgeB, Alpha) + CliffOutcrop(Y, TargetDepth);
+    (void)Top;
+    return FMath::Lerp(EdgeA, EdgeB, Alpha) + CliffOutcrop(Y, FMath::Clamp((Top - SeaLevelCm) / (Top - CliffFoot), 0.0F, 1.0F));
 }
 
 namespace CoastalTerrain
@@ -429,7 +548,7 @@ FCoastHabitatSample FPacificCoastHabitat::Sample(const float X, const float Y)
     // Two irregular noise octaves displace every threshold so transitions are broad and patchy,
     // never contour bands or a sawtooth along mesh rows.
     const float Patch = .55F * Noise(X, Y + 3000.0F, 9000.0F) + .3F * Noise(X - 7000.0F, Y, 3100.0F);
-    float Rock = Smooth((Result.Grade - .58F + .14F * Patch) / .42F);
+    float Rock = Smooth((Result.Grade - .42F + .14F * Patch) / .62F);
     // Moisture index: shade and drainage favour woodland; ocean bluffs are wind-pruned grassland.
     const float Bluff = Smooth((X - (Edge - 5000.0F)) / 3500.0F);
     // Golden grass dominates open Bay Area hills; woodland keeps to shaded aspects and drainages.
@@ -464,6 +583,31 @@ FLinearColor FPacificCoastHabitat::GetGroundVertexColor(const float X, const flo
     const float Bed = .9F * CoastalTerrain::ChannelWeight(X, Y);
     return FLinearColor(Habitat.ExposedGrass * (1.0F - Bed), Habitat.ShelteredGrass * (1.0F - Bed),
         FMath::Lerp(Habitat.Woodland, 1.0F - Habitat.Rock - Habitat.Shore, Bed), 1.0F);
+}
+
+float FPacificCoastHabitat::GetCliffFaceX(const float Y, const float Z)
+{
+    using namespace CoastalTerrain;
+    // Mirrors BuildCoastalTerrain: stations of the two bracketing coast rows, linear in Z and Y.
+    const float ClampedY = FMath::Clamp(Y, -North, North);
+    const TArray<float>& Samples = CoastRowsY();
+    int32 Low = 0, High = Samples.Num() - 1;
+    while (Low + 1 < High) { const int32 Middle = (Low + High) / 2; if (Samples[Middle] <= ClampedY) Low = Middle; else High = Middle; }
+    const int32 Row = FMath::Min(Low, Samples.Num() - 2);
+    auto RowFace = [Z](const float RowY)
+    {
+        const float Edge = APacificCoastGraybox::GetCliffEdgeX(RowY);
+        FVector Stations[CliffDepthSteps + 1];
+        CliffStations(RowY, FVector(Edge, RowY, APacificCoastGraybox::GetCoastalLandHeight(Edge, RowY)), Stations);
+        if (Z >= Stations[0].Z) return static_cast<float>(Stations[0].X);
+        for (int32 Step = 0; Step < CliffDepthSteps; ++Step)
+            if (Z >= Stations[Step + 1].Z)
+                return FMath::Lerp(static_cast<float>(Stations[Step].X), static_cast<float>(Stations[Step + 1].X),
+                    static_cast<float>((Stations[Step].Z - Z) / (Stations[Step].Z - Stations[Step + 1].Z)));
+        return static_cast<float>(Stations[CliffDepthSteps].X);
+    };
+    const float YA = Samples[Row], YB = Samples[Row + 1];
+    return FMath::Lerp(RowFace(YA), RowFace(YB), FMath::Clamp((ClampedY - YA) / (YB - YA), 0.0F, 1.0F));
 }
 
 float FPacificCoastHabitat::GetDistantRangeHeight(const float X, const float Y)
@@ -536,13 +680,9 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
     {
         const int32 Rim = Row * Columns + Columns - 1;
         Cliff.Add(Rim);
-        const FVector Top = Vertices[Rim];
-        for (int32 Depth = 1; Depth <= DepthSteps; ++Depth)
-        {
-            const float D = Depth / static_cast<float>(DepthSteps);
-            const float Outcrop = CliffOutcrop(Top.Y, D);
-            Cliff.Add(Vertex(FVector(Top.X + Outcrop, Top.Y, FMath::Lerp(static_cast<float>(Top.Z), CliffFoot, D))));
-        }
+        FVector Stations[CliffDepthSteps + 1];
+        CliffStations(static_cast<float>(Vertices[Rim].Y), Vertices[Rim], Stations);
+        for (int32 Depth = 1; Depth <= DepthSteps; ++Depth) Cliff.Add(Vertex(Stations[Depth]));
     }
     for (int32 Row = 0; Row < Rows - 1; ++Row)
         for (int32 Depth = 0; Depth < DepthSteps; ++Depth)
@@ -641,17 +781,50 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
         ++GeneratedPrimitiveCount;
     }
 
+    // R5: the single scanned hero face, rigidly placed (scale 1, no rotation, one instance) in front
+    // of the rebuilt closed face; LOD0 triangles are its collision (complex-as-simple), so the
+    // Pawn sweep meets the rock that is drawn. Skipped while the offline draft importer runs.
+    {
+        FString ImportCommandlet;
+        const bool bDraftImport = FParse::Value(FCommandLine::Get(), TEXT("run="), ImportCommandlet)
+            && (ImportCommandlet.Equals(TEXT("CoastDraftImport"), ESearchCase::IgnoreCase) || ImportCommandlet.Equals(TEXT("HabitatDraftImport"), ESearchCase::IgnoreCase));
+        if (!bDraftImport && FPackageName::DoesPackageExist(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastHeroCliffScanDraft")))
+        {
+            static ConstructorHelpers::FObjectFinder<UStaticMesh> HeroScan(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastHeroCliffScanDraft.SM_CoastHeroCliffScanDraft"));
+            if (HeroScan.Object != nullptr)
+            {
+                UStaticMeshComponent* Scan = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CoastalHeroCliffScan"));
+                Scan->SetupAttachment(Root);
+                Scan->SetStaticMesh(HeroScan.Object);
+                Scan->SetRelativeLocation(FVector(ScanX, ScanY, ScanZ));
+                Scan->SetCollisionProfileName(TEXT("BlockAll"));
+                Scan->SetCastShadow(true);
+                Scan->SetMaterial(0, Material);
+                CoastalColorParts.Add(Scan); CoastalPartColors.Add(FLinearColor(.58F, .64F, .68F));
+                ++GeneratedPrimitiveCount;
+            }
+        }
+    }
+
     // Angular fallen buttresses intersect the supported cliff foot, with submerged bases.
     // Unequal spacing, rotation and proportions avoid the former row of identical cubes.
     TArray<FVector> TalusVertices, TalusNormals;
     TArray<int32> TalusIndices;
     FRandomStream RockRandom(914823);
-    for (int32 Rock = 0; Rock < 32; ++Rock)
+    // R3: 64 unequal blocks; half gather at the eroded cove centres as a supported talus/rubble
+    // foot, several breaking the surface (peaks up to ~19 m above the sea).
+    const float CoveCentres[] = {-47000.0F, -19000.0F, 19000.0F, 54000.0F};
+    for (int32 Rock = 0; Rock < 64; ++Rock)
     {
-        const float Y = RockRandom.FRandRange(-57000.0F, 57000.0F);
+        float Y = Rock % 2 == 0 ? FMath::Clamp(CoveCentres[(Rock / 2) % 4] + RockRandom.FRandRange(-6500.0F, 6500.0F), -57000.0F, 57000.0F)
+            : RockRandom.FRandRange(-57000.0F, 57000.0F);
+        // Keep the scanned hero face clear: blocks that fall in front of it move to its flanks.
+        if (FMath::Abs(Y - ScanY) < ScanHalfWidth + 700.0F) Y = ScanY + (Y < ScanY ? -1.0F : 1.0F) * (ScanHalfWidth + 700.0F + FMath::Abs(Y - ScanY) * .8F);
         const float Edge = GetCliffEdgeX(Y);
-        const float Radius = RockRandom.FRandRange(650.0F, 1850.0F);
-        const float Peak = RockRandom.FRandRange(-7500.0F, -3900.0F);
+        const float Radius = RockRandom.FRandRange(650.0F, 2100.0F);
+        const float Peak = RockRandom.FRandRange(-7400.0F, -4600.0F);
+        // Blocks sit on the real sloping cliff foot at the waterline (previously buried behind it).
+        const float Foot = GetCoastalShoreX(Y) + RockRandom.FRandRange(-300.0F, 700.0F) - Radius * .3F;
         const int32 BaseIndex = TalusVertices.Num();
         const float Rotation = RockRandom.FRandRange(0.0F, 2.0F * PI);
         TalusVertices.Add(FVector(Edge - 300.0F, Y, -15500.0F));
@@ -660,10 +833,10 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
             {
                 const float Angle = Rotation + Corner * (2.0F * PI / 7.0F);
                 const float R = Radius * RockRandom.FRandRange(.65F, 1.15F) * (Ring == 0 ? 1.0F : .72F);
-                TalusVertices.Add(FVector(Edge + 150.0F + FMath::Cos(Angle) * R, Y + FMath::Sin(Angle) * R * 1.35F,
+                TalusVertices.Add(FVector(Foot + FMath::Cos(Angle) * R, Y + FMath::Sin(Angle) * R * 1.35F,
                     Ring == 0 ? -11100.0F : Peak - RockRandom.FRandRange(900.0F, 1800.0F)));
             }
-        TalusVertices.Add(FVector(Edge + RockRandom.FRandRange(-100.0F, 500.0F), Y + Radius * .2F, Peak));
+        TalusVertices.Add(FVector(Foot + RockRandom.FRandRange(-250.0F, 350.0F), Y + Radius * .2F, Peak));
         for (int32 Corner = 0; Corner < 7; ++Corner)
         {
             const int32 Next = (Corner + 1) % 7;

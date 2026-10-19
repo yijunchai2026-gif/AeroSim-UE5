@@ -1,0 +1,103 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "AeroSim CC0 scan feasibility; physical 40m triangle crop / meshoptimizer v0.25"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "mesh": 0,
+      "name": "coastal-cliff-40m-lod2"
+    }
+  ],
+  "meshes": [
+    {
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TEXCOORD_0": 2
+          },
+          "indices": 3,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "coastal-cliff-40m-lod2.bin",
+      "byteLength": 136468
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 35016,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 35016,
+      "byteLength": 35016,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 70032,
+      "byteLength": 23344,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 93376,
+      "byteLength": 43092,
+      "target": 34963
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 2918,
+      "type": "VEC3",
+      "min": [
+        -20.0,
+        -0.33416131138801575,
+        -4.9017133712768555
+      ],
+      "max": [
+        20.0,
+        9.630810737609863,
+        4.726827621459961
+      ]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 2918,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 2918,
+      "type": "VEC2"
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5125,
+      "count": 10773,
+      "type": "SCALAR"
+    }
+  ]
+}
