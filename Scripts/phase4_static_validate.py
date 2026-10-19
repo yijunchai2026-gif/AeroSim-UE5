@@ -36,11 +36,12 @@ def main() -> int:
         for path in root.rglob("*")
         if path.is_file() and path.suffix.lower() in {".h", ".cpp", ".ini"}
     )
+    mission_header = (ROOT / "Source/AeroSim/Public/Phase4Mission.h").read_text()
+    require("CurrentVersion = 2" in mission_header, "coastal mission definition must use v2 for revised world objectives")
     tokens = (
         "aerosim.runtime.phase4/v1",
         "FPhase4TaskDefinition",
         "pacific-coast-inspection",
-        "CurrentVersion = 1",
         "FPhase4Checkpoint",
         "SafeHalfLengthCm",
         "FPhase4PreflightChecklist",

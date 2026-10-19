@@ -30,6 +30,11 @@ bool IsCoastalCourseDebugEnabled()
 
 // World positions, shared by mission and environment clearance. The first slice traverses
 // a representative corridor segment; full corridor traversal has its own safety/regression gate.
+const TArray<FVector> PlateauClearancePoints = {
+    FVector(0,0,100), FVector(1800,0,400), FVector(4000,-1200,600),
+    FVector(6500,-500,700), FVector(9000,2000,700), FVector(6500,4000,600), FVector(0,0,100)
+};
+
 const TArray<FVector> RoutePoints = []
 {
     const FVector Home(55,79,APacificCoastGraybox::GetCoastalLandHeight(55,79)+1.8F);
@@ -63,6 +68,11 @@ float SurfaceZ(const FVector& Point)
 {
     return Point.X >= 10000.0F ? -100.0F : 0.0F;
 }
+}
+
+const TArray<FVector>& FPacificCoastGrayboxContract::GetPlateauClearancePoints()
+{
+    return PlateauClearancePoints;
 }
 
 const TArray<FVector>& FPacificCoastGrayboxContract::GetRoutePoints()

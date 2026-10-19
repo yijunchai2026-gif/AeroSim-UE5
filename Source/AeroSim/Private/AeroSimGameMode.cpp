@@ -897,10 +897,17 @@ void AAeroSimGameMode::ToggleLabComparison()
 
 void AAeroSimGameMode::RestartProductMission()
 {
-    if (IsMissionActive()) return;
+    APlayerController* Controller=GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+    AFlightPawn* Pawn=Controller ? Cast<AFlightPawn>(Controller->GetPawn()) : nullptr;
+    // Explicit reset is the only recovery from a latched water incident. Ordinary
+    // active missions retain their guard; do not turn a retry into an auto-resume.
+    const bool bWaterRetry=Shell.Page==EProductPage::Flight && Pawn && Pawn->HasWaterIncident()
+        && Pawn->GetFlightModel().Phase==EFlightPhase::Paused
+        && Phase4Mission.Feedback.Incident==EPhase4Incident::UnsafeLanding;
+    if (IsMissionActive() && !bWaterRetry) return;
     bReplayPlaying = false;
     Phase4Mission.Reset(); MissionFlow.Reset();
-    if (AFlightPawn* Pawn = Cast<AFlightPawn>(GetWorld()->GetFirstPlayerController()->GetPawn())) Pawn->ResetFlight();
+    if (Pawn) Pawn->ResetFlight();
     Shell.Page = EProductPage::Hangar;
     Shell.Status.Reset();
     RefreshProductWidget(); ConfigureProductInputMode();

@@ -43,6 +43,20 @@ MANIFEST_SUMMARY = (
     'review_sequence_index','review_sequence_frames','review_sequence_elapsed_seconds','world_paused')
 
 
+def read_session(path: Path) -> dict:
+    # Runtime heartbeat replaces this fixed sandbox file once per second. Its
+    # platform-neutral delete/move writer has a short missing-file window.
+    # Retry only the read; never replay a command with unknown outcome.
+    for attempt in range(5):
+        try:
+            return json.loads((path/'session.json').read_text(encoding='utf-8-sig'))
+        except (FileNotFoundError, json.JSONDecodeError):
+            if attempt == 4:
+                raise
+            time.sleep(.005)
+    raise AssertionError('unreachable')
+
+
 def directory() -> Path:
     # Configuration is fixed here, not accepted from MCP requests.
     home=Path.home()
@@ -51,7 +65,7 @@ def directory() -> Path:
     fresh=[]
     for path in candidates:
         try:
-            session=json.loads((path/'session.json').read_text(encoding='utf-8-sig'))
+            session=read_session(path)
             if abs(time.time()-session['heartbeat_unix'])<=8: fresh.append(path)
         except (OSError,ValueError,KeyError,TypeError): pass
     if len(fresh)!=1: raise ValueError('LIVE_BRIDGE_REQUIRED: launch one Development demo with -AeroSimControlBridge')
@@ -179,7 +193,7 @@ def run(name: str, arguments: dict) -> tuple[Path, dict]:
     path=directory()
     with (path/'client.lock').open('a') as lock:
         fcntl.flock(lock,fcntl.LOCK_EX)
-        session=json.loads((path/'session.json').read_text(encoding='utf-8-sig'))['session']
+        session=read_session(path)['session']
         opening=send(path,session,'inspect')
         if operation=='inspect':return path,opening
         preview=send(path,session,operation,mode='preview',**payload)

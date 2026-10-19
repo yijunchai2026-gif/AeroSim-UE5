@@ -168,7 +168,9 @@ void FFlightModel::Advance(const FFlightControlInput& RawInput, const float Delt
     Position += Velocity * Step;
     if (Surface.bHasSupport && Position.Z < Surface.SupportedModelZCm)
     {
-        bSupportImpact = Velocity.Z < -100.0F;
+        // A valid slow, level landing returned above. Every remaining support
+        // penetration is an unsafe contact, including fast lateral skids.
+        bSupportImpact = true;
         Position.Z = Surface.SupportedModelZCm;
         Velocity.Z = FMath::Max(Velocity.Z, 0.0F);
     }
@@ -593,7 +595,8 @@ float AFlightPawn::GetFootDepthCm() const
 
 bool AFlightPawn::IsOverWater(const FVector& WorldOrigin) const
 {
-    return WorldOrigin.X > APacificCoastGraybox::GetCoastalShoreX(WorldOrigin.Y) + 30.0F;
+    return WorldOrigin.X < -240000.0F || FMath::Abs(WorldOrigin.Y) > 220000.0F
+        || WorldOrigin.X > APacificCoastGraybox::GetCoastalShoreX(WorldOrigin.Y) + 30.0F;
 }
 
 FFlightSurfaceContext AFlightPawn::QuerySurface(const FVector& WorldOrigin) const
@@ -608,7 +611,7 @@ FFlightSurfaceContext AFlightPawn::QuerySurface(const FVector& WorldOrigin) cons
     // The thin flexible mat is intentionally visual-only; read its actual centre plane,
     // and only accept it when solid terrain underneath has already been hit.
     const AAeroSimGameMode* Mode=GetWorld()->GetAuthGameMode<AAeroSimGameMode>();
-    const APacificCoastGraybox* Coast=Mode ? Mode->GetEnvironmentActor() : nullptr;
+    APacificCoastGraybox* Coast=Mode ? Mode->GetEnvironmentActor() : nullptr;
     UProceduralMeshComponent* Mat=Coast ? Cast<UProceduralMeshComponent>(Coast->GetDefaultSubobjectByName(TEXT("CoastalLaunchMat"))) : nullptr;
     const FProcMeshSection* MatSection=Mat ? Mat->GetProcMeshSection(0) : nullptr;
     // Corners bound the landing footprint, including the actual four support feet.

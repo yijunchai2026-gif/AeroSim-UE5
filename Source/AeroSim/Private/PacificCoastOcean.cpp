@@ -13,6 +13,8 @@ namespace CoastalSea
 {
 constexpr float Gravity = 981.0F;                // cm/s^2
 constexpr float GeometryMinWavelength = 1200.0F; // shorter components live only in the normal
+constexpr float SeaFloorZ = -24000.0F;
+constexpr float DeepFloorDepth = APacificCoastGraybox::SeaLevelCm - SeaFloorZ;
 using FWave = APacificCoastGraybox::FCoastalWaveComponent;
 
 struct FDerived
@@ -110,12 +112,41 @@ float SeabedDepth(const float X, const float Y, const float ShoreX)
     // breaks) before the drop to the 175 m floor.
     const float T = FMath::Clamp((X - (ShoreX - 700.0F)) / 15000.0F, 0.0F, 1.0F);
     float Depth = T <= .3F ? 250.0F + 1500.0F * FMath::Pow(T / .3F, 1.2F)
-        : 1750.0F + 15750.0F * FMath::Pow((T - .3F) / .7F, 1.6F);
+        : 1750.0F + (DeepFloorDepth - 1750.0F) * FMath::Pow((T - .3F) / .7F, 1.6F);
     const float Near = 1.0F - FMath::SmoothStep(.05F, .38F, T);
     const float Reef = FMath::Max(0.0F, FMath::PerlinNoise2D(FVector2D(Y / 2600.0F + 3.1F, T * 7.0F)));
     Depth -= 520.0F * Reef * Near;
     Depth += 120.0F * FMath::PerlinNoise2D(FVector2D(Y / 2300.0F, T * 4.0F)) * (1.0F - T) * T;
     return FMath::Max(Depth, 70.0F);
+}
+
+struct FDepthSample
+{
+    float DepthCm = DeepFloorDepth;
+    float LandZ = SeaFloorZ;
+    bool bLandSurface = false;
+};
+
+FDepthSample SampleDepth(const float X, const float Y, const float ShoreX, const float CliffEdge)
+{
+    FDepthSample Result;
+    // Only the actual shelf footprint can replace the deep ocean floor. A point on the
+    // landward side of the cliff is not automatically shallow: beyond the land's ends
+    // it is open ocean. The former unconditional 250 cm branch painted a huge rectangle.
+    if (FMath::Abs(Y) < 212000.0F && X >= ShoreX - 700.0F)
+    {
+        const float ShelfWeight = 1.0F - FMath::SmoothStep(165000.0F, 210000.0F, FMath::Abs(Y));
+        Result.DepthCm = FMath::Lerp(DeepFloorDepth, SeabedDepth(X, Y, ShoreX), ShelfWeight);
+    }
+    // These are the sampled land mesh bounds in PacificCoastTerrain.cpp. Its height
+    // function extrapolates beyond them, so querying that extrapolation is not seabed evidence.
+    Result.bLandSurface = X >= -240000.0F && X <= CliffEdge && FMath::Abs(Y) <= 220000.0F;
+    if (Result.bLandSurface)
+    {
+        Result.LandZ = APacificCoastGraybox::GetCoastalLandHeight(X, Y);
+        Result.DepthCm = FMath::Min(Result.DepthCm, FMath::Max(0.0F, APacificCoastGraybox::SeaLevelCm - Result.LandZ));
+    }
+    return Result;
 }
 
 FString Num(const double Value) { return FString::Printf(TEXT("%.9g"), Value); }
@@ -193,7 +224,7 @@ FVector APacificCoastGraybox::GetCoastalOceanDisplacement(const float X, const f
 
 float APacificCoastGraybox::GetCoastalSeabedDepthCm(const float X, const float Y)
 {
-    return CoastalSea::SeabedDepth(X, Y, GetCoastalShoreX(Y));
+    return CoastalSea::SampleDepth(X, Y, GetCoastalShoreX(Y), GetCliffEdgeX(Y)).DepthCm;
 }
 
 FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShader Kind)
@@ -294,23 +325,22 @@ void APacificCoastGraybox::BuildCoastalOcean(UMaterialInterface* SolidMaterial)
             const bool bCliffCoast = FMath::Abs(Y) < 212000.0F;
             const bool bNear = bCliffCoast && FMath::Abs(X - ShoreX) < 16000.0F;
             float Distance = bNear ? ShoreLine.Distance(X, Y) : (bCliffCoast ? FMath::Abs(X - ShoreX) : 1.0e6F);
-            const float EndFade = 1.0F - FMath::SmoothStep(165000.0F, 210000.0F, FMath::Abs(Y));
-            float Depth = X < ShoreX - 700.0F ? 250.0F : FMath::Lerp(17500.0F, CoastalSea::SeabedDepth(X, Y, ShoreX), EndFade);
+            const CoastalSea::FDepthSample DepthSample = CoastalSea::SampleDepth(X, Y, ShoreX, CliffEdge);
+            const float Depth = DepthSample.DepthCm;
             float VertexContact = Contact;
             // North/south/west perimeter: the land collar slopes under the sea. Its submerged
             // surface is the real seabed there; estimate distance to its waterline from depth/grade
             // so the long straight shores also get surf, shoal colour and swash foam.
-            if (X < CliffEdge - 200.0F && X > -260000.0F && FMath::Abs(Y) < 240000.0F)
+            if (DepthSample.bLandSurface)
             {
-                const float Land = GetCoastalLandHeight(X, Y);
-                if (Land >= SeaLevelCm) { Distance = 0.0F; Depth = 0.0F; }
+                const float Land = DepthSample.LandZ;
+                if (Land >= SeaLevelCm) { Distance = 0.0F; }
                 else if (Land > SeaLevelCm - 2500.0F)
                 {
                     const float GX = (GetCoastalLandHeight(X + 300.0F, Y) - GetCoastalLandHeight(X - 300.0F, Y)) / 600.0F;
                     const float GY = (GetCoastalLandHeight(X, Y + 300.0F) - GetCoastalLandHeight(X, Y - 300.0F)) / 600.0F;
                     const float Grade = FMath::Max(FMath::Sqrt(GX * GX + GY * GY), .02F);
                     Distance = FMath::Min(Distance, (SeaLevelCm - Land) / Grade);
-                    Depth = FMath::Min(Depth, SeaLevelCm - Land);
                     const float Swash = .55F + .25F * FMath::PerlinNoise2D(FVector2D(X / 13000.0F + 1.7F, Y / 13000.0F - 4.2F));
                     VertexContact = FMath::Max(VertexContact * (bCliffCoast ? 1.0F : 0.0F), Swash);
                 }
@@ -350,7 +380,7 @@ void APacificCoastGraybox::BuildCoastalOcean(UMaterialInterface* SolidMaterial)
             // The shelf joins the actual deep seabed continuously; no translucent hard outer ledge.
             const float EndFade=1-FMath::SmoothStep(165000.0F,210000.0F,FMath::Abs(Y));
             const float Profile=SeaLevelCm-CoastalSea::SeabedDepth(X,Y,ShoreX);
-            const float Z=FMath::Lerp(-24000.0F,Profile,EndFade);
+            const float Z=FMath::Lerp(CoastalSea::SeaFloorZ,Profile,EndFade);
             ShelfPositions.Add(FVector(X,Y,Z));ShelfNormals.Add(FVector::UpVector);ShelfUV.Add(FVector2D(X/1800,Y/1800));
         }
     }
@@ -370,8 +400,8 @@ void APacificCoastGraybox::BuildCoastalOcean(UMaterialInterface* SolidMaterial)
     // Explicit sea floor under the entire visible ocean closes the environment.
     UProceduralMeshComponent* Floor = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("PacificSeaFloor"));
     Floor->SetupAttachment(Root); Floor->SetCollisionProfileName(TEXT("NoCollision")); Floor->SetCastShadow(false);
-    const TArray<FVector> Bottom = {FVector(-2100000,-2100000,-24000),FVector(2100000,-2100000,-24000),
-        FVector(-2100000,2100000,-24000),FVector(2100000,2100000,-24000)};
+    const TArray<FVector> Bottom = {FVector(-2100000,-2100000,CoastalSea::SeaFloorZ),FVector(2100000,-2100000,CoastalSea::SeaFloorZ),
+        FVector(-2100000,2100000,CoastalSea::SeaFloorZ),FVector(2100000,2100000,CoastalSea::SeaFloorZ)};
     Floor->CreateMeshSection_LinearColor(0,Bottom,TArray<int32>{0,2,1,1,2,3},
         TArray<FVector>{FVector::UpVector,FVector::UpVector,FVector::UpVector,FVector::UpVector},
         TArray<FVector2D>{FVector2D(0,0),FVector2D(1,0),FVector2D(0,1),FVector2D(1,1)},

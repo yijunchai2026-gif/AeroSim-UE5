@@ -87,18 +87,9 @@ bool FFlightMissionLandingProofTest::RunTest(const FString& Parameters)
     FPhase4MissionSession Mission;
     Mission.Reset();Mission.EnterPreflight();Mission.SetPreflightComplete(true);Mission.BeginMission();
     Mission.Observe(.1F,EFlightPhase::Takeoff,FVector(55,79,400),FVector(0,0,100),FRotator::ZeroRotator);
-    // Logic fixture follows the guidance state, not a claim of real input traversal.
-    for(int32 I=0;I<Mission.GetGuidanceRoute().Num()+5 && Mission.NextCheckpointIndex<5;++I)
-    {
-        const auto* G=Mission.GetCurrentGuidanceTarget();if(!G)break;
-        Mission.Observe(.1F,EFlightPhase::Flight,G->Position,FVector::ZeroVector,FRotator::ZeroRotator);
-    }
+    for(const auto& Point:Mission.Task.Checkpoints)Mission.Observe(.1F,EFlightPhase::Flight,Point.Position,FVector(500,0,0),FRotator::ZeroRotator);
     TestEqual(TEXT("All actual objectives still require return"),Mission.Stage,EPhase4MissionStage::ReturnToHome);
-    for(int32 I=0;I<Mission.GetGuidanceRoute().Num() && Mission.Stage!=EPhase4MissionStage::Landing;++I)
-    {
-        const auto* G=Mission.GetCurrentGuidanceTarget();if(!G)break;
-        Mission.Observe(.1F,EFlightPhase::Flight,G->Position,FVector::ZeroVector,FRotator::ZeroRotator);
-    }
+    Mission.Observe(.1F,EFlightPhase::Flight,FVector(55,79,500),FVector(100,0,0),FRotator::ZeroRotator);
     Mission.Observe(.1F,EFlightPhase::Grounded,FVector(55,79,11),FVector::ZeroVector,FRotator::ZeroRotator,false);
     TestEqual(TEXT("Unsupported Grounded flag cannot complete"),Mission.Stage,EPhase4MissionStage::Landing);
     Mission.Observe(.1F,EFlightPhase::Grounded,FVector(500,79,11),FVector::ZeroVector,FRotator::ZeroRotator,true);

@@ -207,6 +207,7 @@ public:
     FVector ModelToWorldPosition(const FVector& Position) const { return InitialTransform.TransformPosition(Position); }
     FVector WorldToModelPosition(const FVector& Position) const { return InitialTransform.InverseTransformPosition(Position); }
     bool IsSupportedOnLaunchMat() const;
+    bool HasWaterIncident() const { return bWaterIncidentLatched; }
     const FAircraftDefinition& GetAircraftDefinition() const { return AircraftDefinition; }
     const FGimbalController& GetGimbalController() const { return GimbalController; }
     int32 GetDetailedVisualPartCount() const { return DetailedVisualParts.Num(); }
@@ -284,6 +285,8 @@ public:
 private:
     friend class AAeroSimPlayerController;
     friend class FAeroSimProductInputLifecycleTest;
+    friend class FAeroSimProductWaterResetTest;
+    friend class FAeroSimControlFlightRollbackTest;
     bool IsProductFlightPage() const;
     bool IsGameplayInputAllowed() const;
     void HandlePhysicalInputActivity();

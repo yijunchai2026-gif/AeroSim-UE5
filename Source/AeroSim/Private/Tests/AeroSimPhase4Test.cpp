@@ -29,19 +29,13 @@ bool FPhase4MissionLoopTest::RunTest(const FString& Parameters)
     Mission.SetPreflightComplete(true);
     TestTrue(TEXT("Complete preflight can start"), Mission.BeginMission());
     Mission.Observe(0.1F, EFlightPhase::Takeoff, FVector(0, 0, 300), FVector(0, 0, 300), FRotator::ZeroRotator);
-    // State-machine fixture consumes mandatory navigation gates; this is not flown-route evidence.
-    for (int32 I=0; I<Mission.GetGuidanceRoute().Num()+5 && Mission.NextCheckpointIndex<5; ++I)
+    for (const FPhase4Checkpoint& Checkpoint : Mission.Task.Checkpoints)
     {
-        const auto* G=Mission.GetCurrentGuidanceTarget(); if (!G) break;
-        Mission.Observe(.1F,EFlightPhase::Flight,G->Position,FVector::ZeroVector,FRotator::ZeroRotator);
+        Mission.Observe(0.1F, EFlightPhase::Flight, Checkpoint.Position, FVector(900, 0, 0), FRotator::ZeroRotator);
     }
     TestEqual(TEXT("All gates trigger RTH"), Mission.Stage, EPhase4MissionStage::ReturnToHome);
-    for (int32 I=0; I<Mission.GetGuidanceRoute().Num() && Mission.Stage!=EPhase4MissionStage::Landing; ++I)
-    {
-        const auto* G=Mission.GetCurrentGuidanceTarget(); if (!G) break;
-        Mission.Observe(.1F,EFlightPhase::Flight,G->Position,FVector::ZeroVector,FRotator::ZeroRotator);
-    }
-    TestEqual(TEXT("Verified return guides lead to landing"), Mission.Stage, EPhase4MissionStage::Landing);
+    Mission.Observe(0.1F, EFlightPhase::Flight, FVector(0, 0, 500), FVector(300, 0, 0), FRotator::ZeroRotator);
+    TestEqual(TEXT("Home triggers landing"), Mission.Stage, EPhase4MissionStage::Landing);
     // A model Grounded flag alone is no longer evidence of landing on the real mat.
     Mission.Observe(0.1F, EFlightPhase::Grounded, FVector(55,79,10.8682F), FVector::ZeroVector, FRotator::ZeroRotator, true);
     TestEqual(TEXT("Landing produces Result"), Mission.Stage, EPhase4MissionStage::Result);
@@ -62,13 +56,10 @@ bool FPhase4RecoveryTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Boundary incident recorded once"), Mission.BoundaryViolations, 1);
     TestTrue(TEXT("Boundary feedback is recoverable"), Mission.Feedback.bRecoverable);
     TestEqual(TEXT("Boundary has non-color shape cue"), Mission.Feedback.ShapeCue, FString(TEXT("INWARD CHEVRONS")));
-    const auto* Recovery=Mission.GetCurrentGuidanceTarget();
-    if (TestNotNull(TEXT("Boundary selects one shared recovery guide"),Recovery))
-        Mission.Observe(.1F,EFlightPhase::Flight,Recovery->Position,FVector::ZeroVector,FRotator::ZeroRotator);
-    TestEqual(TEXT("Rejoining verified recovery anchor clears incident"), Mission.Feedback.Incident, EPhase4Incident::None);
+    Mission.Observe(0.1F, EFlightPhase::Flight, FVector(-5000, 0, 500), FVector::ZeroVector, FRotator::ZeroRotator);
+    TestEqual(TEXT("Recovery clears incident"), Mission.Feedback.Incident, EPhase4Incident::None);
     Mission.ReportCollision(FVector::ZeroVector);
     TestEqual(TEXT("Collision tracked"), Mission.Collisions, 1);
-    Mission.ReleaseCollisionContact(); // Fixture moved after the actual contact ended.
     Mission.Observe(0.1F, EFlightPhase::Flight, Mission.Task.Checkpoints[2].Position, FVector::ZeroVector, FRotator::ZeroRotator);
     TestTrue(TEXT("Skipping forward gate reports miss"), Mission.MissedCheckpoints > 0);
     TestEqual(TEXT("Progress preserved at expected gate"), Mission.NextCheckpointIndex, 0);

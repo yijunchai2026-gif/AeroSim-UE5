@@ -67,16 +67,3 @@ RTH 是导航 leg 切换，不是自动飞行；保留真实输入、速度和�
 集成源码已把原七点土地开敞 footprint 冻结为 `GetPlateauClearancePoints()`：`(0,0,100),(1800,0,400),(4000,-1200,600),(6500,-500,700),(9000,2000,700),(6500,4000,600),(0,0,100)`。`Trees.cpp::IsProtected` 改读该接口；实际任务 `GetRoutePoints()` 的海上/林间点专供飞行，不再间接生成全林 26 m 避让带。这是职责解耦，不是以删除植被解决飞行问题；原土地/接地环境断言保留，只更新其读到的正确 footprint 来源。
 
 后续必须在相同 flora 几何/seed 下比较解耦前后 **全部已放置树** 的稳定顺序、archetype、Base、Scale、Yaw、LeanPitch、LeanYaw、near/flank 标志及对应实例 transform，生成可复跑 digest；报具体差异实例。单比 count、密度下限、HISM数量或漂亮截图不能证明没有重新撒树。把“任务引导/计分点变化”和“冻结 plateau footprint”做对照测试：仅改变任务路点，layout digest 必须不变。真实 digest 对比当前仍 **NOT_RUN**，本作者本轮只写此文档，没有运行引擎或修改源/资产。
-
-## R5 NAV 源增量接口签名（PMO 最小实施）
-
-2026-10-18：先冻结上文原始合同与 integration 的五个 owned 源文件到 ignored `Artifacts/ProductShell/AAA/R5/Nav/`，逐项哈希见 intake.json。新增接口仅限 Phase4Mission.h；不需要 FlightPawn、ControlBridge、环境或资产接口变更。
-
-- `EPhase4GuideKind`：Takeoff/Transit/VerticalDescent/VerticalAscent/Corridor/Landing。
-- `FPhase4GuidancePoint`：稳定 Id/Label、WORLD Position、Kind、可选 ScoredCheckpointIndex、平面半径/高度窗/速度窗。
-- `FPhase4TaskDefinition::BuildGuidanceRoute() const -> TArray<FPhase4GuidancePoint>`：生成五目标之间的独立有界引导航迹；不写环境、不调用 Pawn 移动。
-- `FPhase4TaskDefinition::ValidateGuidanceSafety(const TArray<FPhase4GuidancePoint>&, FString&) const -> bool`：逐米检查有限安全体并输出首个失败 leg/sample；真实地表/连续 sweep 由真实 World Automation 另外验证，不把前者标为 G1 PASS。
-- `FPhase4MissionSession::GetCurrentGuidanceTarget() const -> const FPhase4GuidancePoint*` 和 `GetGuidanceRoute() const -> const TArray<FPhase4GuidancePoint>&`：HUD/反馈只读同一来源。
-- `FPhase4MissionSession::GetGuidanceIndex() const -> int32`：回归读取独立进度；禁止外部任意推进。
-
-导航路径与索引在 Reset 重建，Observe 只读已解决 WORLD 位姿推进；评分仍五点。回归可以逐点输入确定性位置验证状态，但明确这不代表实际输入飞行。实际 GameMode/Pawn 水复位测试保持，不把旧 FLIGHT-02 全 patch 作为本轮增量。integration 在复制后的其它修复由 root 保留，合入时只应用相对此五文件复制基线的 patch。

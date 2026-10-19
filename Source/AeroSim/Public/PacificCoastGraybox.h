@@ -69,6 +69,8 @@ struct AEROSIM_API FPacificCoastGrayboxContract final
     static constexpr int32 GateCount = 5;
     static constexpr int32 RouteArrowCount = 18;
 
+    /** Fixed land clearing footprint; mission routes never reshape the forest. */
+    static const TArray<FVector>& GetPlateauClearancePoints();
     static const TArray<FVector>& GetRoutePoints();
     static bool IsInsideWorld(const FVector& Point);
     static bool IsGeometryValid();

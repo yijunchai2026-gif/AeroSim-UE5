@@ -90,7 +90,7 @@ void AFlightHUD::DrawHUD()
     // Native CommonUI owns all product menu pages; Canvas is only a flight perimeter layer.
     if (GameMode != nullptr && GameMode->GetProductPage() != EProductPage::Flight) return;
     FPhase4MissionSession FallbackMission;
-    if (GameMode == nullptr) FallbackMission.Reset();
+    FallbackMission.Reset();
     const FPhase4MissionSession& Mission = GameMode != nullptr ? GameMode->GetPhase4Mission() : FallbackMission;
 
     if (Environment.Weather == EAeroSimWeather::Rain)
@@ -155,20 +155,6 @@ void AFlightHUD::DrawHUD()
     DrawText(
         FString::Printf(TEXT("TRAINING AIRCRAFT\n%s\n%s\nBUILD %s"), *Data.AircraftName, *Data.AssetStatus, *Data.BuildId),
         FLinearColor::White, Right + 14.0F, Top + 12.0F, GEngine->GetSmallFont(), 1.0F, false);
-
-    // One navigation source for ordinary travel and incident recovery; never a
-    // direct arrow to a later scored checkpoint across the cliff or forest turn.
-    if (const FPhase4GuidancePoint* Guide=Mission.GetCurrentGuidanceTarget())
-    {
-        const FVector Delta=Guide->Position-Pawn->GetActorLocation();
-        const float Bearing=FRotator::NormalizeAxis(Delta.Rotation().Yaw-Pawn->GetActorRotation().Yaw);
-        const TCHAR* Turn=FMath::Abs(Bearing)<12 ? TEXT("AHEAD") : Bearing<0 ? TEXT("LEFT") : TEXT("RIGHT");
-        DrawRect(FLinearColor(.01F,.045F,.06F,.90F),Left,Top+182,650,74);
-        DrawText(FString::Printf(TEXT("GUIDE %d/%d  %s\n%s %.0f deg   RANGE %.1f m   HEIGHT %+.1f m\n%s"),
-            Mission.GetGuidanceIndex()+1,Mission.GetGuidanceRoute().Num(),*Guide->Id.ToString(),
-            Turn,FMath::Abs(Bearing),Delta.Size()*.01F,Delta.Z*.01F,*Guide->Label.Left(72)),
-            FLinearColor(.80F,.94F,1),Left+12,Top+192,GEngine->GetSmallFont(),1,false);
-    }
 
     if (Mission.Stage == EPhase4MissionStage::Hangar)
     {

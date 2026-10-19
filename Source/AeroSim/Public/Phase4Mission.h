@@ -52,21 +52,6 @@ struct AEROSIM_API FPhase4Checkpoint
     UPROPERTY(BlueprintReadOnly, Category = "Mission") float RadiusCm = 2500.0F;
 };
 
-enum class EPhase4GuideKind : uint8 { Takeoff, Transit, VerticalDescent, VerticalAscent, Corridor, Landing };
-
-/** Navigation only. Five checkpoint identities/radii remain the scoring contract. */
-struct AEROSIM_API FPhase4GuidancePoint
-{
-    FName Id;
-    FString Label;
-    FVector Position = FVector::ZeroVector;
-    EPhase4GuideKind Kind = EPhase4GuideKind::Transit;
-    int32 ScoredCheckpointIndex = INDEX_NONE;
-    float HorizontalRadiusCm = 150.0F;
-    float HeightToleranceCm = 75.0F;
-    float MaximumPlanarSpeedCm = 1800.0F;
-};
-
 USTRUCT(BlueprintType)
 struct AEROSIM_API FPhase4TaskDefinition
 {
@@ -89,8 +74,6 @@ struct AEROSIM_API FPhase4TaskDefinition
     bool IsValid() const;
     bool IsInsideSafetyVolume(const FVector& Position) const;
     FVector GetRecoveryPoint(const FVector& Position) const;
-    TArray<FPhase4GuidancePoint> BuildGuidanceRoute() const;
-    bool ValidateGuidanceSafety(const TArray<FPhase4GuidancePoint>& Route, FString& Failure) const;
 };
 
 USTRUCT(BlueprintType)
@@ -168,13 +151,8 @@ struct AEROSIM_API FPhase4MissionSession
     FString GetProgressText() const;
     FString GetProgressiveHint() const;
     bool IsRecovering() const { return Feedback.Incident != EPhase4Incident::None; }
-    const FPhase4GuidancePoint* GetCurrentGuidanceTarget() const;
-    const TArray<FPhase4GuidancePoint>& GetGuidanceRoute() const { return GuidanceRoute; }
-    int32 GetGuidanceIndex() const { return GuidanceIndex; }
 
 private:
-    void ObserveGuidance(const FVector& Position, const FVector& Velocity);
-    void SyncGuidanceFeedback();
     void ObserveCheckpoint(const FVector& Position);
     void CompleteMission();
     void BuildScore();
@@ -185,10 +163,4 @@ private:
     float LastSpeedCmPerSecond = 0.0F;
     bool bBoundaryLatched = false;
     bool bCollisionLatched = false;
-    TArray<FPhase4GuidancePoint> GuidanceRoute;
-    int32 GuidanceIndex = 0;
-    bool bGuidanceContactHold = false;
-    FVector ContactPosition = FVector::ZeroVector;
-    bool bRecoveryGuideActive = false;
-    FPhase4GuidancePoint RecoveryGuide;
 };

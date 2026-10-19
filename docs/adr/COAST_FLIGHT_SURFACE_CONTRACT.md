@@ -4,7 +4,7 @@
 
 ## Coordinates and surface authority
 
-FModel.Position remains centimetres relative to InitialTransform. Runtime surface queries are world-space and explicitly inverse-transform supported actor-origin heights. Model.Advance accepts an explicit deterministic FFlightSurfaceContext: valid support, supported model Z, landability and water contact. Its no-context default describes the legacy flat plane only for existing isolated model tests; the Pawn always supplies real query results, never this fallback. Flight has no launch-height floor. HUD distinguishes above-surface/water clearance from launch-relative altitude. Mission receives resolved world coordinates after movement; task checkpoints, safety and recovery are world-space.
+FModel.Position remains centimetres relative to InitialTransform. Runtime surface queries are world-space and explicitly inverse-transform supported actor-origin heights. Model.Advance accepts an explicit deterministic FFlightSurfaceContext: valid support and supported model Z. Runtime Pawn queries separately determine water contact and exclude it from landable support. Its no-context default describes the legacy flat plane only for existing isolated model tests; the Pawn always supplies real query results, never this fallback. Flight has no launch-height floor. HUD distinguishes above-surface/water clearance from launch-relative altitude. Mission receives resolved world coordinates after movement; task checkpoints, safety and recovery are world-space.
 
 A short downward world-static query checks the footprint, walking normals and actual support. Landing depends on support beneath the vehicle, not a zero-Z plane or a negative-throttle key alone. Unsupported descent remains Flight. Positive throttle can cancel Landing. Ground contact resolves feet to the sampled height; water is explicitly not landable, triggers neutral safe pause/incident, and cannot produce Grounded/Result. Reset still returns to the original bounds-grounded mat pose.
 
@@ -25,3 +25,11 @@ RTH approach may use a larger region to permit deceleration, but completion requ
 ## Gates
 
 This spike delivers code, source/static verification and tests ready for root's serialized UE train. Source assertions are not real flight PASS. Exit requires engine tests, an actual menu-started semantic-input coast/forest/water/return traversal, distinct collision/water/landing/negative-Z pause tests, and same-build motion evidence. Low water remains an end goal even if the spike exposes further issues. No AAA or user acceptance is inferred.
+
+## Integration correction: environment footprint is not the mission route
+
+The fixed plateau clearance footprint retains its original seven points and is exposed separately through GetPlateauClearancePoints. Trees use that footprint for land clearing; the five-stage world flight route must not change tree generation or flatten land/sea objectives into grass. Existing environment tests keep the exact old land-support/25m clearing assertions against that fixed footprint. The new route is checked independently for actual sea height, corridor safety and runtime traversal. Input pause fixtures now have a real collision floor so their Grounded expectation remains meaningful without reintroducing a production invisible floor.
+
+Mission definition version advances to v2; score/replay digest already hashes Task.Version. The legacy MakePacificCoastV1 factory symbol is retained only for source compatibility and returns the current v2 definition. This does not migrate or reclassify old recorded flight evidence.
+
+Water reset is explicitly allowed only for a Flight-page paused Pawn with a latched water incident and UnsafeLanding mission feedback. The ordinary active-mission restart guard remains. ResetAction clears the failed run and returns to Hangar at the original supported mat pose, requiring a fresh preflight; it never resumes underwater. A GameMode-backed real Pawn fixture covers this path.
