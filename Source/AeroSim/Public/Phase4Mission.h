@@ -69,6 +69,8 @@ struct AEROSIM_API FPhase4GuidanceLeg
     float AcceptBelowCm = 150.0F;           // allowed origin height below the guide point
     float AcceptAboveCm = 150.0F;           // allowed origin height above the guide point
     float MaxAcceptPlanarSpeedCm = 1800.0F; // speed window at the guide point
+    float MaxAcceptVerticalSpeedCm = 10000.0F; // vertical speed window at the guide point
+    float VerticalBrakeZoneCm = 0.0F;       // remaining height at which the guide asks to brake vertically
     float TrackToleranceCm = 600.0F;        // deviation from the leg that still counts as following it
     float MaxTrackPlanarSpeedCm = 1800.0F;  // progress only counts at or below this planar speed
     float LookaheadCm = 1500.0F;            // steer point ahead of the actual projected progress
@@ -95,6 +97,8 @@ struct AEROSIM_API FPhase4GuidanceTarget
     float AcceptBelowCm = 0.0F;
     float AcceptAboveCm = 0.0F;
     float MaxAcceptPlanarSpeedCm = 0.0F;
+    float MaxAcceptVerticalSpeedCm = 0.0F;
+    bool bVerticalBrake = false;
     float RemainingCm = 0.0F;
     int32 LegIndex = INDEX_NONE;
     int32 LegCount = 0;
