@@ -77,6 +77,9 @@ struct AEROSIM_API FPhase4GuidanceLeg
     int32 ScoredCheckpointIndex = INDEX_NONE;
     FName ScoredCheckpointId;
     bool bReturnLeg = false;
+    /** Transit/corridor: pass-through acceptance (radius/height window or gate-plane crossing, no speed).
+        False for safety gates: column tops/bottoms, brake points, C3 and landing keep tight windows. */
+    bool bPassThrough = false;
 
     float GetLength() const;
     FVector Evaluate(float DistanceCm) const;
@@ -99,6 +102,7 @@ struct AEROSIM_API FPhase4GuidanceTarget
     float MaxAcceptPlanarSpeedCm = 0.0F;
     float MaxAcceptVerticalSpeedCm = 0.0F;
     bool bVerticalBrake = false;
+    bool bPassThrough = false;
     float RemainingCm = 0.0F;
     int32 LegIndex = INDEX_NONE;
     int32 LegCount = 0;

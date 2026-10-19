@@ -169,10 +169,13 @@ void AFlightHUD::DrawHUD()
             : FMath::Abs(Bearing) < 12.0F ? TEXT("AHEAD") : Bearing < 0.0F ? TEXT("LEFT") : TEXT("RIGHT");
         const FLinearColor GuideColor = Guide.bRecovery ? FLinearColor(1.0F, 0.72F, 0.29F) : FLinearColor(0.80F, 0.94F, 1.0F);
         DrawRect(FLinearColor(0.01F, 0.045F, 0.06F, 0.90F), Left, Top + 182.0F, 650.0F, 74.0F);
-        DrawText(FString::Printf(TEXT("GUIDE %d/%d  %s%s\n%s %.0f deg   RANGE %.1f m   HEIGHT %+.1f m   AT GUIDE <=%.1f m/s%s\n%s"),
+        const FString Window = Guide.bPassThrough
+            ? FString::Printf(TEXT("PASS THROUGH  %.0f m / +-%.0f m"), Guide.AcceptRadiusCm * 0.01F, FMath::Max(Guide.AcceptBelowCm, Guide.AcceptAboveCm) * 0.01F)
+            : FString::Printf(TEXT("STOP %.1f m / +-%.1f m  <=%.1f m/s%s"), Guide.AcceptRadiusCm * 0.01F, FMath::Max(Guide.AcceptBelowCm, Guide.AcceptAboveCm) * 0.01F,
+                Guide.MaxAcceptPlanarSpeedCm * 0.01F, Guide.MaxAcceptVerticalSpeedCm < 1000.0F ? *FString::Printf(TEXT(" VERT <=%.1f"), Guide.MaxAcceptVerticalSpeedCm * 0.01F) : TEXT(""));
+        DrawText(FString::Printf(TEXT("GUIDE %d/%d  %s%s\n%s %.0f deg   RANGE %.1f m   HEIGHT %+.1f m   %s\n%s"),
                 Guide.LegIndex + 1, Guide.LegCount, *Guide.GuideId.ToString(), Guide.bRecovery ? TEXT("  [RECOVERY]") : TEXT(""),
-                Turn, FMath::Abs(Bearing), ToGuide.Size() * 0.01F, Delta.Z * 0.01F, Guide.MaxAcceptPlanarSpeedCm * 0.01F,
-                Guide.MaxAcceptVerticalSpeedCm < 1000.0F ? *FString::Printf(TEXT(" / VERT <=%.1f"), Guide.MaxAcceptVerticalSpeedCm * 0.01F) : TEXT(""),
+                Turn, FMath::Abs(Bearing), ToGuide.Size() * 0.01F, Delta.Z * 0.01F, *Window,
                 *Guide.Label.Left(80)),
             GuideColor, Left + 12.0F, Top + 192.0F, GEngine->GetSmallFont(), 1.0F, false);
         // Perimeter arrow (top centre, outside the central flight view).

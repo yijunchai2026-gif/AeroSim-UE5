@@ -175,6 +175,42 @@ bool FAeroSimNavigationCounterexampleTest::RunTest(const FString& Parameters)
         TestEqual(TEXT("Braked vertical arrival completes the column"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-06-alongshore-low-water")));
     }
     {
+        // R6a real-input finding: transit points are pass-through gates, and a pilot who strayed from
+        // the transit tube and rejoins it near the end is not stranded behind the progress window.
+        FPhase4MissionSession Mission = StartMission();
+        TestTrue(TEXT("Reach the inland-to-cliff transit"), WalkUntil(Mission, TEXT("nav-03-inland-to-cliff")));
+        const FPhase4GuidanceLeg Transit = Mission.GetGuidanceRoute()[Mission.GetGuidanceLegIndex()];
+        TestTrue(TEXT("Transit guide is pass-through (>=6 m, +-2 m, no speed window)"), Transit.bPassThrough
+            && Transit.AcceptRadiusCm >= 600.0F && Transit.AcceptBelowCm >= 200.0F && Transit.AcceptAboveCm >= 200.0F);
+        const FVector Side = FVector::CrossProduct(Transit.Path.Last() - Transit.Path[0], FVector::UpVector).GetSafeNormal() * 1500.0F;
+        for (float Along = 0; Along <= Transit.GetLength() - 2000.0F; Along += 50)
+            Mission.Observe(.05F, EFlightPhase::Flight, Transit.Evaluate(Along) + Side, FVector(1200, 0, 0), FRotator::ZeroRotator);
+        TestEqual(TEXT("15 m off the tube records no progress"), Mission.GetGuidanceLegProgressCm(), 0.0F);
+        // Orbit 1-2 m around the guide point at 3 m/s, like the R6a driver.
+        for (int32 Step = 0; Step < 40 && Mission.GetCurrentGuidanceTarget().LegId == Transit.LegId; ++Step)
+        {
+            const float Angle = Step * .4F;
+            Mission.Observe(.05F, EFlightPhase::Flight, Transit.Path.Last() + FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0) * 150.0F,
+                FVector(-FMath::Sin(Angle), FMath::Cos(Angle), 0) * 300.0F, FRotator::ZeroRotator);
+        }
+        TestEqual(TEXT("Rejoining near the end at 3 m/s completes the pass-through transit"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-04-cross-cliff-out")));
+        const FPhase4GuidanceLeg Brake = Mission.GetGuidanceRoute()[Mission.GetGuidanceLegIndex()];
+        TestFalse(TEXT("Descent-column top stays a tight safety gate"), Brake.bPassThrough);
+        Mission.Observe(.05F, EFlightPhase::Flight, Brake.Path.Last(), FVector(500, 0, 0), FRotator::ZeroRotator);
+        TestEqual(TEXT("Column top is never passed through at speed"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-04-cross-cliff-out")));
+        // Gate-plane crossing at cruise speed completes a transit (fresh mission, nav-02 C1).
+        FPhase4MissionSession Cross = StartMission();
+        WalkCurrentLeg(Cross);
+        const FPhase4GuidanceLeg C1Leg = Cross.GetGuidanceRoute()[Cross.GetGuidanceLegIndex()];
+        for (float Along = 0; Along <= C1Leg.GetLength() + 900.0F; Along += 60)
+        {
+            const FVector Dir = (C1Leg.Path.Last() - C1Leg.Path[0]).GetSafeNormal();
+            Cross.Observe(.05F, EFlightPhase::Flight, C1Leg.Path[0] + Dir * Along + FVector(0, 400, 0), Dir * 1700.0F, FRotator::ZeroRotator);
+        }
+        TestEqual(TEXT("Flying through C1 at 17 m/s, 4 m to the side, passes the gate"), Cross.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-03-inland-to-cliff")));
+        TestEqual(TEXT("C1 scored by its original radius"), Cross.NextCheckpointIndex, 1);
+    }
+    {
         // Heading inland before the climb column is complete never advances to the cliff crossing.
         FPhase4MissionSession Mission = StartMission();
         TestTrue(TEXT("Reach the sea climb"), WalkUntil(Mission, TEXT("nav-07-sea-climb")));
@@ -514,7 +550,11 @@ bool FAeroSimNavigationScriptedTraversalTest::RunTest(const FString& Parameters)
         else
         {
             const float Cruise = Leg.Kind == EPhase4GuideKind::Corridor ? 450.0F : 1750.0F;
-            const float Allowed = FMath::Min(Cruise, 1.1F * static_cast<float>(ToEnd.Size()) + .6F * Leg.MaxAcceptPlanarSpeedCm);
+            float Allowed = FMath::Min(Cruise, 1.1F * static_cast<float>(ToEnd.Size()) + .6F * FMath::Min(Leg.MaxAcceptPlanarSpeedCm, 1800.0F));
+            // Pass-through ends need no stop, but slow down before a corridor follows.
+            const TArray<FPhase4GuidanceLeg>& AllLegs = Mission.GetGuidanceRoute();
+            if (AllLegs.IsValidIndex(Guide.LegIndex + 1) && AllLegs[Guide.LegIndex + 1].Kind == EPhase4GuideKind::Corridor)
+                Allowed = FMath::Min(Allowed, 1.1F * static_cast<float>(ToEnd.Size()) + 450.0F);
             const FVector2D Aim = ToEnd.Size() < Leg.LookaheadCm ? ToEnd : ToSteer;
             Desired = Aim.GetSafeNormal() * FMath::Min(Allowed, static_cast<float>(Aim.Size()) * 1.2F);
             VerticalSpeed = VerticalCommand(static_cast<float>(Guide.Position.Z - P.Z));
