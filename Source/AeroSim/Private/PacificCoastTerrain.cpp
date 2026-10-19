@@ -363,6 +363,37 @@ float CoastalErosion(const float Y)
     return Depth;
 }
 
+// R5a/R6 (PMO+QA: the cove cap reads as one smooth draped U-sheet with curtain folds): the land
+// cap of every cove uses a sharper, irregular lateral profile (steep side walls, flatter floor) and
+// descends through an irregular headscarp and a hummocky slump body to the rim. Scarp and
+// walls exceed the ground material's rock threshold, so rock breaks through instead of one sheet.
+// The cliff itself still uses CoastalErosion; the rim depth at each cove centre is unchanged.
+float CoveCapDepth(const float Y)
+{
+    const float Centers[] = {-128000,-47000,-19000,19000,54000,112000};
+    const float Widths[] = {18000,16000,12500,15000,12000,22000};
+    const float Depths[] = {4200,4700,5400,4200,3500,4800};
+    float Depth=0;
+    for(int32 Bay=0;Bay<UE_ARRAY_COUNT(Centers);++Bay)
+    {
+        const float Lateral=1.0F-FMath::Abs(Y-Centers[Bay])/Widths[Bay];
+        const float Wall=Smooth(1.9F*Lateral-.18F+.22F*Noise(Y,Bay*5300.0F,2600.0F));
+        Depth=FMath::Max(Depth,Depths[Bay]*Wall);
+    }
+    return Depth;
+}
+
+float SteppedCoveBlend(const float Run, const float Y, const float X)
+{
+    // A slumped bluff rather than a draped sheet: an irregular rock headscarp high on the slope
+    // (its position wanders along the coast), a hummocky slump body below it, then the cove floor.
+    const float Scarp=.16F+.08F*Noise(Y,-8100.0F,3300.0F);
+    const float Head=Smooth((Run-Scarp)/.16F);
+    const float Body=Smooth((Run-Scarp-.12F)/.75F);
+    const float Hummocks=.07F*Noise(X,Y+4100.0F,1500.0F)*Smooth(Run/.3F)*(1.0F-Smooth((Run-.8F)/.2F));
+    return FMath::Clamp(.42F*Head+.58F*Body+Hummocks,0.0F,1.0F);
+}
+
 float CliffOutcrop(const float Y, const float Depth)
 {
     // Unequal gently dipping beds form supported shelves instead of one smooth bow with vertical ribs.
@@ -720,10 +751,10 @@ float CoastalTerrain::BaselineLandHeight(const float X, const float Y)
     const float LandHeight = FMath::Lerp(SubmergedRim, Rise * FMath::Max(0.0F, Hills + Mountain), Interior);
     // Inland worksite, routes and trails (X <= 105 m) keep their existing supported grade.
     // Only the outer coastal apron descends into unequal coves between surviving high sea headlands.
-    const float CoastBlend=Smooth((X-10500.0F)/FMath::Max(1000.0F,BaselineCliffEdgeX(Y)-10500.0F));
+    const float CoastBlend=SteppedCoveBlend(FMath::Clamp((X-10500.0F)/FMath::Max(1000.0F,BaselineCliffEdgeX(Y)-10500.0F),0.0F,1.0F),Y,X);
     // Inside the scan reach the cove floor is 6 m shallower so the land cap buries the scan's top edge.
     const float ScanCentre=1.0F-Smooth((FMath::Abs(Y-ScanY)-1800.0F)/800.0F); // flat: keeps the runnel/bank relief intact
-    const float CoastHeight=LandHeight-(CoastalErosion(Y)-600.0F*ScanCentre)*CoastBlend*Interior;
+    const float CoastHeight=LandHeight-(CoveCapDepth(Y)-600.0F*ScanCentre)*CoastBlend*Interior;
     // A shallow seasonal swale gives the short woodland bridge an actual crossing to span.
     // Its 16 m bank-to-bank width spans several near-field samples; both bridge landings remain at grade.
     return CoastHeight - 180.0F * ChannelWeight(X, Y) + HeroBayLandRelief(X,Y,BaselineCliffEdgeX(Y));
