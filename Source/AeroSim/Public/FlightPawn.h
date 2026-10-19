@@ -63,7 +63,15 @@ struct AEROSIM_API FFlightControlInput
     bool IsNeutral() const;
 };
 
-/** Pure, deterministic Phase 1 motion/state model. Position is relative to the reset point in cm. */
+/** Explicit support for deterministic simulation. Default is an isolated flat-plane fixture;
+ * runtime always supplies world-query results and never assumes a launch-height floor. */
+struct AEROSIM_API FFlightSurfaceContext
+{
+    bool bHasSupport = true;
+    float SupportedModelZCm = 0.0F;
+};
+
+/** Pure, deterministic motion model. Position is relative to the reset point in cm. */
 USTRUCT(BlueprintType)
 struct AEROSIM_API FFlightModel
 {
@@ -81,13 +89,18 @@ struct AEROSIM_API FFlightModel
     UPROPERTY(BlueprintReadOnly, Category = "Flight")
     FRotator Rotation = FRotator::ZeroRotator;
 
-    void Advance(const FFlightControlInput& Input, float DeltaSeconds);
+    bool bSupportImpact = false;
+
+    void Advance(const FFlightControlInput& Input, float DeltaSeconds, const FFlightSurfaceContext& Surface = FFlightSurfaceContext());
+    /** Called only after an authoritative swept movement has resolved. */
+    void ResolveMovement(const FVector& ResolvedPosition, const FVector& ResolvedVelocity);
     void Pause();
     void Resume();
     void Reset();
 
 private:
     EFlightPhase ResumePhase = EFlightPhase::Grounded;
+    float TakeoffSurfaceZCm = 0.0F;
 };
 
 USTRUCT(BlueprintType)
@@ -103,6 +116,15 @@ struct AEROSIM_API FFlightHudData
 
     UPROPERTY(BlueprintReadOnly, Category = "HUD")
     float AltitudeMeters = 0.0F;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    float SurfaceClearanceMeters = 0.0F;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    bool bSurfaceClearanceValid = false;
+
+    UPROPERTY(BlueprintReadOnly, Category = "HUD")
+    bool bWaterContact = false;
 
     UPROPERTY(BlueprintReadOnly, Category = "HUD")
     float SpeedMetersPerSecond = 0.0F;
@@ -182,6 +204,10 @@ public:
     bool IsAircraftShellVisible() const;
     bool IsLodProxyVisible() const;
     FFlightHudData GetHudData() const;
+    FVector ModelToWorldPosition(const FVector& Position) const { return InitialTransform.TransformPosition(Position); }
+    FVector WorldToModelPosition(const FVector& Position) const { return InitialTransform.InverseTransformPosition(Position); }
+    bool IsSupportedOnLaunchMat() const;
+    bool HasWaterIncident() const { return bWaterIncidentLatched; }
     const FAircraftDefinition& GetAircraftDefinition() const { return AircraftDefinition; }
     const FGimbalController& GetGimbalController() const { return GimbalController; }
     int32 GetDetailedVisualPartCount() const { return DetailedVisualParts.Num(); }
@@ -259,6 +285,8 @@ public:
 private:
     friend class AAeroSimPlayerController;
     friend class FAeroSimProductInputLifecycleTest;
+    friend class FAeroSimProductWaterResetTest;
+    friend class FAeroSimControlFlightRollbackTest;
     bool IsProductFlightPage() const;
     bool IsGameplayInputAllowed() const;
     void HandlePhysicalInputActivity();
@@ -268,6 +296,9 @@ private:
     void ApplyFov();
     void AdvanceResumeCountdown(float DeltaSeconds);
     void RecordTrace(float DeltaSeconds);
+    FFlightSurfaceContext QuerySurface(const FVector& WorldOrigin) const;
+    bool IsOverWater(const FVector& WorldOrigin) const;
+    float GetFootDepthCm() const;
     void HandlePitch(const FInputActionValue& Value);
     void HandleRoll(const FInputActionValue& Value);
     void HandleYaw(const FInputActionValue& Value);
@@ -375,5 +406,7 @@ private:
     float TraceAccumulatorSeconds = 0.0F;
     bool bResumeRequested = false;
     bool bReplayVisualActive = false;
+    bool bWaterIncidentLatched = false;
+    bool bCollisionHold = false;
     FTransform InitialTransform = FTransform::Identity;
 };

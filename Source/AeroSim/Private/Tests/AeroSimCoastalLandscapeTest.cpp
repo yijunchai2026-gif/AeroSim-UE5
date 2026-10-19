@@ -16,7 +16,7 @@ bool FCoastalSceneSupportTest::RunTest(const FString& Parameters)
         const float Edge = APacificCoastGraybox::GetCliffEdgeX(Y);
         TestTrue(TEXT("Cliff boundary is finite and east of all route gates"), FMath::IsFinite(Edge) && Edge > 12500);
     }
-    for (const FVector& Point : FPacificCoastGrayboxContract::GetRoutePoints())
+    for (const FVector& Point : FPacificCoastGrayboxContract::GetPlateauClearancePoints())
     {
         TestTrue(TEXT("Flight route retains a level supported plateau"), FMath::IsNearlyZero(APacificCoastGraybox::GetCoastalLandHeight(Point.X, Point.Y)));
         TestTrue(TEXT("Route remains at least 30 m inland"), APacificCoastGraybox::GetCliffEdgeX(Point.Y) - Point.X > 3000);

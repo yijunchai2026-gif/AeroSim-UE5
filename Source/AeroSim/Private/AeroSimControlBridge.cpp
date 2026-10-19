@@ -401,10 +401,12 @@ void UAeroSimControlBridge::Dispatch(const TSharedRef<FJsonObject>& Request)
     const auto Mission=Game->Phase4Mission;const auto Flow=Game->MissionFlow;const auto Shell=Game->Shell;
     const auto Trace=Pawn->FlightTrace;const auto Elapsed=Pawn->FlightElapsedSeconds;const auto Accumulator=Pawn->TraceAccumulatorSeconds;
     const auto Camera=Pawn->CameraMode;const bool Paused=GetWorld()->IsPaused();const bool Resume=Pawn->bResumeRequested;const float Countdown=Pawn->ResumeCountdownSeconds;
-    Restore=[this,Pawn,Game,PC,Model,Input,Transform,Mission,Flow,Shell,Trace,Elapsed,Accumulator,Camera,Paused,Resume,Countdown]()
+    const bool WaterIncident=Pawn->bWaterIncidentLatched,CollisionHold=Pawn->bCollisionHold;
+    Restore=[this,Pawn,Game,PC,Model,Input,Transform,Mission,Flow,Shell,Trace,Elapsed,Accumulator,Camera,Paused,Resume,Countdown,WaterIncident,CollisionHold]()
     {
         Pawn->FlightModel=Model;Pawn->ControlInput=Input;Pawn->SetActorTransform(Transform);
         Pawn->FlightTrace=Trace;Pawn->FlightElapsedSeconds=Elapsed;Pawn->TraceAccumulatorSeconds=Accumulator;
+        Pawn->bWaterIncidentLatched=WaterIncident;Pawn->bCollisionHold=CollisionHold;
         Pawn->CameraMode=Camera;Pawn->ApplyCameraMode();Pawn->bResumeRequested=Resume;Pawn->ResumeCountdownSeconds=Countdown;
         Game->Phase4Mission=Mission;Game->MissionFlow=Flow;Game->Shell=Shell;
         PC->SetPause(Paused);Game->RefreshProductWidget();Game->ConfigureProductInputMode();

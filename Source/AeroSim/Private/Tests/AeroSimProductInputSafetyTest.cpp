@@ -1,14 +1,18 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "AeroSimGameMode.h"
+#include "AeroSimControlBridge.h"
+#include "Dom/JsonObject.h"
 #include "AeroSimPlayerController.h"
 #include "Engine/GameInstance.h"
 #include "InputKeyEventArgs.h"
 #include "Engine/World.h"
 #include "FlightPawn.h"
+#include "FlightTestWorldSupport.h"
 #include "GameFramework/PlayerInput.h"
 #include "GameFramework/WorldSettings.h"
 #include "InputMappingContext.h"
+#include "InputActionValue.h"
 #include "Misc/AutomationTest.h"
 
 namespace AeroSimInputSafetyTests
@@ -34,6 +38,7 @@ struct FTestWorld final
         Spawn.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
         Controller = World->SpawnActor<AAeroSimPlayerController>(Spawn);
         Pawn = World->SpawnActor<AFlightPawn>(Spawn);
+        AeroSimTestSupport::AddFloorAndGroundPawn(World,Pawn);
         if (Controller != nullptr && Pawn != nullptr)
         {
             // CreateWorld is not begun, so Controller PreInitializeComponents has not registered it.
@@ -186,6 +191,7 @@ bool FAeroSimProductInputCompatibilityTest::RunTest(const FString& Parameters)
     static_cast<void>(Parameters);
     UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
     AFlightPawn* Pawn = World != nullptr ? World->SpawnActor<AFlightPawn>() : nullptr;
+    AeroSimTestSupport::AddFloorAndGroundPawn(World,Pawn);
     if (Pawn != nullptr)
     {
         FFlightControlInput Input;
@@ -245,4 +251,76 @@ bool FAeroSimProductReplayPresentationTest::RunTest(const FString& Parameters)
     return true;
 }
 
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAeroSimProductWaterResetTest,
+    "AeroSim.ProductUX.Input.WaterIncidentExplicitReset",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FAeroSimProductWaterResetTest::RunTest(const FString& Parameters)
+{
+    AeroSimInputSafetyTests::FTestWorld Fixture(true);
+    if(!Fixture.IsValid() || !TestNotNull(TEXT("Actual product GameMode"),Fixture.GameMode))return false;
+    AFlightPawn* Pawn=Fixture.Pawn;
+    AAeroSimGameMode* Mode=Fixture.GameMode;
+    Mode->NavigateProductPage(EProductPage::Mission);
+    Mode->ActivatePrimaryAction();Mode->ActivatePrimaryAction();
+    TestEqual(TEXT("Normal menu commands start Flight"),Mode->GetProductPage(),EProductPage::Flight);
+    Mode->RestartProductMission();
+    TestEqual(TEXT("Ordinary active mission restart guard is retained"),Mode->GetProductPage(),EProductPage::Flight);
+    const FTransform Home=Pawn->GetActorTransform();
+    // Fixture setup puts a real pawn over water; this is not route traversal evidence.
+    Pawn->FlightModel.Phase=EFlightPhase::Flight;
+    Pawn->FlightModel.Position=Pawn->WorldToModelPosition(FVector(40000,0,-6400));
+    Pawn->SetActorLocation(Pawn->ModelToWorldPosition(Pawn->FlightModel.Position));
+    FFlightControlInput Down;Down.Throttle=-1;
+    for(int32 I=0;I<40 && !Pawn->HasWaterIncident();++I)
+    {Pawn->SetSemanticInput(Down);Pawn->Tick(.1F);}
+    TestTrue(TEXT("Active mission real pawn detects water"),Pawn->HasWaterIncident());
+    TestEqual(TEXT("Mission carries unsafe-water feedback"),Mode->GetPhase4Mission().Feedback.Incident,EPhase4Incident::UnsafeLanding);
+    TestEqual(TEXT("Incident model is paused"),Pawn->GetFlightModel().Phase,EFlightPhase::Paused);
+    Pawn->HandleReset(FInputActionValue(true)); // Exact ResetAction consumer, not a direct ResetFlight shortcut.
+    TestEqual(TEXT("Explicit water retry returns to Hangar"),Mode->GetProductPage(),EProductPage::Hangar);
+    TestFalse(TEXT("Explicit retry clears water latch"),Pawn->HasWaterIncident());
+    TestTrue(TEXT("Retry returns to original supported mat pose"),Pawn->GetActorTransform().Equals(Home,.01));
+    TestEqual(TEXT("Retry resets task rather than retaining completed gates"),Mode->GetPhase4Mission().Stage,EPhase4MissionStage::Hangar);
+    TestEqual(TEXT("Retry is grounded"),Pawn->GetFlightModel().Phase,EFlightPhase::Grounded);
+    TestFalse(TEXT("Retry clears world pause"),Fixture.World->IsPaused());
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAeroSimControlFlightRollbackTest,
+    "AeroSim.ProductUX.Input.ControlTransactionRestoresFlightIncidentFlags",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FAeroSimControlFlightRollbackTest::RunTest(const FString& Parameters)
+{
+    AeroSimInputSafetyTests::FTestWorld Fixture(true);
+    if(!Fixture.IsValid() || !Fixture.GameMode) return false;
+    UAeroSimControlBridge* Bridge=NewObject<UAeroSimControlBridge>(Fixture.GameMode);
+    AFlightPawn* Pawn=Fixture.Pawn;
+    for(bool Initial:{false,true})
+    {
+        Pawn->bWaterIncidentLatched=Initial;Pawn->bCollisionHold=Initial;
+        const FFlightModel Before=Pawn->FlightModel;
+        const FTransform Pose=Pawn->GetActorTransform();
+        auto Request=MakeShared<FJsonObject>();
+        Request->SetStringField(TEXT("request_id"),FGuid::NewGuid().ToString(EGuidFormats::Digits));
+        Request->SetStringField(TEXT("session"),TEXT(""));
+        Request->SetNumberField(TEXT("expires_unix"),FDateTime::UtcNow().ToUnixTimestamp()+10);
+        Request->SetStringField(TEXT("target"),TEXT("player:0"));
+        Request->SetStringField(TEXT("operation"),TEXT("release"));
+        Request->SetStringField(TEXT("mode"),TEXT("apply"));
+        Request->SetStringField(TEXT("expected_page"),TEXT("Home"));
+        Bridge->Dispatch(Request);
+        if(!TestTrue(TEXT("Production command creates rollback snapshot"),static_cast<bool>(Bridge->Restore)))break;
+        Pawn->bWaterIncidentLatched=!Initial;Pawn->bCollisionHold=!Initial;
+        Pawn->FlightModel.Position+=FVector(100,200,300);
+        Pawn->SetActorLocation(Pose.GetLocation()+FVector(100,200,300));
+        Bridge->Restore(); // Exact production rollback callback; no mailbox writes in this fixture.
+        TestEqual(TEXT("Rollback restores water latch in both directions"),Pawn->bWaterIncidentLatched,Initial);
+        TestEqual(TEXT("Rollback restores collision hold in both directions"),Pawn->bCollisionHold,Initial);
+        TestTrue(TEXT("Rollback restores actual actor pose"),Pawn->GetActorTransform().Equals(Pose,.01));
+        TestTrue(TEXT("Rollback restores model pose"),Pawn->FlightModel.Position.Equals(Before.Position));
+        Bridge->Restore=nullptr;Bridge->Pending.Reset();Bridge->Before.Reset();
+    }
+    return true;
+}
 #endif

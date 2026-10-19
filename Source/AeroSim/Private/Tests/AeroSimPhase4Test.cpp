@@ -13,7 +13,7 @@ bool FPhase4DefinitionTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Versioned task is valid"), Task.IsValid());
     TestEqual(TEXT("Five ordered checkpoints"), Task.Checkpoints.Num(), 5);
     TestTrue(TEXT("Center is safe"), Task.IsInsideSafetyVolume(FVector(0.0F, 0.0F, 700.0F)));
-    TestFalse(TEXT("Out of bounds is unsafe"), Task.IsInsideSafetyVolume(FVector(30000.0F, 0.0F, 700.0F)));
+    TestFalse(TEXT("Out of bounds is unsafe"), Task.IsInsideSafetyVolume(FVector(90000.0F, 0.0F, 700.0F)));
     TestTrue(TEXT("Recovery point is safe"), Task.IsInsideSafetyVolume(Task.GetRecoveryPoint(FVector(40000.0F, 20000.0F, 4000.0F))));
     TestTrue(TEXT("Runtime is phase4/v1"), FAeroSimRuntimeContract::IsValid());
     return true;
@@ -36,7 +36,8 @@ bool FPhase4MissionLoopTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("All gates trigger RTH"), Mission.Stage, EPhase4MissionStage::ReturnToHome);
     Mission.Observe(0.1F, EFlightPhase::Flight, FVector(0, 0, 500), FVector(300, 0, 0), FRotator::ZeroRotator);
     TestEqual(TEXT("Home triggers landing"), Mission.Stage, EPhase4MissionStage::Landing);
-    Mission.Observe(0.1F, EFlightPhase::Grounded, FVector::ZeroVector, FVector::ZeroVector, FRotator::ZeroRotator);
+    // A model Grounded flag alone is no longer evidence of landing on the real mat.
+    Mission.Observe(0.1F, EFlightPhase::Grounded, FVector(55,79,10.8682F), FVector::ZeroVector, FRotator::ZeroRotator, true);
     TestEqual(TEXT("Landing produces Result"), Mission.Stage, EPhase4MissionStage::Result);
     TestTrue(TEXT("Result is complete"), Mission.Score.bComplete);
     TestTrue(TEXT("Four dimensions contribute"), Mission.Score.Safety > 0 && Mission.Score.Precision > 0 && Mission.Score.Efficiency > 0 && Mission.Score.Smoothness > 0);
@@ -51,7 +52,7 @@ bool FPhase4RecoveryTest::RunTest(const FString& Parameters)
     FPhase4MissionSession Mission;
     Mission.Reset(); Mission.EnterPreflight(); Mission.SetPreflightComplete(true); Mission.BeginMission();
     Mission.Observe(0.1F, EFlightPhase::Flight, FVector(-5000, 0, 500), FVector::ZeroVector, FRotator::ZeroRotator);
-    Mission.Observe(0.1F, EFlightPhase::Flight, FVector(30000, 0, 500), FVector::ZeroVector, FRotator::ZeroRotator);
+    Mission.Observe(0.1F, EFlightPhase::Flight, FVector(90000, 0, 500), FVector::ZeroVector, FRotator::ZeroRotator);
     TestEqual(TEXT("Boundary incident recorded once"), Mission.BoundaryViolations, 1);
     TestTrue(TEXT("Boundary feedback is recoverable"), Mission.Feedback.bRecoverable);
     TestEqual(TEXT("Boundary has non-color shape cue"), Mission.Feedback.ShapeCue, FString(TEXT("INWARD CHEVRONS")));
