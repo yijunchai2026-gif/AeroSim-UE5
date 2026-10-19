@@ -12,7 +12,7 @@ bool FCoastalFloraStreamingTest::RunTest(const FString& Parameters)
 {
     int32 RuntimeSlots = 0;
     const auto& Archetypes = CoastFlora::GetArchetypes();
-    if (!TestEqual(TEXT("All thirteen runtime archetypes participate in the regression"), Archetypes.Num(), 13)) return false;
+    if (!TestEqual(TEXT("All seventeen runtime archetypes participate in the regression"), Archetypes.Num(), 17)) return false;
     for (const CoastFlora::FArchetype& Archetype : Archetypes)
     {
         if (!TestNotNull(TEXT("Runtime mesh exists"), Archetype.Mesh)) return false;
@@ -34,7 +34,7 @@ bool FCoastalFloraStreamingTest::RunTest(const FString& Parameters)
             ++RuntimeSlots;
         }
     }
-    TestEqual(TEXT("Twenty-six runtime slots are covered"), RuntimeSlots, 26);
+    TestEqual(TEXT("Thirty-four runtime slots (17 archetypes x bark+foliage) are covered"), RuntimeSlots, 34);
 
     const APacificCoastGraybox* Coast = GetDefault<APacificCoastGraybox>();
     if (!TestNotNull(TEXT("Actual scene CDO exists"), Coast)) return false;
@@ -60,7 +60,7 @@ bool FCoastalFloraStreamingTest::RunTest(const FString& Parameters)
             ++QueriedSlots;
         }
     }
-    TestTrue(TEXT("Regression exercises visible tree and habitat ISM batches"), VisibleBatches > 13 && QueriedSlots >= 26);
+    TestTrue(TEXT("Regression exercises visible tree and habitat ISM batches"), VisibleBatches > 17 && QueriedSlots >= 34);
     AddInfo(FString::Printf(TEXT("FLORA_UV_STREAMING_AUDIT visible_batches=%d queried_slots=%d"), VisibleBatches, QueriedSlots));
     return true;
 }

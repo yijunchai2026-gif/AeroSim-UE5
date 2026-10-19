@@ -100,6 +100,12 @@ public:
     static float GetCoastalShoreX(float Y);
     static float GetCoastalLandHeight(float X, float Y);
     static float GetCoastalVegetationCover(float X, float Y);
+    // DEV-FLORA: deterministic samplers for ground materials (DEV-TERRAIN may blend with them).
+    /** 0..1 worn-floor weight of the drone training corridor path (1 on the trodden centre). */
+    static float GetTrainingCorridorWear(float X, float Y);
+    /** Trunk-base litter mask: R conifer needles, G oak leaf litter; saturate(1-(d-r)/R)^1.5 from the placed trees. */
+    static FLinearColor GetForestLitterMask(float X, float Y);
+    // DEV-FLORA end
     static constexpr float SeaLevelCm = -6500.0F;
     int32 GetCoastalTreeCount() const { return CoastalTreeCount; }
 

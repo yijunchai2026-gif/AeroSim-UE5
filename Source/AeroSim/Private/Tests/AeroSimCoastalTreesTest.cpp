@@ -40,7 +40,10 @@ bool FCoastalTreeArchetypeTest::RunTest(const FString& Parameters)
 {
     using namespace CoastFlora;
     const TArray<FArchetype>& Archetypes = GetArchetypes();
-    TestEqual(TEXT("Thirteen deterministic archetypes (fir, pine, oak, saplings)"), Archetypes.Num(), 13);
+    TestEqual(TEXT("Seventeen deterministic archetypes (fir, pine, oak, saplings, veterans, young poles)"), Archetypes.Num(), 17);
+    float MinBreast = MAX_flt, MaxBreast = 0;
+    for (const FArchetype& A : Archetypes) if (A.IsOverstory()) { MinBreast = FMath::Min(MinBreast, A.BreastRadius); MaxBreast = FMath::Max(MaxBreast, A.BreastRadius); }
+    TestTrue(TEXT("Overstory DBH spans young poles (<=0.35 m) to veterans (>=1.1 m)"), MinBreast * 2 <= 35 && MaxBreast * 2 >= 110);
     int32 Oaks = 0, Pines = 0, Firs = 0, Saplings = 0;
     for (const FArchetype& A : Archetypes)
     {
@@ -253,6 +256,59 @@ bool FCoastalTreeCorridorTest::RunTest(const FString& Parameters)
             AddInfo(FString::Printf(TEXT("FLORA_CORRIDOR_POSE location=(%.0f,%.0f,%.0f) pitch=-3 yaw=%.1f"), Mouth->Point.X, Mouth->Point.Y,
                 APacificCoastGraybox::GetCoastalLandHeight(Mouth->Point.X, Mouth->Point.Y) + 250.0F, FMath::RadiansToDegrees(FMath::Atan2(Look.Y, Look.X))));
         }
+    }
+    // Legibility from the `corridor` review pose: a clear straight sightline and a thinned lane edge.
+    {
+        FVector Pose; FRotator PoseRotation;
+        if (TestTrue(TEXT("Corridor review pose resolves"), AAeroSimGameMode::ResolveReviewView(TEXT("corridor"), 8, Pose, PoseRotation)))
+        {
+            const FVector2D Look(PoseRotation.Vector());
+            float Sightline = 0;
+            for (float Along = 100; Along <= 6000; Along += 50)
+            {
+                const FVector2D P = FVector2D(Pose) + Look.GetSafeNormal() * Along;
+                bool bHit = false;
+                for (const auto& C : Cylinders)
+                    if (FVector2D::Distance(FVector2D(C.A), P) < C.Radius + 120) { bHit = true; break; }
+                if (bHit) break;
+                Sightline = Along;
+            }
+            AddInfo(FString::Printf(TEXT("FLORA_CORRIDOR_SIGHTLINE clear_m=%.1f (2.4 m wide probe, trunk collision)"), Sightline / 100.0F));
+            TestTrue(TEXT("At least 40 m of open lane straight ahead of the corridor pose"), Sightline >= 4000);
+        }
+        int32 Edge = 0, EdgeCells = 0, Inner = 0, InnerCells = 0;
+        for (const FCorridorSample& Sample : Layout.Corridor)
+        {
+            if (FMath::Fmod(Sample.Distance, 1000.0F) > 60 || NearStandDensity(Sample.Point.X, Sample.Point.Y) < .9F) continue;
+            const FVector2D Normal(-Sample.Tangent.Y, Sample.Tangent.X);
+            for (const FPlacedTree& Tree : Layout.Trees)
+            {
+                if (!Archetypes[Tree.Archetype].IsOverstory() || Tree.bCorridorFlank) continue;
+                const FVector2D D = FVector2D(Tree.Base) - Sample.Point;
+                if (FMath::Abs(FVector2D::DotProduct(D, Sample.Tangent)) > 500) continue;
+                const float Across = FMath::Abs(FVector2D::DotProduct(D, Normal));
+                if (Across > Sample.HalfWidth && Across < Sample.HalfWidth + 600) ++Edge;
+                else if (Across > Sample.HalfWidth + 900 && Across < Sample.HalfWidth + 1500) ++Inner;
+            }
+            ++EdgeCells; ++InnerCells;
+        }
+        AddInfo(FString::Printf(TEXT("FLORA_CORRIDOR_EDGE fill_trees_edge_band=%d stand_band=%d"), Edge, Inner));
+        TestTrue(TEXT("Stand fill thins toward the lane edge"), EdgeCells > 0 && Edge < Inner * .8F);
+        TestTrue(TEXT("Worn path weight is 1 on the centreline and 0 off the lane"),
+            FMath::IsNearlyEqual(APacificCoastGraybox::GetTrainingCorridorWear(Layout.Corridor[200].Point.X, Layout.Corridor[200].Point.Y), 1.0F)
+            && APacificCoastGraybox::GetTrainingCorridorWear(Layout.Corridor[200].Point.X + 2000, Layout.Corridor[200].Point.Y + 2000) == 0);
+        TArray<UProceduralMeshComponent*> Paths; Coast->GetComponents(Paths);
+        TestTrue(TEXT("Worn corridor path geometry exists"), Paths.ContainsByPredicate([](UProceduralMeshComponent* M) { return M->GetFName() == TEXT("CoastalFloraCorridorPath") && M->GetProcMeshSection(0) && M->GetProcMeshSection(0)->ProcIndexBuffer.Num() > 1000; }));
+    }
+    // Trunk-base litter mask for the ground material (DEV-TERRAIN).
+    {
+        const FPlacedTree* Fir = Layout.Trees.FindByPredicate([&](const FPlacedTree& T) { return T.bNearForest && Archetypes[T.Archetype].Species == ESpecies::DouglasFir; });
+        if (TestNotNull(TEXT("A near fir exists"), Fir))
+        {
+            const FLinearColor AtBase = APacificCoastGraybox::GetForestLitterMask(Fir->Base.X + Archetypes[Fir->Archetype].CollarRadius, Fir->Base.Y);
+            TestTrue(TEXT("Conifer litter is full at the trunk base"), AtBase.R > .9F);
+        }
+        TestEqual(TEXT("No litter in the open launch field"), APacificCoastGraybox::GetForestLitterMask(0, 0).R + APacificCoastGraybox::GetForestLitterMask(0, 0).G, 0.0F);
     }
     // The entry is visible from the fixed `forest` review pose.
     FVector Camera; FRotator Rotation;
