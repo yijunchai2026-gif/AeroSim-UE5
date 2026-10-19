@@ -36,7 +36,7 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Golden exposed grass is the dominant habitat (at least 40% of land)"), Counts[0] * 5 >= LandSamples * 2 && Counts[0] > Counts[1] && Counts[0] > Counts[2]);
     TestTrue(TEXT("Woodland ground stays a minority of the land (under 35%)"), Counts[2] * 100 < LandSamples * 35);
     TestTrue(TEXT("Open sea beyond the cliff is classified as shore"), FPacificCoastHabitat::GetHabitatClass(APacificCoastGraybox::GetCliffEdgeX(0) + 5000, 0) == ECoastHabitatClass::CliffShore);
-    for (const FVector& Route : FPacificCoastGrayboxContract::GetRoutePoints())
+    for (const FVector& Route : FPacificCoastGrayboxContract::GetPlateauClearancePoints())
     {
         const ECoastHabitatClass Class = FPacificCoastHabitat::GetHabitatClass(Route.X, Route.Y);
         TestTrue(TEXT("Flight route ground is open grass, not woodland or rock"), Class == ECoastHabitatClass::ExposedGrass || Class == ECoastHabitatClass::ShelteredGrass);

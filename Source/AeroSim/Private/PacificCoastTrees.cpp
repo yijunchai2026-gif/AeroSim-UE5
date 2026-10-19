@@ -242,6 +242,7 @@ struct FSkeleton
     TArray<FTuft> Tufts;
     TArray<FTrunkSegment> Collision;
     int32 Stems = 1;
+    bool bHeroShape = false;
     float TileV = 200, TileU = 200;
     const FIsland* Islands = PineSprigs;
     int32 IslandCount = 2;
@@ -579,6 +580,68 @@ FSkeleton MakeOak(int32 Seed)
 // ---------------------------------------------------------------------------------
 // LOD emission
 // ---------------------------------------------------------------------------------
+// R4 trial: reshape three existing library members, without adding cards, limbs or
+// changing the stand/LOD policy. The continuous map carries connected wood and
+// foliage together; card roll then supplies compound twig planes, not flat shelves.
+void RefineHeroShape(FSkeleton& K)
+{
+    K.bHeroShape = true;
+    const bool bOak = K.Species == ESpecies::CoastLiveOak;
+    const bool bPine = K.Species == ESpecies::MontereyPine;
+    const float H = K.Height, Radius = K.CrownRadius;
+    auto Shape = [=](const FVector& P) -> FVector
+    {
+        // Preserve roots, low bole and gate collision through 4.5 m. The oak's
+        // low fork already exists; allow its upper limbs to carry the broad crown.
+        const float Active = Smooth01((P.Z - 450.0F) / 350.0F);
+        if (Active <= 0) return P;
+        const float T = FMath::Clamp(static_cast<float>(P.Z) / H, 0.0F, 1.0F);
+        const float R = FVector2D(P.X, P.Y).Size();
+        const float Yaw = FMath::Atan2(P.Y, P.X);
+        const float Radial = Smooth01(R / FMath::Max(120.0F, Radius * .65F));
+        // Unequal lobes shrink within the prior envelope. Twist varies with
+        // radius/height so the connected primary limbs are curved, not spokes.
+        const float Envelope = bOak ? .90F + .07F * FMath::Sin(Yaw * 3 + .7F)
+            : bPine ? .90F + .08F * FMath::Sin(Yaw * 2 + .8F) : .93F + .06F * FMath::Sin(Yaw * 3 - .6F);
+        const float Scale = FMath::Lerp(1.0F, Envelope, Active * Radial);
+        const float Twist = Active * Radial * (bPine ? .17F : .10F) * FMath::Sin(T * 7.0F + Yaw);
+        const float X = P.X * FMath::Cos(Twist) - P.Y * FMath::Sin(Twist);
+        const float Y = P.X * FMath::Sin(Twist) + P.Y * FMath::Cos(Twist);
+        // Fir boughs droop unevenly; pine upper boughs ascend with asymmetric
+        // terminal masses. Oak branches carry unequal crown lobes at depth.
+        const float Sag = bOak ? .13F * FMath::Sin(Yaw * 3 + T * 5)
+            : bPine ? .10F + .13F * FMath::Sin(Yaw * 2 + T * 6)
+            : -.12F + .11F * FMath::Sin(Yaw * 3 + T * 5);
+        const float DZ = Active * R * Radial * Sag;
+        // Small recovery bends above the protected bole. Keep conservative
+        // gameplay collision unchanged; no movement of planted origin/collar.
+        const float Bend = Active * (bPine ? 24.0F : bOak ? 12.0F : 10.0F) * FMath::Sin(PI * T);
+        return FVector(X * Scale + Bend, Y * Scale + Bend * .55F * FMath::Sin(T * 5), P.Z + DZ);
+    };
+    for (FVector& P : K.Trunk) P = Shape(P);
+    for (FLimb& Limb : K.Limbs) for (FVector& P : Limb.Path) P = Shape(P);
+    for (int32 Index = 0; Index < K.Tufts.Num(); ++Index)
+    {
+        FTuft& Tuft = K.Tufts[Index];
+        const FVector Old = Tuft.Origin, At = Shape(Old);
+        const FVector Along = (Shape(Old + Tuft.Dir * 10) - At).GetSafeNormal();
+        const FVector Wide = Shape(Old + Tuft.Across.GetSafeNormal() * 10) - At;
+        FVector Across = (Wide - Along * FVector::DotProduct(Wide, Along)).GetSafeNormal();
+        // Both signs and several inclinations break shared planes without
+        // rotating whole trees or changing the deterministic placement stream.
+        const float Phase = FMath::Sin(Old.X * .027F + Old.Y * .019F + Old.Z * .011F + Index * 2.39996F);
+        const float Roll = FMath::DegreesToRadians((Index % 2 ? -1.0F : 1.0F) * (bOak ? 25.0F : 38.0F) + Phase * 25.0F);
+        Across = Across.RotateAngleAxis(FMath::RadiansToDegrees(Roll), Along).GetSafeNormal();
+        Tuft.Origin = At;
+        Tuft.Dir = Along;
+        Tuft.Across = Across;
+        Tuft.Outward = (At - FVector(0, 0, H * (bOak ? .55F : .65F))).GetSafeNormal();
+        // Break coincident edges at the same budget; retain enough area that
+        // reduced flatness does not regress into the previous bare-tree failure.
+        Tuft.Length *= .94F + .06F * (.5F + .5F * Phase);
+    }
+}
+
 void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed)
 {
     const bool bOak = K.Species == ESpecies::CoastLiveOak;
@@ -595,7 +658,8 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed)
             const float Z = K.Trunk[Ring].Z;
             const float Base = K.TrunkRadius[Ring];
             if (K.Species != ESpecies::CoastLiveOak && K.Height < 500) return Base; // seedlings: no collar
-            return Lod >= 2 ? Base * (Z < 30 ? 1.12F : 1.0F) : CollarRadius(Z, Theta, Base, Lobes);
+            const float Section = K.bHeroShape ? 1.0F + .035F * Smooth01((Z - 450.0F) / 350.0F) * FMath::Sin(Theta * 2 + Z * .001F) : 1.0F;
+            return Section * (Lod >= 2 ? Base * (Z < 30 ? 1.12F : 1.0F) : CollarRadius(Z, Theta, Base, Lobes));
         }, TrunkSides, URepeats, K.TileV,
         [&](int32 Ring)
         {
@@ -637,6 +701,53 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed)
             K.Islands[Tuft.Island % K.IslandCount], Tuft.Outward, FVector4f(Tuft.Occlusion, Tuft.Wind, 0, 1));
     }
 }
+
+#if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoastalHeroShapeBudgetTest, "AeroSim.Coastal.Flora.HeroShapeBudgetAndAnchors",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FCoastalHeroShapeBudgetTest::RunTest(const FString& Parameters)
+{
+    for (const int32 Seed : {1101, 2203, 3307})
+    {
+        const FSkeleton Before = Seed == 3307 ? MakeOak(Seed) : MakeConifer(Seed == 2203 ? ESpecies::MontereyPine : ESpecies::DouglasFir, EAge::Mature, Seed);
+        FSkeleton After = Before;
+        RefineHeroShape(After);
+        TestEqual(TEXT("Card allocation is preserved"), After.Tufts.Num(), Before.Tufts.Num());
+        TestEqual(TEXT("Connected wood allocation is preserved"), After.Limbs.Num(), Before.Limbs.Num());
+        TestEqual(TEXT("Placement crown radius is preserved"), After.CrownRadius, Before.CrownRadius);
+        for (int32 Ring = 0; Ring < Before.Trunk.Num(); ++Ring)
+            if (Before.Trunk[Ring].Z <= 450)
+                TestTrue(TEXT("Grounding and low gate bole stay planted"), Before.Trunk[Ring].Equals(After.Trunk[Ring], .001));
+        TestEqual(TEXT("Collision allocation is preserved"), After.Collision.Num(), Before.Collision.Num());
+        for (int32 Index = 0; Index < Before.Collision.Num(); ++Index)
+        {
+            const FTrunkSegment& A = Before.Collision[Index]; const FTrunkSegment& B = After.Collision[Index];
+            TestTrue(TEXT("Existing gate collision is unchanged"), A.Start.Equals(B.Start, .001F) && A.End.Equals(B.End, .001F) && A.Radius == B.Radius);
+        }
+        int32 FlatBefore = 0, FlatAfter = 0;
+        for (int32 Index = 0; Index < After.Tufts.Num(); ++Index)
+        {
+            const FTuft& A = Before.Tufts[Index]; const FTuft& B = After.Tufts[Index];
+            const FVector Normal = FVector::CrossProduct(B.Dir, B.Across).GetSafeNormal();
+            TestTrue(TEXT("Compound twig cards have finite noncollapsed axes"), !B.Origin.ContainsNaN() && !Normal.ContainsNaN() && Normal.SizeSquared() > .99);
+            if (FMath::Abs(FVector::CrossProduct(A.Dir, A.Across).GetSafeNormal().Z) > .95) ++FlatBefore;
+            if (FMath::Abs(Normal.Z) > .95) ++FlatAfter;
+        }
+        if (Seed == 1101) TestTrue(TEXT("Fir sprays no longer share mostly horizontal planes"), FlatBefore > 0 && FlatAfter < FlatBefore * .75F);
+        for (int32 Lod = 0; Lod < LodCount; ++Lod)
+        {
+            FLod A, B;
+            EmitLod(Before, Lod, A, Seed); EmitLod(After, Lod, B, Seed);
+            TestEqual(TEXT("No added wood vertices at any LOD"), B.Bark.P.Num(), A.Bark.P.Num());
+            TestEqual(TEXT("No added foliage vertices at any LOD"), B.Leaf.P.Num(), A.Leaf.P.Num());
+            TestEqual(TEXT("Wood triangle allocation is unchanged"), B.Bark.I.Num(), A.Bark.I.Num());
+            TestEqual(TEXT("Foliage triangle allocation is unchanged"), B.Leaf.I.Num(), A.Leaf.I.Num());
+            TestTrue(TEXT("Both reshaped slots retain real finite UV streaming density"), StreamingUVInfo(B.Bark).IsSet() && StreamingUVInfo(B.Leaf).IsSet());
+        }
+    }
+    return true;
+}
+#endif
 
 UStaticMesh* BuildMesh(const FName Name, const TArray<FLod>& Lods, TArray<int32>& OutTriangles)
 {
@@ -747,6 +858,7 @@ const TArray<FArchetype>& GetArchetypes()
     for (const FSpec& Spec : Specs)
     {
         FSkeleton K = Spec.Species == ESpecies::CoastLiveOak ? MakeOak(Spec.Seed) : MakeConifer(Spec.Species, Spec.Age, Spec.Seed);
+        if (Spec.Seed == 1101 || Spec.Seed == 2203 || Spec.Seed == 3307) RefineHeroShape(K);
         FArchetype A = MakeArchetype(Spec.Name, K, Spec.Age, Spec.Seed);
         if (Spec.Age == EAge::Sapling) A.Species = ESpecies::Sapling;
         Archetypes.Add(MoveTemp(A));
@@ -862,7 +974,7 @@ float BoardwalkDistance(const FVector2D& Point)
 
 bool IsProtected(const FVector2D& Point, float Clearance)
 {
-    const TArray<FVector>& Route = FPacificCoastGrayboxContract::GetRoutePoints();
+    const TArray<FVector>& Route = FPacificCoastGrayboxContract::GetPlateauClearancePoints();
     for (int32 Index = 1; Index < Route.Num(); ++Index)
         if (SegmentDistance(Point, FVector2D(Route[Index - 1]), FVector2D(Route[Index])) < FMath::Max(Clearance, 2600.0F)) return true;
     for (int32 Index = 1; Index < 4; ++Index)

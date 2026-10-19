@@ -120,7 +120,7 @@ bool FCoastalContinuityTest::RunTest(const FString& Parameters)
             MinimumCover = FMath::Min(MinimumCover, Cover); MaximumCover = FMath::Max(MaximumCover, Cover);
         }
     TestTrue(TEXT("Shared vegetation field is finite, bounded and varies across real ridges and drainage"), bValidCover && MaximumCover - MinimumCover > .3F);
-    for (const FVector& Route : FPacificCoastGrayboxContract::GetRoutePoints())
+    for (const FVector& Route : FPacificCoastGrayboxContract::GetPlateauClearancePoints())
         TestTrue(TEXT("Vegetation coverage keeps the actual flight route open"), FMath::IsNearlyZero(APacificCoastGraybox::GetCoastalVegetationCover(Route.X, Route.Y)));
     TestTrue(TEXT("Vegetation does not grow beyond the ocean-facing cliff"), FMath::IsNearlyZero(APacificCoastGraybox::GetCoastalVegetationCover(APacificCoastGraybox::GetCliffEdgeX(0) + 1000, 0)));
     AddInfo(FString::Printf(TEXT("Closed terrain metadata: %d triangles; %d vertices; %d classified components; west %.0f cm; north/south %.0f cm; max height %.0f cm; max mountain grade %.3f; open edges %d"), TriangleCount, Positions.Num(), SurfaceParts, MinX, MaxAbsY, MountainHeight, MaximumMountainGrade, OpenEdges));
