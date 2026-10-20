@@ -224,6 +224,15 @@ TSharedRef<FJsonObject> UAeroSimControlBridge::Inspect() const
         State->SetNumberField(TEXT("guide_progress_cm"),Mission.GetGuidanceLegProgressCm());
         VectorFields(State,TEXT("guide_target_cm"),Guide.Position);
         VectorFields(State,TEXT("guide_point_cm"),Guide.GuidePoint);
+        // All guide_* coordinates are WORLD cm: compare with actor_cm_*, never with position_cm_*
+        // (model space relative to the launch-mat start, offset by about (55,79,11) cm).
+        if(const auto* GuidePawn=Cast<AFlightPawn>(GetWorld()&&GetWorld()->GetFirstPlayerController()?GetWorld()->GetFirstPlayerController()->GetPawn():nullptr))
+        {
+            const FVector World=GuidePawn->GetActorLocation();
+            State->SetNumberField(TEXT("guide_point_planar_distance_cm"),FVector::Dist2D(World,Guide.GuidePoint));
+            State->SetNumberField(TEXT("guide_point_height_delta_cm"),World.Z-Guide.GuidePoint.Z);
+            State->SetNumberField(TEXT("guide_target_distance_cm"),FVector::Distance(World,Guide.Position));
+        }
     }
     if(FSlateApplication::IsInitialized())
     {
