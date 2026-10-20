@@ -158,7 +158,7 @@ UMaterial* Foliage(const TCHAR* Name,UTexture2D* Base,UTexture2D* Alpha,UTexture
     auto* Depth=Node<UMaterialExpressionPixelDepth>(M);auto* Fade=Node<UMaterialExpressionPerInstanceFadeAmount>(M);
     auto* World=Node<UMaterialExpressionWorldPosition>(M);auto* Time=Node<UMaterialExpressionTime>(M);
     // Per-instance hue/brightness spread and inner-crown occlusion (vertex colour R).
-    auto* Surface=Custom(M,TEXT("float3 c=C*Tint.rgb*lerp(.80,1.12,R)*float3(lerp(1.04,.94,R),1,lerp(.96,1.06,R));return c*(.50+.50*V.r);"),CMOT_Float3,
+    auto* Surface=Custom(M,TEXT("float3 c=C*Tint.rgb*lerp(.80,1.12,R)*float3(lerp(1.04,.94,R),1,lerp(.96,1.06,R));return c*(.62+.38*V.r);"),CMOT_Float3,
         {{TEXT("C"),Color,0},{TEXT("Tint"),TintParam,0},{TEXT("R"),Random,0},{TEXT("V"),Vertex,0}});
     // The bias stays below the clip value so dilated atlas background never becomes opaque.
     auto* Opacity=Custom(M,TEXT("return A*F+saturate((D-1500.0)/3500.0)*B;"),CMOT_Float1,
@@ -206,17 +206,22 @@ UMaterial* Bark(const TCHAR* Name,UTexture2D* Base,UTexture2D* Normal,UTexture2D
 UMaterial* GroundLitter(const TCHAR* Name,UTexture2D* Base,UTexture2D* Alpha,UTexture2D* Normal,UTexture2D* Rough)
 {
     bool bNew=false;UMaterial* M=Begin(Name,bNew);
-    M->BlendMode=BLEND_Masked;M->TwoSided=false;M->SetShadingModel(MSM_DefaultLit);M->OpacityMaskClipValue=.35F;
+    M->BlendMode=BLEND_Masked;M->TwoSided=false;M->SetShadingModel(MSM_DefaultLit);M->OpacityMaskClipValue=.5F;
     auto* Color=Sample(M,Base,TEXT("BaseColorTexture"),SAMPLERTYPE_Color);
     auto* Mask=Sample(M,Alpha,TEXT("OpacityTexture"),SAMPLERTYPE_LinearGrayscale);
     auto* Nrm=Sample(M,Normal,TEXT("NormalTexture"),SAMPLERTYPE_Normal);
     auto* Rgh=Sample(M,Rough,TEXT("RoughnessTexture"),SAMPLERTYPE_LinearGrayscale);
     auto* Random=Node<UMaterialExpressionPerInstanceRandom>(M);
     auto* Surface=Custom(M,TEXT("return C*lerp(.78,1.0,R);"),CMOT_Float3,{{TEXT("C"),Color,0},{TEXT("R"),Random,0}});
+    // Soft edge: texture alpha x a broad radial falloff, resolved by a screen-space dither (TAA
+    // integrates it), so each ring fades into the ground instead of ending as a hard-edged rug.
+    auto* UV=Node<UMaterialExpressionTextureCoordinate>(M);
+    auto* Feather=Custom(M,TEXT("float d=length(T-.5);float a=A*(1.0-smoothstep(.12,.5,d));float n=frac(52.9829189*frac(dot(Parameters.SvPosition.xy,float2(.06711056,.00583715))));return a>n*.9+.05?1.0:0.0;"),CMOT_Float1,
+        {{TEXT("A"),Mask,1},{TEXT("T"),UV,0}});
     bool bOk=UMaterialEditingLibrary::ConnectMaterialProperty(Surface,TEXT(""),MP_BaseColor);
     bOk&=UMaterialEditingLibrary::ConnectMaterialProperty(Nrm,TEXT("RGB"),MP_Normal);
     bOk&=UMaterialEditingLibrary::ConnectMaterialProperty(Rgh,TEXT("R"),MP_Roughness);
-    bOk&=UMaterialEditingLibrary::ConnectMaterialProperty(Mask,TEXT("R"),MP_OpacityMask);
+    bOk&=UMaterialEditingLibrary::ConnectMaterialProperty(Feather,TEXT(""),MP_OpacityMask);
     return bOk?Finish(M,bNew,Name):nullptr;
 }
 bool Mesh(const TCHAR* Name,UMaterialInterface* M)
@@ -286,10 +291,10 @@ int32 UHabitatDraftImportCommandlet::Main(const FString& Params)
     UMaterial* Shrub=Foliage(TEXT("M_CoastBroadShrubDraft"),T(TEXT("T_CoastBroadShrub_BaseColor")),T(TEXT("T_CoastBroadShrub_Alpha")),T(TEXT("T_CoastBroadShrub_Normal")),T(TEXT("T_CoastBroadShrub_Roughness")),0,.33F,FLinearColor(.78F,.84F,.72F));
     UMaterial* Fern=Foliage(TEXT("M_FloraFernDraft"),T(TEXT("T_FloraFern_BaseColor")),T(TEXT("T_FloraFern_Alpha")),T(TEXT("T_FloraFern_Normal")),T(TEXT("T_FloraFern_ARM")),1,.36F,FLinearColor(.85F,.92F,.82F));
     UMaterial* Rooibos=Foliage(TEXT("M_FloraRooibosDraft"),T(TEXT("T_FloraRooibos_BaseColor")),T(TEXT("T_FloraRooibos_Alpha")),T(TEXT("T_FloraRooibos_Normal")),T(TEXT("T_FloraRooibos_ARM")),1,.36F,FLinearColor(.70F,.78F,.62F));
-    UMaterial* PineNeedles=Foliage(TEXT("M_FloraPineNeedlesDraft"),T(TEXT("T_FloraPineTwig_BaseColor")),T(TEXT("T_FloraPineTwig_Alpha")),T(TEXT("T_FloraPineTwig_Normal")),T(TEXT("T_FloraPineTwig_Roughness")),0,.36F,FLinearColor(.86F,.95F,.84F));
-    UMaterial* FirNeedles=Foliage(TEXT("M_FloraFirNeedlesDraft"),T(TEXT("T_FloraFirTwig_BaseColor")),T(TEXT("T_FloraFirTwig_Alpha")),T(TEXT("T_FloraFirTwig_Normal")),T(TEXT("T_FloraFirTwig_Roughness")),0,.36F,FLinearColor(.62F,.74F,.60F));
+    UMaterial* PineNeedles=Foliage(TEXT("M_FloraPineNeedlesDraft"),T(TEXT("T_FloraPineTwig_BaseColor")),T(TEXT("T_FloraPineTwig_Alpha")),T(TEXT("T_FloraPineTwig_Normal")),T(TEXT("T_FloraPineTwig_Roughness")),0,.36F,FLinearColor(.78F,1.0F,.74F));
+    UMaterial* FirNeedles=Foliage(TEXT("M_FloraFirNeedlesDraft"),T(TEXT("T_FloraFirTwig_BaseColor")),T(TEXT("T_FloraFirTwig_Alpha")),T(TEXT("T_FloraFirTwig_Normal")),T(TEXT("T_FloraFirTwig_Roughness")),0,.36F,FLinearColor(.56F,.82F,.52F));
     // Live-oak leaves are darker and glossier than the published island_tree_02 scan.
-    UMaterial* OakLeaves=Foliage(TEXT("M_FloraOakLeavesDraft"),T(TEXT("T_FloraOakLeaf_BaseColor")),T(TEXT("T_FloraOakLeaf_Alpha")),T(TEXT("T_FloraOakLeaf_Normal")),T(TEXT("T_FloraOakLeaf_Roughness")),0,.38F,FLinearColor(.92F,.95F,.90F));
+    UMaterial* OakLeaves=Foliage(TEXT("M_FloraOakLeavesDraft"),T(TEXT("T_FloraOakLeaf_BaseColor")),T(TEXT("T_FloraOakLeaf_Alpha")),T(TEXT("T_FloraOakLeaf_Normal")),T(TEXT("T_FloraOakLeaf_Roughness")),0,.38F,FLinearColor(.84F,1.0F,.76F));
     // Douglas-fir proxy bark is tinted warmer (+red), per the ART-FLORA spec.
     UMaterial* PineBark=Bark(TEXT("M_FloraPineBarkDraft"),T(TEXT("T_FloraPineBark_BaseColor")),T(TEXT("T_FloraPineBark_Normal")),T(TEXT("T_FloraPineBark_Roughness")),FLinearColor(.62F,.55F,.50F));
     UMaterial* FirBark=Bark(TEXT("M_FloraFirBarkDraft"),T(TEXT("T_FloraFirBark_BaseColor")),T(TEXT("T_FloraFirBark_Normal")),T(TEXT("T_FloraFirBark_Roughness")),FLinearColor(.45F,.42F,.40F));

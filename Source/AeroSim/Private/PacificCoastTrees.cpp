@@ -733,8 +733,8 @@ FVector Turn(const FVector& D, float YawDegrees, float PitchDegrees)
 void AddClusterCard(FSkeleton& K, int32 Cluster, const FVector& Origin, const FVector& Along, const FVector& Across, float Length,
     int32 Island, float Wind, float Occlusion, float Fold)
 {
-    // Modest sway on branchlet cards (QA-MOTION R5a): cap the shared wind weight.
-    FTuft Tuft{Origin, Along.GetSafeNormal(), Across, FVector::UpVector, Length, Occlusion, FMath::Min(Wind, .45F), Island};
+    // Subtle sway on branchlet cards (QA-MOTION R5a/R6b): weight capped at .15 (~0.4 cm gust).
+    FTuft Tuft{Origin, Along.GetSafeNormal(), Across, FVector::UpVector, Length, Occlusion, FMath::Min(Wind, .15F), Island};
     Tuft.Cluster = Cluster; Tuft.Fold = Fold;
     K.Tufts.Add(Tuft);
 }
@@ -802,7 +802,7 @@ void BuildFirBranchlets(FSkeleton& K, FRandomStream& Random)
             const FVector Attach = PathPoint(Limb, S);
             const FVector Ahead = (PathPoint(Limb, FMath::Min(1.0F, S + .04F)) - Attach).GetSafeNormal();
             const float U = (Attach.Z - K.CrownBase) / FMath::Max(1.0F, CrownTop - K.CrownBase);
-            const float GroupLength = Random.FRandRange(56, 84) * Scale * (Limb.Level == 2 ? .8F : 1.0F) * FMath::Lerp(1.0F, .72F, U);
+            const float GroupLength = Random.FRandRange(56, 84) * Scale * (Limb.Level == 2 ? .8F : 1.0F) * FMath::Lerp(1.0F, .96F, U);
             // Group axis leaves the limb sideways and droops; tips near the limb end turn up.
             const FVector Axis = Turn(Ahead, Side * Random.FRandRange(28, 58), -Random.FRandRange(10, 26) + (S > .85F ? 18.0F : 0.0F));
             const FVector Lift(0, 0, Side * Random.FRandRange(6, 18) * (Random.FRand() < .5F ? 1 : -1));
@@ -1012,9 +1012,39 @@ void EmitHeroFoliage(const FSkeleton& K, int32 Lod, FLod& Out)
         for (int32 I = 0, Rank = 0; I < Members.Num() && Rank < PerLobe; I += Step, ++Rank) Ranked.Add({Rank, Members[I]});
     }
     Ranked.Sort([](const TPair<int32, int32>& A, const TPair<int32, int32>& B) { return A.Key != B.Key ? A.Key < B.Key : A.Value < B.Value; });
-    const int32 Limit = FMath::Max(1, FMath::FloorToInt(Total * .3F));
+    const int32 Limit = FMath::Max(1, FMath::FloorToInt(Total * .15F));
     for (int32 I = 0; I < Ranked.Num() && I < Limit; ++I)
-        for (int32 Plane = 0; Plane < Planes; ++Plane) ClusterCard(K.Clusters[Ranked[I].Value], Ranked[I].Value, K.Height < 500 ? 1.0F : 1.3F, Plane * 90.0F);
+        for (int32 Plane = 0; Plane < Planes; ++Plane) ClusterCard(K.Clusters[Ranked[I].Value], Ranked[I].Value, K.Height < 500 ? 1.0F : 1.5F, Plane * 90.0F);
+    // R7 far crown mass: every lobe also gets a three-plane crossed proxy spanning its whole
+    // envelope, so 300 m+ views keep the crown silhouette instead of thin tops over bare poles.
+    for (const int32 Key : Keys)
+    {
+        const TArray<int32>& Members = Lobes[Key];
+        FBox Box(ForceInit);
+        float Wind = 0;
+        for (const int32 Id : Members)
+        {
+            const FCluster& C = K.Clusters[Id];
+            Box += C.Center + FVector(C.Radii.X, C.Radii.X, C.Radii.Z) * .7F;
+            Box += C.Center - FVector(C.Radii.X, C.Radii.X, C.Radii.Z) * .7F;
+            Wind = FMath::Max(Wind, C.Wind);
+        }
+        const FVector Centre = Box.GetCenter(), Half = Box.GetExtent();
+        // Fit inside the lobe envelope in every direction (any yaw): horizontal reach is the
+        // smaller half-extent, vertical reach the half-height; the island aspect fixes the other side.
+        const float Width = FMath::Min(Half.X, Half.Y) * 2.0F, Tall = Half.Z * 2.0F;
+        const FIsland& Island = K.Islands[K.Clusters[Members[0]].Island % K.IslandCount];
+        const FVector2f Extent = Island.Max - Island.Min;
+        const float Aspect = Island.bAlongU ? Extent.X / Extent.Y : Extent.Y / Extent.X;
+        for (int32 Plane = 0; Plane < 3; ++Plane)
+        {
+            const FVector Side = FVector(1, 0, 0).RotateAngleAxis(Plane * 60.0F + Key * 17.0F, FVector::UpVector);
+            const bool bWide = Width > Tall;
+            const FVector Along = bWide ? Side : FVector::UpVector, Across = bWide ? FVector::UpVector : Side;
+            const float Length = bWide ? FMath::Min(Width, Tall * Aspect) : FMath::Min(Tall, Width * Aspect);
+            EnvelopeCard(Out.Leaf, Centre - Along * Length * .5F, Along, Across, Length, Island, Centre, FVector4f(.85F, FMath::Min(Wind, .15F), 0, 1), 0);
+        }
+    }
 }
 
 void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrossed = true)
@@ -1035,14 +1065,16 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
             if (K.Species != ESpecies::CoastLiveOak && K.Height < 500) return Base; // seedlings: no collar
             const float Section = K.bHeroShape ? 1.0F + .035F * Smooth01((Z - 450.0F) / 350.0F) * FMath::Sin(Theta * 2 + Z * .001F) : 1.0F;
             // LOD2+ keep the smooth flare (no buttress lobes) so mid-distance bases never read as cylinders.
-            return Section * (Lod >= 2 ? Base * (1.0F + .18F * FMath::Exp(-FMath::Max(Z, 0.0F) / 30.0F)) : CollarRadius(Z, Theta, Base, Lobes));
+            // Far trunks are thinned (LOD2 x0.8, LOD3 x0.55) so from 300 m+ the crowns, not poles, dominate.
+            const float Far = Lod == 2 ? .8F : Lod == 3 ? .55F : 1.0F;
+            return Section * Far * (Lod >= 2 ? Base * (1.0F + .18F * FMath::Exp(-FMath::Max(Z, 0.0F) / 30.0F)) : CollarRadius(Z, Theta, Base, Lobes));
         }, TrunkSides, URepeats, K.TileV,
         [&](int32 Ring)
         {
             const float Z = K.Trunk[Ring].Z;
             // Soil contact darkening, stand shade on the bole, deeper shade inside the crown;
             // far LODs are darker still so distant trunks never read as pale matchsticks.
-            const float Shade = (Z > K.CrownBase ? .62F : .80F) * (Lod >= 2 ? .72F : 1.0F);
+            const float Shade = (Z > K.CrownBase ? .62F : .80F) * (Lod >= 2 ? .6F : 1.0F);
             return FVector4f(FMath::Min(FMath::Clamp(.05F + Z / 55.0F, 0.0F, 1.0F), Shade), FMath::Square(FMath::Max(Z, 0.0F) / Height) * .12F, 0, 1);
         });
     for (const FLimb& Limb : K.Limbs)
@@ -1667,7 +1699,6 @@ const FLayout& GetLayout()
     TArray<int32> CorridorTrees;
     for (int32 Index : Firs) if (Archetypes[Index].LowestFoliageNearStem >= 520) CorridorTrees.Add(Index);
     for (int32 Index : Pines) if (Archetypes[Index].LowestFoliageNearStem >= 520) CorridorTrees.Add(Index);
-    for (int32 Index : Veterans) if (Archetypes[Index].LowestFoliageNearStem >= 520) CorridorTrees.Add(Index);
     check(!CorridorTrees.IsEmpty());
     const int32 GateArchetype = CorridorTrees[0];
     const float GateRadius = Archetypes[GateArchetype].BreastRadius;
@@ -1738,7 +1769,7 @@ const FLayout& GetLayout()
                 const bool bPine = SpeciesRoll < (P.X > -6000 ? .62F : .30F);
                 const TArray<int32>& Poles = bPine ? PinePoles : FirPoles;
                 Archetype = Age == EAge::Pole ? Poles[Random.RandRange(0, Poles.Num() - 1)]
-                    : ScaleRoll < .20F ? Veterans[bPine ? 1 : 0]
+                    : ScaleRoll < .12F ? Veterans[bPine ? 1 : 0]
                     : bPine ? Pines[Random.RandRange(0, Pines.Num() - 1)] : Firs[Random.RandRange(0, Firs.Num() - 1)];
             }
             const FArchetype& A = Archetypes[Archetype];
