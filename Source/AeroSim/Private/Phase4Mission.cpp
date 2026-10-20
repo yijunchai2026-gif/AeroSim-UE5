@@ -227,9 +227,11 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
         if (Kind == EPhase4GuideKind::VerticalDescent || Kind == EPhase4GuideKind::VerticalAscent
             || Kind == EPhase4GuideKind::Takeoff || Kind == EPhase4GuideKind::Landing)
         {
-            // Columns lock XY: <=100 cm off axis and <=100 cm/s planar while progressing.
-            Leg.AcceptRadiusCm = 100.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F;
-            Leg.SafetyHalfWidthCm = 100.0F; Leg.SafetyBelowCm = 150.0F; Leg.SafetyAboveCm = 150.0F;
+            // Columns hold XY near the axis (<=100 cm/s planar while progressing). R7b: the column
+            // corridor (2.5 m) must contain the previous leg's 1.5 m acceptance window, otherwise a
+            // pilot accepted 1.0-1.5 m off C3 starts the climb already "off corridor" and is stuck.
+            Leg.AcceptRadiusCm = 150.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F;
+            Leg.SafetyHalfWidthCm = 250.0F; Leg.SafetyBelowCm = 150.0F; Leg.SafetyAboveCm = 150.0F;
             Leg.MaxTrackPlanarSpeedCm = 100.0F; Leg.LookaheadCm = 300.0F;
             Leg.MaxAcceptPlanarSpeedCm = 100.0F;
             // Vertical brake window: ~2x the 6-8 m/s envelope's stopping distance (3.3-5.3 m).
@@ -319,8 +321,13 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
             EPhase4GuideKind::Transit, {MouthApproach});
     }
     // 8. Corridor: entry (C4), polyline follow to C5 along CoastFlora::GetLayout().Corridor.
-    Add(TEXT("nav-10-forest-entry"), TEXT("checkpoint-04"), TEXT("TRIANGLE 4 / FOREST ENTRY / LOW AND SLOW"),
-        EPhase4GuideKind::Corridor, {C4}, 3);
+    {
+        // Open field funnelling into the mouth: must contain nav-09's 6 m / +-2 m pass-through window.
+        auto& Leg = Add(TEXT("nav-10-forest-entry"), TEXT("checkpoint-04"), TEXT("TRIANGLE 4 / FOREST ENTRY / LOW AND SLOW"),
+            EPhase4GuideKind::Corridor, {C4}, 3);
+        Leg.SafetyHalfWidthCm = 1300.0F; Leg.EndFunnelHalfWidthCm = 180.0F; Leg.EndFunnelSlope = 0.9F;
+        Leg.SafetyBelowCm = 200.0F; Leg.SafetyAboveCm = 200.0F;
+    }
     TArray<FVector> Corridor;
     for (const CoastFlora::FCorridorSample& Sample : CoastFlora::GetLayout().Corridor)
     {
@@ -357,6 +364,7 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
         auto& Leg = Add(TEXT("nav-15-land-on-mat"), TEXT("guide-home-mat"), TEXT("LAND VERTICALLY ON THE MAT / BELOW 0.4 M/S"),
             EPhase4GuideKind::Landing, {Home});
         Leg.bReturnLeg = true; Leg.AcceptRadiusCm = FPacificCoastGrayboxContract::TakeoffPadRadiusCm; Leg.MaxAcceptPlanarSpeedCm = 40.0F;
+        Leg.SafetyHalfWidthCm = 150.0F; // launch-site props: keep the mat column tight
     }
     return Route;
 }
@@ -412,6 +420,14 @@ bool FPhase4TaskDefinition::ValidateGuidanceStructure(const TArray<FPhase4Guidan
                     return Fail(LegIndex, Leg.LegId, Along + FVector::Distance(A, P), P, TEXT("OUTSIDE_SAFETY_VOLUME"));
             }
             Along += FVector::Distance(A, B);
+        }
+        if (LegIndex > 0)
+        {
+            // Hand-off: every pose the previous leg can accept must already be inside this leg's corridor.
+            const FPhase4GuidanceLeg& Prior = Route[LegIndex - 1];
+            const float Reach = Prior.AcceptRadiusCm * (Prior.bPassThrough && Prior.Kind != EPhase4GuideKind::Corridor ? 2.0F : 1.0F);
+            if (Leg.GetHalfWidthAt(0.0F) < Reach || Leg.SafetyBelowCm < Prior.AcceptBelowCm || Leg.SafetyAboveCm < Prior.AcceptAboveCm)
+                return Fail(LegIndex, Leg.LegId, 0, Leg.Path[0], TEXT("HANDOFF_WINDOW_EXCEEDS_NEXT_CORRIDOR"));
         }
         Previous = Leg.Path.Last();
     }
@@ -631,7 +647,7 @@ void FPhase4MissionSession::ObserveGuidance(const FVector& Position, const FVect
         // leg's last planar direction) within 2x the radius; no speed requirement.
         const FVector2D Last = Leg.Path.Num() > 1 ? FVector2D(End - Leg.Path[Leg.Path.Num() - 2]) : FVector2D::ZeroVector;
         const bool bCrossed = Last.SizeSquared() > 1.0 && FVector2D::DotProduct(FVector2D(Position - End), Last.GetSafeNormal()) >= 0.0
-            && FVector::Dist2D(Position, End) <= 2.0F * Leg.AcceptRadiusCm;
+            && FVector::Dist2D(Position, End) <= (Leg.Kind == EPhase4GuideKind::Corridor ? 1.0F : 2.0F) * Leg.AcceptRadiusCm;
         bAccepted = bProgress && bHeight && (FVector::Dist2D(Position, End) <= Leg.AcceptRadiusCm || bCrossed);
     }
     else
