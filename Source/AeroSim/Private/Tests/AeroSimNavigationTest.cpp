@@ -9,6 +9,8 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "FlightPawn.h"
+#include "FlightTestWorldSupport.h"
+#include "InputKeyEventArgs.h"
 #include "GameFramework/PlayerInput.h"
 #include "GameFramework/WorldSettings.h"
 #include "Misc/AutomationTest.h"
@@ -39,7 +41,10 @@ bool WalkCurrentLeg(FPhase4MissionSession& Mission)
     const EFlightPhase Phase = Mission.Stage == EPhase4MissionStage::Takeoff ? EFlightPhase::Takeoff : EFlightPhase::Flight;
     const float Length = Leg.GetLength();
     for (float Along = 0.0F; Along <= Length + 50.0F && Mission.GetGuidanceLegIndex() == Start; Along += 50.0F)
+    {
         Mission.Observe(.05F, Mission.Stage == EPhase4MissionStage::Takeoff ? Phase : EFlightPhase::Flight, Leg.Evaluate(Along), FVector::ZeroVector, FRotator::ZeroRotator);
+        if (!Mission.IsScoreGuidanceConsistent()) return false;
+    }
     return Mission.GetGuidanceLegIndex() != Start;
 }
 
@@ -108,15 +113,16 @@ bool FAeroSimNavigationContractTest::RunTest(const FString& Parameters)
     for (const FPhase4GuidanceLeg& Leg : Route)
     {
         if (Leg.ScoredCheckpointIndex != INDEX_NONE) TestEqual(TEXT("Scored legs keep checkpoint order"), Leg.ScoredCheckpointIndex, Scored++);
-        AddInfo(FString::Printf(TEXT("%s guide=%s kind=%d score=%s len=%.0fcm end=(%.0f,%.0f,%.0f) R=%.0f H=-%.0f/+%.0f Vacc<=%.0f track<=%.0f@%.0f"),
+        AddInfo(FString::Printf(TEXT("%s guide=%s kind=%d score=%s len=%.0fcm end=(%.0f,%.0f,%.0f) R=%.0f H=-%.0f/+%.0f Vacc<=%.0f corridor+-%.0f@%.0f band-%.0f/+%.0f %s"),
             *Leg.LegId.ToString(), *Leg.GuideId.ToString(), static_cast<int32>(Leg.Kind), *Leg.ScoredCheckpointId.ToString(), Leg.GetLength(),
             Leg.Path.Last().X, Leg.Path.Last().Y, Leg.Path.Last().Z, Leg.AcceptRadiusCm, Leg.AcceptBelowCm, Leg.AcceptAboveCm,
-            Leg.MaxAcceptPlanarSpeedCm, Leg.TrackToleranceCm, Leg.MaxTrackPlanarSpeedCm));
+            Leg.MaxAcceptPlanarSpeedCm, Leg.SafetyHalfWidthCm, Leg.MaxTrackPlanarSpeedCm, Leg.SafetyBelowCm, Leg.SafetyAboveCm,
+            Leg.bPassThrough ? TEXT("PASS") : TEXT("STOP")));
     }
     TestEqual(TEXT("Five scored legs; intermediate guides never score"), Scored, 5);
     const FPhase4GuidanceLeg& Descent = Route[LegIndexOf(Mission, TEXT("nav-05-offshore-descent"))];
     TestTrue(TEXT("Descent column locks XY at C2"), FVector::Dist2D(Descent.Path[0], Mission.Task.Checkpoints[1].Position) < 1.0);
-    TestTrue(TEXT("Descent column is slow (<=100 cm/s)"), Descent.MaxTrackPlanarSpeedCm <= 100.0F && Descent.TrackToleranceCm <= 100.0F);
+    TestTrue(TEXT("Descent column is slow (<=100 cm/s)"), Descent.MaxTrackPlanarSpeedCm <= 100.0F && Descent.SafetyHalfWidthCm <= 100.0F);
     const FPhase4GuidanceLeg& Brake = Route[LegIndexOf(Mission, TEXT("nav-04-cross-cliff-out"))];
     TestTrue(TEXT("Brake to <=100 cm/s before descending"), Brake.MaxAcceptPlanarSpeedCm <= 100.0F);
     TestTrue(TEXT("Cliff is crossed at a positive altitude, never on a descending chord"), Brake.Path[0].Z >= 0 && FMath::IsNearlyEqual(Brake.Path[0].Z, Brake.Path.Last().Z));
@@ -166,13 +172,15 @@ bool FAeroSimNavigationCounterexampleTest::RunTest(const FString& Parameters)
             Mission.Observe(.05F, EFlightPhase::Flight, Descent.Evaluate(Along), FVector(400, 0, -300), FRotator::ZeroRotator);
         TestEqual(TEXT("Fast planar drift on the column records no progress"), Mission.GetGuidanceLegProgressCm(), 0.0F);
         TestEqual(TEXT("Scored C2 by radius does not complete the column"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-05-offshore-descent")));
-        TestEqual(TEXT("C2 original radius still scores once its leg is active"), Mission.NextCheckpointIndex, 2);
+        TestEqual(TEXT("C2 is not scored before its descent column completes (no score/guide divergence)"), Mission.NextCheckpointIndex, 1);
+        TestTrue(TEXT("Score/guidance invariant holds"), Mission.IsScoreGuidanceConsistent());
         for (float Along = 0; Along <= Descent.GetLength(); Along += 50)
             Mission.Observe(.05F, EFlightPhase::Flight, Descent.Evaluate(Along), FVector(0, 0, -500), FRotator::ZeroRotator);
         TestEqual(TEXT("Arriving at C2 still descending at 5 m/s is not accepted (vertical brake window)"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-05-offshore-descent")));
         TestTrue(TEXT("Brake cue shown inside the vertical brake zone"), Mission.GetCurrentGuidanceTarget().bVerticalBrake);
         Mission.Observe(.05F, EFlightPhase::Flight, Descent.Path.Last(), FVector(0, 0, -100), FRotator::ZeroRotator);
         TestEqual(TEXT("Braked vertical arrival completes the column"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-06-alongshore-low-water")));
+        TestEqual(TEXT("C2 scores in the same frame its column completes"), Mission.NextCheckpointIndex, 2);
     }
     {
         // R6a real-input finding: transit points are pass-through gates, and a pilot who strayed from
@@ -182,10 +190,12 @@ bool FAeroSimNavigationCounterexampleTest::RunTest(const FString& Parameters)
         const FPhase4GuidanceLeg Transit = Mission.GetGuidanceRoute()[Mission.GetGuidanceLegIndex()];
         TestTrue(TEXT("Transit guide is pass-through (>=6 m, +-2 m, no speed window)"), Transit.bPassThrough
             && Transit.AcceptRadiusCm >= 600.0F && Transit.AcceptBelowCm >= 200.0F && Transit.AcceptAboveCm >= 200.0F);
-        const FVector Side = FVector::CrossProduct(Transit.Path.Last() - Transit.Path[0], FVector::UpVector).GetSafeNormal() * 1500.0F;
+        const FVector Side = FVector::CrossProduct(Transit.Path.Last() - Transit.Path[0], FVector::UpVector).GetSafeNormal() * (Transit.SafetyHalfWidthCm + 1000.0F);
         for (float Along = 0; Along <= Transit.GetLength() - 2000.0F; Along += 50)
             Mission.Observe(.05F, EFlightPhase::Flight, Transit.Evaluate(Along) + Side, FVector(1200, 0, 0), FRotator::ZeroRotator);
-        TestEqual(TEXT("15 m off the tube records no progress"), Mission.GetGuidanceLegProgressCm(), 0.0F);
+        TestEqual(TEXT("Outside the safety corridor records no progress"), Mission.GetGuidanceLegProgressCm(), 0.0F);
+        TestTrue(TEXT("Off-corridor is visible guidance, not a silent stall"), Mission.GetCurrentGuidanceTarget().bOffCorridor
+            && Mission.GetCurrentGuidanceTarget().bRecovery && SingleSource(Mission));
         // Orbit 1-2 m around the guide point at 3 m/s, like the R6a driver.
         for (int32 Step = 0; Step < 40 && Mission.GetCurrentGuidanceTarget().LegId == Transit.LegId; ++Step)
         {
@@ -209,6 +219,59 @@ bool FAeroSimNavigationCounterexampleTest::RunTest(const FString& Parameters)
         }
         TestEqual(TEXT("Flying through C1 at 17 m/s, 4 m to the side, passes the gate"), Cross.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-03-inland-to-cliff")));
         TestEqual(TEXT("C1 scored by its original radius"), Cross.NextCheckpointIndex, 1);
+    }
+    {
+        // R6a redesign: a real-input-like L-shaped and zigzag path inside the open-air safety corridor
+        // completes transit legs; nobody has to hug the centre line.
+        for (int32 Shape = 0; Shape < 2; ++Shape)
+        {
+            FPhase4MissionSession Mission = StartMission();
+            TestTrue(TEXT("Reach the inland-to-cliff transit"), WalkUntil(Mission, TEXT("nav-03-inland-to-cliff")));
+            const FPhase4GuidanceLeg Leg = Mission.GetGuidanceRoute()[Mission.GetGuidanceLegIndex()];
+            const FVector Normal = FVector::CrossProduct(Leg.Path.Last() - Leg.Path[0], FVector::UpVector).GetSafeNormal();
+            const float W = Leg.SafetyHalfWidthCm * .8F, Length = Leg.GetLength();
+            for (float Along = 0; Along <= Length + 200.0F && Mission.GetGuidanceLegIndex() == LegIndexOf(Mission, TEXT("nav-03-inland-to-cliff")); Along += 60)
+            {
+                const float U = Along / Length;
+                // L: drift straight out to 80 % width over the first quarter, run parallel, cut back late.
+                // Zigzag: +-80 % width weave every ~30 m with diagonal corrections and +-1.5 m height.
+                const float Offset = Shape == 0 ? W * FMath::Clamp(FMath::Min(U * 4.0F, (1.0F - U) * 6.0F), 0.0F, 1.0F)
+                    : W * FMath::Sin(Along / 3000.0F * PI);
+                const float Height = Shape == 0 ? 0.0F : 150.0F * FMath::Sin(Along / 1700.0F);
+                Mission.Observe(.05F, EFlightPhase::Flight, Leg.Evaluate(Along) + Normal * Offset + FVector(0, 0, Height),
+                    FVector(1500, 0, 0), FRotator::ZeroRotator);
+            }
+            TestEqual(Shape == 0 ? TEXT("L-shaped path inside the corridor completes the transit") : TEXT("Zigzag path inside the corridor completes the transit"),
+                Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-04-cross-cliff-out")));
+        }
+        {
+            // Exact PMO R6a packaged case: progress 501 cm, then parked at (16823,-12026,339), speed 0.
+            FPhase4MissionSession Parked = StartMission();
+            TestTrue(TEXT("Reach the inland-to-cliff transit"), WalkUntil(Parked, TEXT("nav-03-inland-to-cliff")));
+            const FPhase4GuidanceLeg Leg = Parked.GetGuidanceRoute()[Parked.GetGuidanceLegIndex()];
+            Parked.Observe(.05F, EFlightPhase::Flight, Leg.Evaluate(501.0F), FVector(1500, 0, 0), FRotator::ZeroRotator);
+            Parked.Observe(.05F, EFlightPhase::Flight, FVector(16823, -12026, 339), FVector::ZeroVector, FRotator::ZeroRotator);
+            TestEqual(TEXT("PMO R6a parked pose 17/26/11 cm from the guide completes leg 3"), Parked.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-04-cross-cliff-out")));
+        }
+        // Cutting across the cliff edge: dropping below the transit band over the cliff, or flying the
+        // chord from C1 straight at the offshore descent point, is rejected (no progress, no skip).
+        FPhase4MissionSession Cut = StartMission();
+        TestTrue(TEXT("Reach the cliff crossing"), WalkUntil(Cut, TEXT("nav-04-cross-cliff-out")));
+        const FPhase4GuidanceLeg Cross = Cut.GetGuidanceRoute()[Cut.GetGuidanceLegIndex()];
+        for (float Along = 0; Along <= Cross.GetLength(); Along += 50)
+            Cut.Observe(.05F, EFlightPhase::Flight, Cross.Evaluate(Along) - FVector(0, 0, 1500.0F * Along / Cross.GetLength()), FVector(800, 0, -200), FRotator::ZeroRotator);
+        Cut.Observe(.05F, EFlightPhase::Flight, Cross.Path.Last() - FVector(0, 0, 1500), FVector::ZeroVector, FRotator::ZeroRotator);
+        TestEqual(TEXT("Descending across the cliff edge below the band does not complete the crossing"), Cut.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-04-cross-cliff-out")));
+        TestTrue(TEXT("Below-band cliff crossing shows recovery guidance"), Cut.GetCurrentGuidanceTarget().bOffCorridor || Cut.GetCurrentGuidanceTarget().bRecovery);
+        FPhase4MissionSession Chord = StartMission();
+        TestTrue(TEXT("Reach the inland-to-cliff transit"), WalkUntil(Chord, TEXT("nav-03-inland-to-cliff")));
+        const FVector From = Chord.GetGuidanceRoute()[Chord.GetGuidanceLegIndex()].Path[0];
+        const FVector OffshoreTop = Chord.GetGuidanceRoute()[LegIndexOf(Chord, TEXT("nav-04-cross-cliff-out"))].Path.Last();
+        for (float U = 0; U <= 1.0F; U += .002F)
+            Chord.Observe(.05F, EFlightPhase::Flight, FMath::Lerp(From, OffshoreTop, static_cast<double>(U)), FVector(1500, 0, 0), FRotator::ZeroRotator);
+        for (int32 I = 0; I < 5; ++I) Chord.Observe(.05F, EFlightPhase::Flight, OffshoreTop, FVector::ZeroVector, FRotator::ZeroRotator);
+        TestEqual(TEXT("The C1-to-offshore chord never completes the above-cliff gate"), Chord.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-03-inland-to-cliff")));
+        TestEqual(TEXT("C2 is not scored from a shortcut"), Chord.NextCheckpointIndex, 1);
     }
     {
         // Heading inland before the climb column is complete never advances to the cliff crossing.
@@ -369,6 +432,7 @@ bool FAeroSimNavigationCollisionRouteTest::RunTest(const FString& Parameters)
     {
         FPhase4GuidanceLeg Buffer;
         Buffer.LegId = TEXT("nav-11b-c5-overshoot-buffer"); Buffer.Kind = EPhase4GuideKind::Corridor;
+        Buffer.SafetyHalfWidthCm = 180.0F; Buffer.SafetyBelowCm = 150.0F; Buffer.SafetyAboveCm = 150.0F;
         const FVector C5 = Mission.Task.Checkpoints[4].Position;
         Buffer.Path.Add(C5);
         float StartDistance = -1;
@@ -411,6 +475,30 @@ bool FAeroSimNavigationCollisionRouteTest::RunTest(const FString& Parameters)
         }
         int32 CrownSamples = 0;
         FString FirstCrown;
+        // Declared safety corridor (progress envelope) must itself be clear: every pose a pilot may hold
+        // while progressing keeps a margin from WorldStatic, stays in the safety volume and above water.
+        const float Margin = bSupport ? 0.0F : bCorridor ? 30.0F : 100.0F;
+        const double MinOrigin = FPacificCoastGrayboxContract::GetRoutePoints()[0].Z + Foot + .5;
+        auto EnvelopeClear = [&](const FVector& P, const FVector& Direction, const float HalfWidth, FString* OutReason)
+        {
+            const double Bottom = bSupport ? FMath::Max(P.Z - Leg.SafetyBelowCm, MinOrigin) : P.Z - Leg.SafetyBelowCm;
+            const double Top = P.Z + Leg.SafetyAboveCm;
+            const FVector Centre(P.X, P.Y, (Bottom + Top) * .5);
+            const FVector2D Dir2 = FVector2D(Direction).GetSafeNormal();
+            const FQuat Rotation = Dir2.IsNearlyZero() ? FQuat::Identity : FRotator(0, FMath::RadiansToDegrees(FMath::Atan2(Dir2.Y, Dir2.X)), 0).Quaternion();
+            const FVector Half(Shape.X + 60.0F + Margin, Shape.Y + HalfWidth + Margin, (Top - Bottom) * .5 + Shape.Z + Margin);
+            if (World->OverlapAnyTestByObjectType(Centre, Rotation, Objects, FCollisionShape::MakeBox(Half), Query))
+            { if (OutReason) *OutReason = TEXT("ENVELOPE_HITS_WORLDSTATIC"); return false; }
+            const FVector Across = Rotation.RotateVector(FVector(0, HalfWidth, 0));
+            for (const FVector& Corner : {FVector(P.X, P.Y, Bottom) + Across, FVector(P.X, P.Y, Bottom) - Across, FVector(P.X, P.Y, Top) + Across, FVector(P.X, P.Y, Top) - Across})
+            {
+                if (!Mission.Task.IsInsideSafetyVolume(Corner)) { if (OutReason) *OutReason = TEXT("ENVELOPE_OUTSIDE_SAFETY_VOLUME"); return false; }
+                if (Corner.X > APacificCoastGraybox::GetCoastalShoreX(Corner.Y) + 30.0F && Corner.Z - Foot - APacificCoastGraybox::SeaLevelCm < 100.0F)
+                { if (OutReason) *OutReason = TEXT("ENVELOPE_FOOT_WITHIN_1M_OF_WATER"); return false; }
+            }
+            return true;
+        };
+        float MaxClearWidth = BIG_NUMBER, MinMargin = BIG_NUMBER;
         FString First;
         FVector Previous = Leg.Evaluate(0);
         if (bSupport) Previous.Z = FMath::Max(Previous.Z, FPacificCoastGrayboxContract::GetRoutePoints()[0].Z + Foot + .5);
@@ -444,6 +532,21 @@ bool FAeroSimNavigationCollisionRouteTest::RunTest(const FString& Parameters)
                 }
                 Clear = Lo;
                 Reason = bCorridor ? TEXT("LATERAL_MARGIN_BELOW_50") : TEXT("CLEARANCE_BELOW_300");
+            }
+            const FVector Direction = Leg.Evaluate(FMath::Min(Along + 50.0F, Length)) - Leg.Evaluate(FMath::Max(Along - 50.0F, 0.0F));
+            if (Reason.IsEmpty())
+            {
+                FString Envelope;
+                if (!EnvelopeClear(P, Direction, Leg.GetHalfWidthAt(Along), &Envelope)) Reason = FString::Printf(TEXT("SAFETY_CORRIDOR +-%.0f %s"), Leg.GetHalfWidthAt(Along), *Envelope);
+            }
+            {
+                // Measured maximum clear half-width at this sample (for deriving the per-leg corridor).
+                float Lo = 0, Hi = 3000;
+                if (!EnvelopeClear(P, Direction, Lo, nullptr)) Hi = 0;
+                for (int32 Iteration = 0; Iteration < 9 && Hi > 0; ++Iteration)
+                { const float Mid = (Lo + Hi) * .5F; (EnvelopeClear(P, Direction, Mid, nullptr) ? Lo : Hi) = Mid; }
+                MaxClearWidth = FMath::Min(MaxClearWidth, Lo);
+                MinMargin = FMath::Min(MinMargin, Lo - Leg.GetHalfWidthAt(Along));
             }
             if (Reason.IsEmpty() && Step > 0)
             {
@@ -481,6 +584,9 @@ bool FAeroSimNavigationCollisionRouteTest::RunTest(const FString& Parameters)
             if (!bHit || Support.ImpactNormal.Z < .8 || FMath::Abs(Support.ImpactPoint.Z - Home.Z) > 5.0)
                 First += FString::Printf(TEXT(" NO_REAL_SUPPORT_AT_MAT hit=%d z=%.1f"), bHit, bHit ? Support.ImpactPoint.Z : 0.0);
         }
+        AddInfo(FString::Printf(TEXT("LEG %s corridor+-%.0f%s band-%.0f/+%.0f measured_min_clear_halfwidth=%.0f min_spare=%.0f"), *Leg.LegId.ToString(),
+            Leg.SafetyHalfWidthCm, Leg.EndFunnelHalfWidthCm > 0 ? *FString::Printf(TEXT(" (funnel to +-%.0f)"), Leg.EndFunnelHalfWidthCm) : TEXT(""),
+            Leg.SafetyBelowCm, Leg.SafetyAboveCm, MaxClearWidth, MinMargin));
         AddInfo(FString::Printf(TEXT("LEG %s kind=%d length=%.0fcm samples=%d min_foot_clear=%.0f min_water_clear=%s min_clearance=%s required=%.0f %s visible_crown_samples=%d%s"),
             *Leg.LegId.ToString(), static_cast<int32>(Leg.Kind), Length, Steps + 1, MinFoot,
             MinWater < BIG_NUMBER ? *FString::Printf(TEXT("%.0f"), MinWater) : TEXT("n/a"),
@@ -520,6 +626,7 @@ bool FAeroSimNavigationScriptedTraversalTest::RunTest(const FString& Parameters)
         return Dz >= 0.0F ? Magnitude : -Magnitude;
     };
     TMap<FName, float> PeakVertical;
+    int32 Divergences = 0;
     float Time = 0.0F;
     int32 LastLeg = -1;
     float LegStart = 0.0F;
@@ -571,6 +678,7 @@ bool FAeroSimNavigationScriptedTraversalTest::RunTest(const FString& Parameters)
         Pawn->SetSemanticInput(Input);
         Pawn->Tick(Dt);
         Time += Dt;
+        if (!Mission.IsScoreGuidanceConsistent()) ++Divergences;
         float& Peak = PeakVertical.FindOrAdd(Leg.LegId);
         Peak = FMath::Max(Peak, FMath::Abs(static_cast<float>(Pawn->GetFlightModel().Velocity.Z)));
     }
@@ -588,6 +696,90 @@ bool FAeroSimNavigationScriptedTraversalTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Never left the finite safety volume"), Mission.BoundaryViolations, 0);
     TestEqual(TEXT("No shortcut diagnostics"), Mission.MissedCheckpoints, 0);
     TestFalse(TEXT("Never touched water"), Pawn->HasWaterIncident());
+    TestEqual(TEXT("Score and guidance never diverged on any tick"), Divergences, 0);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAeroSimNavigationDescentSyncTest, "AeroSim.Flight.Navigation.DescentColumnScoreGuideSync",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAeroSimNavigationDescentSyncTest::RunTest(const FString& Parameters)
+{
+    using namespace AeroSimNavigationTests;
+    // PMO packaged R6b: a 5.3 m/s descent drifting ~5.7 m off the C2 column reached (23089,-11997,-5232);
+    // C2 scored by its 25 m radius while the guide stayed at progress 0 pointing to z=+50.
+    FPhase4MissionSession Mission = StartMission();
+    TestTrue(TEXT("Reach the descent column"), WalkUntil(Mission, TEXT("nav-05-offshore-descent")));
+    const FPhase4GuidanceLeg Column = Mission.GetGuidanceRoute()[Mission.GetGuidanceLegIndex()];
+    const FVector C2 = Mission.Task.Checkpoints[1].Position;
+    const FVector Drift = FVector(C2.X - 567.0, -11997.0, 0) - FVector(C2.X, C2.Y, 0);
+    for (float Along = 0; Along <= Column.GetLength() - 68.0F; Along += 50)
+    {
+        const float U = Along / Column.GetLength();
+        Mission.Observe(.05F, EFlightPhase::Flight, Column.Evaluate(Along) + Drift * U, FVector(-60, 0, -530), FRotator::ZeroRotator);
+        if (!TestTrue(TEXT("Score/guidance never diverge during the descent"), Mission.IsScoreGuidanceConsistent())) break;
+    }
+    const FVector Parked(C2.X - 567.0, -11997.0, -5232.0);
+    Mission.Observe(.05F, EFlightPhase::Flight, Parked, FVector::ZeroVector, FRotator::ZeroRotator);
+    const FPhase4GuidanceTarget& Guide = Mission.GetCurrentGuidanceTarget();
+    TestEqual(TEXT("Off-axis bottom does not score C2"), Mission.NextCheckpointIndex, 1);
+    TestEqual(TEXT("Guide stays on the descent column"), Guide.LegId, FName(TEXT("nav-05-offshore-descent")));
+    TestTrue(TEXT("Off-axis is shown as recovery (re-centre)"), Guide.bOffCorridor);
+    TestTrue(TEXT("Re-centre target is the column axis at the pilot's own height, not the column top"),
+        FVector::Dist2D(Guide.Position, C2) < 1.0 && FMath::Abs(Guide.Position.Z - Parked.Z) < 100.0);
+    TestTrue(TEXT("Guide point is the column bottom"), Guide.GuidePoint.Equals(C2, 1.0));
+    TestTrue(TEXT("Feedback recovery point = HUD target"), SingleSource(Mission));
+    // Re-centre horizontally at that height (68 cm above C2, inside its +-75 cm window) at 0.8 m/s.
+    for (float X = Parked.X; X <= C2.X && Mission.NextCheckpointIndex < 2; X += 50)
+    {
+        Mission.Observe(.05F, EFlightPhase::Flight, FVector(X, FMath::Lerp(Parked.Y, C2.Y, (X - Parked.X) / (C2.X - Parked.X)), Parked.Z), FVector(80, 0, 0), FRotator::ZeroRotator);
+        if (!TestTrue(TEXT("Score/guidance never diverge while re-centring"), Mission.IsScoreGuidanceConsistent())) break;
+    }
+    TestEqual(TEXT("Re-centred braked pose scores C2 without climbing back up"), Mission.NextCheckpointIndex, 2);
+    TestEqual(TEXT("...and completes the column in the same frame"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-06-alongshore-low-water")));
+    TestTrue(TEXT("Invariant after scoring"), Mission.IsScoreGuidanceConsistent());
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAeroSimInactiveResumeTest, "AeroSim.ProductUX.Input.InactiveResumeNeedsObservedNeutralOnly",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAeroSimInactiveResumeTest::RunTest(const FString& Parameters)
+{
+    // PMO packaged R6b: offscreen app lost OS focus -> SAFE PAUSE; after bridge release + Enter the resume
+    // stayed at 3 s forever because inactivity alone was treated as non-neutral input.
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+    FActorSpawnParameters Spawn; Spawn.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    AAeroSimPlayerController* Controller = World->SpawnActor<AAeroSimPlayerController>(Spawn);
+    AFlightPawn* Pawn = World->SpawnActor<AFlightPawn>(Spawn);
+    AeroSimTestSupport::AddFloorAndGroundPawn(World, Pawn);
+    World->AddController(Controller);
+    Controller->PlayerInput = NewObject<UPlayerInput>(Controller);
+    Controller->Possess(Pawn);
+    auto Key = [Controller](const FKey& K, EInputEvent E) { Controller->ObservePhysicalInput(FInputKeyEventArgs(nullptr, INPUTDEVICEID_NONE, K, E, E == IE_Released ? 0.0F : 1.0F, false, 0u)); };
+    // Bridge presses and releases (observed like real Slate events), then the OS takes focus away.
+    Key(EKeys::W, IE_Pressed); Key(EKeys::W, IE_Released);
+    Controller->NotifyApplicationActivationChanged(false);
+    TestEqual(TEXT("Focus loss safe-pauses"), Pawn->GetFlightModel().Phase, EFlightPhase::Paused);
+    TestTrue(TEXT("Released keys are neutral even while inactive"), Pawn->IsPhysicalInputNeutral());
+    Pawn->SetSafePaused(false); // Enter
+    Pawn->Tick(1.0F);
+    TestTrue(TEXT("Countdown runs while inactive with observed-neutral input"), Pawn->IsResumeCountdownActive() && Pawn->GetResumeCountdownSeconds() < 2.5F);
+    Pawn->Tick(2.1F);
+    TestFalse(TEXT("Resume completes"), Pawn->IsResumeCountdownActive());
+    TestTrue(TEXT("Model resumed"), Pawn->GetFlightModel().Phase != EFlightPhase::Paused);
+    // A key held at focus loss stays held (no OS KeyUp while inactive): resume never completes.
+    Key(EKeys::LeftShift, IE_Pressed);
+    Controller->NotifyApplicationActivationChanged(false);
+    TestFalse(TEXT("Held key observed before focus loss is not neutral"), Pawn->IsPhysicalInputNeutral());
+    Pawn->SetSafePaused(false);
+    Pawn->Tick(5.0F);
+    TestTrue(TEXT("Held key blocks resume"), Pawn->IsResumeCountdownActive() && Pawn->GetFlightModel().Phase == EFlightPhase::Paused);
+    Key(EKeys::LeftShift, IE_Released);
+    Pawn->Tick(2.0F);
+    Controller->NotifyApplicationActivationChanged(true);
+    TestTrue(TEXT("Regaining focus restarts the neutral window (full 3 s under focus)"), Pawn->GetResumeCountdownSeconds() >= 2.99F);
+    Pawn->Tick(3.1F);
+    TestTrue(TEXT("Resumes after a full neutral window"), Pawn->GetFlightModel().Phase != EFlightPhase::Paused);
+    World->DestroyWorld(false);
     return true;
 }
 

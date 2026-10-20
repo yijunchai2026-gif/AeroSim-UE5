@@ -163,7 +163,10 @@ void AAeroSimPlayerController::ObservePhysicalInput(const FInputKeyEventArgs& Pa
 
 bool AAeroSimPlayerController::IsPhysicalInputNeutral() const
 {
-    if (!bApplicationActive || bObservationOverflow || !DevicesAwaitingObservation.IsEmpty()
+    // R6b: inactivity alone is not "held input". While inactive the OS routes no physical keys to this
+    // app; the only possible sources are events we observe (e.g. the local control bridge). Held keys
+    // observed before deactivation stay held until an actual release/zero is observed.
+    if (bObservationOverflow || !DevicesAwaitingObservation.IsEmpty()
         || (bRequiresSlateObservation && !bSlateObservationRegistered)) return false;
 
     TSet<FKey> ObservedKeys;
@@ -194,6 +197,11 @@ void AAeroSimPlayerController::NotifyApplicationActivationChanged(const bool bAc
     if (!bActive)
     {
         if (AFlightPawn* Pawn = Cast<AFlightPawn>(GetPawn())) Pawn->SetSafePaused(true);
+    }
+    else if (AFlightPawn* Pawn = Cast<AFlightPawn>(GetPawn()))
+    {
+        // Regaining focus restarts any pending resume so a full neutral window is observed under focus.
+        Pawn->HandlePhysicalInputActivity();
     }
 }
 

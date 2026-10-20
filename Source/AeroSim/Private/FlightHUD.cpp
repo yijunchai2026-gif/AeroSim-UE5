@@ -178,6 +178,12 @@ void AFlightHUD::DrawHUD()
                 Turn, FMath::Abs(Bearing), ToGuide.Size() * 0.01F, Delta.Z * 0.01F, *Window,
                 *Guide.Label.Left(80)),
             GuideColor, Left + 12.0F, Top + 192.0F, GEngine->GetSmallFont(), 1.0F, false);
+        if (Guide.bOffCorridor)
+        {
+            DrawRect(FLinearColor(0.78F, 0.22F, 0.02F, 0.94F), Left, Top + 262.0F, 650.0F, 26.0F);
+            DrawText(FString::Printf(TEXT("OFF CORRIDOR (+-%.0f m)  -  NO PROGRESS UNTIL YOU RETURN TO THE ARROW"), Guide.SafetyHalfWidthCm * 0.01F),
+                FLinearColor::White, Left + 12.0F, Top + 267.0F, GEngine->GetSmallFont(), 1.0F, false);
+        }
         // Perimeter arrow (top centre, outside the central flight view).
         const FVector2D Centre(Canvas->ClipX * 0.5F, Top + 44.0F);
         if (!Guide.bHold && !bVertical)

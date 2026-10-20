@@ -7,6 +7,7 @@
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "Components/PostProcessComponent.h"
+#include "Components/SkyLightComponent.h"
 #include "Components/VolumetricCloudComponent.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -107,6 +108,12 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
             const auto* Post = SeaSkyTest::Find<UPostProcessComponent>(Coast);
             TestTrue(TEXT("Dynamic GI (Lumen) supplies sky occlusion and bounce for shaded ground"), Post && Post->Settings.bOverride_DynamicGlobalIlluminationMethod
                 && Post->Settings.DynamicGlobalIlluminationMethod == EDynamicGlobalIlluminationMethod::Lumen);
+            // R6b perf P0: Lumen for GI only, reduced gather, sky captured per weather change only.
+            TestTrue(TEXT("Reflections stay screen-space under Lumen GI"), Post && Post->Settings.bOverride_ReflectionMethod && Post->Settings.ReflectionMethod == EReflectionMethod::ScreenSpace);
+            TestTrue(TEXT("Lumen final gather runs at reduced quality"), Post && Post->Settings.bOverride_LumenFinalGatherQuality && Post->Settings.LumenFinalGatherQuality <= .5F);
+            TestTrue(TEXT("Clear bloom avoids a large sun halo"), Post && Post->Settings.bOverride_BloomIntensity && Post->Settings.BloomIntensity <= .3F);
+            const auto* Sky = SeaSkyTest::Find<USkyLightComponent>(Coast);
+            TestTrue(TEXT("Sky light is not recaptured every frame"), Sky && !Sky->bRealTimeCapture);
             TestTrue(TEXT("Cloud evolution frozen for a deterministic baseline"), bWind && Wind == 0.0F);
         }
     }
@@ -120,7 +127,7 @@ bool FCoastalCirrusTest::RunTest(const FString& Parameters)
 {
     const FString Code = APacificCoastGraybox::GetCoastalWaterShaderCode(APacificCoastGraybox::ECoastalWaterShader::Cirrus);
     TestTrue(TEXT("Cirrus field is time-independent (deterministic baseline, no wind)"), !Code.Contains(TEXT("T*"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("*T"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("+T"), ESearchCase::CaseSensitive));
-    TestTrue(TEXT("Cirrus is masked below the horizon and around the sun"), Code.Contains(TEXT("smoothstep(.06,.30,v.z)")) && Code.Contains(TEXT("dot(v,normalize(S))")));
+    TestTrue(TEXT("Cirrus is masked below the horizon and around the sun"), Code.Contains(TEXT("smoothstep(.08,.35,v.z)")) && Code.Contains(TEXT("dot(v,normalize(S))")));
     UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
     APacificCoastGraybox* Coast = World ? World->SpawnActor<APacificCoastGraybox>() : nullptr;
     if (TestNotNull(TEXT("Coast spawns"), Coast))
