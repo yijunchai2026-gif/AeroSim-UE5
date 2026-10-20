@@ -236,6 +236,8 @@ struct AEROSIM_API FPhase4MissionSession
     const FPhase4GuidanceTarget& GetCurrentGuidanceTarget() const { return CurrentGuidance; }
     const TArray<FPhase4GuidanceLeg>& GetGuidanceRoute() const { return GuidanceRoute; }
     int32 GetGuidanceLegIndex() const { return GuidanceLegIndex; }
+    /** Invariant: checkpoints scored == scored legs completed (score and guidance never diverge). */
+    bool IsScoreGuidanceConsistent() const;
     float GetGuidanceLegProgressCm() const { return GuidanceProgressCm; }
 
 private:
@@ -261,6 +263,7 @@ private:
     float GuidanceProgressCm = 0.0F;
     bool bRecoveryGuideActive = false;
     bool bOffCorridor = false;
+    bool bShortcutThisFrame = false;
     float RecoveryAnchorCm = 0.0F;
     FPhase4GuidanceTarget CurrentGuidance;
     FPhase4GuidanceTarget RecoveryGuidance;

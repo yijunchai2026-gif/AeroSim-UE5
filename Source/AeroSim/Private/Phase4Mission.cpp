@@ -587,6 +587,7 @@ void FPhase4MissionSession::ObserveGuidance(const FVector& Position, const FVect
     // Contact frames are frozen collision-resolved poses: no navigation or score progress.
     if (bCollisionLatched || !GuidanceRoute.IsValidIndex(GuidanceLegIndex)) return;
     const int32 LegAtStart = GuidanceLegIndex;
+    bShortcutThisFrame = false;
     const FPhase4GuidanceLeg& Leg = GuidanceRoute[GuidanceLegIndex];
     const float Planar = static_cast<float>(Velocity.Size2D());
     // Progress = furthest projection of the sweep-resolved actual pose onto the leg while that pose is
@@ -615,15 +616,12 @@ void FPhase4MissionSession::ObserveGuidance(const FVector& Position, const FVect
                 Feedback.RecoveryAction = TEXT("Return to the current guide; completed checkpoints stay saved.");
                 Feedback.ShapeCue = Task.Checkpoints.IsValidIndex(NextCheckpointIndex) ? Task.Checkpoints[NextCheckpointIndex].ShapeCue : TEXT("GUIDE ARROW");
             }
-        // Scoring only for the checkpoint that owns the active leg (original radius/height rules).
-        if (!bShortcut && Leg.ScoredCheckpointIndex == NextCheckpointIndex) ObserveCheckpoint(Position);
+        bShortcutThisFrame = bShortcut;
     }
-    if (GuidanceLegIndex != LegAtStart) return; // RTH switched to the return legs.
     if (Leg.Kind == EPhase4GuideKind::Landing) return; // Completion is the supported-landing rule.
     const FVector End = Leg.Path.Last();
     const float Rise = static_cast<float>(Position.Z - End.Z);
     const float Length = Leg.GetLength();
-    const bool bScored = Leg.ScoredCheckpointIndex == INDEX_NONE || NextCheckpointIndex > Leg.ScoredCheckpointIndex;
     const bool bHeight = Rise >= -Leg.AcceptBelowCm && Rise <= Leg.AcceptAboveCm;
     const bool bProgress = GuidanceProgressCm >= Length - FMath::Max3(Leg.AcceptRadiusCm, Leg.AcceptBelowCm, Leg.AcceptAboveCm) - 50.0F;
     bool bAccepted = false;
@@ -634,16 +632,27 @@ void FPhase4MissionSession::ObserveGuidance(const FVector& Position, const FVect
         const FVector2D Last = Leg.Path.Num() > 1 ? FVector2D(End - Leg.Path[Leg.Path.Num() - 2]) : FVector2D::ZeroVector;
         const bool bCrossed = Last.SizeSquared() > 1.0 && FVector2D::DotProduct(FVector2D(Position - End), Last.GetSafeNormal()) >= 0.0
             && FVector::Dist2D(Position, End) <= 2.0F * Leg.AcceptRadiusCm;
-        bAccepted = bScored && bProgress && bHeight && (FVector::Dist2D(Position, End) <= Leg.AcceptRadiusCm || bCrossed);
+        bAccepted = bProgress && bHeight && (FVector::Dist2D(Position, End) <= Leg.AcceptRadiusCm || bCrossed);
     }
     else
     {
-        bAccepted = bScored && bProgress && bHeight
+        bAccepted = bProgress && bHeight
             && FVector::Dist2D(Position, End) <= Leg.AcceptRadiusCm
             && Planar <= Leg.MaxAcceptPlanarSpeedCm
             && FMath::Abs(static_cast<float>(Velocity.Z)) <= Leg.MaxAcceptVerticalSpeedCm;
     }
-    if (bAccepted) AdvanceGuidanceLeg();
+    if (!bAccepted) return;
+    if (Leg.ScoredCheckpointIndex != INDEX_NONE)
+    {
+        // R6b: a scored checkpoint is scored by its original radius/height rules at the moment its own
+        // leg's end gate is accepted, so score and guidance can never diverge (e.g. C2 scored by its
+        // 25 m radius while the descent column still pointed back up).
+        if (Stage != EPhase4MissionStage::Inspection || bShortcutThisFrame || Leg.ScoredCheckpointIndex != NextCheckpointIndex) return;
+        ObserveCheckpoint(Position);
+        if (NextCheckpointIndex <= Leg.ScoredCheckpointIndex) return;
+        if (GuidanceLegIndex != LegAtStart) return; // fifth checkpoint: RTH already switched to the return legs
+    }
+    AdvanceGuidanceLeg();
 }
 
 void FPhase4MissionSession::AdvanceGuidanceLeg()
@@ -654,6 +663,15 @@ void FPhase4MissionSession::AdvanceGuidanceLeg()
         GuidanceProgressCm = 0.0F;
         bOffCorridor = false;
     }
+}
+
+bool FPhase4MissionSession::IsScoreGuidanceConsistent() const
+{
+    if (GuidanceRoute.IsEmpty()) return true;
+    int32 ScoredLegsDone = 0;
+    for (int32 Index = 0; Index < GuidanceLegIndex && Index < GuidanceRoute.Num(); ++Index)
+        if (GuidanceRoute[Index].ScoredCheckpointIndex != INDEX_NONE) ++ScoredLegsDone;
+    return ScoredLegsDone == NextCheckpointIndex;
 }
 
 int32 FPhase4MissionSession::FindFirstReturnLeg() const
@@ -730,8 +748,11 @@ void FPhase4MissionSession::RefreshGuidance(const FVector& Position)
         {
             // Visible recovery guidance (never a silent stall): steer back onto the verified leg near the
             // actual progress when a conservative straight link exists, otherwise a controlled stop.
-            float Distance = 0.0F;
-            const float AnchorAlong = Leg.Project(Position, FMath::Max(0.0F, GuidanceProgressCm - 200.0F), GuidanceProgressCm + Leg.LookaheadCm, Distance);
+            float Distance = 0.0F, AnchorLateral = 0.0F, AnchorVertical = 0.0F;
+            // Columns re-centre horizontally at the pilot's own height (never back up to the column top).
+            const float AnchorAlong = Leg.IsColumn()
+                ? Leg.ProjectCorridor(Position, 0.0F, Leg.GetLength(), AnchorLateral, AnchorVertical)
+                : Leg.Project(Position, FMath::Max(0.0F, GuidanceProgressCm - 200.0F), GuidanceProgressCm + Leg.LookaheadCm, Distance);
             const FVector Anchor = Leg.Evaluate(AnchorAlong);
             Target.bOffCorridor = true;
             Target.bRecovery = true;

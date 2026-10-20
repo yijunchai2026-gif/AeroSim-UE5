@@ -182,3 +182,15 @@ Enter、Enter → Shift ≈1 s 起飞 → W 穿 C1 → W+A ≈9.5 s 至崖上点
 新增测试：L 形与之字形（±80% 半宽、±1.5 m 高度）路径完成 nav-03；PMO 停泊位姿完成 nav-03；越崖时降到带下 1.5 m 不完成并显示恢复；C1 直插离岸下降点的弦线不完成越崖门、不计 C2。
 
 **实测**：逐米真实碰撞 1176 m / 1201 样本、0 失败段；脚本语义输入全程 Result、5/5、碰撞/越界/漏检/触水 0，**111.6 s**（分段同上一节，nav-10 3.8 s）。真实按键全程仍 NOT_RUN。
+
+## R6b 真实输入修复（2026-10-19，DEV-FLIGHT）
+
+PMO 打包 R6b（integration `cedf003`）真实按键：起飞→C1→越崖 35 s 通过，下降约 5.3 m/s，C2 计分。三个问题与处理：
+
+1. **计分/引导失步**：下降中平面漂移约 5.7 m，停在 (23089,-11997,-5232)。旧逻辑中 C2 在其 leg 激活时按原 25 m 半径立即计分，而下降柱进度要求离轴 ≤1 m，进度停在 0，`guide_target` = 进度+lookahead = 柱顶下 3 m（z≈50），因而 HUD 显示 HEIGHT +52.7 m。修复：
+   - 计分检查点**在其所属 leg 终点门被接受的同一帧**按原半径/高度规则计分（C1 越门/±6 m、C2/C3 紧窗+竖直 ≤1.5 m/s、C4/C5 走廊末端；这些门都在原半径/LOW WATER 高度窗内），所以计分与引导不可能分叉；`IsScoreGuidanceConsistent()`（已完成计分 leg 数 == 已计分数）在逻辑遍历、脚本全程每 tick 与新测试中断言。
+   - 竖直柱进度按高度投影；离轴时 `bOffCorridor` 恢复目标为**本人高度处的柱轴点**（水平回中），不再指回柱顶；回到轴上进度即跟随高度。新测试复现 PMO 位姿：未回中前不计 C2、目标在本人高度、回中且制动后同帧计 C2 并进入 nav-06。
+2. **失焦后恢复卡死**：`IsPhysicalInputNeutral()` 把"应用未激活"直接当成非中性，后台窗口永远无法完成 3 s 中性窗口（physical_neutral=False，resume_seconds 保持 3）。修复：未激活本身不再等于"有输入"——未激活时 OS 不会把物理按键送到本应用，唯一可能的输入是本应用观测到的事件（如本地控制桥）；中性仍只由已观测的值判定，失焦前已观测为按下的键在观测到松开前**仍为非中性**（原安全规则不变），重新获得焦点会把待恢复倒计时重置为完整 3 s。新测试 `AeroSim.ProductUX.Input.InactiveResumeNeedsObservedNeutralOnly`；原 `DeactivationAndDisconnectNeverAutoResume` 不变并通过。
+3. **QA 失焦时的操作步骤**（桥不能也不应激活窗口）：①读 Inspect：`application_active=false`、Flight 页 SAFE PAUSE；②用桥对所有曾按下的飞控键发送松开（`aerosim_release`），确认 `physical_neutral=true`——若仍为 false，说明有键的按下被观测而松开未被观测，补发该键松开；③发送 Enter，观察 `resume_pending=true` 且 `resume_seconds` 在 3 s 内递减到 0、`phase` 离开 Paused；④期间任何飞控键按下都会重置倒计时（预期行为）；⑤若由人类把窗口切回前台，倒计时会重新从 3 s 开始；⑥不得用 OS 脚本/AppleScript 强制激活用户窗口，记录失焦时间点与原因（通常是其它应用抢焦点），证据中注明该段为"后台恢复"。
+
+**实测**：逐米真实碰撞 1176 m / 1201 样本、0 失败段；脚本语义输入全程 Result、5/5、碰撞/越界/漏检/触水 0、计分/引导失步 0 次，112.6 s（走廊 10.2/10.4 s，略慢于上轮因 C4/C5 改为终点门计分）。真实按键全程仍 NOT_RUN。

@@ -9,6 +9,8 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "FlightPawn.h"
+#include "FlightTestWorldSupport.h"
+#include "InputKeyEventArgs.h"
 #include "GameFramework/PlayerInput.h"
 #include "GameFramework/WorldSettings.h"
 #include "Misc/AutomationTest.h"
@@ -39,7 +41,10 @@ bool WalkCurrentLeg(FPhase4MissionSession& Mission)
     const EFlightPhase Phase = Mission.Stage == EPhase4MissionStage::Takeoff ? EFlightPhase::Takeoff : EFlightPhase::Flight;
     const float Length = Leg.GetLength();
     for (float Along = 0.0F; Along <= Length + 50.0F && Mission.GetGuidanceLegIndex() == Start; Along += 50.0F)
+    {
         Mission.Observe(.05F, Mission.Stage == EPhase4MissionStage::Takeoff ? Phase : EFlightPhase::Flight, Leg.Evaluate(Along), FVector::ZeroVector, FRotator::ZeroRotator);
+        if (!Mission.IsScoreGuidanceConsistent()) return false;
+    }
     return Mission.GetGuidanceLegIndex() != Start;
 }
 
@@ -167,13 +172,15 @@ bool FAeroSimNavigationCounterexampleTest::RunTest(const FString& Parameters)
             Mission.Observe(.05F, EFlightPhase::Flight, Descent.Evaluate(Along), FVector(400, 0, -300), FRotator::ZeroRotator);
         TestEqual(TEXT("Fast planar drift on the column records no progress"), Mission.GetGuidanceLegProgressCm(), 0.0F);
         TestEqual(TEXT("Scored C2 by radius does not complete the column"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-05-offshore-descent")));
-        TestEqual(TEXT("C2 original radius still scores once its leg is active"), Mission.NextCheckpointIndex, 2);
+        TestEqual(TEXT("C2 is not scored before its descent column completes (no score/guide divergence)"), Mission.NextCheckpointIndex, 1);
+        TestTrue(TEXT("Score/guidance invariant holds"), Mission.IsScoreGuidanceConsistent());
         for (float Along = 0; Along <= Descent.GetLength(); Along += 50)
             Mission.Observe(.05F, EFlightPhase::Flight, Descent.Evaluate(Along), FVector(0, 0, -500), FRotator::ZeroRotator);
         TestEqual(TEXT("Arriving at C2 still descending at 5 m/s is not accepted (vertical brake window)"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-05-offshore-descent")));
         TestTrue(TEXT("Brake cue shown inside the vertical brake zone"), Mission.GetCurrentGuidanceTarget().bVerticalBrake);
         Mission.Observe(.05F, EFlightPhase::Flight, Descent.Path.Last(), FVector(0, 0, -100), FRotator::ZeroRotator);
         TestEqual(TEXT("Braked vertical arrival completes the column"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-06-alongshore-low-water")));
+        TestEqual(TEXT("C2 scores in the same frame its column completes"), Mission.NextCheckpointIndex, 2);
     }
     {
         // R6a real-input finding: transit points are pass-through gates, and a pilot who strayed from
@@ -619,6 +626,7 @@ bool FAeroSimNavigationScriptedTraversalTest::RunTest(const FString& Parameters)
         return Dz >= 0.0F ? Magnitude : -Magnitude;
     };
     TMap<FName, float> PeakVertical;
+    int32 Divergences = 0;
     float Time = 0.0F;
     int32 LastLeg = -1;
     float LegStart = 0.0F;
@@ -670,6 +678,7 @@ bool FAeroSimNavigationScriptedTraversalTest::RunTest(const FString& Parameters)
         Pawn->SetSemanticInput(Input);
         Pawn->Tick(Dt);
         Time += Dt;
+        if (!Mission.IsScoreGuidanceConsistent()) ++Divergences;
         float& Peak = PeakVertical.FindOrAdd(Leg.LegId);
         Peak = FMath::Max(Peak, FMath::Abs(static_cast<float>(Pawn->GetFlightModel().Velocity.Z)));
     }
@@ -687,6 +696,90 @@ bool FAeroSimNavigationScriptedTraversalTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Never left the finite safety volume"), Mission.BoundaryViolations, 0);
     TestEqual(TEXT("No shortcut diagnostics"), Mission.MissedCheckpoints, 0);
     TestFalse(TEXT("Never touched water"), Pawn->HasWaterIncident());
+    TestEqual(TEXT("Score and guidance never diverged on any tick"), Divergences, 0);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAeroSimNavigationDescentSyncTest, "AeroSim.Flight.Navigation.DescentColumnScoreGuideSync",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAeroSimNavigationDescentSyncTest::RunTest(const FString& Parameters)
+{
+    using namespace AeroSimNavigationTests;
+    // PMO packaged R6b: a 5.3 m/s descent drifting ~5.7 m off the C2 column reached (23089,-11997,-5232);
+    // C2 scored by its 25 m radius while the guide stayed at progress 0 pointing to z=+50.
+    FPhase4MissionSession Mission = StartMission();
+    TestTrue(TEXT("Reach the descent column"), WalkUntil(Mission, TEXT("nav-05-offshore-descent")));
+    const FPhase4GuidanceLeg Column = Mission.GetGuidanceRoute()[Mission.GetGuidanceLegIndex()];
+    const FVector C2 = Mission.Task.Checkpoints[1].Position;
+    const FVector Drift = FVector(C2.X - 567.0, -11997.0, 0) - FVector(C2.X, C2.Y, 0);
+    for (float Along = 0; Along <= Column.GetLength() - 68.0F; Along += 50)
+    {
+        const float U = Along / Column.GetLength();
+        Mission.Observe(.05F, EFlightPhase::Flight, Column.Evaluate(Along) + Drift * U, FVector(-60, 0, -530), FRotator::ZeroRotator);
+        if (!TestTrue(TEXT("Score/guidance never diverge during the descent"), Mission.IsScoreGuidanceConsistent())) break;
+    }
+    const FVector Parked(C2.X - 567.0, -11997.0, -5232.0);
+    Mission.Observe(.05F, EFlightPhase::Flight, Parked, FVector::ZeroVector, FRotator::ZeroRotator);
+    const FPhase4GuidanceTarget& Guide = Mission.GetCurrentGuidanceTarget();
+    TestEqual(TEXT("Off-axis bottom does not score C2"), Mission.NextCheckpointIndex, 1);
+    TestEqual(TEXT("Guide stays on the descent column"), Guide.LegId, FName(TEXT("nav-05-offshore-descent")));
+    TestTrue(TEXT("Off-axis is shown as recovery (re-centre)"), Guide.bOffCorridor);
+    TestTrue(TEXT("Re-centre target is the column axis at the pilot's own height, not the column top"),
+        FVector::Dist2D(Guide.Position, C2) < 1.0 && FMath::Abs(Guide.Position.Z - Parked.Z) < 100.0);
+    TestTrue(TEXT("Guide point is the column bottom"), Guide.GuidePoint.Equals(C2, 1.0));
+    TestTrue(TEXT("Feedback recovery point = HUD target"), SingleSource(Mission));
+    // Re-centre horizontally at that height (68 cm above C2, inside its +-75 cm window) at 0.8 m/s.
+    for (float X = Parked.X; X <= C2.X && Mission.NextCheckpointIndex < 2; X += 50)
+    {
+        Mission.Observe(.05F, EFlightPhase::Flight, FVector(X, FMath::Lerp(Parked.Y, C2.Y, (X - Parked.X) / (C2.X - Parked.X)), Parked.Z), FVector(80, 0, 0), FRotator::ZeroRotator);
+        if (!TestTrue(TEXT("Score/guidance never diverge while re-centring"), Mission.IsScoreGuidanceConsistent())) break;
+    }
+    TestEqual(TEXT("Re-centred braked pose scores C2 without climbing back up"), Mission.NextCheckpointIndex, 2);
+    TestEqual(TEXT("...and completes the column in the same frame"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-06-alongshore-low-water")));
+    TestTrue(TEXT("Invariant after scoring"), Mission.IsScoreGuidanceConsistent());
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAeroSimInactiveResumeTest, "AeroSim.ProductUX.Input.InactiveResumeNeedsObservedNeutralOnly",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAeroSimInactiveResumeTest::RunTest(const FString& Parameters)
+{
+    // PMO packaged R6b: offscreen app lost OS focus -> SAFE PAUSE; after bridge release + Enter the resume
+    // stayed at 3 s forever because inactivity alone was treated as non-neutral input.
+    UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
+    FActorSpawnParameters Spawn; Spawn.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    AAeroSimPlayerController* Controller = World->SpawnActor<AAeroSimPlayerController>(Spawn);
+    AFlightPawn* Pawn = World->SpawnActor<AFlightPawn>(Spawn);
+    AeroSimTestSupport::AddFloorAndGroundPawn(World, Pawn);
+    World->AddController(Controller);
+    Controller->PlayerInput = NewObject<UPlayerInput>(Controller);
+    Controller->Possess(Pawn);
+    auto Key = [Controller](const FKey& K, EInputEvent E) { Controller->ObservePhysicalInput(FInputKeyEventArgs(nullptr, INPUTDEVICEID_NONE, K, E, E == IE_Released ? 0.0F : 1.0F, false, 0u)); };
+    // Bridge presses and releases (observed like real Slate events), then the OS takes focus away.
+    Key(EKeys::W, IE_Pressed); Key(EKeys::W, IE_Released);
+    Controller->NotifyApplicationActivationChanged(false);
+    TestEqual(TEXT("Focus loss safe-pauses"), Pawn->GetFlightModel().Phase, EFlightPhase::Paused);
+    TestTrue(TEXT("Released keys are neutral even while inactive"), Pawn->IsPhysicalInputNeutral());
+    Pawn->SetSafePaused(false); // Enter
+    Pawn->Tick(1.0F);
+    TestTrue(TEXT("Countdown runs while inactive with observed-neutral input"), Pawn->IsResumeCountdownActive() && Pawn->GetResumeCountdownSeconds() < 2.5F);
+    Pawn->Tick(2.1F);
+    TestFalse(TEXT("Resume completes"), Pawn->IsResumeCountdownActive());
+    TestTrue(TEXT("Model resumed"), Pawn->GetFlightModel().Phase != EFlightPhase::Paused);
+    // A key held at focus loss stays held (no OS KeyUp while inactive): resume never completes.
+    Key(EKeys::LeftShift, IE_Pressed);
+    Controller->NotifyApplicationActivationChanged(false);
+    TestFalse(TEXT("Held key observed before focus loss is not neutral"), Pawn->IsPhysicalInputNeutral());
+    Pawn->SetSafePaused(false);
+    Pawn->Tick(5.0F);
+    TestTrue(TEXT("Held key blocks resume"), Pawn->IsResumeCountdownActive() && Pawn->GetFlightModel().Phase == EFlightPhase::Paused);
+    Key(EKeys::LeftShift, IE_Released);
+    Pawn->Tick(2.0F);
+    Controller->NotifyApplicationActivationChanged(true);
+    TestTrue(TEXT("Regaining focus restarts the neutral window (full 3 s under focus)"), Pawn->GetResumeCountdownSeconds() >= 2.99F);
+    Pawn->Tick(3.1F);
+    TestTrue(TEXT("Resumes after a full neutral window"), Pawn->GetFlightModel().Phase != EFlightPhase::Paused);
+    World->DestroyWorld(false);
     return true;
 }
 
