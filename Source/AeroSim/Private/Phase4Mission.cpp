@@ -159,6 +159,50 @@ float FPhase4GuidanceLeg::Project(const FVector& Position, const float MinCm, co
     return Best;
 }
 
+float FPhase4GuidanceLeg::ProjectCorridor(const FVector& Position, const float MinCm, const float MaxCm, float& OutLateralCm, float& OutVerticalCm) const
+{
+    OutLateralCm = BIG_NUMBER; OutVerticalCm = 0.0F;
+    float Best = FMath::Max(0.0F, MinCm), Start = 0.0F, BestScore = BIG_NUMBER;
+    for (int32 Index = 1; Index < Path.Num(); ++Index)
+    {
+        const FVector A = Path[Index - 1], B = Path[Index];
+        const float Segment = FVector::Distance(A, B);
+        const float End = Start + Segment;
+        if (End >= MinCm && Start <= MaxCm && Segment > KINDA_SMALL_NUMBER)
+        {
+            const float Lo = (FMath::Max(MinCm, Start) - Start) / Segment, Hi = (FMath::Min(MaxCm, End) - Start) / Segment;
+            const double Planar = FVector::Dist2D(A, B);
+            float T;
+            if (Planar > 1.0) T = static_cast<float>(FVector2D::DotProduct(FVector2D(Position - A), FVector2D(B - A)) / (Planar * Planar));
+            else T = static_cast<float>((Position.Z - A.Z) / (B.Z - A.Z));
+            T = FMath::Clamp(T, Lo, Hi);
+            const FVector Point = FMath::Lerp(A, B, static_cast<double>(T));
+            const float Lateral = static_cast<float>(FVector::Dist2D(Position, Point));
+            const float Vertical = static_cast<float>(Position.Z - Point.Z);
+            const float Score = Lateral * Lateral + Vertical * Vertical;
+            if (Score < BestScore) { BestScore = Score; Best = Start + T * Segment; OutLateralCm = Lateral; OutVerticalCm = Vertical; }
+        }
+        Start = End;
+    }
+    return Best;
+}
+
+namespace Phase4Guidance
+{
+/** Conservative analytic link check used before offering a straight return arrow. */
+bool LinkClear(const FVector& From, const FVector& To)
+{
+    const int32 Steps = FMath::Max(1, FMath::CeilToInt(FVector::Distance(From, To) / 100.0F));
+    for (int32 Step = 0; Step <= Steps; ++Step)
+    {
+        const FVector P = FMath::Lerp(From, To, Step / static_cast<double>(Steps));
+        if (FMath::Abs(P.X) > FPacificCoastGrayboxContract::WorldHalfExtentCm || FMath::Abs(P.Y) > FPacificCoastGrayboxContract::WorldHalfExtentCm
+            || P.Z < ConservativeSurface(P.X, P.Y) + TransitClearanceCm) return false;
+    }
+    return true;
+}
+}
+
 TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
 {
     using namespace Phase4Guidance;
@@ -185,7 +229,8 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
         {
             // Columns lock XY: <=100 cm off axis and <=100 cm/s planar while progressing.
             Leg.AcceptRadiusCm = 100.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F;
-            Leg.TrackToleranceCm = 100.0F; Leg.MaxTrackPlanarSpeedCm = 100.0F; Leg.LookaheadCm = 300.0F;
+            Leg.SafetyHalfWidthCm = 100.0F; Leg.SafetyBelowCm = 150.0F; Leg.SafetyAboveCm = 150.0F;
+            Leg.MaxTrackPlanarSpeedCm = 100.0F; Leg.LookaheadCm = 300.0F;
             Leg.MaxAcceptPlanarSpeedCm = 100.0F;
             // Vertical brake window: ~2x the 6-8 m/s envelope's stopping distance (3.3-5.3 m).
             Leg.MaxAcceptVerticalSpeedCm = 150.0F; Leg.VerticalBrakeZoneCm = 1000.0F;
@@ -195,7 +240,9 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
             // Pass-through along the polyline (R6a real-input finding): reach the end of the verified
             // polyline inside the corridor tube; no speed window.
             Leg.AcceptRadiusCm = 150.0F; Leg.AcceptBelowCm = 150.0F; Leg.AcceptAboveCm = 150.0F;
-            Leg.TrackToleranceCm = 150.0F; Leg.LookaheadCm = 600.0F; Leg.MaxAcceptPlanarSpeedCm = 10000.0F;
+            // Forest: measured clear half-width >=205 cm along the corridor polyline (gates included).
+            Leg.SafetyHalfWidthCm = 180.0F; Leg.SafetyBelowCm = 150.0F; Leg.SafetyAboveCm = 150.0F;
+            Leg.LookaheadCm = 600.0F; Leg.MaxAcceptPlanarSpeedCm = 10000.0F;
             Leg.bPassThrough = true;
         }
         else if (Kind == EPhase4GuideKind::Transit)
@@ -215,7 +262,7 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
         // The takeoff phase overshoots its 3 m hand-over; accept the actual climb-out band.
         Leg.AcceptBelowCm = 40.0F; Leg.AcceptAboveCm = 700.0F; Leg.MaxAcceptPlanarSpeedCm = 200.0F;
         Leg.MaxAcceptVerticalSpeedCm = 10000.0F; Leg.VerticalBrakeZoneCm = 0.0F;
-        Leg.TrackToleranceCm = 150.0F; Leg.MaxTrackPlanarSpeedCm = 200.0F;
+        Leg.SafetyHalfWidthCm = 150.0F; Leg.SafetyBelowCm = 100.0F; Leg.SafetyAboveCm = 700.0F; Leg.MaxTrackPlanarSpeedCm = 200.0F;
     }
     // 2. C1 over the grass/soil worksite (unchanged checkpoint and radius).
     Add(TEXT("nav-02-grass-soil"), TEXT("checkpoint-01"), TEXT("CIRCLE 1 / GRASS AND SOIL"), EPhase4GuideKind::Transit, {C1}, 0);
@@ -248,7 +295,8 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
         auto& Leg = Add(TEXT("nav-06-alongshore-low-water"), TEXT("checkpoint-03"), TEXT("FOLLOW THE SHORE LOW / SQUARE 3 LOW WATER"),
             EPhase4GuideKind::Transit, Curve, 2);
         Leg.AcceptRadiusCm = 150.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F; Leg.bPassThrough = false; // C3 = climb column bottom
-        Leg.MaxAcceptPlanarSpeedCm = 100.0F; Leg.TrackToleranceCm = 300.0F;
+        Leg.MaxAcceptPlanarSpeedCm = 100.0F;
+        Leg.SafetyHalfWidthCm = 1000.0F; Leg.SafetyBelowCm = 250.0F; Leg.SafetyAboveCm = 300.0F; // low water: foot stays >1 m above sea
         // C3 is 4 m above the sea: brake the descent before it (no overshoot into the water).
         Leg.MaxAcceptVerticalSpeedCm = 150.0F; Leg.VerticalBrakeZoneCm = 1000.0F;
     }
@@ -300,6 +348,8 @@ TArray<FPhase4GuidanceLeg> FPhase4TaskDefinition::BuildGuidanceRoute() const
         auto& Leg = Add(TEXT("nav-14-field-return"), TEXT("guide-home-above-mat"), TEXT("RETURN HOME / BRAKE ABOVE THE MAT"),
             EPhase4GuideKind::Transit, {FVector(Mouth, Hhome), HomeAbove});
         Leg.bReturnLeg = true; Leg.bPassThrough = false; // safety gate: landing column top
+        // Open field is wide; launch-site props near the mat narrow it (funnel to 3 m at the brake point).
+        Leg.EndFunnelHalfWidthCm = 300.0F; Leg.EndFunnelSlope = 0.1F; // measured: props ~4 m off the line 5 m before the mat
         Leg.AcceptRadiusCm = 100.0F; Leg.AcceptBelowCm = 75.0F; Leg.AcceptAboveCm = 75.0F;
         Leg.MaxAcceptPlanarSpeedCm = 100.0F; Leg.MaxAcceptVerticalSpeedCm = 150.0F;
     }
@@ -333,7 +383,7 @@ bool FPhase4TaskDefinition::ValidateGuidanceStructure(const TArray<FPhase4Guidan
         if (LegIds.Contains(Leg.LegId) || GuideIds.Contains(Leg.GuideId)) return Fail(LegIndex, Leg.LegId, 0, Previous, TEXT("DUPLICATE_ID"));
         LegIds.Add(Leg.LegId); GuideIds.Add(Leg.GuideId);
         if (!Leg.Path[0].Equals(Previous, 1.0)) return Fail(LegIndex, Leg.LegId, 0, Leg.Path[0], TEXT("DISCONTINUOUS"));
-        if (Leg.AcceptRadiusCm <= 0 || Leg.AcceptBelowCm <= 0 || Leg.AcceptAboveCm <= 0 || Leg.TrackToleranceCm <= 0
+        if (Leg.AcceptRadiusCm <= 0 || Leg.AcceptBelowCm <= 0 || Leg.AcceptAboveCm <= 0 || Leg.SafetyHalfWidthCm <= 0 || Leg.SafetyBelowCm < 0 || Leg.SafetyAboveCm <= 0
             || Leg.MaxAcceptPlanarSpeedCm <= 0 || Leg.MaxAcceptVerticalSpeedCm <= 0 || Leg.MaxTrackPlanarSpeedCm <= 0 || Leg.LookaheadCm <= 0)
             return Fail(LegIndex, Leg.LegId, 0, Previous, TEXT("INVALID_WINDOW"));
         if (Leg.ScoredCheckpointIndex != INDEX_NONE)
@@ -402,6 +452,7 @@ void FPhase4MissionSession::Reset()
     GuidanceLegIndex = 0;
     GuidanceProgressCm = 0.0F;
     bRecoveryGuideActive = false;
+    bOffCorridor = false;
     RecoveryAnchorCm = 0.0F;
     RecoveryGuidance = FPhase4GuidanceTarget();
     CurrentGuidance = FPhase4GuidanceTarget();
@@ -523,12 +574,12 @@ bool FPhase4MissionSession::IsOnCurrentLeg(const FVector& Position, float* OutAl
 {
     if (!GuidanceRoute.IsValidIndex(GuidanceLegIndex)) return false;
     const FPhase4GuidanceLeg& Leg = GuidanceRoute[GuidanceLegIndex];
-    float Distance = 0.0F;
+    float Lateral = 0.0F, Vertical = 0.0F;
     // While recovering, the offered anchor (possibly further along the verified leg) also counts.
     const float Max = FMath::Max(GuidanceProgressCm + Leg.LookaheadCm, bRecoveryGuideActive ? RecoveryAnchorCm + 200.0F : 0.0F);
-    const float Along = Leg.Project(Position, GuidanceProgressCm - 200.0F, Max, Distance);
+    const float Along = Leg.ProjectCorridor(Position, GuidanceProgressCm - 200.0F, Max, Lateral, Vertical);
     if (OutAlongCm) *OutAlongCm = Along;
-    return Distance <= Leg.TrackToleranceCm;
+    return Leg.IsInsideCorridor(Along, Lateral, Vertical);
 }
 
 void FPhase4MissionSession::ObserveGuidance(const FVector& Position, const FVector& Velocity)
@@ -536,23 +587,19 @@ void FPhase4MissionSession::ObserveGuidance(const FVector& Position, const FVect
     // Contact frames are frozen collision-resolved poses: no navigation or score progress.
     if (bCollisionLatched || !GuidanceRoute.IsValidIndex(GuidanceLegIndex)) return;
     const int32 LegAtStart = GuidanceLegIndex;
+    bShortcutThisFrame = false;
     const FPhase4GuidanceLeg& Leg = GuidanceRoute[GuidanceLegIndex];
     const float Planar = static_cast<float>(Velocity.Size2D());
-    // Progress only from the sweep-resolved actual pose, inside a bounded window: a later
-    // part of the same polyline (or a future checkpoint) can never be reached by a jump.
-    float Distance = 0.0F;
-    const float Along = Leg.Project(Position, GuidanceProgressCm - 200.0F, GuidanceProgressCm + 1000.0F, Distance);
-    if (Distance <= Leg.TrackToleranceCm && Planar <= Leg.MaxTrackPlanarSpeedCm)
+    // Progress = furthest projection of the sweep-resolved actual pose onto the leg while that pose is
+    // inside the leg's validated safety corridor (wide in open air, tight at columns/forest). Straight
+    // transit/column legs project over the whole remaining leg; the curved forest polyline keeps a
+    // bounded window so a later stretch of the same corridor is never reached by a jump.
+    float Lateral = 0.0F, Vertical = 0.0F;
+    const float MaxAlong = Leg.Kind == EPhase4GuideKind::Corridor ? GuidanceProgressCm + 1500.0F : Leg.GetLength();
+    const float Along = Leg.ProjectCorridor(Position, GuidanceProgressCm - 200.0F, MaxAlong, Lateral, Vertical);
+    bOffCorridor = !Leg.IsInsideCorridor(Along, Lateral, Vertical);
+    if (!bOffCorridor && Planar <= Leg.MaxTrackPlanarSpeedCm)
         GuidanceProgressCm = FMath::Max(GuidanceProgressCm, Along);
-    else if (Leg.Kind == EPhase4GuideKind::Transit && Planar <= Leg.MaxTrackPlanarSpeedCm)
-    {
-        // R6a: a pilot who left the transit tube and rejoins it further along (a straight verified
-        // segment, no loops) must not be stranded behind a 10 m window. Columns and corridor keep
-        // the bounded window, so vertical/corridor safety gates still cannot be skipped.
-        float Rejoin = 0.0F;
-        const float RejoinAlong = Leg.Project(Position, GuidanceProgressCm, Leg.GetLength(), Rejoin);
-        if (Rejoin <= Leg.TrackToleranceCm) GuidanceProgressCm = FMath::Max(GuidanceProgressCm, RejoinAlong);
-    }
 
     if (Stage == EPhase4MissionStage::Inspection)
     {
@@ -569,15 +616,12 @@ void FPhase4MissionSession::ObserveGuidance(const FVector& Position, const FVect
                 Feedback.RecoveryAction = TEXT("Return to the current guide; completed checkpoints stay saved.");
                 Feedback.ShapeCue = Task.Checkpoints.IsValidIndex(NextCheckpointIndex) ? Task.Checkpoints[NextCheckpointIndex].ShapeCue : TEXT("GUIDE ARROW");
             }
-        // Scoring only for the checkpoint that owns the active leg (original radius/height rules).
-        if (!bShortcut && Leg.ScoredCheckpointIndex == NextCheckpointIndex) ObserveCheckpoint(Position);
+        bShortcutThisFrame = bShortcut;
     }
-    if (GuidanceLegIndex != LegAtStart) return; // RTH switched to the return legs.
     if (Leg.Kind == EPhase4GuideKind::Landing) return; // Completion is the supported-landing rule.
     const FVector End = Leg.Path.Last();
     const float Rise = static_cast<float>(Position.Z - End.Z);
     const float Length = Leg.GetLength();
-    const bool bScored = Leg.ScoredCheckpointIndex == INDEX_NONE || NextCheckpointIndex > Leg.ScoredCheckpointIndex;
     const bool bHeight = Rise >= -Leg.AcceptBelowCm && Rise <= Leg.AcceptAboveCm;
     const bool bProgress = GuidanceProgressCm >= Length - FMath::Max3(Leg.AcceptRadiusCm, Leg.AcceptBelowCm, Leg.AcceptAboveCm) - 50.0F;
     bool bAccepted = false;
@@ -588,16 +632,27 @@ void FPhase4MissionSession::ObserveGuidance(const FVector& Position, const FVect
         const FVector2D Last = Leg.Path.Num() > 1 ? FVector2D(End - Leg.Path[Leg.Path.Num() - 2]) : FVector2D::ZeroVector;
         const bool bCrossed = Last.SizeSquared() > 1.0 && FVector2D::DotProduct(FVector2D(Position - End), Last.GetSafeNormal()) >= 0.0
             && FVector::Dist2D(Position, End) <= 2.0F * Leg.AcceptRadiusCm;
-        bAccepted = bScored && bProgress && bHeight && (FVector::Dist2D(Position, End) <= Leg.AcceptRadiusCm || bCrossed);
+        bAccepted = bProgress && bHeight && (FVector::Dist2D(Position, End) <= Leg.AcceptRadiusCm || bCrossed);
     }
     else
     {
-        bAccepted = bScored && bProgress && bHeight
+        bAccepted = bProgress && bHeight
             && FVector::Dist2D(Position, End) <= Leg.AcceptRadiusCm
             && Planar <= Leg.MaxAcceptPlanarSpeedCm
             && FMath::Abs(static_cast<float>(Velocity.Z)) <= Leg.MaxAcceptVerticalSpeedCm;
     }
-    if (bAccepted) AdvanceGuidanceLeg();
+    if (!bAccepted) return;
+    if (Leg.ScoredCheckpointIndex != INDEX_NONE)
+    {
+        // R6b: a scored checkpoint is scored by its original radius/height rules at the moment its own
+        // leg's end gate is accepted, so score and guidance can never diverge (e.g. C2 scored by its
+        // 25 m radius while the descent column still pointed back up).
+        if (Stage != EPhase4MissionStage::Inspection || bShortcutThisFrame || Leg.ScoredCheckpointIndex != NextCheckpointIndex) return;
+        ObserveCheckpoint(Position);
+        if (NextCheckpointIndex <= Leg.ScoredCheckpointIndex) return;
+        if (GuidanceLegIndex != LegAtStart) return; // fifth checkpoint: RTH already switched to the return legs
+    }
+    AdvanceGuidanceLeg();
 }
 
 void FPhase4MissionSession::AdvanceGuidanceLeg()
@@ -606,7 +661,17 @@ void FPhase4MissionSession::AdvanceGuidanceLeg()
     {
         ++GuidanceLegIndex;
         GuidanceProgressCm = 0.0F;
+        bOffCorridor = false;
     }
+}
+
+bool FPhase4MissionSession::IsScoreGuidanceConsistent() const
+{
+    if (GuidanceRoute.IsEmpty()) return true;
+    int32 ScoredLegsDone = 0;
+    for (int32 Index = 0; Index < GuidanceLegIndex && Index < GuidanceRoute.Num(); ++Index)
+        if (GuidanceRoute[Index].ScoredCheckpointIndex != INDEX_NONE) ++ScoredLegsDone;
+    return ScoredLegsDone == NextCheckpointIndex;
 }
 
 int32 FPhase4MissionSession::FindFirstReturnLeg() const
@@ -635,17 +700,7 @@ void FPhase4MissionSession::SetRecoveryGuide(const FVector& Position, const bool
         const FPhase4GuidanceLeg& Leg = GuidanceRoute[GuidanceLegIndex];
         // Anchors lie on the verified current leg; the link to one is only offered when a conservative
         // analytic terrain check passes (cliff top assumed to extend to the shore). Otherwise hold.
-        auto LinkClear = [&Position](const FVector& Anchor)
-        {
-            const int32 Steps = FMath::Max(1, FMath::CeilToInt(FVector::Distance(Position, Anchor) / 100.0F));
-            for (int32 Step = 0; Step <= Steps; ++Step)
-            {
-                const FVector P = FMath::Lerp(Position, Anchor, Step / static_cast<double>(Steps));
-                if (FMath::Abs(P.X) > FPacificCoastGrayboxContract::WorldHalfExtentCm || FMath::Abs(P.Y) > FPacificCoastGrayboxContract::WorldHalfExtentCm
-                    || P.Z < Phase4Guidance::ConservativeSurface(P.X, P.Y) + Phase4Guidance::TransitClearanceCm) return false;
-            }
-            return true;
-        };
+        auto LinkClear = [&Position](const FVector& Anchor) { return Phase4Guidance::LinkClear(Position, Anchor); };
         float Distance = 0.0F;
         const float Candidates[] = {Leg.Project(Position, 0.0F, Leg.GetLength(), Distance), GuidanceProgressCm, Leg.GetLength()};
         bool bLinkClear = false;
@@ -683,15 +738,40 @@ void FPhase4MissionSession::RefreshGuidance(const FVector& Position)
         Target.bPassThrough = Leg.bPassThrough;
         const float HeightToGo = FMath::Abs(static_cast<float>(Leg.Path.Last().Z - Position.Z));
         Target.bVerticalBrake = Leg.VerticalBrakeZoneCm > 0.0F && HeightToGo <= Leg.VerticalBrakeZoneCm
-            && FVector::Dist2D(Position, Leg.Path.Last()) <= FMath::Max(Leg.TrackToleranceCm, 300.0F);
+            && FVector::Dist2D(Position, Leg.Path.Last()) <= FMath::Max(Leg.SafetyHalfWidthCm, 300.0F);
         if (Target.bVerticalBrake) Target.Label = FString::Printf(TEXT("BRAKE VERTICAL SPEED / %s"), *Leg.Label);
         Target.ScoredCheckpointIndex = Leg.ScoredCheckpointIndex; Target.ScoredCheckpointId = Leg.ScoredCheckpointId;
-        float Distance = 0.0F;
-        Leg.Project(Position, GuidanceProgressCm - 200.0F, GuidanceProgressCm + 1000.0F, Distance);
-        // Off the leg: steer back to the verified line just ahead of actual progress, never to the end.
-        const float Ahead = Distance <= Leg.TrackToleranceCm ? Leg.LookaheadCm : FMath::Min(Leg.LookaheadCm, 300.0F);
-        Target.Position = Leg.Evaluate(GuidanceProgressCm + Ahead);
+        Target.SafetyHalfWidthCm = Leg.GetHalfWidthAt(GuidanceProgressCm);
+        Target.Position = Leg.Evaluate(GuidanceProgressCm + Leg.LookaheadCm);
         Target.RemainingCm = FMath::Max(0.0F, Leg.GetLength() - GuidanceProgressCm);
+        if (bOffCorridor)
+        {
+            // Visible recovery guidance (never a silent stall): steer back onto the verified leg near the
+            // actual progress when a conservative straight link exists, otherwise a controlled stop.
+            float Distance = 0.0F, AnchorLateral = 0.0F, AnchorVertical = 0.0F;
+            // Columns re-centre horizontally at the pilot's own height (never back up to the column top).
+            const float AnchorAlong = Leg.IsColumn()
+                ? Leg.ProjectCorridor(Position, 0.0F, Leg.GetLength(), AnchorLateral, AnchorVertical)
+                : Leg.Project(Position, FMath::Max(0.0F, GuidanceProgressCm - 200.0F), GuidanceProgressCm + Leg.LookaheadCm, Distance);
+            const FVector Anchor = Leg.Evaluate(AnchorAlong);
+            Target.bOffCorridor = true;
+            Target.bRecovery = true;
+            // Columns and the forest corridor: a short local re-centre (the analytic 3 m link check cannot
+            // hold at 2.5 m forest height); open-air transit: only with a conservative clear link.
+            if (Leg.IsColumn() || Leg.Kind == EPhase4GuideKind::Corridor || Phase4Guidance::LinkClear(Position, Anchor))
+            {
+                Target.Position = Anchor;
+                Target.Label = Leg.IsColumn() ? FString::Printf(TEXT("RE-CENTER OVER THE COLUMN / %s"), *Leg.Label)
+                    : Leg.Kind == EPhase4GuideKind::Corridor ? FString::Printf(TEXT("RE-CENTER IN THE FOREST CORRIDOR / %s"), *Leg.Label)
+                    : FString::Printf(TEXT("OFF THE VERIFIED CORRIDOR / RETURN TO THE ARROW / %s"), *Leg.Label);
+            }
+            else
+            {
+                Target.Position = Position;
+                Target.bHold = true;
+                Target.Label = TEXT("OFF CORRIDOR / CONTROLLED STOP / HOVER, THEN CLIMB SLOWLY UNTIL THE ARROW RETURNS");
+            }
+        }
     }
     Target.LegIndex = GuidanceLegIndex;
     Target.LegCount = GuidanceRoute.Num();
