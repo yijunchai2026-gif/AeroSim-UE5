@@ -245,7 +245,7 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("float detail=1-smoothstep(1500,12000,dist);")
             + TEXT("return normalize(float3(-g+(N1.xy*.15+N2.xy*.06)*detail,1));");
     case ECoastalWaterShader::Foam:
-        // Inputs P,T,A,C,Mask (RGB),MaskA (vertex alpha; Custom inputs take only RGB). Mask r=distance to waterline/100 m, g=rock contact energy,
+        // Inputs P,T,A,C,FoamTex (texture object),Mask (RGB),MaskA (vertex alpha; Custom inputs take only RGB). Mask r=distance to waterline/100 m, g=rock contact energy,
         // b=depth/40 m, a=shoal (reef) factor. Foam follows the swell crest that actually
         // reaches the rock and drifts shoreward with it; open water never receives foam
         // because every term is gated by rock contact or shoal depth.
@@ -264,11 +264,15 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("float patches=contact*exp(-d/650)*lace*gaps*.55;")
             // Beach/shelf surf zone from the interpolated depth mask (survives coarse far mesh):
             // breaker lines where crests reach < ~9 m depth, whitewater swash in the last ~4 m.
-            + TEXT("float shallow=1-smoothstep(.05,.40,Mask.b);")
-            + TEXT("float breaker=max(shoal,shallow*contact)*smoothstep(.40,.82,crest)*lace*smoothstep(.20,.60,cells)*1.3;")
-            + TEXT("float swash=contact*(1-smoothstep(0,.16,Mask.b))*(.35+.65*crest)*lace*.8;")
+            + TEXT("float shallow=1-smoothstep(.05,.50,Mask.b);")
+            + TEXT("float breaker=max(shoal,shallow*contact)*smoothstep(.35,.75,crest)*lace*smoothstep(.20,.60,cells)*1.4;")
+            + TEXT("float swash=contact*(1-smoothstep(0,.22,Mask.b))*(.40+.60*crest)*lace*.9;")
             + TEXT("float streak=contact*exp(-d/1400)*smoothstep(.58,.90,noise.f((P.xy+drift)*float2(.0016,.0035)))*.45;")
-            + TEXT("return saturate(surge+churn*.65+patches+breaker+swash+streak);");
+            // Foam002 (ambientCG CC0) opacity, advected with the same current, gives the
+            // white water crisp bubbly edges instead of a soft smeared sheet.
+            + TEXT("float tex=Texture2DSample(FoamTex,FoamTexSampler,(P.xy+drift)/220.0).r;")
+            + TEXT("float f=surge+churn*.65+patches+breaker+swash+streak;")
+            + TEXT("return saturate(smoothstep(.12,.85,f*(.40+.95*tex)));");
     case ECoastalWaterShader::Scattering:
         // Input Mask. Greener shallows over the platform, deep blue-grey offshore (per cm); a
         // turbid surf-zone term keeps the waterline from reading as clear glass over rock.
@@ -289,20 +293,23 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("float top=lerp(110,210,crest)+60*(noise.f(P.xy*.004+float2(P.z*.002,0))-.5);")
             + TEXT("return 1-smoothstep(top*.35,top,above);");
     case ECoastalWaterShader::Cirrus:
-        // Inputs P (dome world pos), C (camera), S (direction toward the sun). Returns 0..1
-        // cirrus coverage: sparse fibrous streaks projected on a ~9 km layer, elongated along a
-        // fixed WSW jet, only above the horizon and never veiling the sun. Time-independent,
-        // so the Clear/seed-21630 baseline is deterministic.
+        // Inputs P (dome world pos), C (camera), S (direction toward the sun). Returns 0..1.
+        // Soft, broken, fibrous cirrus (R6b: the first version read as a parallel comb):
+        // domain-warped noise on a ~9 km layer, locally varying streak direction, moderate
+        // anisotropy, clumped coverage and noisy wispy tails. Above the horizon only, never
+        // over the sun, no time input (deterministic baseline).
         return NoiseHelpers()
-            + TEXT("float3 v=normalize(P-C); float up=smoothstep(.06,.30,v.z);")
-            + TEXT("float2 q=v.xy/max(v.z,.06)*9000.0;")
-            + TEXT("float2 jet=float2(.94,.34); float2 r=float2(dot(q,jet),dot(q,float2(-jet.y,jet.x)));")
-            + TEXT("float band=noise.f(float2(r.x*.00012,r.y*.0022));")
-            + TEXT("float wisp=noise.f(float2(r.x*.0009,r.y*.006)+3.1);")
-            + TEXT("float cover=smoothstep(.58,.80,noise.f(q*.00006+7.3));")
-            + TEXT("float streak=smoothstep(.45,.85,band*.7+wisp*.3)*cover;")
+            + TEXT("float3 v=normalize(P-C); float up=smoothstep(.08,.35,v.z);")
+            + TEXT("float2 q=v.xy/max(v.z,.08)*9000.0*.00015;")
+            + TEXT("float2 wq=float2(noise.f(q*.7+1.3),noise.f(q*.7+8.1))-.5; float2 p=q+wq*1.6;")
+            + TEXT("float ang=.36+(noise.f(q*.3+4.2)-.5)*1.4; float2 dir=float2(cos(ang),sin(ang));")
+            + TEXT("float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
+            + TEXT("float fib=noise.f(float2(r.x*.8,r.y*5.0)); float body=noise.f(p*1.1+2.7);")
+            + TEXT("float clump=smoothstep(.55,.80,noise.f(q*.22+7.3));")
+            + TEXT("float tails=smoothstep(.20,.80,noise.f(r*float2(2.0,9.0)+5.5))*.5+.5;")
+            + TEXT("float c=smoothstep(.40,.92,body*.6+fib*.4)*clump*tails;")
             + TEXT("float sun=1-smoothstep(.975,.995,dot(v,normalize(S)));")
-            + TEXT("return saturate(streak*up*sun);");
+            + TEXT("return saturate(c*up*sun);");
     default:
         return TEXT("return 0;");
     }
