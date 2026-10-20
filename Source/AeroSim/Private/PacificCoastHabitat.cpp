@@ -225,14 +225,16 @@ void APacificCoastGraybox::BuildCoastalHabitat()
         {
             const FArchetype& A = Archetypes[Tree.Archetype];
             if (!Tree.bNearForest || !A.IsOverstory()) continue;
-            const float Radius = (A.Species == ESpecies::CoastLiveOak ? LitterRandom.FRandRange(220, 330) : LitterRandom.FRandRange(150, 240)) * Tree.Scale;
+            // Contact-scale rings only (DEV-TERRAIN's ground litter mask carries the continuous forest floor).
+            const float Radius = (A.Species == ESpecies::CoastLiveOak ? LitterRandom.FRandRange(140, 210) : LitterRandom.FRandRange(95, 160)) * Tree.Scale;
             const float H = Radius * .5F;
             const float DX = (GetCoastalLandHeight(Tree.Base.X + H, Tree.Base.Y) - GetCoastalLandHeight(Tree.Base.X - H, Tree.Base.Y)) / (2 * H);
             const float DY = (GetCoastalLandHeight(Tree.Base.X, Tree.Base.Y + H) - GetCoastalLandHeight(Tree.Base.X, Tree.Base.Y - H)) / (2 * H);
             const FVector Normal = FVector(-DX, -DY, 1).GetSafeNormal();
             const FQuat Align = FQuat::FindBetweenNormals(FVector::UpVector, Normal) * FQuat(FVector::UpVector, LitterRandom.FRandRange(0, 2 * PI));
             const FVector Centre(Tree.Base.X, Tree.Base.Y, GetCoastalLandHeight(Tree.Base.X, Tree.Base.Y) + 2.0F);
-            Rings.Add(FTransform(Align, Centre, FVector(Radius / 100.0F, Radius / 100.0F, 1)));
+            // Irregular outline: unequal X/Y radii per ring.
+            Rings.Add(FTransform(Align, Centre, FVector(Radius / 100.0F, Radius / 100.0F * LitterRandom.FRandRange(.7F, 1.0F), 1)));
         }
         Litter->AddInstances(Rings, false);
         Litter->ComponentTags.Add(TEXT("CoastalFloraHabitat"));
