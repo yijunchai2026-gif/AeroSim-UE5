@@ -185,6 +185,42 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
         AddInfo(FString::Printf(TEXT("Litter vertices %d"), LitterVertices));
     }
 
+    // R7: the procedural upper sea-cliff face (above the spray zone, outside the scan footprint)
+    // carries geometric relief: fracture ledges (up-facing facets) between steep risers, and
+    // plan-view buttresses/chutes along the rim.
+    {
+        int32 UpperFacets = 0, Ledges = 0, Risers = 0;
+        for (UProceduralMeshComponent* Mesh : Meshes)
+        {
+            if (Mesh->GetFName() != TEXT("CoastalBedrock") && Mesh->GetFName() != TEXT("CoastalFracturedRock")) continue;
+            const FProcMeshSection* Section = Mesh->GetProcMeshSection(0);
+            if (!Section) continue;
+            for (int32 Index = 0; Index + 2 < Section->ProcIndexBuffer.Num(); Index += 3)
+            {
+                const FVector A = Section->ProcVertexBuffer[Section->ProcIndexBuffer[Index]].Position;
+                const FVector B = Section->ProcVertexBuffer[Section->ProcIndexBuffer[Index + 1]].Position;
+                const FVector C = Section->ProcVertexBuffer[Section->ProcIndexBuffer[Index + 2]].Position;
+                const FVector Centre = (A + B + C) / 3;
+                if (FMath::Abs(Centre.Y) > 60000 || FMath::Abs(Centre.Y + 19000) < 2600 || Centre.Z < APacificCoastGraybox::SeaLevelCm + 300
+                    || Centre.Z > APacificCoastGraybox::GetCoastalLandHeight(APacificCoastGraybox::GetCliffEdgeX(Centre.Y), Centre.Y) - 100) continue;
+                const FVector N = FVector::CrossProduct(C - A, B - A).GetSafeNormal();
+                if (N.IsNearlyZero()) continue;
+                ++UpperFacets;
+                if (FMath::Abs(N.Z) > .45) ++Ledges;
+                if (FMath::Abs(N.Z) < .2) ++Risers;
+            }
+        }
+        float RimWiggle = 0;
+        for (float Y = -55000; Y < 55000; Y += 500)
+            if (FMath::Abs(Y + 19000) > 3000)
+                RimWiggle = FMath::Max(RimWiggle, FMath::Abs(APacificCoastGraybox::GetCliffEdgeX(Y + 250) - APacificCoastGraybox::GetCliffEdgeX(Y - 250)));
+        TestTrue(TEXT("Upper cliff face was sampled"), UpperFacets > 2000);
+        TestTrue(TEXT("At least 10% of the upper cliff facets are fracture ledges (|n.z| > .45)"), Ledges * 10 >= UpperFacets);
+        TestTrue(TEXT("At least 15% of the upper cliff facets are steep risers (|n.z| < .2)"), Risers * 100 >= UpperFacets * 15);
+        TestTrue(TEXT("Rim line has buttress/chute relief (> 1.5 m step-out change per 5 m)"), RimWiggle > 150);
+        AddInfo(FString::Printf(TEXT("Upper cliff relief: %d facets, %d ledges, %d risers; rim max change %.0f cm / 5 m"), UpperFacets, Ledges, Risers, RimWiggle));
+    }
+
     // Cliff face never overhangs: along every sampled cliff column, X grows monotonically with depth.
     {
         TMap<int32, TArray<FVector>> Columns;

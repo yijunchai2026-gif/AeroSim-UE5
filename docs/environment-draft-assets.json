@@ -34,7 +34,7 @@
   "assets": [
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastBarkDraft.uasset",
-      "sha256": "5311e2667dba618d9007b5232d792f48fe3e4b00a933332264f1461b0d8e8c73",
+      "sha256": "962e777f5de86864f05aa521a7f2780ed3bdb397805726ea5883a74ec9ded962",
       "bytes": 9868
     },
     {
@@ -44,7 +44,7 @@
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastCirrusDraft.uasset",
-      "sha256": "142ee5ae3cef9e0087cb35c3b4242c446d103479318911c7d98cb7fe4593f55b",
+      "sha256": "7190ab39a3e26517ea82ad0ed68c771b1b3d08fb835f966561b33fb599a88f46",
       "bytes": 10144
     },
     {
@@ -54,27 +54,27 @@
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastGravelDraft.uasset",
-      "sha256": "1c3ef7347d9a2cc9f4d3686a1489fc06f3122e853c13e14e18c7e87f4a4b06cd",
-      "bytes": 84653
+      "sha256": "e99bf85703423e0ccd8ba4ac07c0235ecbe0b3cc510b70b95ddc002d4f324534",
+      "bytes": 84851
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastGroundDraft.uasset",
-      "sha256": "6371aad7b772fe69f467a5035cd08996cfcec6888d493f8b9bc9d1f507e99b87",
-      "bytes": 74480
+      "sha256": "fc8e76b19a41ad0908a6905b7e46f43aa4628fbdead362972bd0400bff6954f1",
+      "bytes": 74678
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastNeedlesDraft.uasset",
-      "sha256": "60a3a42c5ac68308bf9c3c7ed5e772e291e1fa9c1800585e1903f5e892625bb6",
+      "sha256": "84555152cce104b833ac436fe9de3619f0581c6e5aa86d744b62509d3cb3a6ec",
       "bytes": 14620
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastRockDraft.uasset",
-      "sha256": "260625c4ec9f84b6d365e763c187ff3b197cefbb73af57bd7876cc42ab798217",
+      "sha256": "1121fe3ad20d35c9d351d68fd07247b118755877ead9d570303e93ec590f7e53",
       "bytes": 68860
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastWaterDraft.uasset",
-      "sha256": "5aa7ce0640a0d0870ec57fd600a717e21f547766531e21d238199bd35530ef17",
+      "sha256": "e9dbcfb2359557a7a36f40401fd5ca1bc8347266852fd51bda155555e711a806",
       "bytes": 36569
     },
     {
@@ -174,17 +174,17 @@
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastBark_BaseColor.uasset",
-      "sha256": "2e1fdfdef254e89c3cb0b45a1870a4e2e16b90d53f7222c12327e453c1397b8b",
+      "sha256": "582478e076e9ca21e7d9e39b74ed55eff3aeff8402fb12ad0466f2ac25469de2",
       "bytes": 5755461
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastBark_Normal.uasset",
-      "sha256": "c2b257f9b3f45d8645df2620f13595dbe69cd5b54ebea34ff82a4fab422788fe",
+      "sha256": "fa58f190c7ea17c41634a578f2ce81435112eaeeaea4c2cb58a34b5301a000ba",
       "bytes": 6011242
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastBark_Roughness.uasset",
-      "sha256": "8426bc6194f704f396515f2a6c998ea86575e834cb662d51f8b55f3564843c65",
+      "sha256": "6a7a57f11319431983770d6f32434e31dc886f8d43490d2bc4be42c6e8ea561c",
       "bytes": 2904695
     },
     {
@@ -209,12 +209,12 @@
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastDetailDirt_Normal.uasset",
-      "sha256": "38e3c31799577374ff5ab5902300f1cd62b7b483fca81ed614bb472aefcf9458",
+      "sha256": "6035120e012a4613e6522f7444510095e90ea91de0669ef4eebad87145c7b8c3",
       "bytes": 4903807
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastDetailDirt_Roughness.uasset",
-      "sha256": "1d104a6952d7a706ad70d9e5cabbeaebc7ff4679c3439a1615bcf67136561dfe",
+      "sha256": "68c3f5731091265a635f8721342fe6bd5d3fbfacbbaffd598c7f6482235261bc",
       "bytes": 969133
     },
     {
@@ -239,217 +239,217 @@
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastEarthTrail_BaseColor.uasset",
-      "sha256": "b129e630bb95495d8c104f15fd678d92acec0dead72c59e5d654d856a0249dd8",
+      "sha256": "ce30cea41d0f8ba1f577fb54bb44aeea8a94b123624fdccea16653e89cdc0ba1",
       "bytes": 3517785
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastEarthTrail_Normal.uasset",
-      "sha256": "2269cc4406f07cbf14b04be6154dab33647577fbb67e86d0f3e1acd314f1d50a",
+      "sha256": "be490ae695a05732dd66f1d35bdaf137058badc84dec8a7ba1ccdd92e9e65d5c",
       "bytes": 5699415
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastEarthTrail_Roughness.uasset",
-      "sha256": "23ed832b8d12bd037d611d2d267d5e77956d1264e61c71b564b29660e6c15970",
+      "sha256": "18262cf3e0e6e881ddddfb55ff8433747c0aa7ebdc455212fdf265252ac628ab",
       "bytes": 2252167
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastFoam_BaseColor.uasset",
-      "sha256": "926138889e3da04e88169f8488ce368c2ced54c5de7fe1554854d119d26c1d92",
+      "sha256": "3d1492918faf010ee0d4779e8e7a2d09219d60fb05121f43519fa847e7747189",
       "bytes": 4501460
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastFoam_Normal.uasset",
-      "sha256": "4470023ed0688478699dbd83d2a88de2629ad84c86b5db94508e443c033f95d6",
+      "sha256": "d5a25794730fd75e5f619d3b010f4c82829cc5db27522aa87ddea6ed05353ae7",
       "bytes": 9101086
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastFoam_Opacity.uasset",
-      "sha256": "325e2020398eea6752bf5d2c7b947f01dde0942f97cdc5b8a077a819fc6bdfdf",
+      "sha256": "481c71eef1e1cecbe1d4daa0ae70d3f9730fd5042849a4446260f875538066f7",
       "bytes": 2667111
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastFoam_Roughness.uasset",
-      "sha256": "f4022c522c5801de61adcb54778dde7e465057cda8686b0f82d0eb3961d3fad5",
+      "sha256": "909146bce2e613cd1342a240cfb5726f99759df5e3e440c98ef272c85f483085",
       "bytes": 2495328
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastGravel_BaseColor.uasset",
-      "sha256": "3cbe78dbf8601b1841f825e5dbe9b5d36f4dd307ad64a23a76bbb5595819685b",
+      "sha256": "3ba58ba1483b910c58080046420c0dbaf52ec2bbf6a32e06bf038f64b5648e0a",
       "bytes": 4102030
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastGravel_Normal.uasset",
-      "sha256": "fa4a2cf9a3969c5e8ea0391f6eeebb465959563607832350386f3dfcdaca56b6",
+      "sha256": "ce657c212a7e3baa020b3fe81ef7c9c430a3f38645ff71f7e7e1e592054962b6",
       "bytes": 5315792
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastGravel_Roughness.uasset",
-      "sha256": "e65503f41079facfd0c42044b24c2384d3f1c8e88e8342e300c958a0fbf1215e",
+      "sha256": "e3d30d7b85fbdabab98edec402d0e86cca5ec8c673dfe49472c39bf2de18f670",
       "bytes": 1736541
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastGround_BaseColor.uasset",
-      "sha256": "151979e4d6745cb22f7b147242e373f5eafbf554b7af50ef86511b914734c81b",
+      "sha256": "bfad0771eac1f87fc58fa2d25a3a8bb8b3d24673f3d0419d9a31b82651a9ca80",
       "bytes": 3236862
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastGround_Normal.uasset",
-      "sha256": "c600b82c8ef4019cc31f7cd3f1e6e3c3fc5bdd3a9aa940c740581571978691ed",
+      "sha256": "0580a6966061872bc24eb072d601604cb2543e4c4a809815a6bd9e1acca00082",
       "bytes": 4151133
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastGround_Roughness.uasset",
-      "sha256": "ee9eed9d5b9e85529804b3fb81036d9b13d297da4aa72a686153a65a5f060d9b",
+      "sha256": "53c22383dc21c46e706639aa46b24799e75313dc3161f54a4abc0ac74872ca36",
       "bytes": 1593515
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastLeafLitter_BaseColor.uasset",
-      "sha256": "61a214f280f695f9fe195d3a28b7c91e810497e3563e7b208606591341ecd878",
+      "sha256": "202ff4d6e252496dd92e9d2d4cd812049a6333cad69951c421c96cff25a54c82",
       "bytes": 2860187
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastLeafLitter_Height.uasset",
-      "sha256": "3d7dffd42369ddbb1e3cebb350c9fdf2d609b9aaf16febc3b826bd23fa560a39",
+      "sha256": "2e9f51a92f59328b6e4304db2a1a330d6c56179ed0563d9a98522a3a71dd7917",
       "bytes": 1195665
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastLeafLitter_Normal.uasset",
-      "sha256": "371ea38adcbb3989297879bed005033db9d4f8fdcd63be36070c9c411f2bdc58",
+      "sha256": "12c84ae7dfe00d8d34f2946148465c939a7efd2918641359846374c57066415c",
       "bytes": 3930178
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastLeafLitter_Roughness.uasset",
-      "sha256": "073de6f853a1d8b396a0fac1f2a919bcc56440eecad9c8e50146936b623b8826",
+      "sha256": "1d6270c0b3f87cc51a5a835b9949d5d1040ee90627f78b7ca1cad8140659e369",
       "bytes": 1966403
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastMacroGrassRock_BaseColor.uasset",
-      "sha256": "97f149117feb50500e4a7a9ae7ef330d961a002895d5217ae8b0a06a98f75125",
+      "sha256": "e535d1b9213c7506c47b1f9f2fb1055bc4b102ce3cea6593f970ac9a805facd4",
       "bytes": 2628771
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastNeedles_Alpha.uasset",
-      "sha256": "82a6bbcbe4827ea90c534bdc298cf92e6e3a0b0db6c776bf5d23acceb2546828",
+      "sha256": "a044ee3dc6df4993e4a2de70e9b4ef88428e8e0bb6e52958db7abaad966b072d",
       "bytes": 38963
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastNeedles_BaseColor.uasset",
-      "sha256": "7f2db6b13d87bcb393e92f12766e53b19a32c03bd619d8dfd76cb3d9e90c36a5",
+      "sha256": "6c92d83e9dfb23ffc584012bc4ca1cf365b28523cf1b8043c0c8ca582dbd3598",
       "bytes": 159083
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastNeedles_Normal.uasset",
-      "sha256": "e93a016d9d53806caadaa1ab329a6af4d71b7e36809e6069f1e356c4ed4f8af0",
+      "sha256": "738df866d4b19a39f38675e7ff6db4d6ea2cc486560c75468290dd4981bf7d52",
       "bytes": 151356
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastNeedles_Roughness.uasset",
-      "sha256": "40e384e4df7853627af4ab686bea9c99be02f4b47eaffd7d2305cd002aa9da89",
+      "sha256": "b943eb7aeb65c689c69a70899b222ff10b5c531091c91076aecd0c06024a1cb8",
       "bytes": 41729
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastRockFace_BaseColor.uasset",
-      "sha256": "49170639869efb00217d9c0106d0270de4ba05352407e3bd7f4614445dde15d0",
+      "sha256": "315c0901b2e87bf26b4134d37d4de58cebcd10257ca31d147533a4bb6384e866",
       "bytes": 3818450
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastRockFace_Normal.uasset",
-      "sha256": "cfcfc0dac985f5b9b41d712ee75ebe0510956055aed31e61d6cb740e511ab02b",
+      "sha256": "b70c2e373947d75c5c14e1b445d60ea1cf5e9cb3997aaec801d67789d9473bc6",
       "bytes": 4466969
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastRockFace_Roughness.uasset",
-      "sha256": "c9ab82a381cf464f9d281e649dbd578041f631e7ec32a6b98980b181235f3d88",
+      "sha256": "19ab0f9f3973d773dd184dc9aee1f36540a1add8ea9911b1040ebb52d97bf9f9",
       "bytes": 2605818
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastRock_BaseColor.uasset",
-      "sha256": "3ae73a80f902e4c1fedda92f8cd5218eaaf2aebc6408cde04cef7bcd00e33d4d",
+      "sha256": "5ddaf9071a661f0b79d6d1341acbaa8b2de607f9ee9d8034061ccb8ad65e215d",
       "bytes": 3391372
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastRock_Normal.uasset",
-      "sha256": "91bc82efccbc2a10f35ec3897b6af4c92c525cb03dcf63e295cf7a466a266f08",
+      "sha256": "e6a9a18434c089bebe8848518f92eda1a94963fa7f49efa17742c81fa03350b1",
       "bytes": 3598596
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastRock_Roughness.uasset",
-      "sha256": "aa44ed9dcafa605099f24337a4a3b6677ad69f68bc39ac3c9cd3abb39253c39d",
+      "sha256": "1f2eac8d1f0e91c42d6be5ea7522f6ac5269657343d9427cf0f8ea89183d82c8",
       "bytes": 1769322
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastSparseGrass_BaseColor.uasset",
-      "sha256": "040fbca758ddac82c886120c3ab8855e9621d8e896b0124973502eb819a70f36",
+      "sha256": "6a3cb41af6ed97b9bdcdfc1427a4d31a273b5ae15dc0d45263d668743a8630f0",
       "bytes": 3737901
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastSparseGrass_Height.uasset",
-      "sha256": "c2fd759e915181db4dd4b726c1764c317c9ec8622bd7af1b63993403755f341d",
+      "sha256": "4bfc386a80eb7e43d85139aca04016ec367bb988c13e4358ea3cb73911e5dbb7",
       "bytes": 2316508
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastSparseGrass_Normal.uasset",
-      "sha256": "0fbd74679df69d239c7e5ac3dfdea4783be5a5dcaa091fca079b15ed8b0ea743",
+      "sha256": "a599ca820c7f64937c7427c7e991700df18e135e3fcb7cf414109f158e22a839",
       "bytes": 5867304
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastSparseGrass_Roughness.uasset",
-      "sha256": "9d0d69f1cbadece0f0d42d741142991c3e5f9645e4008ade05186cd4bd720cb7",
+      "sha256": "d72ec3f83dcbced9275502de35ccebe9753d8f52bb7c019f32e2654fd74a26c4",
       "bytes": 1734068
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastStonyGround_BaseColor.uasset",
-      "sha256": "e4a455ac3c75a93c38359c676fd7c2209f9274d13da130d5112df9afad42f0e2",
+      "sha256": "f75a512f3ce9a76b8c063014320e87e283cea46e217d9a4241edfb92ea029626",
       "bytes": 3432480
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastStonyGround_Height.uasset",
-      "sha256": "c2780ca98dff622e9a23036bc991e7775b83575e204785cbf0c93090451bb397",
+      "sha256": "0db2ac812c9e68d8e9c01cbb73ad02ca86e721571fc337406bed2acc7689a4ce",
       "bytes": 872285
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastStonyGround_Normal.uasset",
-      "sha256": "1f4131dcd24a5b36d108da61a1e38a361ce351d059cc994397db768b22bdf493",
+      "sha256": "d7d68c7456355460c45f003468cd1047dd5acf5bedde019780700fa5644d2413",
       "bytes": 5430612
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastStonyGround_Roughness.uasset",
-      "sha256": "76e79bba6eb5ce385eebd22fee58cbf598db36328e2179c4390c878d975dd6cc",
+      "sha256": "f0cf8d115cd95caff4e5351440edb12cde0a80b8f5ea6ccbdcd6b61f8400f5d4",
       "bytes": 1894700
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastWitheredGrass_BaseColor.uasset",
-      "sha256": "bfe43e172ed638a14e663002aa067e3ff5359c257d0f1c1550be6a8443ea81b2",
+      "sha256": "4f468aff739c37e4d7299bd15368e7d1a0240d6dadbc8ca3891847c9a3d28d3c",
       "bytes": 4636906
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastWitheredGrass_Height.uasset",
-      "sha256": "3256a186932e32eb093914b09b2d6d75217421fabb89d91b3e70fd824c60ba0d",
+      "sha256": "34c1ddeabc1f44b835a275d22340126ba95abfbdd2257a95255a0fa917c49019",
       "bytes": 2437249
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastWitheredGrass_Normal.uasset",
-      "sha256": "66027a5faebe3b7cb03f0722106723c579d02f9b116d0f7eda141e5bf23ffb5e",
+      "sha256": "a6ba70742e0d4d21132685d15eaeae48357e250bf145c9e77a1a70e900a9cd0b",
       "bytes": 6204647
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastWitheredGrass_Roughness.uasset",
-      "sha256": "a4e7d716010d0ddd83121c10dc4baebb5f695657acb10b3096e6803983ed1001",
+      "sha256": "c89afbe9a64a35137091b480e2b601b51b99bb1cffc554a86dfb9934624306c9",
       "bytes": 3670671
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastWornRock_BaseColor.uasset",
-      "sha256": "19ebca6a5594443b8add5a2c5954acb6a67d49ca8c7557a5ece0e68403041808",
+      "sha256": "bf0541cd4de372e44811c23ab79b2c7124f63dff749a21e1567e0b4c43ae5faa",
       "bytes": 3380176
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastWornRock_Normal.uasset",
-      "sha256": "247373c606f0f0852fa1b7c41026e3a2a4fcb1fda2568c02a4f6bb4988e0ce62",
+      "sha256": "8639cc255b028e994d6f01dc4ce114d6eb5245407b92827b9fddc6ed8e91f32a",
       "bytes": 3488800
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastWornRock_Roughness.uasset",
-      "sha256": "62d4244bd05fabb6c31d51adea114baa76c58187c1a88b3da5223928b4107c8f",
+      "sha256": "296a4ee7bc522742cb4ee75ab5a89a23b27f2b5b3f9966e6092fea0d5e865409",
       "bytes": 2170721
     },
     {

@@ -389,8 +389,13 @@ float SteppedCoveBlend(const float Run, const float Y, const float X)
     // (its position wanders along the coast), a hummocky slump body below it, then the cove floor.
     const float Scarp=.16F+.08F*Noise(Y,-8100.0F,3300.0F);
     const float Head=Smooth((Run-Scarp)/.16F);
-    const float Body=Smooth((Run-Scarp-.12F)/.75F);
-    const float Hummocks=.07F*Noise(X,Y+4100.0F,1500.0F)*Smooth(Run/.3F)*(1.0F-Smooth((Run-.8F)/.2F));
+    // R7 (QA: slump sheet still folds like a curtain): the slump body descends in irregular blocky
+    // steps (flat-topped blocks, steep rock risers) instead of a smooth sheet.
+    const float Smoothed=Smooth((Run-Scarp-.12F)/.75F);
+    const float Steps=5.0F, T=Smoothed*Steps+.45F*Noise(X,Y-2700.0F,1100.0F)*Smoothed*(1.0F-Smoothed)*4.0F;
+    const float Block=FMath::Clamp(FMath::FloorToFloat(T),0.0F,Steps-1.0F);
+    const float Body=FMath::Clamp((Block+Smooth((T-Block-.55F)/.22F))/Steps,0.0F,1.0F);
+    const float Hummocks=.04F*Noise(X,Y+4100.0F,1500.0F)*Smooth(Run/.3F)*(1.0F-Smooth((Run-.8F)/.2F));
     return FMath::Clamp(.42F*Head+.58F*Body+Hummocks,0.0F,1.0F);
 }
 
@@ -433,6 +438,35 @@ float CliffOutcrop(const float Y, const float Depth)
     return Outcrop + Interior * Blocks + HeroRock * (1.0F - ScanWeight(Y));
 }
 
+// R7 (QA: the procedural cliff face above the scan band shades as a smooth plane): fracture
+// benches. Going down from the rim the face steps outward in 4-7 irregular ledges with steep
+// risers; the rim (land edge) is receded by the total step-out BenchTotal(Y), whose own variation
+// along the coast forms 4-12 m buttresses and chutes. The step-out reaches exactly BenchTotal at
+// still water, so the waterline (shore, foam, DEV-FLIGHT C2/C3 references) is unchanged; only
+// the scan footprint is excluded (its proxy face is fitted to the scan).
+float BenchFootprint(const float Y)
+{
+    return 1.0F - Smooth((FMath::Abs(Y - ScanY) - ScanHalfWidth) / 600.0F);
+}
+
+float BenchTotal(const float Y)
+{
+    const float Buttress = 420.0F + 260.0F * Noise(Y, 2900.0F, 1300.0F) + 380.0F * FMath::Abs(Noise(Y, -6100.0F, 470.0F));
+    return FMath::Max(0.0F, Buttress) * (1.0F - BenchFootprint(Y));
+}
+
+float BenchStepOut(const float Y, const float Z, const float Top)
+{
+    const float Total = BenchTotal(Y);
+    if (Total <= 0) return 0.0F;
+    const float Height = FMath::Max(100.0F, Top - APacificCoastGraybox::SeaLevelCm);
+    const float Down = FMath::Clamp((Top - Z) / Height, 0.0F, 1.0F);
+    const float Count = 4.0F + FMath::Floor(3.0F * (.5F + .5F * Noise(Y, 7300.0F, 5200.0F)));
+    const float T = Down * Count + .45F * Noise(Y, Z * .7F, 900.0F) * Down * (1.0F - Down) * 4.0F;
+    const float Ledge = FMath::Clamp(FMath::FloorToFloat(T), 0.0F, Count - 1.0F);
+    return Total * FMath::Clamp((Ledge + Smooth((T - Ledge - .6F) / .25F)) / Count, 0.0F, 1.0F);
+}
+
 // Match the actual last-column float arithmetic, not only the analytic edge coordinate.
 FVector BaselineRimPosition(const float Y)
 {
@@ -454,7 +488,9 @@ FVector RimPosition(const float Y)
 // the ordinary profile ~8-33 m under water. A running max keeps every row free of overhangs.
 void BaselineCliffStations(const float RowY, const FVector& Rim, FVector (&Out)[CliffDepthSteps + 1])
 {
-    constexpr int32 Upper = 16;
+    // R7: 26 stations rim -> just below still water (fracture benches need ~2.5 m resolution on a
+    // 65 m face), 10 for the submerged foot; total unchanged.
+    constexpr int32 Upper = 26;
     const float Top = static_cast<float>(Rim.Z);
     const float Split = Top > APacificCoastGraybox::SeaLevelCm + 300.0F ? APacificCoastGraybox::SeaLevelCm - 200.0F : FMath::Lerp(Top, CliffFoot, .4F);
     const float Weight = ScanWeight(RowY);
@@ -464,14 +500,15 @@ void BaselineCliffStations(const float RowY, const FVector& Rim, FVector (&Out)[
         const float Z = Step <= Upper ? FMath::Lerp(Top, Split, Step / static_cast<float>(Upper))
             : FMath::Lerp(Split, CliffFoot, (Step - Upper) / static_cast<float>(CliffDepthSteps - Upper));
         const float Depth = FMath::Clamp((Top - Z) / (Top - CliffFoot), 0.0F, 1.0F);
-        float X = static_cast<float>(Rim.X) + CliffOutcrop(RowY, Depth);
+        const float Bench = BenchStepOut(RowY, Z, Top);
+        float X = static_cast<float>(Rim.X) + CliffOutcrop(RowY, Depth) + Bench;
         if (Weight > 0)
         {
             const float Local = Z - ScanZ;
             const float Base = ScanX + ScanFaceLocalX(RowY, -50.0F);
             const float Hero = Local >= -50.0F ? ScanX + ScanFaceLocalX(RowY, Local) : Base + (-50.0F - Local) * .9F;
             const float Fade = 1.0F - Smooth((-50.0F - Local - 800.0F) / 2500.0F);
-            X = FMath::Lerp(X, Hero, Weight * Fade);
+            X = FMath::Lerp(X, Hero - BenchTotal(RowY) + Bench, Weight * Fade);
         }
         Out[Step] = FVector(FMath::Max(X, static_cast<float>(Out[Step - 1].X)), RowY, Z);
     }
@@ -716,7 +753,7 @@ float CoastalTerrain::BaselineCliffEdgeX(const float Y)
     const float Edge = FMath::Max(14500.0F,Headland-1500.0F*CoastalTerrain::CoastalErosion(Y)/5400.0F);
     // The rim inside the scan reach is the top of the rebuilt closed face behind the scan.
     using namespace CoastalTerrain;
-    return FMath::Lerp(Edge, ScanX + ScanFaceLocalX(Y, 1000.0F), ScanWeight(Y));
+    return FMath::Lerp(Edge, ScanX + ScanFaceLocalX(Y, 1000.0F), ScanWeight(Y)) - BenchTotal(Y);
 }
 
 float CoastalTerrain::BaselineLandHeight(const float X, const float Y)
@@ -729,7 +766,11 @@ float CoastalTerrain::BaselineLandHeight(const float X, const float Y)
     const float YSide = Y < 0 ? -1.0F : 1.0F;
     WestDistance += (9000.0F * Noise(Y, 3100.0F, 52000.0F) + 3500.0F * Noise(Y, -4100.0F, 17000.0F)) * FMath::Clamp(WestDistance / 15000.0F, 0.0F, 1.0F);
     // R5a: stronger, multi-scale displacement (QA: N/S shores still read ruler-straight from 2.5 km).
-    NorthDistance += (19000.0F * Noise(X, 9100.0F * YSide, 47000.0F) + 10000.0F * Noise(X, -5300.0F * YSide, 17000.0F) + 3500.0F * Noise(X, 2900.0F * YSide, 6100.0F)) * FMath::Clamp(NorthDistance / 15000.0F, 0.0F, 1.0F);
+    // R7: 3x stronger at 50-200 m (coves and points along the north/south shores).
+    // The strong short terms act only in the low collar near the waterline (not on the ridges).
+    const float ShoreBand = FMath::Clamp(NorthDistance / 8000.0F, 0.0F, 1.0F) * (1.0F - Smooth((NorthDistance - 20000.0F) / 20000.0F));
+    NorthDistance += 19000.0F * Noise(X, 9100.0F * YSide, 47000.0F) * FMath::Clamp(NorthDistance / 15000.0F, 0.0F, 1.0F)
+        + (30000.0F * Noise(X, -5300.0F * YSide, 17000.0F) + 10500.0F * Noise(X, 2900.0F * YSide, 6100.0F)) * ShoreBand;
     const float Interior = Smooth(FMath::Min(WestDistance, NorthDistance) / 56000.0F);
     const float RouteDistance = FMath::Max(FMath::Max(-X - 23000.0F, FMath::Abs(Y) - 17000.0F), 0.0F);
     const float Rise = Smooth(RouteDistance / 24000.0F);
@@ -1026,16 +1067,27 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
         Triangle(Boundary[Next], Bottom[Next], Bottom[Index], 3);
         Triangle(Center, Bottom[Index], Bottom[Next], 3);
     }
-    TArray<FVector> Normals;
-    Normals.Init(FVector::ZeroVector, Vertices.Num());
-    for (const TArray<int32>& Group : Triangles)
-        for (int32 Index = 0; Index < Group.Num(); Index += 3)
+    // R7 (QA: stretched streaks along the rim lip and rock ledges): the shared rim vertices used to
+    // average land (up) and cliff (sideways) normals, so the cliff's world-aligned projection picked
+    // its top plane on vertical rim facets. Land and rock sections now shade with normals from their
+    // own family of faces; positions and indices stay shared, so the closed topology is unchanged.
+    TArray<FVector> Normals, RockNormals;
+    Normals.Init(FVector::ZeroVector, Vertices.Num()); RockNormals.Init(FVector::ZeroVector, Vertices.Num());
+    for (int32 GroupIndex = 0; GroupIndex < 5; ++GroupIndex)
+        for (int32 Index = 0; Index < Triangles[GroupIndex].Num(); Index += 3)
         {
+            const TArray<int32>& Group = Triangles[GroupIndex];
             const int32 A = Group[Index], B = Group[Index + 1], C = Group[Index + 2];
             const FVector N = FVector::CrossProduct(Vertices[C] - Vertices[A], Vertices[B] - Vertices[A]);
-            Normals[A] += N; Normals[B] += N; Normals[C] += N;
+            TArray<FVector>& Target = GroupIndex < 3 ? Normals : RockNormals;
+            Target[A] += N; Target[B] += N; Target[C] += N;
         }
-    for (FVector& Normal : Normals) Normal.Normalize();
+    for (int32 Index = 0; Index < Vertices.Num(); ++Index)
+    {
+        if (Normals[Index].IsNearlyZero()) Normals[Index] = RockNormals[Index];
+        if (RockNormals[Index].IsNearlyZero()) RockNormals[Index] = Normals[Index];
+        Normals[Index].Normalize(); RockNormals[Index].Normalize();
+    }
     const TCHAR* Names[] = {TEXT("CoastalPlateau"), TEXT("CoastalMountainRock"), TEXT("CoastalMountainScrub"), TEXT("CoastalBedrock"), TEXT("CoastalFracturedRock")};
     const FLinearColor Colors[] = {FLinearColor(.115F,.155F,.065F), FLinearColor(.13F,.153F,.087F), FLinearColor(.12F,.155F,.075F), FLinearColor(.19F,.175F,.14F), FLinearColor(.215F,.20F,.165F)};
     for (int32 Group = 0; Group < 5; ++Group)
@@ -1044,7 +1096,7 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
         Mesh->SetupAttachment(Root);
         Mesh->bUseAsyncCooking = true;
         Mesh->SetCollisionProfileName(TEXT("BlockAll"));
-        Mesh->CreateMeshSection_LinearColor(0, Vertices, Triangles[Group], Normals, UV, CoverColors, TArray<FProcMeshTangent>(), true);
+        Mesh->CreateMeshSection_LinearColor(0, Vertices, Triangles[Group], Group < 3 ? Normals : RockNormals, UV, CoverColors, TArray<FProcMeshTangent>(), true);
         Mesh->SetMaterial(0, Material);
         Mesh->SetCastShadow(true);
         CoastalColorParts.Add(Mesh); CoastalPartColors.Add(Colors[Group]);

@@ -197,7 +197,9 @@ const TCHAR* Weights = TEXT(
     "float3 w3=saturate(VC.rgb); float4 w=float4(w3,saturate(1-w3.r-w3.g-w3.b));"
     "float steep=smoothstep(.87,.70,VN.z+(nB-.5)*.10);"
     "w.w=max(w.w,steep); w.z=max(w.z,LIT*.85); w/=max(dot(w,1),1e-3);"
-    "float cliffFace=smoothstep(.55,.32,VN.z);"
+    // R7: steepness from the true facet (screen derivatives of world position), not only the
+    // interpolated vertex normal, so every near-vertical cap facet takes world projection.
+    "float3 facet=normalize(cross(ddx(WP),ddy(WP))); float cliffFace=smoothstep(.55,.32,min(VN.z,abs(facet.z)));"
     "float4 jitter=float4(nB*.55+nC*.45, nC*.6+nA*.4, nB*.5+nD*.5, nA*.6+nB*.4)-.5;"
     "float4 h=float4(EH.r,SH.r,WH.r,RH.r)-.5;"
     "float4 hw=w+jitter*.62*saturate(w*3+.1)+h*.35*fineMix*saturate(w*4);"
