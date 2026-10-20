@@ -106,8 +106,11 @@ void UAeroSimControlBridge::BeginPlay()
     if(FFileHelper::LoadFileToString(Existing,*(Directory/TEXT("session.json")))
         &&FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Existing),Previous)&&Previous.IsValid())
     {
-        double Pid=0;
-        if(Previous->TryGetNumberField(TEXT("pid"),Pid)&&Pid>0&&Pid<4294967295.0
+        // PIDs are reused by the OS, so a live PID alone does not mean the old session is still writing heartbeats.
+        double Pid=0,HeartbeatUnix=0;
+        Previous->TryGetNumberField(TEXT("heartbeat_unix"),HeartbeatUnix);
+        const bool bFreshHeartbeat=FMath::Abs(FDateTime::UtcNow().ToUnixTimestamp()-HeartbeatUnix)<=8.0;
+        if(bFreshHeartbeat&&Previous->TryGetNumberField(TEXT("pid"),Pid)&&Pid>0&&Pid<4294967295.0
             &&FPlatformProcess::IsApplicationRunning(static_cast<uint32>(Pid)))
         {
             Enabled=false;SetComponentTickEnabled(false);
