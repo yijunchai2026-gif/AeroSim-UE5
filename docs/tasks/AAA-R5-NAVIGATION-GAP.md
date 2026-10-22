@@ -208,3 +208,13 @@ PMO 打包 R7b（integration `9600be5`）真实按键已 5/5 到 C5（约 206 s�
 - 回归测试 `AeroSim.Flight.Navigation.ColumnHandoffAndClimbCompletes`：分别按 PMO 引用坐标与换算后的真实 WORLD 位姿重放 (25343,-5986,-6057)→(25345,-5986,338)，爬升全程不离走廊并完成；下降柱在离制动点 1.4 m 处接受后同样不离走廊并完成 C2。
 
 **实测**：逐米真实碰撞 1178 m / 1203 样本、0 失败段（下降/爬升柱 ±2.5 m 实测可用 ≥29.9 m；nav-10 漏斗余量 ≥16.9 m）；脚本语义输入全程 Result 5/5、碰撞/越界/漏检/触水/失步 0，112.3 s。真实按键全程（含落地）仍 NOT_RUN。
+
+## R8 精确悬停与落 mat（2026-10-21，DEV-FLIGHT）
+
+**PMO 发现**（打包 R8，integration `fd5ccb9`+seasky `7b7a86e`）：nav-15 在距 mat 中心 100 cm（>90 cm）处落地；重试时在 (55,106,264–361) 附近沿 X 以 ±170–230 cm/s、约 3.5 s 周期往复，无法稳在 mat 上方。
+
+**根因**：复核两份 route-log，两份日志中都**不存在 ≥2 s 的无按键区间**；"无键时振荡"区间里驱动器实际每约 1.6 s 交替发送 60 ms 的 W/S。模型平面通道是纯一阶速度跟随（无位置保持、无反号制动），无键时只会单调衰减；问题是**轻点增益过大**：响应 1.8/s、无加速度上限，60 ms 轻点即达约 2 m/s、滑行约 1.2 m，与交替纠正构成极限环。A/D 同理。
+
+**修复**（FlightPawn.cpp，Flight 相位平面通道）：加速时一阶响应 1.8/s 且平面加速度 ≤650 cm/s²；减速时响应 2.5/s、制动 ≤1500 cm/s²；单步不越过目标速度。竖直 8/6 m/s 包络、起飞与 Landing 相位不变。HUD 在 Landing 阶段落地且离 mat 中心 >90 cm 时显示红条 `OFF PAD (x m from centre) - LIFT (SHIFT) AND RE-CENTRE, THEN LAND`（落地后水平键不能平移，这是有意的）。
+
+**实测**（`AeroSim.Flight.Navigation.PrecisionHoverTapNoOscillation`，纯模型）：60 ms W/S/D 轻点：位移 16.6 cm、峰值 39 cm/s、0.33 s 内 <20 cm/s、速度反号 0 次；100 ms W/A：28.9 cm、峰值 65 cm/s、0.57 s；无键从 1 m/s：停在 39 cm、过冲 0、1.19 s 内 <5 cm/s；满杆 2.93 s 达 17 m/s；满速松杆 1.51 s / 11.5 m 降到 <1 m/s。逐米碰撞 1178 m / 1203 样本 0 失败段；脚本语义输入全程 Result 5/5、碰撞/越界/漏检/触水/失步 0，**114.0 s**，落点距 mat 中心约 2 cm（脚本先在 mat 上方停稳对中再下降，与 HUD 提示一致）。真实按键落 mat 仍 NOT_RUN。
