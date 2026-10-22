@@ -436,11 +436,18 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
         FacetColor->Code = TEXT("float3 f=normalize(cross(ddx(P),ddy(P))); float mis=saturate((abs(VN.z)-abs(f.z))*2.5);"
             "float3 w=pow(abs(f),4.0); w/=max(dot(w,1),1e-4); float s=1.0/350.0;"
             "float3 t=Texture2DSample(Tex,TexSampler,P.yz*s).rgb*w.x+Texture2DSample(Tex,TexSampler,P.xz*s).rgb*w.y+Texture2DSample(Tex,TexSampler,P.xy*s).rgb*w.z;"
-            "return lerp(C,t*float3(1.12,1.06,.92),mis);");
+            // R9: keep the face's own tone (macro cliff_side colour); the re-projected sample only
+            // contributes luminance detail, so these pixels never turn pale, untextured gold.
+            "float detail=clamp(dot(t,float3(.3,.59,.11))/.33,.6,1.4); return lerp(C,M*float3(1.12,1.06,.92)*detail,mis);");
         { FCustomInput I; I.InputName = TEXT("P"); I.Input.Connect(0, CliffWorld); FacetColor->Inputs.Add(I); }
         { FCustomInput I; I.InputName = TEXT("VN"); I.Input.Connect(0, GeometryNormal); FacetColor->Inputs.Add(I); }
         { FCustomInput I; I.InputName = TEXT("C"); I.Input.Connect(0, CliffColor); FacetColor->Inputs.Add(I); }
         { FCustomInput I; I.InputName = TEXT("Tex"); I.Input.Connect(0, FacetTexture); FacetColor->Inputs.Add(I); }
+        {
+            auto* MacroPass = Node<UMaterialExpressionMultiply>(Material); MacroPass->ConstB = 1.0F;
+            UMaterialEditingLibrary::ConnectMaterialExpressions(MacroColor, TEXT("XYZ Texture"), MacroPass, TEXT("A"));
+            FCustomInput I; I.InputName = TEXT("M"); I.Input.Connect(0, MacroPass); FacetColor->Inputs.Add(I);
+        }
         BaseExpression = FacetColor; NormalExpression = Rebased; RoughnessExpression = CliffRough; RoughnessOutput = TEXT("");
     }
     else
