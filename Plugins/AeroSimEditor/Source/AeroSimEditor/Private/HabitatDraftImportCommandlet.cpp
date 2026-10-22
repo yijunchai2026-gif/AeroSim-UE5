@@ -161,7 +161,9 @@ UMaterial* Foliage(const TCHAR* Name,UTexture2D* Base,UTexture2D* Alpha,UTexture
     auto* Surface=Custom(M,TEXT("float3 c=C*Tint.rgb*lerp(.80,1.12,R)*float3(lerp(1.04,.94,R),1,lerp(.96,1.06,R));return c*(.62+.38*V.r);"),CMOT_Float3,
         {{TEXT("C"),Color,0},{TEXT("Tint"),TintParam,0},{TEXT("R"),Random,0},{TEXT("V"),Vertex,0}});
     // The bias stays below the clip value so dilated atlas background never becomes opaque.
-    auto* Opacity=Custom(M,TEXT("return A*F+saturate((D-1500.0)/3500.0)*B;"),CMOT_Float1,
+    // The distance coverage bias is for the camera only: in shadow-depth passes (depth is measured
+    // from the light) it would turn every canopy into a solid shadow caster and black out the floor.
+    auto* Opacity=Custom(M,TEXT("#if defined(SHADOW_DEPTH_SHADER) && SHADOW_DEPTH_SHADER\nreturn A*F;\n#else\nreturn A*F+saturate((D-1500.0)/3500.0)*B;\n#endif"),CMOT_Float1,
         {{TEXT("A"),Mask,1},{TEXT("D"),Depth,0},{TEXT("B"),Coverage,0},{TEXT("F"),Fade,0}});
     auto* Roughness=Custom(M,TEXT("return saturate(Rg*K);"),CMOT_Float1,{{TEXT("Rg"),Rgh,1+RoughChannel},{TEXT("K"),RoughParam,0}});
     auto* Subsurface=Custom(M,TEXT("return S*.38;"),CMOT_Float3,{{TEXT("S"),Surface,0}});
