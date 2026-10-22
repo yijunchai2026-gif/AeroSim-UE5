@@ -251,6 +251,10 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
     auto Pass=[Material](UMaterialExpression* Call){auto* M=Node<UMaterialExpressionMultiply>(Material);UMaterialEditingLibrary::ConnectMaterialExpressions(Call,TEXT("XYZ Texture"),M,TEXT("A"));M->ConstB=1.0F;return M;};
     UMaterialExpression* SteepColor=Pass(Project(Material,AlignedTexture,Textures[34],TEXT("SteepFaceColor"),SAMPLERTYPE_Color,350.0F));
     UMaterialExpression* SteepRough=Pass(Project(Material,AlignedTexture,Textures[36],TEXT("SteepFaceRoughness"),SAMPLERTYPE_LinearGrayscale,350.0F));
+    // R9 self-check: the cove headscarp (steep land faces) still read pale gold next to the cliff. Steep
+    // faces now take the cliff's own macro tone (cliff_side, world-aligned at 23 m) with the sandstone
+    // only as luminance detail, matching the rock material's tinted colour.
+    UMaterialExpression* SteepMacro=Pass(Project(Material,AlignedTexture,Textures[3],TEXT("SteepFaceMacro"),SAMPLERTYPE_Color,2300.0F));
     // Trunk-base litter (DEV-FLORA GetForestLitterMask) arrives as 1 - vertex alpha on terrain;
     // trail surfaces use their alpha as the worn-core mask, so they read no litter.
     UMaterialExpression* LitterAlpha=nullptr;
@@ -269,6 +273,7 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         FCustomInput NIn;NIn.InputName=TEXT("VN");NIn.Input.Connect(0,GeometryNormal);C->Inputs.Add(NIn);
         FCustomInput TIn;TIn.InputName=TEXT("TRI");TIn.Input.Connect(0,SteepColor);C->Inputs.Add(TIn);
         FCustomInput TRIn;TRIn.InputName=TEXT("TRR");TRIn.Input.Connect(0,SteepRough);C->Inputs.Add(TRIn);
+        FCustomInput TMIn;TMIn.InputName=TEXT("TRM");TMIn.Input.Connect(0,SteepMacro);C->Inputs.Add(TMIn);
         FCustomInput LIn;LIn.InputName=TEXT("LIT");LIn.Input.Connect(0,LitterAlpha);C->Inputs.Add(LIn);
         return C;
     };
@@ -295,7 +300,8 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "c*=lerp(1,m1*m2,.25+.3*(1-fineMix));"
         "c*=1+.24*(float3(nC,nD,nE)-.5);"
         // R8: steep cap faces match the cliff rock tone (was a pale-gold sandstone that read untextured).
-        "c=lerp(c,TRI*float3(.66,.62,.55),cliffFace);"
+        "float3 rockTone=lerp(TRI,TRM,.72)*float3(.58,.64,.68)*float3(1.12,1.06,.92)*clamp(dot(TRI,L)/.33,.7,1.3);"
+        "c=lerp(c,rockTone,cliffFace);"
         "return min(c,float3(.6,.5,.4));"));
     auto* Normal=Make(CMOT_Float3,TEXT(
         // R3: grass normals mix a 1.37x/37 deg second sample by noise (no periodic bands in
