@@ -47,6 +47,10 @@ constexpr float MaxClimbCmPerSecond = 800.0F;
 constexpr float MaxDescentCmPerSecond = 600.0F;
 constexpr float VerticalResponse = 2.2F;
 constexpr float MaxVerticalAccelerationCmPerSecondSquared = 700.0F;
+// R8 precision-hover tuning (planar): gentle bounded spin-up, firmer bounded brake.
+constexpr float MaxPlanarAccelerationCmPerSecondSquared = 650.0F;
+constexpr float PlanarBrakeResponse = 2.5F;
+constexpr float MaxPlanarBrakeCmPerSecondSquared = 1500.0F;
 }
 
 void FFlightControlInput::Clamp()
@@ -171,8 +175,22 @@ void FFlightModel::Advance(const FFlightControlInput& RawInput, const float Delt
     FVector TargetVelocity=FRotator(0,Rotation.Yaw,0).RotateVector(Horizontal);
     TargetVelocity.Z=Input.Throttle*(Input.Throttle>=0.0F ? AeroSimFlight::MaxClimbCmPerSecond : AeroSimFlight::MaxDescentCmPerSecond);
     const float VerticalTarget=static_cast<float>(TargetVelocity.Z);
-    TargetVelocity.Z=Velocity.Z;
-    Velocity = FMath::VInterpTo(Velocity, TargetVelocity, Step, AeroSimFlight::VelocityResponse);
+    // Planar (R8): first-order speed hold with a bounded acceleration when speeding up and a firmer,
+    // still bounded brake when slowing. A 60-100 ms tap now nudges 15-30 cm instead of reaching
+    // ~2 m/s and coasting >1 m (which, with alternating W/S corrections, produced the R8 hover
+    // limit cycle). Neutral input is a pure first-order decay: no position hold, no sign reversal.
+    {
+        const FVector2D Current(Velocity.X, Velocity.Y), Target(TargetVelocity.X, TargetVelocity.Y);
+        const bool bBraking = Target.SizeSquared() < Current.SizeSquared();
+        const float Response = bBraking ? AeroSimFlight::PlanarBrakeResponse : AeroSimFlight::VelocityResponse;
+        const float Limit = bBraking ? AeroSimFlight::MaxPlanarBrakeCmPerSecondSquared : AeroSimFlight::MaxPlanarAccelerationCmPerSecondSquared;
+        FVector2D Rate = (Target - Current) * Response;
+        if (Rate.Size() > Limit) Rate = Rate.GetSafeNormal() * Limit;
+        // Never step past the target (no overshoot at large frame steps).
+        FVector2D Next = Current + Rate * Step;
+        if (FVector2D::DotProduct(Target - Next, Target - Current) < 0.0) Next = Target;
+        Velocity.X = Next.X; Velocity.Y = Next.Y;
+    }
     // Vertical: first-order response with a bounded acceleration, so full-throttle climbs and
     // descents ramp and brake smoothly and a short tap moves the aircraft only a few decimetres.
     const float VerticalAcceleration=FMath::Clamp((VerticalTarget-static_cast<float>(Velocity.Z))*AeroSimFlight::VerticalResponse,
