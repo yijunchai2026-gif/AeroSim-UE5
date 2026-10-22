@@ -1088,8 +1088,24 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
             // Soil contact darkening, stand shade on the bole, deeper shade inside the crown;
             // far LODs are darker still so distant trunks never read as pale matchsticks.
             const float Shade = (Z > K.CrownBase ? .62F : .80F) * (Lod >= 2 ? .6F : 1.0F);
-            return FVector4f(FMath::Min(FMath::Clamp(.05F + Z / 55.0F, 0.0F, 1.0F), Shade), FMath::Square(FMath::Max(Z, 0.0F) / Height) * .12F, 0, 1);
+            return FVector4f(FMath::Min(FMath::Clamp(Z / 90.0F, 0.0F, 1.0F), Shade), FMath::Square(FMath::Max(Z, 0.0F) / Height) * .12F, 0, 1);
         });
+    // R9 surface root swells: low, mostly buried ridges along each buttress lobe that run out and
+    // down into the soil (LOD0/1). They read as a rooted base, never as legs (they start inside
+    // the collar at <=15 cm height and end 15 cm below grade).
+    if (Lod <= 1 && K.Height >= 500)
+    {
+        const float R0 = K.TrunkRadius.IsValidIndex(1) ? K.TrunkRadius[1] : K.Breast;
+        for (const auto& Lobe : Lobes)
+        {
+            const FVector RootDir(FMath::Cos(Lobe.Key), FMath::Sin(Lobe.Key), 0);
+            const float Reach = R0 * FMath::Lerp(1.8F, 2.4F, (Lobe.Value - .05F) / .02F);
+            const TArray<FVector> Path = {RootDir * R0 * .55F + FVector(0, 0, 15), RootDir * R0 * 1.15F + FVector(0, 0, 4),
+                RootDir * Reach * .8F + FVector(0, 0, -4), RootDir * Reach + FVector(0, 0, -15)};
+            Sweep(Out.Bark, Path, [&](int32 Ring, float) { return R0 * FMath::Lerp(.30F, .06F, Ring / 3.0F); },
+                Lod == 0 ? 6 : 4, 1.0F, K.TileV, [](int32) { return FVector4f(.1F, 0, 0, 1); });
+        }
+    }
     for (const FLimb& Limb : K.Limbs)
     {
         if (Lod == 1 && Limb.Level >= (bOak ? 3 : 2)) continue;
@@ -1622,10 +1638,11 @@ float NearStandDensity(const float X, const float Y)
     // The south field edge stays close in front of the `forest` review pose and corridor entry.
     const float EntryKeep = Y < 0 ? FMath::Clamp(FMath::Abs(X + 15800.0F) / 5000.0F - .4F, 0.0F, 1.0F) : 1.0F;
     const float FieldEdge = 7700.0F + 900.0F * Fbm(X, Y > 0 ? 1000.0F : -1000.0F, 5200.0F) - 450.0F
-        + EntryKeep * 5200.0F * FMath::Max(0.0F, Fbm(X + 3100.0F, Y > 0 ? 7000.0F : -7000.0F, 15000.0F) - .42F);
-    const float OuterEdge = 25000.0F + 6000.0F * (Fbm(X + 5000, Y, 13000.0F) - .5F);
-    const float WestEdge = -29000.0F + 7000.0F * (Fbm(Y, X, 12000.0F) - .5F);
-    const float EastEdge = NearEastEdge(Y) - 900.0F * Fbm(Y, 300.0F, 4200.0F) - 4500.0F * FMath::Max(0.0F, Fbm(Y - 2000.0F, 900.0F, 11000.0F) - .4F);
+        + EntryKeep * 8000.0F * FMath::Max(0.0F, Fbm(X + 3100.0F, Y > 0 ? 7000.0F : -7000.0F, 15000.0F) - .40F);
+    // R9: two-scale outline noise (60-160 m lobes plus 20-50 m bays) so groves never read as blocks.
+    const float OuterEdge = 25000.0F + 10000.0F * (Fbm(X + 5000, Y, 16000.0F) - .5F) + 3000.0F * (Fbm(X - 900, Y + 400, 4800.0F) - .5F);
+    const float WestEdge = -29000.0F + 11000.0F * (Fbm(Y, X, 14000.0F) - .5F) + 3000.0F * (Fbm(Y + 700, X, 4500.0F) - .5F);
+    const float EastEdge = NearEastEdge(Y) - 1800.0F * Fbm(Y, 300.0F, 4200.0F) - 8000.0F * FMath::Max(0.0F, Fbm(Y - 2000.0F, 900.0F, 11000.0F) - .38F);
     const float Inside = FMath::Min(FMath::Min(AbsY - FieldEdge, OuterEdge - AbsY), FMath::Min(X - WestEdge, EastEdge - X));
     if (Inside <= 0)
     {
@@ -1635,18 +1652,25 @@ float NearStandDensity(const float X, const float Y)
         const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(X, Y);
         const float Woodland = Habitat.Woodland + .5F * Habitat.ShelteredGrass - .6F * Habitat.Rock;
         const float Reach = 1.0F - Smooth01(-Inside / 9000.0F);
-        return .72F * Smooth01((Woodland - .32F + .25F * (Fbm(X - 700, Y + 900, 5200.0F) - .5F)) / .28F) * (.35F + .65F * Reach);
+        const float Extension = .72F * Smooth01((Woodland - .32F + .25F * (Fbm(X - 700, Y + 900, 5200.0F) - .5F)) / .28F) * (.35F + .65F * Reach);
+        // Feathered edge: scattered outlier trees and small clumps up to ~30 m beyond the outline.
+        const float Outlier = .22F * (1.0F - Smooth01(-Inside / 3000.0F)) * Smooth01((Fbm(X + 300, Y - 800, 1900.0F) - .52F) / .1F);
+        return FMath::Max(Extension, Outlier);
     }
     // Ragged 6-20 m feather from sparse edge trees into the closed stand.
     const float Feather = .28F + .72F * Smooth01(Inside / (600.0F + 1400.0F * Fbm(X, Y, 3100.0F)));
     // Small natural glades keep openings without thinning the stand everywhere.
-    const float Glade = Fbm(X + 9100, Y - 4700, 4600.0F);
+    float Glade = Fbm(X + 9100, Y - 4700, 4600.0F);
+    // More, larger clearings (~14% of area), but never on the training corridor's flanks.
+    if (Glade > .56F) { float Half = 0; if (CorridorDistance(FVector2D(X, Y), &Half) < Half + 1800.0F) Glade = 0; }
     // DEV-TERRAIN habitat: steep rock and strongly sun-exposed dry grass break the stand.
     const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(X, Y);
     // Habitat shapes only the outer ~40 m of each stand: the dense training core is never erased.
     const float Hostile = (Habitat.Rock + Habitat.Shore + FMath::Max(0.0F, Habitat.ExposedGrass - .55F) * Smooth01(Habitat.SunExposure / .5F))
         * (1.0F - Smooth01(Inside / 4000.0F));
-    return Feather * (1.0F - Smooth01((Glade - .64F) / .06F)) * (1.0F - Smooth01((Hostile - .25F) / .35F));
+    // Natural clumping: 0.88-1.0 density modulation at ~25 m scale.
+    const float Clump = .88F + .12F * Smooth01((Fbm(X - 4100, Y + 2600, 2600.0F) - .35F) / .3F);
+    return Feather * Clump * (1.0F - Smooth01((Glade - .60F) / .06F)) * (1.0F - Smooth01((Hostile - .25F) / .35F));
 }
 
 FTransform InstanceTransform(const FPlacedTree& Tree)
@@ -1765,7 +1789,7 @@ const FLayout& GetLayout()
         }
     }
     // 2. Fixed-density stand fill: jittered 5.0 m lattice with Poisson-style rejection.
-    constexpr float Cell = 470.0F;
+    constexpr float Cell = 450.0F;
     for (float GX = -45000; GX < 12500; GX += Cell)
         for (float GY = -41000; GY < 41000; GY += Cell)
         {

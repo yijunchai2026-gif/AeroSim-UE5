@@ -90,10 +90,11 @@ bool FCoastalTreePlacementTest::RunTest(const FString& Parameters)
     const FLayout& Layout = GetLayout();
     const TArray<FArchetype>& Archetypes = GetArchetypes();
     TestTrue(TEXT("Layout is deterministic across calls"), &Layout == &GetLayout());
-    // Density over the closed stand interior (density field >= .9), measured on a 5 m grid.
+    // Density over the closed stand interior (density field >= .85, i.e. past the feathered edge and
+    // within the 0.88-1.0 clumping band), measured on a 5 m grid.
     int32 InteriorCells = 0;
     for (float X = -31000; X < 12500; X += 500) for (float Y = -28000; Y < 28000; Y += 500)
-        if (NearStandDensity(X + 250, Y + 250) >= .9F) ++InteriorCells;
+        if (NearStandDensity(X + 250, Y + 250) >= .85F) ++InteriorCells;
     int32 InteriorTrees = 0, InteriorStems = 0, NearAll = 0, Mature = 0, Pole = 0, Sapling = 0;
     int32 Floating = 0, BuriedTrees = 0, RouteIntrusions = 0, CliffIntrusions = 0, BoardwalkIntrusions = 0;
     for (const FPlacedTree& Tree : Layout.Trees)
@@ -102,7 +103,7 @@ bool FCoastalTreePlacementTest::RunTest(const FString& Parameters)
         const FArchetype& A = Archetypes[Tree.Archetype];
         ++NearAll;
         (A.Age == EAge::Mature ? Mature : A.Age == EAge::Pole ? Pole : Sapling)++;
-        if (A.IsOverstory() && NearStandDensity(Tree.Base.X, Tree.Base.Y) >= .9F) { ++InteriorTrees; InteriorStems += A.StemCount; }
+        if (A.IsOverstory() && NearStandDensity(Tree.Base.X, Tree.Base.Y) >= .85F) { ++InteriorTrees; InteriorStems += A.StemCount; }
         // Root grounding: around the actual collar the terrain lies between the visible collar
         // bottom and the buried trunk end, i.e. the trunk always passes through the surface.
         const FTransform T = InstanceTransform(Tree);
@@ -181,7 +182,10 @@ bool FCoastalTreePlacementTest::RunTest(const FString& Parameters)
     // Trunk-base litter: one terrain-aligned ring per near overstory tree, never colliding.
     if (const auto* Litter = CoastalTreeTest::FindBatch(Coast, TEXT("CoastalFloraTrunkLitter")))
     {
-        TestEqual(TEXT("One litter ring per near overstory tree"), Litter->GetInstanceCount(), Layout.NearOverstoryTrees);
+        TestTrue(TEXT("Litter rings at most one per near overstory tree, none in the corridor lane"), Litter->GetInstanceCount() <= Layout.NearOverstoryTrees && Litter->GetInstanceCount() > Layout.NearOverstoryTrees * 8 / 10);
+        for (const FCorridorSample& Sample : Layout.Corridor)
+            if (FMath::Fmod(Sample.Distance, 500.0F) < 60.0F)
+                TestTrue(TEXT("No forest-floor litter on the corridor path"), APacificCoastGraybox::GetForestLitterMask(Sample.Point.X, Sample.Point.Y).R + APacificCoastGraybox::GetForestLitterMask(Sample.Point.X, Sample.Point.Y).G < .05F);
         TestEqual(TEXT("Litter rings never collide"), Litter->GetCollisionEnabled(), ECollisionEnabled::NoCollision);
         int32 RingsAbove = 0;
         for (int32 Index = 0; Index < Litter->GetInstanceCount(); Index += 7)
@@ -299,7 +303,7 @@ bool FCoastalTreeCorridorTest::RunTest(const FString& Parameters)
         int32 Edge = 0, EdgeCells = 0, Inner = 0, InnerCells = 0;
         for (const FCorridorSample& Sample : Layout.Corridor)
         {
-            if (FMath::Fmod(Sample.Distance, 1000.0F) > 60 || NearStandDensity(Sample.Point.X, Sample.Point.Y) < .9F) continue;
+            if (FMath::Fmod(Sample.Distance, 1000.0F) > 60 || NearStandDensity(Sample.Point.X, Sample.Point.Y) < .85F) continue;
             const FVector2D Normal(-Sample.Tangent.Y, Sample.Tangent.X);
             for (const FPlacedTree& Tree : Layout.Trees)
             {
@@ -326,7 +330,8 @@ bool FCoastalTreeCorridorTest::RunTest(const FString& Parameters)
         if (TestNotNull(TEXT("A near fir exists"), Fir))
         {
             const FLinearColor AtBase = APacificCoastGraybox::GetForestLitterMask(Fir->Base.X + Archetypes[Fir->Archetype].CollarRadius, Fir->Base.Y);
-            TestTrue(TEXT("Conifer litter is full at the trunk base"), AtBase.R > .9F);
+            // Patchy by design (0.55-1.0 of full strength), zero on the corridor path.
+            TestTrue(TEXT("Conifer litter is present at the trunk base"), AtBase.R > .5F || APacificCoastGraybox::GetTrainingCorridorWear(Fir->Base.X, Fir->Base.Y) > 0);
         }
         TestEqual(TEXT("No litter in the open launch field"), APacificCoastGraybox::GetForestLitterMask(0, 0).R + APacificCoastGraybox::GetForestLitterMask(0, 0).G, 0.0F);
     }

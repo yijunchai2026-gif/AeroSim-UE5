@@ -39,12 +39,20 @@ FLinearColor APacificCoastGraybox::GetForestLitterMask(const float X, const floa
                 const FPlacedTree& Tree = Layout.Trees[Item];
                 const FArchetype& A = Archetypes[Tree.Archetype];
                 const bool bOak = A.Species == ESpecies::CoastLiveOak;
-                const float Reach = (bOak ? 300.0F : A.Species == ESpecies::Sapling ? 80.0F : 200.0F) * Tree.Scale;
+                // R9: contact-scale reach so neighbouring trees no longer merge into one dark carpet.
+                const float Reach = (bOak ? 170.0F : A.Species == ESpecies::Sapling ? 50.0F : 110.0F) * Tree.Scale * Tree.Girth;
                 const float D = FVector2D::Distance(FVector2D(X, Y), FVector2D(Tree.Base)) - A.CollarRadius * Tree.Scale * Tree.Girth;
                 const float W = FMath::Pow(FMath::Clamp(1.0F - D / Reach, 0.0F, 1.0F), 1.5F);
                 (bOak ? Oak : Conifer) = FMath::Max(bOak ? Oak : Conifer, W);
             }
-    return FLinearColor(Conifer, Oak, 0, 1);
+    // Keep the training lane and its worn path free of litter (path stays readable), and break the
+    // remaining floor litter into patches so bare duff/soil shows between trees.
+    float HalfWidth = 0;
+    const float Lane = CorridorDistance(FVector2D(X, Y), &HalfWidth);
+    const float LaneClear = FMath::SmoothStep(HalfWidth - 60.0F, HalfWidth + 80.0F, Lane);
+    const float Patch = FMath::SmoothStep(.30F, .62F, FMath::Frac(FMath::Sin(X * .0031F + FMath::Sin(Y * .0023F)) * 1.7F + .5F));
+    const float Keep = LaneClear * FMath::Lerp(.55F, 1.0F, Patch);
+    return FLinearColor(Conifer * Keep, Oak * Keep, 0, 1);
 }
 
 // Forest-floor understory for the near stands: sword-fern-like clumps under closed
@@ -201,6 +209,9 @@ void APacificCoastGraybox::BuildCoastalHabitat()
         Path->SetMaterial(0, Gravel.Object);
         Path->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         Path->SetCastShadow(false);
+        // R9: brighter, warmer worn-earth core so the path reads under the closed canopy
+        // (ApplyCoastalMaterials turns this tint into the material's Color parameter).
+        CoastalColorParts.Add(Path); CoastalPartColors.Add(FLinearColor(1.45F, 1.30F, 1.05F));
         ++GeneratedPrimitiveCount;
     }
     // Trunk-base litter rings (needles under conifers, leaf litter under oaks): a terrain-aligned
@@ -225,6 +236,10 @@ void APacificCoastGraybox::BuildCoastalHabitat()
         {
             const FArchetype& A = Archetypes[Tree.Archetype];
             if (!Tree.bNearForest || !A.IsOverstory()) continue;
+            {
+                float LaneHalf = 0;
+                if (CorridorDistance(FVector2D(Tree.Base), &LaneHalf) < LaneHalf + 150.0F) continue; // no rug in the lane
+            }
             // Contact-scale rings only (DEV-TERRAIN's ground litter mask carries the continuous forest floor).
             const float Radius = (A.Species == ESpecies::CoastLiveOak ? LitterRandom.FRandRange(170, 250) : LitterRandom.FRandRange(120, 190)) * Tree.Scale * Tree.Girth;
             const float H = Radius * .5F;
