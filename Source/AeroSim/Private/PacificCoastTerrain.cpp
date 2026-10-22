@@ -414,7 +414,8 @@ float CliffOutcrop(const float Y, const float Depth)
     Outcrop += TalusReach * FMath::Square(Smooth((Depth - .32F) / .55F));
     for (int32 Bed = 0; Bed < UE_ARRAY_COUNT(Thresholds); ++Bed)
     {
-        const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F);
+        // R9: stronger, shorter dip so beds are not read as level contour bands on low headlands.
+        const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F) + .07F * Noise(Y, Bed * 2700.0F - 5000.0F, 2400.0F);
         const float BedHeight = Thickness[Bed] * (1.0F + .25F * Noise(Y, Bed * 9100.0F, 4700.0F));
         Outcrop += BedHeight * Smooth((Depth - Thresholds[Bed] - Dip) / Widths[Bed]);
     }
@@ -511,7 +512,13 @@ void BaselineCliffStations(const float RowY, const FVector& Rim, FVector (&Out)[
             : FMath::Lerp(Split, CliffFoot, (Step - Upper) / static_cast<float>(CliffDepthSteps - Upper));
         const float Depth = FMath::Clamp((Top - Z) / (Top - CliffFoot), 0.0F, 1.0F);
         const float Bench = BenchStepOut(RowY, Z, Top);
-        float X = static_cast<float>(Rim.X) + CliffOutcrop(RowY, Depth) + Bench;
+        // R9 (QA: ledge band reads as planar flat-shaded facets; flat bands under water): 1-6 m rock
+        // relief breaks every station plane. It fades out within 1-4 m of still water so the
+        // waterline (shore query, foam, DEV-FLIGHT references) is unchanged.
+        const float Above = Z - APacificCoastGraybox::SeaLevelCm, Below = -Above;
+        const float ReliefFade = FMath::Max(Smooth((Above - 100.0F) / 300.0F), Smooth((Below - 150.0F) / 400.0F));
+        const float Relief = ReliefFade * (90.0F * Noise(RowY, Z * 1.6F, 560.0F) + 55.0F * Noise(RowY + 700.0F, Z * 2.1F, 230.0F) + 35.0F * Noise(RowY - 300.0F, Z, 110.0F));
+        float X = static_cast<float>(Rim.X) + CliffOutcrop(RowY, Depth) + Bench + Relief * (1.0F - BenchFootprint(RowY));
         if (Weight > 0)
         {
             const float Local = Z - ScanZ;
@@ -1202,22 +1209,38 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
         const float Foot = GetCoastalShoreX(Y) + RockRandom.FRandRange(-300.0F, 700.0F) - Radius * .3F;
         const int32 BaseIndex = TalusVertices.Num();
         const float Rotation = RockRandom.FRandRange(0.0F, 2.0F * PI);
+        // R9 (QA: waterline rocks read as smooth pyramids/cones): irregular boulders - four rings of
+        // nine jittered corners with a bulging waist, a leaning, chamfered and flattened crown, and
+        // a footing sunk well below the waterline. 38 vertices per block; the crown is the last.
+        constexpr int32 Corners = 9, Rings = 4;
         TalusVertices.Add(FVector(Edge - 300.0F, Y, -15500.0F));
-        for (int32 Ring = 0; Ring < 2; ++Ring)
-            for (int32 Corner = 0; Corner < 7; ++Corner)
+        const FVector2D Lean(RockRandom.FRandRange(-.35F, .35F) * Radius, RockRandom.FRandRange(-.35F, .35F) * Radius);
+        const float RingT[Rings] = {0.0F, RockRandom.FRandRange(.38F, .52F), RockRandom.FRandRange(.72F, .82F), RockRandom.FRandRange(.9F, .96F)};
+        const float RingScale[Rings] = {1.05F, RockRandom.FRandRange(1.0F, 1.25F), RockRandom.FRandRange(.72F, .9F), RockRandom.FRandRange(.38F, .55F)};
+        float Jitter[Corners];
+        for (int32 Corner = 0; Corner < Corners; ++Corner) Jitter[Corner] = RockRandom.FRandRange(.68F, 1.2F);
+        for (int32 Ring = 0; Ring < Rings; ++Ring)
+            for (int32 Corner = 0; Corner < Corners; ++Corner)
             {
-                const float Angle = Rotation + Corner * (2.0F * PI / 7.0F);
-                const float R = Radius * RockRandom.FRandRange(.65F, 1.15F) * (Ring == 0 ? 1.0F : .72F);
-                TalusVertices.Add(FVector(Foot + FMath::Cos(Angle) * R, Y + FMath::Sin(Angle) * R * 1.35F,
-                    Ring == 0 ? -11100.0F : Peak - RockRandom.FRandRange(900.0F, 1800.0F)));
+                const float Angle = Rotation + (Corner + RockRandom.FRandRange(-.3F, .3F)) * (2.0F * PI / Corners);
+                const float R = Radius * RingScale[Ring] * FMath::Lerp(Jitter[Corner], RockRandom.FRandRange(.7F, 1.2F), .35F);
+                const float Height = FMath::Lerp(-11100.0F, Peak, RingT[Ring]) + (Ring > 0 ? RockRandom.FRandRange(-120.0F, 120.0F) : 0.0F);
+                const FVector2D Shift = Lean * RingT[Ring];
+                TalusVertices.Add(FVector(Foot + Shift.X + FMath::Cos(Angle) * R, Y + Shift.Y + FMath::Sin(Angle) * R * 1.3F, Height));
             }
-        TalusVertices.Add(FVector(Foot + RockRandom.FRandRange(-250.0F, 350.0F), Y + Radius * .2F, Peak));
-        for (int32 Corner = 0; Corner < 7; ++Corner)
+        TalusVertices.Add(FVector(Foot + Lean.X + RockRandom.FRandRange(-200.0F, 200.0F), Y + Lean.Y + RockRandom.FRandRange(-200.0F, 200.0F), Peak));
+        const int32 Crown = BaseIndex + 1 + Rings * Corners;
+        for (int32 Corner = 0; Corner < Corners; ++Corner)
         {
-            const int32 Next = (Corner + 1) % 7;
-            const int32 A = BaseIndex + 1 + Corner, B = BaseIndex + 1 + Next;
-            const int32 C = A + 7, D = B + 7;
-            TalusIndices.Append({BaseIndex, A, B, A, C, B, B, C, D, C, BaseIndex + 15, D});
+            const int32 Next = (Corner + 1) % Corners;
+            TalusIndices.Append({BaseIndex, BaseIndex + 1 + Corner, BaseIndex + 1 + Next});
+            for (int32 Ring = 0; Ring + 1 < Rings; ++Ring)
+            {
+                const int32 A = BaseIndex + 1 + Ring * Corners + Corner, B = BaseIndex + 1 + Ring * Corners + Next;
+                const int32 C = A + Corners, D = B + Corners;
+                TalusIndices.Append({A, C, B, B, C, D});
+            }
+            TalusIndices.Append({BaseIndex + 1 + (Rings - 1) * Corners + Corner, Crown, BaseIndex + 1 + (Rings - 1) * Corners + Next});
         }
     }
     TalusNormals.Init(FVector::ZeroVector, TalusVertices.Num());

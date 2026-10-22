@@ -153,11 +153,11 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
         if (Mesh->GetFName() != TEXT("CoastalTalusButtresses")) continue;
         const FProcMeshSection* Section = Mesh->GetProcMeshSection(0);
         if (!TestNotNull(TEXT("Talus has geometry"), Section)) break;
-        const int32 Blocks = Section->ProcVertexBuffer.Num() / 16;
+        const int32 Blocks = Section->ProcVertexBuffer.Num() / 38;
         int32 Emergent = 0, NearWaterline = 0;
         for (int32 Block = 0; Block < Blocks; ++Block)
         {
-            const FVector Top = Section->ProcVertexBuffer[Block * 16 + 15].Position;
+            const FVector Top = Section->ProcVertexBuffer[Block * 38 + 37].Position;
             if (Top.Z > APacificCoastGraybox::SeaLevelCm + 100) ++Emergent;
             if (FMath::Abs(Top.X - APacificCoastGraybox::GetCoastalShoreX(Top.Y)) < 2500) ++NearWaterline;
         }
