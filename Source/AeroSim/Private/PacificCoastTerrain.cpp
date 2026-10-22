@@ -389,13 +389,11 @@ float SteppedCoveBlend(const float Run, const float Y, const float X)
     // (its position wanders along the coast), a hummocky slump body below it, then the cove floor.
     const float Scarp=.16F+.08F*Noise(Y,-8100.0F,3300.0F);
     const float Head=Smooth((Run-Scarp)/.16F);
-    // R7 (QA: slump sheet still folds like a curtain): the slump body descends in irregular blocky
-    // steps (flat-topped blocks, steep rock risers) instead of a smooth sheet.
-    const float Smoothed=Smooth((Run-Scarp-.12F)/.75F);
-    const float Steps=5.0F, T=Smoothed*Steps+.45F*Noise(X,Y-2700.0F,1100.0F)*Smoothed*(1.0F-Smoothed)*4.0F;
-    const float Block=FMath::Clamp(FMath::FloorToFloat(T),0.0F,Steps-1.0F);
-    const float Body=FMath::Clamp((Block+Smooth((T-Block-.55F)/.22F))/Steps,0.0F,1.0F);
-    const float Hummocks=.04F*Noise(X,Y+4100.0F,1500.0F)*Smooth(Run/.3F)*(1.0F-Smooth((Run-.8F)/.2F));
+    // R8: the R7 blocky slump steps sat on the ~7.6 m land grid and rendered as identical faceted
+    // trays; the body is a smooth, irregular slump again and rock breakup comes from the steep-face
+    // and habitat rock layers instead.
+    const float Body=Smooth((Run-Scarp-.12F)/.75F+.06F*Noise(X,Y-2700.0F,2300.0F));
+    const float Hummocks=.06F*Noise(X,Y+4100.0F,1500.0F)*Smooth(Run/.3F)*(1.0F-Smooth((Run-.8F)/.2F));
     return FMath::Clamp(.42F*Head+.58F*Body+Hummocks,0.0F,1.0F);
 }
 
@@ -461,10 +459,22 @@ float BenchStepOut(const float Y, const float Z, const float Top)
     if (Total <= 0) return 0.0F;
     const float Height = FMath::Max(100.0F, Top - APacificCoastGraybox::SeaLevelCm);
     const float Down = FMath::Clamp((Top - Z) / Height, 0.0F, 1.0F);
-    const float Count = 4.0F + FMath::Floor(3.0F * (.5F + .5F * Noise(Y, 7300.0F, 5200.0F)));
-    const float T = Down * Count + .45F * Noise(Y, Z * .7F, 900.0F) * Down * (1.0F - Down) * 4.0F;
+    // R8 (QA: ledges read as stacked identical trays / contour bands): fewer ledges whose height
+    // wanders strongly along the coast, unequal tread widths and softer, rounded risers.
+    const float Count = 3.0F + FMath::Floor(3.0F * (.5F + .5F * Noise(Y, 7300.0F, 5200.0F)));
+    const float Wander = 1.1F * Noise(Y, 5100.0F, 1700.0F) + .5F * Noise(Y, -900.0F, 640.0F);
+    const float T = FMath::Clamp(Down * Count + Wander * Down * (1.0F - Down) * 4.0F, 0.0F, Count);
     const float Ledge = FMath::Clamp(FMath::FloorToFloat(T), 0.0F, Count - 1.0F);
-    return Total * FMath::Clamp((Ledge + Smooth((T - Ledge - .6F) / .25F)) / Count, 0.0F, 1.0F);
+    const float Tread = .45F + .3F * Noise(Y, Ledge * 3100.0F, 2900.0F);
+    const float Riser = Smooth((T - Ledge - Tread) / .45F);
+    // Unequal ledge widths: each ledge contributes its own share of the total step-out.
+    float Weights[6], Sum = 0;
+    for (int32 Index = 0; Index < 6; ++Index) { Weights[Index] = .55F + .45F * (.5F + .5F * Noise(Y, Index * 4700.0F, 4100.0F)); if (Index < Count) Sum += Weights[Index]; }
+    float Done = 0;
+    for (int32 Index = 0; Index < static_cast<int32>(Ledge); ++Index) Done += Weights[Index];
+    const float Share = FMath::Clamp((Done + Weights[static_cast<int32>(Ledge)] * Riser) / Sum, 0.0F, 1.0F);
+    // The full step-out is reached exactly at still water, so the waterline never moves.
+    return Total * FMath::Lerp(Share, 1.0F, Smooth((Down - .9F) / .1F));
 }
 
 // Match the actual last-column float arithmetic, not only the analytic edge coordinate.
