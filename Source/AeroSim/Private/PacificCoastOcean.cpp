@@ -189,6 +189,29 @@ FString EmitWaves(const bool bOffset, const bool bGradient, const bool bSwellOnl
     return Code;
 }
 
+// R9: the visible waterline taken from the actual terrain/cliff/talus triangles. Terrain
+// rounds (ledges, slumps, wiggled shores) moved the rock face away from the analytic shore
+// function, so foam keyed only to GetCoastalShoreX missed the real rock contact.
+struct FWaterlineGrid
+{
+    static constexpr float Cell = 1000.0F;
+    TMap<FIntPoint, TArray<FVector2D>> Grid;
+    int32 Num = 0;
+    static FIntPoint Key(const FVector2D& P) { return FIntPoint(FMath::FloorToInt(P.X / Cell), FMath::FloorToInt(P.Y / Cell)); }
+    void Add(const FVector2D& P) { Grid.FindOrAdd(Key(P)).Add(P); ++Num; }
+    float Nearest(const FVector2D& P, const float MaxDistance) const
+    {
+        float Best = MaxDistance;
+        const FIntPoint C = Key(P);
+        const int32 R = FMath::CeilToInt(MaxDistance / Cell);
+        for (int32 DX = -R; DX <= R; ++DX)
+            for (int32 DY = -R; DY <= R; ++DY)
+                if (const TArray<FVector2D>* Points = Grid.Find(C + FIntPoint(DX, DY)))
+                    for (const FVector2D& Q : *Points) Best = FMath::Min(Best, static_cast<float>(FVector2D::Distance(P, Q)));
+        return Best;
+    }
+};
+
 FString NoiseHelpers()
 {
     return TEXT("struct CoastNoise { float hash(float2 p) { return frac(sin(dot(p,float2(127.1,311.7)))*43758.5453); }")
@@ -268,14 +291,17 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             // Beach/shelf surf zone from the interpolated depth mask (survives coarse far mesh):
             // breaker lines where crests reach < ~9 m depth, whitewater swash in the last ~4 m.
             + TEXT("float shallow=1-smoothstep(.05,.50,Mask.b);")
-            + TEXT("float breaker=max(shoal,shallow*contact)*smoothstep(.35,.75,crest)*lace*smoothstep(.20,.60,cells)*1.4;")
+            + TEXT("float breaker=max(shoal,shallow*contact)*smoothstep(.55,.80,crest)*(.55+.45*lace)*1.5;")
+            + TEXT("float residue=shallow*contact*smoothstep(.30,.60,crest)*lace*.5;")
             + TEXT("float swash=contact*(1-smoothstep(0,.22,Mask.b))*(.40+.60*crest)*lace*.9;")
             + TEXT("float streak=contact*exp(-d/1400)*smoothstep(.58,.90,noise.f((P.xy+drift)*float2(.0016,.0035)))*.45;")
             // Foam002 (ambientCG CC0) opacity, advected with the same current, gives the
             // white water crisp bubbly edges instead of a soft smeared sheet.
             + TEXT("float tex=Texture2DSample(FoamTex,FoamTexSampler,(P.xy+drift)/220.0).r;")
-            + TEXT("float f=surge+churn*.65+patches+breaker+swash+streak;")
-            + TEXT("return saturate(smoothstep(.12,.85,f*(.40+.95*tex)));");
+            + TEXT("float f=surge+churn*.65+patches+breaker+residue+swash+streak;")
+            // Sharpening only up close; far away the mip-averaged value is used directly, so distant
+            // foam cannot pop on/off between frames (R8 overview flicker at the cliff base).
+            + TEXT("float x=f*(.40+.95*tex); return saturate(lerp(smoothstep(.12,.85,x),x,smoothstep(3000,20000,length(P-C))));");
     case ECoastalWaterShader::Scattering:
         // Input Mask. Greener shallows over the platform, deep blue-grey offshore (per cm); a
         // turbid surf-zone term keeps the waterline from reading as clear glass over rock.
@@ -297,19 +323,23 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("return 1-smoothstep(top*.35,top,above);");
     case ECoastalWaterShader::Cirrus:
         // Inputs P (dome world pos), C (camera), S (direction toward the sun). Returns 0..1.
-        // Straight-to-gently-curved fibrous streaks with one prevailing WSW direction (R7b: the
-        // rotating-direction version made swirls/vortices). Strong stretch along the jet, only a
-        // low-amplitude domain warp, clumped and broken coverage. Horizon/sun masked, no time.
+        // Cirrus uncinus: one prevailing WSW axis, thin fibres at three scales instead of a
+        // broad stretched body (R8: smeared/motion-blur look), and hooked ends - near the end of
+        // each streak segment the cross-axis coordinate bends, so fibres curl like commas.
+        // Low-amplitude warp only, clumped/broken coverage, horizon/sun masked, no time input.
         return NoiseHelpers()
             + TEXT("float3 v=normalize(P-C); float up=smoothstep(.08,.35,v.z);")
             + TEXT("float2 q=v.xy/max(v.z,.08)*9000.0*.00015;")
             + TEXT("float2 p=q+(float2(noise.f(q*.5+1.3),noise.f(q*.5+8.1))-.5)*.25;")
             + TEXT("float2 dir=float2(.94,.34); float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
-            + TEXT("float fib=noise.f(float2(r.x*.5,r.y*9.0)); float fib2=noise.f(float2(r.x*1.1+4.0,r.y*16.0));")
-            + TEXT("float body=noise.f(float2(r.x*.35,r.y*1.6)+2.7);")
+            + TEXT("float seg=frac(r.x*.45+noise.f(float2(r.y*1.3,7.7))*.8); float hook=pow(smoothstep(.62,1.0,seg),2.0);")
+            + TEXT("r.y+=hook*.18;")
+            + TEXT("float fib=noise.f(float2(r.x*.6,r.y*12.0)); float fib2=noise.f(float2(r.x*1.4+4.0,r.y*26.0));")
+            + TEXT("float fib3=noise.f(float2(r.x*3.0+9.0,r.y*55.0));")
+            + TEXT("float body=noise.f(float2(r.x*.35,r.y*2.2)+2.7);")
             + TEXT("float clump=smoothstep(.55,.80,noise.f(q*.22+7.3));")
             + TEXT("float breaks=smoothstep(.30,.70,noise.f(float2(r.x*2.5,r.y*.8)+5.5));")
-            + TEXT("float c=smoothstep(.45,.90,body*.55+fib*.30+fib2*.15)*clump*breaks;")
+            + TEXT("float c=smoothstep(.50,.88,body*.30+fib*.30+fib2*.25+fib3*.15)*clump*breaks*(.75+.25*hook);")
             + TEXT("float sun=1-smoothstep(.975,.995,dot(v,normalize(S)));")
             + TEXT("return saturate(c*up*sun);");
     default:
@@ -337,6 +367,26 @@ void APacificCoastGraybox::BuildCoastalOcean(UMaterialInterface* SolidMaterial)
         return T * 60000.0F + FMath::Sign(T) * 1940000.0F * FMath::Pow(FMath::Abs(T), 5.0F);
     };
     const CoastalSea::FShoreSamples& ShoreLine = CoastalSea::Shore();
+    CoastalSea::FWaterlineGrid Waterline;
+    for (UMeshComponent* Part : CoastalColorParts)
+    {
+        UProceduralMeshComponent* Land = Cast<UProceduralMeshComponent>(Part);
+        // Near-field land only: the distant backdrop range is several km away and needs no surf.
+        const FProcMeshSection* Section = Land && Land->GetName().StartsWith(TEXT("Coastal"))
+            && !Land->GetName().Contains(TEXT("Distant")) ? Land->GetProcMeshSection(0) : nullptr;
+        if (Section == nullptr) continue;
+        const TArray<FProcMeshVertex>& V = Section->ProcVertexBuffer;
+        const TArray<uint32>& I = Section->ProcIndexBuffer;
+        for (int32 T = 0; T + 2 < I.Num(); T += 3)
+            for (int32 E = 0; E < 3; ++E)
+            {
+                const FVector A = V[I[T + E]].Position, B = V[I[T + (E + 1) % 3]].Position;
+                if ((A.Z - SeaLevelCm) * (B.Z - SeaLevelCm) >= 0) continue;
+                const FVector X = FMath::Lerp(A, B, (SeaLevelCm - A.Z) / (B.Z - A.Z));
+                Waterline.Add(FVector2D(X.X, X.Y));
+            }
+    }
+    WaterlinePointCount = Waterline.Num;
     for (int32 Row = 0; Row < Size; ++Row)
     {
         const float Y = Axis(Row);
@@ -387,6 +437,17 @@ void APacificCoastGraybox::BuildCoastalOcean(UMaterialInterface* SolidMaterial)
                 }
             }
             if (!bCliffCoast && VertexContact == Contact) VertexContact = 0.0F;
+            if (Distance > 0.0F && Waterline.Num > 0 && FMath::Abs(X) < 320000.0F && FMath::Abs(Y) < 260000.0F)
+            {
+                const float Actual = Waterline.Nearest(FVector2D(X, Y), 3000.0F);
+                if (Actual < 3000.0F && Actual < Distance) // Nearest returns the search radius when nothing is found
+                {
+                    Distance = Actual;
+                    // Rock actually touches the sea here: guarantee surf energy even where the
+                    // analytic cliff row says otherwise (perimeter or moved ledges).
+                    VertexContact = FMath::Max(VertexContact, .6F);
+                }
+            }
             const float Shoal = (1.0F - FMath::SmoothStep(260.0F, 900.0F, Depth)) * FMath::SmoothStep(200.0F, 500.0F, Distance)
                 * (VertexContact > 0.0F ? 1.0F : 0.0F);
             ShoreMasks.Add(FLinearColor(FMath::Clamp(Distance / 10000.0F, 0.0F, 1.0F), VertexContact,

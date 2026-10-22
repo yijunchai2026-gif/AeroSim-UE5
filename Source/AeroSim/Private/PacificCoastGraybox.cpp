@@ -192,6 +192,7 @@ APacificCoastGraybox::APacificCoastGraybox()
     // supplies sky occlusion plus warm bounce from sunlit ground/foliage. Procedural meshes have
     // no mesh distance fields, so this relies on Lumen screen traces; it is a lighting fix,
     // not a ground tint.
+    // R9: the GI method is chosen per weather in ApplyCoastalSky (see UnderstoryGI there).
     WeatherPostProcess->Settings.bOverride_DynamicGlobalIlluminationMethod = true;
     WeatherPostProcess->Settings.DynamicGlobalIlluminationMethod = EDynamicGlobalIlluminationMethod::Lumen;
     // R6b perf P0 (Mac Metal, software Lumen): GI only. Reflections stay screen-space (the
@@ -532,17 +533,34 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
     const int32 W = State.Weather == EAeroSimWeather::Clear ? 0 : (State.Weather == EAeroSimWeather::Overcast ? 1 : 2);
     // Index: Clear, Overcast, Rain. One state, one table: weather never moves the sun.
     const FLinearColor SunColor[] = {FLinearColor(1.0F,.96F,.90F), FLinearColor(.74F,.78F,.82F), FLinearColor(.52F,.60F,.70F)};
-    const float SkyFill[] = {.75F, .65F, .5F}; // Clear .75: less blue sky term under canopy (R6b lighting_only 44,49,55)
-    const float Bloom[] = {.25F, .45F, .45F};
-    // Understory (R7b lit floor 34,34,28, ~30% too dark): more Lumen bounce and a warmer sky
-    // term under Clear; ground albedo is untouched.
-    const float Indirect[] = {1.35F, 1.1F, 1.0F};
-    const FLinearColor SkyTint[] = {FLinearColor(1.0F,.94F,.84F), FLinearColor::White, FLinearColor::White}; // Clear: no large halo around the low sun (R6b glint)
+    // R9 (measured with the editor -game bridge, corridor/forest floor band): without mesh
+    // distance fields (removed in R7c for the runtime hitch) software Lumen contributes nothing
+    // here - Lumen indirect/leaking/boost changed the floor by <1 level - so R8's indirect 1.35
+    // never applied and the floor followed the R7 sky-fill cut (1.0 -> .75): 34 -> 24 levels.
+    // The understory is sky-light driven: Clear fill 1.85 with a warm tint (floor albedo is
+    // unchanged beige ~140,128,100 unlit, so litter rings are not the cause).
+    float SkyFill[] = {1.85F, .65F, .5F};
+    const float Bloom[] = {.25F, .45F, .45F}; // Clear: no large halo around the low sun (R6b glint)
+    float Indirect[] = {1.0F, 1.0F, 1.0F};
+    FLinearColor SkyTint[] = {FLinearColor(1.0F,.76F,.60F), FLinearColor::White, FLinearColor::White};
+    int32 UnderstoryGI = 0; // 0 none (sky light only), 1 Lumen, 2 screen-space GI; Lumen inert without DFs
+#if !UE_BUILD_SHIPPING
+    // Development-only measurement overrides (no runtime ramp; read once per weather apply):
+    // -AeroSimSkyFill= -AeroSimIndirect= -AeroSimSkyGI= -AeroSimSkyTintG= -AeroSimSkyTintB=
+    FParse::Value(FCommandLine::Get(), TEXT("AeroSimSkyFill="), SkyFill[0]);
+    FParse::Value(FCommandLine::Get(), TEXT("AeroSimIndirect="), Indirect[0]);
+    FParse::Value(FCommandLine::Get(), TEXT("AeroSimSkyGI="), UnderstoryGI);
+    FParse::Value(FCommandLine::Get(), TEXT("AeroSimSkyTintG="), SkyTint[0].G);
+    FParse::Value(FCommandLine::Get(), TEXT("AeroSimSkyTintB="), SkyTint[0].B);
+#endif
+    WeatherPostProcess->Settings.DynamicGlobalIlluminationMethod = UnderstoryGI == 0 ? EDynamicGlobalIlluminationMethod::None
+        : (UnderstoryGI == 2 ? EDynamicGlobalIlluminationMethod::ScreenSpace : EDynamicGlobalIlluminationMethod::Lumen); // Clear: no large halo around the low sun (R6b glint)
     const float Mie[] = {.0034F, .014F, .024F}, MieG[] = {.80F, .62F, .55F}, Aerial[] = {1.6F, 2.6F, 3.2F};
     const float FogFalloff[] = {.20F, .18F, .12F}, FogOpacity[] = {.75F, .95F, 1.0F}, FogStart[] = {250000.0F, 0.0F, 0.0F};
     // Clear horizon haze is warm beige-white at 16:30 (dry coastal aerosol), not neutral grey.
     const FLinearColor FogColor[] = {FLinearColor(.80F,.72F,.62F), FLinearColor(.30F,.36F,.41F), FLinearColor(.12F,.20F,.28F)};
-    const float LayerDensity[] = {.007F, .03F, .05F}, LayerOffset[] = {200.0F, 1500.0F, 2500.0F}, LayerFalloff[] = {1.6F, .5F, .35F};
+    // Clear: thin low haze with a soft top (R8: flat white band), not an opaque bank.
+    const float LayerDensity[] = {.003F, .03F, .05F}, LayerOffset[] = {0.0F, 1500.0F, 2500.0F}, LayerFalloff[] = {.7F, .5F, .35F};
     const float CloudBottomKm[] = {1.6F, .7F, .45F}, CloudHeightKm[] = {1.6F, 2.4F, 3.5F};
     const float WaterRoughness[] = {.07F, .11F, .16F}, WaveScale[] = {1.0F, 1.2F, 1.45F};
 

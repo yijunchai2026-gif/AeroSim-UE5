@@ -224,10 +224,12 @@ public:
     static FVector2D GetCoastalSunElevationAzimuth(const FEnvironmentState& State);
     static FRotator GetCoastalSunRotation(const FEnvironmentState& State);
     float GetAppliedSurfaceWetness() const { return AppliedSurfaceWetness; }
+    int32 GetWaterlinePointCount() const { return WaterlinePointCount; }
 private:
     void ApplyCoastalSky(const FEnvironmentState& State);
     void ApplyCoastalSurfaceWeather(const FEnvironmentState& State);
     float AppliedSurfaceWetness = 0.0F;
+    int32 WaterlinePointCount = 0;
     UPROPERTY(VisibleAnywhere, Category = "Environment")
     TObjectPtr<UStaticMeshComponent> CoastalCirrusDome;
     // DEV-SEASKY end

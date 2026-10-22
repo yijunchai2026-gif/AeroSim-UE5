@@ -44,8 +44,8 @@
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastCirrusDraft.uasset",
-      "sha256": "703ed6defaa8d21b72d5f80948c777b878a1f15b59ff65ac6954f8c93dc37629",
-      "bytes": 10328
+      "sha256": "bcd1d15109d874a85e6f4fadd04166bf9b0d0916a1f5f9e102e12859ba5797bb",
+      "bytes": 10517
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastDryGrassDraft.uasset",
@@ -74,8 +74,8 @@
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastWaterDraft.uasset",
-      "sha256": "c47688bf8a9bae6d4de2a8882aef1de915a673a89375d9ab0c680e8083dba591",
-      "bytes": 39247
+      "sha256": "50a70520c06a390b5a0acd6f08c7239bab5f400ae29cf9851170b0f4e851bf0d",
+      "bytes": 39357
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_FloraFernDraft.uasset",
