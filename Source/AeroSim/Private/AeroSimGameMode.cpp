@@ -1109,6 +1109,14 @@ void AAeroSimGameMode::CaptureProductEvidence()
         {
             UE_LOG(LogTemp, Display, TEXT("PRODUCT_EVIDENCE_PIXELS width=%d height=%d count=%d"), Width, Height, Pixels.Num());
             if (Width <= 0 || Height <= 0 || Width > 16384 || Height > 16384 || Pixels.Num() < Width * Height) return;
+            // An occluded or off-screen fullscreen window on macOS reads back pure black; never commit that as evidence.
+            bool bBlank = true;
+            for (int32 Index = 0; Index < Width * Height && bBlank; Index += 997)
+            {
+                const FColor& Pixel = Pixels[Index];
+                bBlank = Pixel.R < 3 && Pixel.G < 3 && Pixel.B < 3;
+            }
+            if (bBlank) { UE_LOG(LogTemp, Warning, TEXT("PRODUCT_EVIDENCE_BLANK width=%d height=%d"), Width, Height); return; }
             TArray64<uint8> Png;
             FImageUtils::PNGCompressImageArray(Width, Height, TArrayView64<const FColor>(Pixels.GetData(), Width * Height), Png);
             if (Png.IsEmpty() || Png.Num() > 64 * 1024 * 1024) return;
