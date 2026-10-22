@@ -46,6 +46,8 @@ struct FPlacedTree
 {
     FVector Base = FVector::ZeroVector;
     float Yaw = 0, Scale = 1, LeanPitch = 0, LeanYaw = 0;
+    /** Horizontal-only size factor (trunk girth and crown spread vary independently of height). */
+    float Girth = 1;
     int32 Archetype = 0;
     bool bNearForest = false;
     bool bCorridorFlank = false;

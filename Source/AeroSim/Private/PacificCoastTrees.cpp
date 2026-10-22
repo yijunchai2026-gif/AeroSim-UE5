@@ -1012,37 +1012,50 @@ void EmitHeroFoliage(const FSkeleton& K, int32 Lod, FLod& Out)
         for (int32 I = 0, Rank = 0; I < Members.Num() && Rank < PerLobe; I += Step, ++Rank) Ranked.Add({Rank, Members[I]});
     }
     Ranked.Sort([](const TPair<int32, int32>& A, const TPair<int32, int32>& B) { return A.Key != B.Key ? A.Key < B.Key : A.Value < B.Value; });
-    const int32 Limit = FMath::Max(1, FMath::FloorToInt(Total * .15F));
+    // The rounded lobe shells below carry far mass; only a few outer clusters keep their own card.
+    const int32 Limit = FMath::FloorToInt(Total * .06F);
     for (int32 I = 0; I < Ranked.Num() && I < Limit; ++I)
         for (int32 Plane = 0; Plane < Planes; ++Plane) ClusterCard(K.Clusters[Ranked[I].Value], Ranked[I].Value, K.Height < 500 ? 1.0F : 1.5F, Plane * 90.0F);
-    // R7 far crown mass: every lobe also gets a three-plane crossed proxy spanning its whole
-    // envelope, so 300 m+ views keep the crown silhouette instead of thin tops over bare poles.
+    // R8 far crown mass: each lobe becomes a rounded shell of natural-aspect cards spread over
+    // its ellipsoid (Fibonacci directions), lying tangent to the surface with spherical normals.
+    // No card is stretched beyond its atlas aspect and none stands as an upright plane, so far
+    // crowns read as rounded masses rather than flags against the sky.
+    const bool bOakShell = K.Species == ESpecies::CoastLiveOak, bPineShell = K.Species == ESpecies::MontereyPine;
+    // Round, dense atlas cells for the shell: pine radial clump, oak rosette, fir widest spray.
+    const int32 ShellIsland = bPineShell ? 0 : bOakShell ? 2 : 1;
+    const int32 ShellCardsMax = bOakShell ? 10 : bPineShell ? 7 : 6;
     for (const int32 Key : Keys)
     {
         const TArray<int32>& Members = Lobes[Key];
         FBox Box(ForceInit);
-        float Wind = 0;
+        float Wind = 0, Occlusion = 0;
         for (const int32 Id : Members)
         {
             const FCluster& C = K.Clusters[Id];
-            Box += C.Center + FVector(C.Radii.X, C.Radii.X, C.Radii.Z) * .7F;
-            Box += C.Center - FVector(C.Radii.X, C.Radii.X, C.Radii.Z) * .7F;
-            Wind = FMath::Max(Wind, C.Wind);
+            Box += C.Center + FVector(C.Radii.X, C.Radii.X, C.Radii.Z) * .6F;
+            Box += C.Center - FVector(C.Radii.X, C.Radii.X, C.Radii.Z) * .6F;
+            Wind = FMath::Max(Wind, C.Wind); Occlusion += C.Occlusion;
         }
-        const FVector Centre = Box.GetCenter(), Half = Box.GetExtent();
-        // Fit inside the lobe envelope in every direction (any yaw): horizontal reach is the
-        // smaller half-extent, vertical reach the half-height; the island aspect fixes the other side.
-        const float Width = FMath::Min(Half.X, Half.Y) * 2.0F, Tall = Half.Z * 2.0F;
-        const FIsland& Island = K.Islands[K.Clusters[Members[0]].Island % K.IslandCount];
-        const FVector2f Extent = Island.Max - Island.Min;
-        const float Aspect = Island.bAlongU ? Extent.X / Extent.Y : Extent.Y / Extent.X;
-        for (int32 Plane = 0; Plane < 3; ++Plane)
+        Occlusion /= Members.Num();
+        const FVector Centre = Box.GetCenter(), Radius = Box.GetExtent() * .8F;
+        // Small lobes (saplings, young trees) get fewer shell cards so LOD3 stays cheaper than LOD2.
+        const int32 ShellCards = FMath::Clamp(FMath::FloorToInt(Members.Num() * .4F), bPineShell && K.Height >= 500 ? 4 : 2, ShellCardsMax);
+        const float CardSize = FMath::Clamp(FMath::Min3(Radius.X, Radius.Y, Radius.Z) * 1.3F, 60.0F, 420.0F);
+        for (int32 I = 0; I < ShellCards; ++I)
         {
-            const FVector Side = FVector(1, 0, 0).RotateAngleAxis(Plane * 60.0F + Key * 17.0F, FVector::UpVector);
-            const bool bWide = Width > Tall;
-            const FVector Along = bWide ? Side : FVector::UpVector, Across = bWide ? FVector::UpVector : Side;
-            const float Length = bWide ? FMath::Min(Width, Tall * Aspect) : FMath::Min(Tall, Width * Aspect);
-            EnvelopeCard(Out.Leaf, Centre - Along * Length * .5F, Along, Across, Length, Island, Centre, FVector4f(.85F, FMath::Min(Wind, .15F), 0, 1), 0);
+            // Fibonacci sphere, skipping the lowest cap (crown underside is hidden at distance).
+            const float Y = 1.0F - 1.8F * (I + .5F) / ShellCards;
+            const float R = FMath::Sqrt(FMath::Max(0.0F, 1.0F - Y * Y)), Phi = I * 2.39996F + Key * .7F;
+            const FVector Dir(FMath::Cos(Phi) * R, FMath::Sin(Phi) * R, Y);
+            const FVector At = Centre + Dir * Radius;
+            const FVector Normal = Dir;
+            FVector Tangent = FVector::CrossProduct(Normal, FVector::UpVector);
+            if (Tangent.IsNearlyZero()) Tangent = FVector::ForwardVector;
+            Tangent = Tangent.GetSafeNormal().RotateAngleAxis(I * 47.0F, Normal);
+            const FVector Across = FVector::CrossProduct(Normal, Tangent).GetSafeNormal();
+            const FIsland& Island = K.Islands[ShellIsland % K.IslandCount];
+            const FVector Origin = Island.bCentered ? At : At - Tangent * CardSize * .5F;
+            EnvelopeCard(Out.Leaf, Origin, Tangent, Across, CardSize, Island, Centre, FVector4f(FMath::Lerp(.75F, 1.0F, Occlusion), FMath::Min(Wind, .15F), 0, 1), 0);
         }
     }
 }
@@ -1379,6 +1392,8 @@ UStaticMesh* BuildMesh(const FName Name, const TArray<FLod>& Lods, TArray<int32>
         return nullptr;
     }
     UStaticMesh* Mesh = NewObject<UStaticMesh>(GetTransientPackage(), Name, RF_Transient);
+    // Runtime fast-built meshes never request a mesh distance field (no async DF build/render-thread cost).
+    Mesh->bGenerateMeshDistanceField = false;
     const FName SlotNames[2] = {TEXT("Bark"), TEXT("Foliage")};
     for (int32 Slot = 0; Slot < 2; ++Slot)
     {
@@ -1637,7 +1652,7 @@ float NearStandDensity(const float X, const float Y)
 FTransform InstanceTransform(const FPlacedTree& Tree)
 {
     const FQuat Lean = FQuat(FVector(-FMath::Sin(Tree.LeanYaw), FMath::Cos(Tree.LeanYaw), 0), Tree.LeanPitch);
-    return FTransform(Lean * FQuat(FVector::UpVector, Tree.Yaw), Tree.Base, FVector(Tree.Scale));
+    return FTransform(Lean * FQuat(FVector::UpVector, Tree.Yaw), Tree.Base, FVector(Tree.Scale * Tree.Girth, Tree.Scale * Tree.Girth, Tree.Scale));
 }
 
 const FLayout& GetLayout()
@@ -1672,11 +1687,14 @@ const FLayout& GetLayout()
         }
         return Z - 4.0F;
     };
+    float NextGirth = 1.0F; // consumed by the next Place
     auto Place = [&](const FVector2D& P, int32 Archetype, float Scale, float Yaw, float LeanPitch, float LeanYaw, bool bNear, bool bFlank, float SpacingRadius)
     {
         FPlacedTree Tree;
         // Lean tilts the collar: lower by the lift on the uphill side of the tilt.
-        Tree.Base = FVector(P.X, P.Y, Ground(P, Archetypes[Archetype].CollarRadius * Scale) - Archetypes[Archetype].CollarRadius * Scale * FMath::Sin(LeanPitch) - 2.0F);
+        Tree.Girth = NextGirth; NextGirth = 1.0F;
+        const float Collar = Archetypes[Archetype].CollarRadius * Scale * Tree.Girth;
+        Tree.Base = FVector(P.X, P.Y, Ground(P, Collar) - Collar * FMath::Sin(LeanPitch) - 2.0F);
         Tree.Archetype = Archetype; Tree.Scale = Scale; Tree.Yaw = Yaw; Tree.LeanPitch = LeanPitch; Tree.LeanYaw = LeanYaw;
         Tree.bNearForest = bNear; Tree.bCorridorFlank = bFlank;
         const int32 Index = Layout.Trees.Add(Tree);
@@ -1727,8 +1745,8 @@ const FLayout& GetLayout()
             if (Sample.Distance < Next) continue;
             Next = Sample.Distance + Random.FRandRange(560, 800);
             const int32 Archetype = CorridorTrees[Random.RandRange(0, CorridorTrees.Num() - 1)];
-            const float FlankScale = Random.FRandRange(.9F, 1.12F);
-            const float Radius = Archetypes[Archetype].BreastRadius * FlankScale;
+            const float FlankScale = Random.FRandRange(.9F, 1.12F), FlankGirth = Random.FRandRange(.85F, 1.25F);
+            const float Radius = Archetypes[Archetype].BreastRadius * FlankScale * FlankGirth;
             const FVector2D Normal(-Sample.Tangent.Y, Sample.Tangent.X);
             const FVector2D P = Sample.Point + Normal * Side * (Sample.HalfWidth + Radius + Random.FRandRange(10, 70));
             if (NearStandDensity(P.X, P.Y) <= 0 || IsProtected(P, 400)) continue;
@@ -1742,6 +1760,7 @@ const FLayout& GetLayout()
                 }
                 if (High - Low > 35.0F) continue;
             }
+            NextGirth = FlankGirth;
             Place(P, Archetype, FlankScale, Random.FRandRange(0, 2 * PI), 0, 0, true, true, Radius + 120);
         }
     }
@@ -1774,7 +1793,9 @@ const FLayout& GetLayout()
             }
             const FArchetype& A = Archetypes[Archetype];
             const float Scale = A.Species == ESpecies::CoastLiveOak ? FMath::Lerp(.85F, 1.1F, ScaleRoll) : FMath::Lerp(.86F, 1.14F, ScaleRoll);
-            const float TrunkRadius = A.CollarRadius * Scale;
+            // Girth varies trunk thickness (and crown spread) independently of height: 0.8-1.3x.
+            const float Girth = A.Species == ESpecies::Sapling ? 1.0F : FMath::Lerp(.8F, 1.3F, FMath::Frac(ScaleRoll * 7.31F + Yaw));
+            const float TrunkRadius = A.CollarRadius * Scale * Girth;
             // Corridor: no trunk surface inside the clear width plus 30 cm; no oak limbs, no sapling crowns.
             float HalfWidth = 0;
             const float ToCorridor = CorridorDistance(P, &HalfWidth);
@@ -1806,6 +1827,7 @@ const FLayout& GetLayout()
                 if (High - Low > 35.0F) continue;
             }
             const float MaxLean = A.Species == ESpecies::MontereyPine ? 7.0F : A.Species == ESpecies::CoastLiveOak ? 0 : 3.5F;
+            NextGirth = Girth;
             Place(P, Archetype, Scale, Yaw, FMath::DegreesToRadians(MaxLean * LeanRoll), LeanYaw, true, false, Spacing);
         }
     // 3. Woodland mosaic beyond the near stands, driven by DEV-TERRAIN habitat classes:
@@ -1923,7 +1945,7 @@ void APacificCoastGraybox::BuildCoastalTrees(UMaterialInterface* Material)
         {
             const FVector Start = Instance.TransformPosition(FVector(Segment.Start)), End = Instance.TransformPosition(FVector(Segment.End));
             const FVector Axis = End - Start;
-            const float Radius = Segment.Radius * Tree.Scale;
+            const float Radius = Segment.Radius * Tree.Scale * Tree.Girth;
             TrunkProxies->AddInstance(FTransform(FQuat::FindBetweenNormals(FVector::UpVector, Axis.GetSafeNormal()), (Start + End) * .5,
                 FVector(Radius * .02F, Radius * .02F, Axis.Size() * .01F)));
         }

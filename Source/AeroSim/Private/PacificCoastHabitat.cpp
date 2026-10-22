@@ -40,7 +40,7 @@ FLinearColor APacificCoastGraybox::GetForestLitterMask(const float X, const floa
                 const FArchetype& A = Archetypes[Tree.Archetype];
                 const bool bOak = A.Species == ESpecies::CoastLiveOak;
                 const float Reach = (bOak ? 300.0F : A.Species == ESpecies::Sapling ? 80.0F : 200.0F) * Tree.Scale;
-                const float D = FVector2D::Distance(FVector2D(X, Y), FVector2D(Tree.Base)) - A.CollarRadius * Tree.Scale;
+                const float D = FVector2D::Distance(FVector2D(X, Y), FVector2D(Tree.Base)) - A.CollarRadius * Tree.Scale * Tree.Girth;
                 const float W = FMath::Pow(FMath::Clamp(1.0F - D / Reach, 0.0F, 1.0F), 1.5F);
                 (bOak ? Oak : Conifer) = FMath::Max(bOak ? Oak : Conifer, W);
             }
@@ -93,7 +93,7 @@ void APacificCoastGraybox::BuildCoastalHabitat()
                 for (int32 Item : *Items)
                 {
                     const FPlacedTree& Tree = Layout.Trees[Item];
-                    if (FVector2D::Distance(P, FVector2D(Tree.Base)) < Archetypes[Tree.Archetype].CollarRadius * Tree.Scale + Margin) return true;
+                    if (FVector2D::Distance(P, FVector2D(Tree.Base)) < Archetypes[Tree.Archetype].CollarRadius * Tree.Scale * Tree.Girth + Margin) return true;
                 }
         return false;
     };
@@ -226,7 +226,7 @@ void APacificCoastGraybox::BuildCoastalHabitat()
             const FArchetype& A = Archetypes[Tree.Archetype];
             if (!Tree.bNearForest || !A.IsOverstory()) continue;
             // Contact-scale rings only (DEV-TERRAIN's ground litter mask carries the continuous forest floor).
-            const float Radius = (A.Species == ESpecies::CoastLiveOak ? LitterRandom.FRandRange(140, 210) : LitterRandom.FRandRange(95, 160)) * Tree.Scale;
+            const float Radius = (A.Species == ESpecies::CoastLiveOak ? LitterRandom.FRandRange(170, 250) : LitterRandom.FRandRange(120, 190)) * Tree.Scale * Tree.Girth;
             const float H = Radius * .5F;
             const float DX = (GetCoastalLandHeight(Tree.Base.X + H, Tree.Base.Y) - GetCoastalLandHeight(Tree.Base.X - H, Tree.Base.Y)) / (2 * H);
             const float DY = (GetCoastalLandHeight(Tree.Base.X, Tree.Base.Y + H) - GetCoastalLandHeight(Tree.Base.X, Tree.Base.Y - H)) / (2 * H);
