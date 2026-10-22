@@ -4,6 +4,7 @@
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
 #include "FlightPawn.h"
+#include "PacificCoastGraybox.h"
 #include "GameFramework/PlayerController.h"
 
 namespace
@@ -220,6 +221,16 @@ void AFlightHUD::DrawHUD()
                 Mission.Preflight.bEnvironmentChecked ? TEXT("OK") : TEXT("READY"), WeatherText(Environment.Weather), Mission.Preflight.bQualityChecked ? TEXT("OK") : TEXT("READY"),
                 GameMode->GetAppliedSettings().ResolutionWidth, GameMode->GetAppliedSettings().ResolutionHeight, WindowModeText(GameMode->GetAppliedSettings().WindowMode)),
             FLinearColor::White, Right + 14.0F, Top + 146.0F, GEngine->GetSmallFont(), 1.0F, false);
+    }
+
+    // R8: grounded off the pad during landing - horizontal keys cannot slide a landed aircraft.
+    if (Mission.Stage == EPhase4MissionStage::Landing && Data.Phase == EFlightPhase::Grounded
+        && FVector::Dist2D(Pawn->GetActorLocation(), FVector(55, 79, 0)) > FPacificCoastGrayboxContract::TakeoffPadRadiusCm)
+    {
+        DrawRect(FLinearColor(0.78F, 0.22F, 0.02F, 0.94F), Left, Top + 296.0F, 650.0F, 26.0F);
+        DrawText(FString::Printf(TEXT("OFF PAD (%.1f m from centre) - LIFT (SHIFT) AND RE-CENTRE, THEN LAND"),
+                FVector::Dist2D(Pawn->GetActorLocation(), FVector(55, 79, 0)) * 0.01F),
+            FLinearColor::White, Left + 12.0F, Top + 301.0F, GEngine->GetSmallFont(), 1.0F, false);
     }
 
     if (Mission.IsRecovering())

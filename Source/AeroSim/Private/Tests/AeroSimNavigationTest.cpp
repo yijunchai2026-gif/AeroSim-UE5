@@ -672,7 +672,8 @@ bool FAeroSimNavigationScriptedTraversalTest::RunTest(const FString& Parameters)
         if (Leg.Kind == EPhase4GuideKind::Landing)
         {
             Input.Pitch = FMath::Clamp(Input.Pitch, -.2F, .2F); Input.Roll = FMath::Clamp(Input.Roll, -.2F, .2F);
-            if (ToEnd.Size() < 40.0F && V.Size2D() < 30.0F) Input.Throttle = -1.0F;
+            // Pilot technique: hold height until centred and slow over the pad, then descend.
+            Input.Throttle = (ToEnd.Size() < 40.0F && V.Size2D() < 30.0F) ? -1.0F : VerticalCommand(static_cast<float>(Leg.Path[0].Z - P.Z)) / 600.0F;
             if (Pawn->GetFlightModel().Phase == EFlightPhase::Grounded || Pawn->GetFlightModel().Phase == EFlightPhase::Landing) Input = FFlightControlInput(), Input.Throttle = Pawn->GetFlightModel().Phase == EFlightPhase::Landing ? -1.0F : 0.0F;
         }
         Pawn->SetSemanticInput(Input);
@@ -834,6 +835,74 @@ bool FAeroSimInactiveResumeTest::RunTest(const FString& Parameters)
     Pawn->Tick(3.1F);
     TestTrue(TEXT("Resumes after a full neutral window"), Pawn->GetFlightModel().Phase != EFlightPhase::Paused);
     World->DestroyWorld(false);
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAeroSimPrecisionHoverTest, "AeroSim.Flight.Navigation.PrecisionHoverTapNoOscillation",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAeroSimPrecisionHoverTest::RunTest(const FString& Parameters)
+{
+    // R8 packaged landing retry: each 60 ms W/S tap reached ~2 m/s and coasted ~1.2 m, so alternating
+    // corrections never settled over the 90 cm pad. Pure model, no surface (hovering at 3 m).
+    FFlightSurfaceContext Air; Air.bHasSupport = false;
+    constexpr float Dt = 0.01F;
+    auto Tap = [&](const float Seconds, const float Pitch, const float Roll, float& OutDistance, float& OutPeak, int32& OutSignChanges, float& OutSettle)
+    {
+        FFlightModel M; M.Phase = EFlightPhase::Flight; M.Position = FVector(0, 0, 300);
+        FFlightControlInput In; In.Pitch = Pitch; In.Roll = Roll;
+        const FFlightControlInput Neutral;
+        OutPeak = 0; OutSignChanges = 0; OutSettle = -1;
+        FVector2D LastV = FVector2D::ZeroVector;
+        const int32 TapFrames = FMath::RoundToInt(Seconds / Dt);
+        for (int32 Frame = 0; Frame < 500; ++Frame)
+        {
+            M.Advance(Frame < TapFrames ? In : Neutral, Dt, Air);
+            const FVector2D V(M.Velocity.X, M.Velocity.Y);
+            OutPeak = FMath::Max(OutPeak, static_cast<float>(V.Size()));
+            if (FVector2D::DotProduct(V, LastV) < 0.0 && V.Size() > 1.0 && LastV.Size() > 1.0) ++OutSignChanges;
+            if (V.Size() > 1.0) LastV = V;
+            if (OutSettle < 0 && Frame >= TapFrames && V.Size() < 20.0F) OutSettle = (Frame + 1) * Dt;
+        }
+        OutDistance = static_cast<float>(FVector2D(M.Position.X, M.Position.Y).Size());
+        return M;
+    };
+    struct FCase { const TCHAR* Name; float Seconds, Pitch, Roll; };
+    const FCase Cases[] = {{TEXT("60 ms W"), .06F, 1, 0}, {TEXT("100 ms W"), .10F, 1, 0}, {TEXT("60 ms S"), .06F, -1, 0}, {TEXT("60 ms D"), .06F, 0, 1}, {TEXT("100 ms A"), .10F, 0, -1}};
+    for (const FCase& Case : Cases)
+    {
+        float Distance, Peak, Settle; int32 Signs;
+        Tap(Case.Seconds, Case.Pitch, Case.Roll, Distance, Peak, Signs, Settle);
+        AddInfo(FString::Printf(TEXT("%s tap: nudge %.1f cm, peak %.0f cm/s, <20 cm/s after %.2f s, velocity sign changes %d"), Case.Name, Distance, Peak, Settle, Signs));
+        TestTrue(FString::Printf(TEXT("%s: controllable 10-40 cm nudge"), Case.Name), Distance >= 10.0F && Distance <= 40.0F);
+        TestTrue(FString::Printf(TEXT("%s: planar speed <20 cm/s within 2 s"), Case.Name), Settle >= 0.0F && Settle <= 2.0F);
+        TestTrue(FString::Printf(TEXT("%s: velocity never changes sign more than once"), Case.Name), Signs <= 1);
+    }
+    // Neutral from drift: no overshoot past the stopping point, settles within ~1.5 s from 1 m/s.
+    {
+        FFlightModel M; M.Phase = EFlightPhase::Flight; M.Position = FVector(0, 0, 300); M.Velocity = FVector(100, 0, 0);
+        const FFlightControlInput Neutral; double MaxX = 0, Final = 0; float SettleTime = -1;
+        for (int32 Frame = 0; Frame < 400; ++Frame)
+        {
+            M.Advance(Neutral, Dt, Air); MaxX = FMath::Max(MaxX, M.Position.X);
+            if (SettleTime < 0 && FMath::Abs(M.Velocity.X) < 5.0) SettleTime = (Frame + 1) * Dt;
+        }
+        Final = M.Position.X;
+        AddInfo(FString::Printf(TEXT("neutral from 1 m/s: stops after %.0f cm, overshoot %.1f cm, |v|<5 cm/s after %.2f s"), Final, MaxX - Final, SettleTime));
+        TestTrue(TEXT("Neutral hover: no overshoot > 15 cm"), MaxX - Final <= 15.0);
+        TestTrue(TEXT("Neutral hover settles within 1.5 s"), SettleTime >= 0 && SettleTime <= 1.5F);
+    }
+    // Cruise envelope kept: full stick still reaches 18 m/s; braking from full speed is bounded.
+    {
+        FFlightModel M; M.Phase = EFlightPhase::Flight; M.Position = FVector(0, 0, 300);
+        FFlightControlInput Full; Full.Pitch = 1; const FFlightControlInput Neutral;
+        float Reach = -1;
+        for (int32 Frame = 0; Frame < 600; ++Frame) { M.Advance(Full, Dt, Air); if (Reach < 0 && M.Velocity.X >= 1700) Reach = (Frame + 1) * Dt; }
+        const double Start = M.Position.X; float BrakeTime = -1;
+        for (int32 Frame = 0; Frame < 600 && BrakeTime < 0; ++Frame) { M.Advance(Neutral, Dt, Air); if (M.Velocity.X < 100) BrakeTime = (Frame + 1) * Dt; }
+        AddInfo(FString::Printf(TEXT("full stick: 17 m/s after %.2f s; release from 18 m/s: <1 m/s after %.2f s over %.1f m"), Reach, BrakeTime, (M.Position.X - Start) * .01));
+        TestTrue(TEXT("Full stick still reaches 17 m/s within 4 s"), Reach > 0 && Reach <= 4.0F);
+        TestTrue(TEXT("Release from full speed stops within 15 m"), BrakeTime > 0 && M.Position.X - Start <= 1500.0);
+    }
     return true;
 }
 
