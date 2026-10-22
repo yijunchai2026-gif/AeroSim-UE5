@@ -240,10 +240,13 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
         // Inputs P,T,A,C. Real travelling vertex displacement: the silhouette moves.
         return EmitWaves(true, false, false) + TEXT("return float3(o,h);");
     case ECoastalWaterShader::Normal:
-        // Inputs P,T,A,C,N1,N2 (detail normal samples). World-space normal.
+        // Inputs P,T,A,C,N1,N2,N3 (detail/far normal samples). World-space normal.
         return EmitWaves(false, true, false)
             + TEXT("float detail=1-smoothstep(1500,12000,dist);")
-            + TEXT("return normalize(float3(-g+(N1.xy*.15+N2.xy*.06)*detail,1));");
+            // Far field (R7b "flat"): an isotropic ~550 m texture normal fades in from 0.8 km, so
+            // the distant sea keeps soft broad modulation without directional crest stripes.
+            + TEXT("float far=smoothstep(80000,300000,dist)*(1-smoothstep(1500000,4000000,dist));")
+            + TEXT("return normalize(float3(-g+(N1.xy*.15+N2.xy*.06)*detail+N3.xy*.10*far,1));");
     case ECoastalWaterShader::Foam:
         // Inputs P,T,A,C,FoamTex (texture object),Mask (RGB),MaskA (vertex alpha; Custom inputs take only RGB). Mask r=distance to waterline/100 m, g=rock contact energy,
         // b=depth/40 m, a=shoal (reef) factor. Foam follows the swell crest that actually
@@ -294,20 +297,19 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("return 1-smoothstep(top*.35,top,above);");
     case ECoastalWaterShader::Cirrus:
         // Inputs P (dome world pos), C (camera), S (direction toward the sun). Returns 0..1.
-        // Soft, broken, fibrous cirrus (R6b: the first version read as a parallel comb):
-        // domain-warped noise on a ~9 km layer, locally varying streak direction, moderate
-        // anisotropy, clumped coverage and noisy wispy tails. Above the horizon only, never
-        // over the sun, no time input (deterministic baseline).
+        // Straight-to-gently-curved fibrous streaks with one prevailing WSW direction (R7b: the
+        // rotating-direction version made swirls/vortices). Strong stretch along the jet, only a
+        // low-amplitude domain warp, clumped and broken coverage. Horizon/sun masked, no time.
         return NoiseHelpers()
             + TEXT("float3 v=normalize(P-C); float up=smoothstep(.08,.35,v.z);")
             + TEXT("float2 q=v.xy/max(v.z,.08)*9000.0*.00015;")
-            + TEXT("float2 wq=float2(noise.f(q*.7+1.3),noise.f(q*.7+8.1))-.5; float2 p=q+wq*1.6;")
-            + TEXT("float ang=.36+(noise.f(q*.3+4.2)-.5)*1.4; float2 dir=float2(cos(ang),sin(ang));")
-            + TEXT("float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
-            + TEXT("float fib=noise.f(float2(r.x*.8,r.y*5.0)); float body=noise.f(p*1.1+2.7);")
+            + TEXT("float2 p=q+(float2(noise.f(q*.5+1.3),noise.f(q*.5+8.1))-.5)*.25;")
+            + TEXT("float2 dir=float2(.94,.34); float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
+            + TEXT("float fib=noise.f(float2(r.x*.5,r.y*9.0)); float fib2=noise.f(float2(r.x*1.1+4.0,r.y*16.0));")
+            + TEXT("float body=noise.f(float2(r.x*.35,r.y*1.6)+2.7);")
             + TEXT("float clump=smoothstep(.55,.80,noise.f(q*.22+7.3));")
-            + TEXT("float tails=smoothstep(.20,.80,noise.f(r*float2(2.0,9.0)+5.5))*.5+.5;")
-            + TEXT("float c=smoothstep(.40,.92,body*.6+fib*.4)*clump*tails;")
+            + TEXT("float breaks=smoothstep(.30,.70,noise.f(float2(r.x*2.5,r.y*.8)+5.5));")
+            + TEXT("float c=smoothstep(.45,.90,body*.55+fib*.30+fib2*.15)*clump*breaks;")
             + TEXT("float sun=1-smoothstep(.975,.995,dot(v,normalize(S)));")
             + TEXT("return saturate(c*up*sun);");
     default:
@@ -367,14 +369,20 @@ void APacificCoastGraybox::BuildCoastalOcean(UMaterialInterface* SolidMaterial)
             if (DepthSample.bLandSurface)
             {
                 const float Land = DepthSample.LandZ;
-                if (Land >= SeaLevelCm) { Distance = 0.0F; }
+                // Swash energy must also sit on the land-side vertices of the waterline triangles:
+                // otherwise contact interpolates to ~0 exactly at the waterline (R7b south: no surf).
+                const float Swash = .55F + .25F * FMath::PerlinNoise2D(FVector2D(X / 13000.0F + 1.7F, Y / 13000.0F - 4.2F));
+                if (Land >= SeaLevelCm)
+                {
+                    Distance = 0.0F;
+                    if (Land < SeaLevelCm + 2500.0F) VertexContact = FMath::Max(VertexContact * (bCliffCoast ? 1.0F : 0.0F), Swash);
+                }
                 else if (Land > SeaLevelCm - 2500.0F)
                 {
                     const float GX = (GetCoastalLandHeight(X + 300.0F, Y) - GetCoastalLandHeight(X - 300.0F, Y)) / 600.0F;
                     const float GY = (GetCoastalLandHeight(X, Y + 300.0F) - GetCoastalLandHeight(X, Y - 300.0F)) / 600.0F;
                     const float Grade = FMath::Max(FMath::Sqrt(GX * GX + GY * GY), .02F);
                     Distance = FMath::Min(Distance, (SeaLevelCm - Land) / Grade);
-                    const float Swash = .55F + .25F * FMath::PerlinNoise2D(FVector2D(X / 13000.0F + 1.7F, Y / 13000.0F - 4.2F));
                     VertexContact = FMath::Max(VertexContact * (bCliffCoast ? 1.0F : 0.0F), Swash);
                 }
             }

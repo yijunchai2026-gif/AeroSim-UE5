@@ -114,6 +114,10 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
             TestTrue(TEXT("Clear bloom avoids a large sun halo"), Post && Post->Settings.bOverride_BloomIntensity && Post->Settings.BloomIntensity <= .3F);
             const auto* Sky = SeaSkyTest::Find<USkyLightComponent>(Coast);
             TestTrue(TEXT("Sky light is not recaptured every frame"), Sky && !Sky->bRealTimeCapture);
+            TestTrue(TEXT("No distance-field shadows/AO from the sun or sky light"), Sky && !Sky->CastShadows
+                && SeaSkyTest::Find<UDirectionalLightComponent>(Coast) && !SeaSkyTest::Find<UDirectionalLightComponent>(Coast)->bUseRayTracedDistanceFieldShadows);
+            TestTrue(TEXT("Clear understory gets extra warm bounce"), Post && Post->Settings.bOverride_IndirectLightingIntensity && Post->Settings.IndirectLightingIntensity > 1.2F
+                && Sky && Sky->GetLightColor().R > Sky->GetLightColor().B);
             TestTrue(TEXT("Cloud evolution frozen for a deterministic baseline"), bWind && Wind == 0.0F);
         }
     }
@@ -127,6 +131,7 @@ bool FCoastalCirrusTest::RunTest(const FString& Parameters)
 {
     const FString Code = APacificCoastGraybox::GetCoastalWaterShaderCode(APacificCoastGraybox::ECoastalWaterShader::Cirrus);
     TestTrue(TEXT("Cirrus field is time-independent (deterministic baseline, no wind)"), !Code.Contains(TEXT("T*"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("*T"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("+T"), ESearchCase::CaseSensitive));
+    TestTrue(TEXT("Cirrus has one prevailing direction (no rotating/swirling streak axis)"), !Code.Contains(TEXT("cos("), ESearchCase::CaseSensitive) && Code.Contains(TEXT("float2 dir=float2(.94,.34)")));
     TestTrue(TEXT("Cirrus is masked below the horizon and around the sun"), Code.Contains(TEXT("smoothstep(.08,.35,v.z)")) && Code.Contains(TEXT("dot(v,normalize(S))")));
     UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
     APacificCoastGraybox* Coast = World ? World->SpawnActor<APacificCoastGraybox>() : nullptr;
@@ -249,9 +254,10 @@ bool FCoastalWaveSpectrumTest::RunTest(const FString& Parameters)
     auto MaxFade = [](const FString& Code)
     {
         double Max = 0; int32 From = 0;
-        while ((From = Code.Find(TEXT("1-smoothstep("), ESearchCase::CaseSensitive, ESearchDir::FromStart, From)) != INDEX_NONE)
+        // Per-component wave fades only ("float f="); the isotropic far texture term is separate.
+        while ((From = Code.Find(TEXT("float f=1-smoothstep("), ESearchCase::CaseSensitive, ESearchDir::FromStart, From)) != INDEX_NONE)
         {
-            From += 13; const int32 Comma = Code.Find(TEXT(","), ESearchCase::CaseSensitive, ESearchDir::FromStart, From);
+            From += 21; const int32 Comma = Code.Find(TEXT(","), ESearchCase::CaseSensitive, ESearchDir::FromStart, From);
             const int32 End = Code.Find(TEXT(",dist)"), ESearchCase::CaseSensitive, ESearchDir::FromStart, Comma);
             if (Comma != INDEX_NONE && End != INDEX_NONE) Max = FMath::Max(Max, FCString::Atod(*Code.Mid(Comma + 1, End - Comma - 1)));
         }
@@ -315,6 +321,17 @@ bool FCoastalShoreMaskTest::RunTest(const FString& Parameters)
         if(FMath::Abs(V.Position.Y)>150000 && FMath::Abs(V.Position.Y)<220000 && V.Position.X<0
             && C.B>.02F && C.B<.4F && C.G>.3F && C.R<.2F)++ValidPerimeterShallows;
     }
+    // R7b south: the land-side vertices of waterline triangles must also carry swash contact,
+    // or contact interpolates to ~0 exactly where the surf should be.
+    int32 WaterlineLandContact = 0;
+    for (const FProcMeshVertex& V : Section->ProcVertexBuffer)
+    {
+        if (FMath::Abs(V.Position.Y) < 150000 || FMath::Abs(V.Position.Y) > 220000 || V.Position.X > 0 || V.Position.X < -240000) continue;
+        const float Land = APacificCoastGraybox::GetCoastalLandHeight(V.Position.X, V.Position.Y);
+        if (Land >= APacificCoastGraybox::SeaLevelCm && Land < APacificCoastGraybox::SeaLevelCm + 2500.0F && V.Color.ReinterpretAsLinear().G > .3F) ++WaterlineLandContact;
+    }
+    AddInfo(FString::Printf(TEXT("perimeter land-side waterline vertices with swash contact %d"), WaterlineLandContact));
+    TestTrue(TEXT("Perimeter waterline carries swash contact on both sides"), WaterlineLandContact > 10);
     AddInfo(FString::Printf(TEXT("false shallow beyond shelf %d, perimeter surf vertices %d"), FalseShallow, PerimeterSurf));
     TestEqual(TEXT("No shallow colour over the 175 m floor beyond the shelf"), FalseShallow, 0);
     TestTrue(TEXT("North/south/west perimeter shores carry surf contact"), PerimeterSurf > 20);

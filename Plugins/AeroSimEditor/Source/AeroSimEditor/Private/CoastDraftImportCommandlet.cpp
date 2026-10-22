@@ -626,9 +626,12 @@ bool BuildWaterMaterial(UTexture2D* NormalTexture)
     auto* SecondPan=Node<UMaterialExpressionPanner>(Material);SecondPan->Coordinate.Connect(0,SecondUV);SecondPan->SpeedX=-.021F;SecondPan->SpeedY=-.017F;SecondPan->bFractionalPart=true;
     auto* N1=Sample(Material,MidNormal,TEXT("WaterNormalA"),FirstPan,SAMPLERTYPE_Normal);
     auto* N2=Sample(Material,NormalTexture,TEXT("WaterNormalB"),SecondPan,SAMPLERTYPE_Normal);
+    auto* ThirdUV=Node<UMaterialExpressionTextureCoordinate>(Material);ThirdUV->UTiling=.018F;ThirdUV->VTiling=.018F;
+    auto* ThirdPan=Node<UMaterialExpressionPanner>(Material);ThirdPan->Coordinate.Connect(0,ThirdUV);ThirdPan->SpeedX=-.0012F;ThirdPan->SpeedY=-.0007F;ThirdPan->bFractionalPart=true;
+    auto* N3=Sample(Material,MidNormal,TEXT("WaterNormalFar"),ThirdPan,SAMPLERTYPE_Normal);
     auto* Normal=Custom(EShader::Normal,CMOT_Float3);
     Input(Normal,TEXT("P"),World);Input(Normal,TEXT("T"),Time);Input(Normal,TEXT("A"),Amplitude);Input(Normal,TEXT("C"),Camera);
-    Input(Normal,TEXT("N1"),N1);Input(Normal,TEXT("N2"),N2);
+    Input(Normal,TEXT("N1"),N1);Input(Normal,TEXT("N2"),N2);Input(Normal,TEXT("N3"),N3);
     auto* Foam=Custom(EShader::Foam,CMOT_Float1);
     Input(Foam,TEXT("P"),World);Input(Foam,TEXT("T"),Time);Input(Foam,TEXT("A"),Amplitude);Input(Foam,TEXT("C"),Camera);Input(Foam,TEXT("Mask"),Mask);
     {FCustomInput Alpha;Alpha.InputName=TEXT("MaskA");Alpha.Input.Connect(4,Mask);Foam->Inputs.Add(Alpha);}
