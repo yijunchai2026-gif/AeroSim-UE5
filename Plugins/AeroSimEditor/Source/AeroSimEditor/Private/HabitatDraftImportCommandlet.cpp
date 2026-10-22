@@ -212,7 +212,7 @@ UMaterial* GroundLitter(const TCHAR* Name,UTexture2D* Base,UTexture2D* Alpha,UTe
     auto* Nrm=Sample(M,Normal,TEXT("NormalTexture"),SAMPLERTYPE_Normal);
     auto* Rgh=Sample(M,Rough,TEXT("RoughnessTexture"),SAMPLERTYPE_LinearGrayscale);
     auto* Random=Node<UMaterialExpressionPerInstanceRandom>(M);
-    auto* Surface=Custom(M,TEXT("return C*lerp(.78,1.0,R);"),CMOT_Float3,{{TEXT("C"),Color,0},{TEXT("R"),Random,0}});
+    auto* Surface=Custom(M,TEXT("return C*lerp(1.15,1.4,R)*float3(1.06,1.0,.86);"),CMOT_Float3,{{TEXT("C"),Color,0},{TEXT("R"),Random,0}});
     // Soft edge: texture alpha x a broad radial falloff, resolved by a screen-space dither (TAA
     // integrates it), so each ring fades into the ground instead of ending as a hard-edged rug.
     auto* UV=Node<UMaterialExpressionTextureCoordinate>(M);
@@ -292,10 +292,10 @@ int32 UHabitatDraftImportCommandlet::Main(const FString& Params)
     UMaterial* Shrub=Foliage(TEXT("M_CoastBroadShrubDraft"),T(TEXT("T_CoastBroadShrub_BaseColor")),T(TEXT("T_CoastBroadShrub_Alpha")),T(TEXT("T_CoastBroadShrub_Normal")),T(TEXT("T_CoastBroadShrub_Roughness")),0,.33F,FLinearColor(.78F,.84F,.72F));
     UMaterial* Fern=Foliage(TEXT("M_FloraFernDraft"),T(TEXT("T_FloraFern_BaseColor")),T(TEXT("T_FloraFern_Alpha")),T(TEXT("T_FloraFern_Normal")),T(TEXT("T_FloraFern_ARM")),1,.36F,FLinearColor(.85F,.92F,.82F));
     UMaterial* Rooibos=Foliage(TEXT("M_FloraRooibosDraft"),T(TEXT("T_FloraRooibos_BaseColor")),T(TEXT("T_FloraRooibos_Alpha")),T(TEXT("T_FloraRooibos_Normal")),T(TEXT("T_FloraRooibos_ARM")),1,.36F,FLinearColor(.70F,.78F,.62F));
-    UMaterial* PineNeedles=Foliage(TEXT("M_FloraPineNeedlesDraft"),T(TEXT("T_FloraPineTwig_BaseColor")),T(TEXT("T_FloraPineTwig_Alpha")),T(TEXT("T_FloraPineTwig_Normal")),T(TEXT("T_FloraPineTwig_Roughness")),0,.36F,FLinearColor(.72F,1.05F,.64F));
-    UMaterial* FirNeedles=Foliage(TEXT("M_FloraFirNeedlesDraft"),T(TEXT("T_FloraFirTwig_BaseColor")),T(TEXT("T_FloraFirTwig_Alpha")),T(TEXT("T_FloraFirTwig_Normal")),T(TEXT("T_FloraFirTwig_Roughness")),0,.36F,FLinearColor(.50F,.90F,.44F));
+    UMaterial* PineNeedles=Foliage(TEXT("M_FloraPineNeedlesDraft"),T(TEXT("T_FloraPineTwig_BaseColor")),T(TEXT("T_FloraPineTwig_Alpha")),T(TEXT("T_FloraPineTwig_Normal")),T(TEXT("T_FloraPineTwig_Roughness")),0,.36F,FLinearColor(.62F,1.08F,.52F));
+    UMaterial* FirNeedles=Foliage(TEXT("M_FloraFirNeedlesDraft"),T(TEXT("T_FloraFirTwig_BaseColor")),T(TEXT("T_FloraFirTwig_Alpha")),T(TEXT("T_FloraFirTwig_Normal")),T(TEXT("T_FloraFirTwig_Roughness")),0,.36F,FLinearColor(.42F,.92F,.36F));
     // Live-oak leaves are darker and glossier than the published island_tree_02 scan.
-    UMaterial* OakLeaves=Foliage(TEXT("M_FloraOakLeavesDraft"),T(TEXT("T_FloraOakLeaf_BaseColor")),T(TEXT("T_FloraOakLeaf_Alpha")),T(TEXT("T_FloraOakLeaf_Normal")),T(TEXT("T_FloraOakLeaf_Roughness")),0,.38F,FLinearColor(.76F,1.08F,.66F));
+    UMaterial* OakLeaves=Foliage(TEXT("M_FloraOakLeavesDraft"),T(TEXT("T_FloraOakLeaf_BaseColor")),T(TEXT("T_FloraOakLeaf_Alpha")),T(TEXT("T_FloraOakLeaf_Normal")),T(TEXT("T_FloraOakLeaf_Roughness")),0,.38F,FLinearColor(.66F,1.10F,.56F));
     // Douglas-fir proxy bark is tinted warmer (+red), per the ART-FLORA spec.
     UMaterial* PineBark=Bark(TEXT("M_FloraPineBarkDraft"),T(TEXT("T_FloraPineBark_BaseColor")),T(TEXT("T_FloraPineBark_Normal")),T(TEXT("T_FloraPineBark_Roughness")),FLinearColor(.62F,.55F,.50F));
     UMaterial* FirBark=Bark(TEXT("M_FloraFirBarkDraft"),T(TEXT("T_FloraFirBark_BaseColor")),T(TEXT("T_FloraFirBark_Normal")),T(TEXT("T_FloraFirBark_Roughness")),FLinearColor(.45F,.42F,.40F));

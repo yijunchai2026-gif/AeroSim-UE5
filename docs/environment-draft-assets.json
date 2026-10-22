@@ -39,7 +39,7 @@
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastBroadShrubDraft.uasset",
-      "sha256": "4db083b3ae2d1f225357badebd7a6da1464104699a2214cdde4ab66c2e1d56b8",
+      "sha256": "54a3dd892395234bfb3a0080f58a31f86141f2a2e41ad7b41633c68eab45d50e",
       "bytes": 17194
     },
     {
@@ -49,7 +49,7 @@
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastDryGrassDraft.uasset",
-      "sha256": "ba36683560e06d9dd92d048fb40a11a4da871578fe792184af801652d6dc0f88",
+      "sha256": "20b627b1d4e0a8930ba485b4462ef0209884b32dd36ddc983732771c78f5327e",
       "bytes": 17168
     },
     {
@@ -79,62 +79,62 @@
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_FloraFernDraft.uasset",
-      "sha256": "e4591c01dfe07d24653e53573e3aa760c083d6f1955495e862d857e0f5c962df",
+      "sha256": "afd7c358c30e69b622f67b0f057c43ff0463fbe0d57515a363d54e2f79b86d82",
       "bytes": 17130
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_FloraFirBarkDraft.uasset",
-      "sha256": "d67a26f87b8abe745dd75649a95b9b780c3635fecdc15c9d82d1b2df185ab7e9",
+      "sha256": "682f7e0e8ff452cc3abb79bf4cbdab84d4c9b463b725b5b99acebd4ee187ad9d",
       "bytes": 15330
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_FloraFirNeedlesDraft.uasset",
-      "sha256": "2dd825558c23742311ab2819a46a5e33186e2c881355e5b78d0e1f07c976aae5",
+      "sha256": "6179e4dac8e3e852b948f3607694792aedf0df7c4e6d8b1b09ea7719ea923a63",
       "bytes": 17170
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_FloraOakBarkDraft.uasset",
-      "sha256": "77c943e76ee16206a90b80ecf8678d88f6ec8bed88fa9c8db8246bf3ae2413c5",
+      "sha256": "0d1e530d18c0ff4391b9316e2510548a19f08d08a785843e965cf019e8db8f98",
       "bytes": 15330
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_FloraOakLeavesDraft.uasset",
-      "sha256": "6f05ce0e12355eb1ca9b4c5a1f5ca5c8de92eb6802c386b58f22ebd3f7c27c4f",
+      "sha256": "444f7d07142e7096a0ac38ceae960cd7298c5f0babfaf77cfb98d230a2693fdb",
       "bytes": 17165
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_FloraPineBarkDraft.uasset",
-      "sha256": "4843142087c8cfd2817a007cc68b6ebac46885d615152517546997790226c3d5",
+      "sha256": "0f48600d7dd32f1c724edc318ee41a3616f9552066bd71fadd1d6aeaa4fbf040",
       "bytes": 15341
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_FloraPineNeedlesDraft.uasset",
-      "sha256": "0feff7c5d3e7ff25da800ed84b73889a07deeb639ee22e07b655f673907f7397",
+      "sha256": "a5eb1b4017e0b084423f5bcd94d195c1529b0ab64b946fb10e06afbfd4c51bac",
       "bytes": 17183
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_FloraRooibosDraft.uasset",
-      "sha256": "b5af3ea87c765c76bd8b41a777eaa28ba67c6a0a4612a425920f86a591a043d0",
+      "sha256": "bb706ceaba91b9dfeedeb18a9a867c06acc669c4301a2159354387b5b31d5379",
       "bytes": 17169
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_FloraTrunkLitterDraft.uasset",
-      "sha256": "a42a55d7f3879dd0f16cab7550d5be8da1a5af132badde25c49dc05a9bc25eb8",
-      "bytes": 10883
+      "sha256": "c0a34c7f2f9268a53e4771168a1713c81ceb09e9690d500ef8e38e440634a51b",
+      "bytes": 10905
     },
     {
       "path": "Content/Development/CoastDraft/Meshes/SM_CoastGrassSmallDraft.uasset",
-      "sha256": "e168e01466b3778b7a5696bc442d28112de9dec72be292bf445f0ba236af7fcc",
+      "sha256": "6e1b1ab410849a914ef0c9ac17dd8b68adc5ba83839e686cf858b6a8b868065c",
       "bytes": 54028
     },
     {
       "path": "Content/Development/CoastDraft/Meshes/SM_CoastGrassTallDraft.uasset",
-      "sha256": "872ac1de50408530c12967e2cd00babb776e27d0fee8dfcd715c3363e3f0324f",
+      "sha256": "b6c1afdf2e873a4ce2e2b8633d4d13263242eb07ba8c2ecab911b41555676524",
       "bytes": 30202
     },
     {
       "path": "Content/Development/CoastDraft/Meshes/SM_CoastGrassTinyDraft.uasset",
-      "sha256": "32b5e02fa9649a5f487c0615de9100843353b9c08361040c2ed6b0b23ae4a0fc",
+      "sha256": "88b9518279a5c70a26398ddc29df52f61a4e88d281babc3d5201ef6273cc9ee2",
       "bytes": 12309
     },
     {
@@ -144,32 +144,32 @@
     },
     {
       "path": "Content/Development/CoastDraft/Meshes/SM_CoastShrubADraft.uasset",
-      "sha256": "6ac4e33f685896e05958e2b268f0a915211b9ad877e42616b0660762625da320",
+      "sha256": "7fdefe2c2e59a91ee73d25546e99e23c3db8a482d87fc21eaccbd66a0e263cd7",
       "bytes": 105890
     },
     {
       "path": "Content/Development/CoastDraft/Meshes/SM_CoastShrubBDraft.uasset",
-      "sha256": "3ef84a8c27c252fd2f039f3f04c033c2449a9afe98270347761c92cf5811fa8d",
+      "sha256": "6bf4caeb8d1c34efac72cdf8719a5c7d780bc62f4cd3e8cf4cc7aaf35c3ac0f3",
       "bytes": 86332
     },
     {
       "path": "Content/Development/CoastDraft/Meshes/SM_FloraFernADraft.uasset",
-      "sha256": "4eea607d81c5398a7525a8a6d6c123cdee875c07f8188137aaacc27bf497c960",
+      "sha256": "a4ffa082dc0ccbb8a2731e00205c79d3380b672bae70f94fe92d723152537057",
       "bytes": 103683
     },
     {
       "path": "Content/Development/CoastDraft/Meshes/SM_FloraFernBDraft.uasset",
-      "sha256": "2422c6743028ffac08f997c11b62008d28c23742955d129d111249351e4cdb6c",
+      "sha256": "35f65746da8ef29abbbddee2a36d7191fcd53ca43c5ea2fbbb2225eeaf1df9a1",
       "bytes": 45645
     },
     {
       "path": "Content/Development/CoastDraft/Meshes/SM_FloraRooibosADraft.uasset",
-      "sha256": "7847bea74214db250de473679f37b08a7b48b387ed25b58aa43b8b48c0cd2fb3",
+      "sha256": "8650f38844de7ba65f9533505751ec2fba5f30c4df56f1d6af2cf70a0f3e4ed4",
       "bytes": 258461
     },
     {
       "path": "Content/Development/CoastDraft/Meshes/SM_FloraRooibosBDraft.uasset",
-      "sha256": "c39293ea4b047b5d0a04b90cb68db3a8e84ef8866ba9bbdab48195478473a664",
+      "sha256": "4691a57116d85df4ae7e417b31b15802a875ea3955c476ae13e085dba9439c97",
       "bytes": 124329
     },
     {
@@ -189,22 +189,22 @@
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastBroadShrub_Alpha.uasset",
-      "sha256": "5d1a857f3351b0fc7363a6867f006926afdd25ee6f9d1ce618b08b646c36c829",
+      "sha256": "4cc73deeaaee933a38b954169cfa182e104bd6d850af8221da8ce4f14e09819f",
       "bytes": 149336
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastBroadShrub_BaseColor.uasset",
-      "sha256": "bcb07bf256b6f8e2c3cce539910903b8d34fd1e5cbf9eb04328616d6b06db785",
+      "sha256": "96294542e8dfc1677ffb9d0818ee3167572ab4b85f584c3643266a11178ab06e",
       "bytes": 485978
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastBroadShrub_Normal.uasset",
-      "sha256": "0b3daf3bf1c7ed06e3dcb000f6580436436c06ff725a3233317114f5f2198285",
+      "sha256": "c3b68bd8e7c02a1b57888bb761a91d71d71aa0aa6288636c6746c6c8276e3a24",
       "bytes": 504866
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastBroadShrub_Roughness.uasset",
-      "sha256": "0f3bd0fa1c6fe0df5a8a97b1eeeeb5232ec5e8f10537dee6c37730698a28c2fd",
+      "sha256": "2eff96a190d7dc73c88f94d23a56f4561fd6e69c31700a4d6bb3d51f641431c5",
       "bytes": 266989
     },
     {
@@ -219,22 +219,22 @@
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastDryGrass_Alpha.uasset",
-      "sha256": "9f976f3fb3964acd4111dcd35189acb80bfb785f92a38e338f607aa715cafee1",
+      "sha256": "d72e6d57f8c2405180ca56457d8498efb44197d6b54edef8ed4afcb99b28ee53",
       "bytes": 451894
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastDryGrass_BaseColor.uasset",
-      "sha256": "d1cc549a69bdff11e9234fec8bf95d7dca75aa4bc319b055ea624b68428b9df1",
+      "sha256": "dcac148ffeceea2881614e0e4ecd965bf69ecba086fc655202638c52cb9a6d18",
       "bytes": 427239
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastDryGrass_Normal.uasset",
-      "sha256": "0ec5441059f34e0e6300961ae6da268615e55f3b0ba442fd0ec5cc195258b726",
+      "sha256": "7d4837adc506c3c6e2c24d08ebe18464a42fec86b8ec1f446280ba34d0abb904",
       "bytes": 959283
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastDryGrass_Roughness.uasset",
-      "sha256": "8db46d7d5bac35b1f7f4e77aa9f24d62ff218697b0ba7d9c22523fa859164c5c",
+      "sha256": "e71f930eba18b8cc847f26911d778cb62954dc1a71f3f7737482416d328b5341",
       "bytes": 545581
     },
     {
@@ -454,167 +454,167 @@
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraFern_ARM.uasset",
-      "sha256": "4c2e375fa0078606c6ba4c502ab2a450ae6a23039c33a645b8ef2d55ce554326",
+      "sha256": "8bcfdef6b6bcc19fe71e85815c7648d48a01b57caf7ed17845b030ea533645df",
       "bytes": 284644
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraFern_Alpha.uasset",
-      "sha256": "7aa47b470971212b1572105d1d00d9cc8d638ea6015d6407a455801c4f9d3fef",
+      "sha256": "08a6f1f23d2741343bec316528d9e900d3ecea58c2ae7555df6495141b39d569",
       "bytes": 250381
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraFern_BaseColor.uasset",
-      "sha256": "667ecb9df183e0d9564e35607dae7b3bc5155d9d44c607bde00e1f0c89731f9d",
+      "sha256": "b61e10d6ce0080733a4139c0bb48de282a73b4293e9050401f8c985d04e8c06c",
       "bytes": 319842
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraFern_Normal.uasset",
-      "sha256": "275ea1c9820c81e7827a823f72379934e3f6b856acf2414599c61ce83604eb1d",
+      "sha256": "ec13ca7f7d369cefcca58203495a89ade24813854ad0abfc2bbd9007046d7c4a",
       "bytes": 373349
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraFirBark_BaseColor.uasset",
-      "sha256": "7df324dfdffe9f52fdd85a0544831700369c186bf4987f1363aaa03d00aad9f5",
+      "sha256": "cb59f717b30f445a917f0c711e33c6415f312b1d908cbaaaa399a2b3a774e339",
       "bytes": 6451768
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraFirBark_Normal.uasset",
-      "sha256": "37280a4242450df47f7993e78132519b7ab5393af7f8d239c8063c2d4731e406",
+      "sha256": "2835f6e8431214d99653aaed3695a549153c54116e5ce395fbdcfc673eaecbd5",
       "bytes": 7245960
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraFirBark_Roughness.uasset",
-      "sha256": "71a9c5f018fa6e63badc7c20f5415f1b7ca8b586c7b850830e3848743df3768e",
+      "sha256": "e5b7e6be66c479dca106c8398506af65fb737109f5bd3aeee001f07e004d0c68",
       "bytes": 3143144
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraFirTwig_Alpha.uasset",
-      "sha256": "7faf9118ce5ef2f700d41cc6ffd0a603d015c70f00ff452feeccbd211526a362",
+      "sha256": "919d61911060f49bcc40903e05b1e8e7a48fa8203fecd47ecb169834de57004f",
       "bytes": 1171220
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraFirTwig_BaseColor.uasset",
-      "sha256": "96ba9f88db981b8ea569311f67ce869fd80b6db06951d752f9d98da3cacdc23b",
+      "sha256": "041ebcec894f710c6a5699ff36f279731a1dacd267a4220dc73d17751f84e089",
       "bytes": 2173768
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraFirTwig_Normal.uasset",
-      "sha256": "787645ef527724a0987353a21d13e374b47ce4086a0c6131f9a40f82fad3569c",
+      "sha256": "e64ec3d7a5121be0671262c7ba68d3b1beeb689fa99e7ed6108e17617fc0eb9b",
       "bytes": 4724413
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraFirTwig_Roughness.uasset",
-      "sha256": "8dee6e6b564131f1a86eac0d6a7df84e4957aef4036fe8208378f273d1ea72db",
+      "sha256": "768b3f24c403b2bc8af521ee14a8641faaa7c84c1456b4ce20e40d5fc08e4827",
       "bytes": 1577041
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraOakBark_BaseColor.uasset",
-      "sha256": "3821dfdf576b0a9c36fab0c45249a5b824b02235bccb36001e07e177c5cb62d7",
+      "sha256": "adb4364a51188699bfeb40281878dfb64d737c5a82398b565bda4621d6316db1",
       "bytes": 1940801
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraOakBark_Normal.uasset",
-      "sha256": "56f718e8dad7ac1b4fde0ee1646af4dbca9b1fe45d096f1be29e4ecc7176267f",
+      "sha256": "c2d7c438a962f07a7a6122920653689a9af7f23a24de902c8422b6ff0a1599d2",
       "bytes": 2694987
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraOakBark_Roughness.uasset",
-      "sha256": "650cfb1df3a0eef7bc713ecf7e89a1e1cb03bf30cab33e0329dadd0e7999c1d7",
+      "sha256": "60cc401f35f8b27b5999e6e07ce6eaebd6b7cb36a83b7a8f0be9f7565609807d",
       "bytes": 803438
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraOakLeaf_Alpha.uasset",
-      "sha256": "22149b2eabd7703dfce77f2f4fb74c38d9078911deb1f6823a57eb53468927cb",
+      "sha256": "76e06a98271832be8314060364fc1ee013fbbdc28477cdaad5b07848b3281013",
       "bytes": 142735
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraOakLeaf_BaseColor.uasset",
-      "sha256": "22fe3599a58d40129951ccfbe37a8de022623f6dcefd4ab4a594f9d2dda5b6d3",
+      "sha256": "7f668858064c13ad4db1ac4e3315209cf2c95375c49e3d7dfe5cd5f8ca385465",
       "bytes": 2853592
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraOakLeaf_Normal.uasset",
-      "sha256": "9a74a82cb6e25c29f4bdb397860e857f6df1973602d80ba737fcfc1aa65633b9",
+      "sha256": "e154fddf90bc12df79a737cb6e290dcfd496ae01c57f6d121eeb5c93860b7d0d",
       "bytes": 3673054
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraOakLeaf_Roughness.uasset",
-      "sha256": "3afb7ac2d7f1e7cf0c88abcc25fe32618ba2e4e9976991a4ac220c2db6c949b1",
+      "sha256": "e343219411296bd7a50b2311869a3173c3f91c1e45c8b5fc8c35a663a6f1883a",
       "bytes": 1027071
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraPineBark_BaseColor.uasset",
-      "sha256": "15466978b780b42437377a3ba9b586f228e880530987fff6b8ad276f354e1302",
+      "sha256": "30aab1e41c9d39bd2e32966bf225ad2e6cf5a535a7ba3fc658dd1005efa42364",
       "bytes": 3171704
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraPineBark_Normal.uasset",
-      "sha256": "38a912c0cfc1daee1a54924b25c1313d1176ea10c334eed086f5ee95b83e2dc3",
+      "sha256": "353733439451203d64067cb24461e66e4a57569d903cb9925a0ea15a77bed121",
       "bytes": 4530630
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraPineBark_Roughness.uasset",
-      "sha256": "f199bd74d5f72a001d3dcf1d1a17f815311f4ecb41ee989d257816e617f92aa5",
+      "sha256": "5dbdc58f496c3063feb508adf0343d8eb41ca1a082ae6169e0bd82514535eb79",
       "bytes": 2089349
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraPineTwig_Alpha.uasset",
-      "sha256": "705ff6313edf140747c2238414c503c22896c77fda7c6da404690132e5752d19",
+      "sha256": "2b1c98d5956665e04dd235329aa677b6fa737f905021076f4b6c008ddf6e9653",
       "bytes": 895686
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraPineTwig_BaseColor.uasset",
-      "sha256": "d7c6446733cac7139563c7918c6f452f2911f6b0ec71b06bdbf0da252acec667",
+      "sha256": "01da9e2d40f6e437c7cb66255bff60868fa2cc43f24080f3242a4ab3ca909a94",
       "bytes": 4976844
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraPineTwig_Normal.uasset",
-      "sha256": "cbc9e6e07b0334e81b2de0dd44d1cc8a17502bc9d84cb8a95bbff6036e63dc5c",
+      "sha256": "bf8b25b26c937c2d75de0267584e45494073c226ce6aaa6539a9dc8aec074bda",
       "bytes": 4802260
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraPineTwig_Roughness.uasset",
-      "sha256": "4f2dc27d5b1b952ce9c91969370caf9713e8e7fc8b18af1e38cc3c867ee448dd",
+      "sha256": "374c9554878892364868f6f4c128e490967ea880e3ef93292dc47bad1104c4bb",
       "bytes": 1447606
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraRooibos_ARM.uasset",
-      "sha256": "3b6cd7ca7e5a972c07ce6cf97c4d275dc72667f9d6ff6003dc539660621618b3",
+      "sha256": "fac20552f4f11dcc772c8e7c7b452837096496d5dcfa51386223ae434306673c",
       "bytes": 371610
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraRooibos_Alpha.uasset",
-      "sha256": "80ebf5c8a5082118a4555b769ab646e2a8a827057db4ee7224f8db1aea237591",
+      "sha256": "d646d4defe0019d9b32fe0a3569079c07ab3ed433565eab8de3c7afd253610b8",
       "bytes": 119973
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraRooibos_BaseColor.uasset",
-      "sha256": "2363c6a33092d50f1076e252e322f3246b704855ec1e78ad966b5a10f9d30734",
+      "sha256": "93550e51fd5cb8fd97ae250a388240201b7c1d46a4f43364544e362f500d1e78",
       "bytes": 378192
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraRooibos_Normal.uasset",
-      "sha256": "b6cbadb44843859fa1e59fda66ef6840792299bb23b814cc2ff56a14cdd221cb",
+      "sha256": "373be1377e77b5549a89b6410f994627180035e11e5d8a933bf5743f0a6f699e",
       "bytes": 464921
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraTrunkLitter_Alpha.uasset",
-      "sha256": "c2da557d36f7c86dbdca66dc5004b6d3372f2893af5f7ad565969b76f944253a",
+      "sha256": "ca769deb37cef7d24045fa24edd0f170ee8b72ea37ef8f8a6dc5d91fc528c14b",
       "bytes": 309217
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraTrunkLitter_BaseColor.uasset",
-      "sha256": "54a5ba96618a463c25d343d6bbac0ea0df3cfd4cc124513ea8fc5f6acf1a5fa5",
+      "sha256": "48e06f6a0574a9e2f1a3191906c0e3bb791c5f8b827f305c93ac33968e66bee1",
       "bytes": 3131448
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraTrunkLitter_Normal.uasset",
-      "sha256": "d306ab2ffea7cb7c2f7fb61fb5eee6549fffe15ce708655aadeade513079e4e0",
+      "sha256": "bee6ae91a865432e7e86f2ec4a98ba29d8929f3556eccf2c5f02144c273b00cb",
       "bytes": 3202635
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraTrunkLitter_Roughness.uasset",
-      "sha256": "c1470ec2366f52e7406c3c55a3a1692f2ba39041df0fc9d52cbb1804a8cf6579",
+      "sha256": "124c2aa6fa5a71f59728e819cb40f66f6001e5982752cdef493d4ff94bb54454",
       "bytes": 831690
     }
   ],
