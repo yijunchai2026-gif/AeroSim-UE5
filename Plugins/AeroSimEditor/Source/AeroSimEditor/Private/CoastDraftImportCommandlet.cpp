@@ -251,6 +251,10 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
     auto Pass=[Material](UMaterialExpression* Call){auto* M=Node<UMaterialExpressionMultiply>(Material);UMaterialEditingLibrary::ConnectMaterialExpressions(Call,TEXT("XYZ Texture"),M,TEXT("A"));M->ConstB=1.0F;return M;};
     UMaterialExpression* SteepColor=Pass(Project(Material,AlignedTexture,Textures[34],TEXT("SteepFaceColor"),SAMPLERTYPE_Color,350.0F));
     UMaterialExpression* SteepRough=Pass(Project(Material,AlignedTexture,Textures[36],TEXT("SteepFaceRoughness"),SAMPLERTYPE_LinearGrayscale,350.0F));
+    // R9 self-check: the cove headscarp (steep land faces) still read pale gold next to the cliff. Steep
+    // faces now take the cliff's own macro tone (cliff_side, world-aligned at 23 m) with the sandstone
+    // only as luminance detail, matching the rock material's tinted colour.
+    UMaterialExpression* SteepMacro=Pass(Project(Material,AlignedTexture,Textures[3],TEXT("SteepFaceMacro"),SAMPLERTYPE_Color,2300.0F));
     // Trunk-base litter (DEV-FLORA GetForestLitterMask) arrives as 1 - vertex alpha on terrain;
     // trail surfaces use their alpha as the worn-core mask, so they read no litter.
     UMaterialExpression* LitterAlpha=nullptr;
@@ -269,6 +273,7 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         FCustomInput NIn;NIn.InputName=TEXT("VN");NIn.Input.Connect(0,GeometryNormal);C->Inputs.Add(NIn);
         FCustomInput TIn;TIn.InputName=TEXT("TRI");TIn.Input.Connect(0,SteepColor);C->Inputs.Add(TIn);
         FCustomInput TRIn;TRIn.InputName=TEXT("TRR");TRIn.Input.Connect(0,SteepRough);C->Inputs.Add(TRIn);
+        FCustomInput TMIn;TMIn.InputName=TEXT("TRM");TMIn.Input.Connect(0,SteepMacro);C->Inputs.Add(TMIn);
         FCustomInput LIn;LIn.InputName=TEXT("LIT");LIn.Input.Connect(0,LitterAlpha);C->Inputs.Add(LIn);
         return C;
     };
@@ -295,7 +300,8 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "c*=lerp(1,m1*m2,.25+.3*(1-fineMix));"
         "c*=1+.24*(float3(nC,nD,nE)-.5);"
         // R8: steep cap faces match the cliff rock tone (was a pale-gold sandstone that read untextured).
-        "c=lerp(c,TRI*float3(.66,.62,.55),cliffFace);"
+        "float3 rockTone=lerp(TRI,TRM,.72)*float3(.58,.64,.68)*float3(1.12,1.06,.92)*clamp(dot(TRI,L)/.33,.7,1.3);"
+        "c=lerp(c,rockTone,cliffFace);"
         "return min(c,float3(.6,.5,.4));"));
     auto* Normal=Make(CMOT_Float3,TEXT(
         // R3: grass normals mix a 1.37x/37 deg second sample by noise (no periodic bands in
@@ -436,11 +442,18 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
         FacetColor->Code = TEXT("float3 f=normalize(cross(ddx(P),ddy(P))); float mis=saturate((abs(VN.z)-abs(f.z))*2.5);"
             "float3 w=pow(abs(f),4.0); w/=max(dot(w,1),1e-4); float s=1.0/350.0;"
             "float3 t=Texture2DSample(Tex,TexSampler,P.yz*s).rgb*w.x+Texture2DSample(Tex,TexSampler,P.xz*s).rgb*w.y+Texture2DSample(Tex,TexSampler,P.xy*s).rgb*w.z;"
-            "return lerp(C,t*float3(1.12,1.06,.92),mis);");
+            // R9: keep the face's own tone (macro cliff_side colour); the re-projected sample only
+            // contributes luminance detail, so these pixels never turn pale, untextured gold.
+            "float detail=clamp(dot(t,float3(.3,.59,.11))/.33,.6,1.4); return lerp(C,M*float3(1.12,1.06,.92)*detail,mis);");
         { FCustomInput I; I.InputName = TEXT("P"); I.Input.Connect(0, CliffWorld); FacetColor->Inputs.Add(I); }
         { FCustomInput I; I.InputName = TEXT("VN"); I.Input.Connect(0, GeometryNormal); FacetColor->Inputs.Add(I); }
         { FCustomInput I; I.InputName = TEXT("C"); I.Input.Connect(0, CliffColor); FacetColor->Inputs.Add(I); }
         { FCustomInput I; I.InputName = TEXT("Tex"); I.Input.Connect(0, FacetTexture); FacetColor->Inputs.Add(I); }
+        {
+            auto* MacroPass = Node<UMaterialExpressionMultiply>(Material); MacroPass->ConstB = 1.0F;
+            UMaterialEditingLibrary::ConnectMaterialExpressions(MacroColor, TEXT("XYZ Texture"), MacroPass, TEXT("A"));
+            FCustomInput I; I.InputName = TEXT("M"); I.Input.Connect(0, MacroPass); FacetColor->Inputs.Add(I);
+        }
         BaseExpression = FacetColor; NormalExpression = Rebased; RoughnessExpression = CliffRough; RoughnessOutput = TEXT("");
     }
     else
