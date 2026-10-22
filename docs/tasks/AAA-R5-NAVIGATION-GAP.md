@@ -194,3 +194,17 @@ PMO 打包 R6b（integration `cedf003`）真实按键：起飞→C1→越崖 35 
 3. **QA 失焦时的操作步骤**（桥不能也不应激活窗口）：①读 Inspect：`application_active=false`、Flight 页 SAFE PAUSE；②用桥对所有曾按下的飞控键发送松开（`aerosim_release`），确认 `physical_neutral=true`——若仍为 false，说明有键的按下被观测而松开未被观测，补发该键松开；③发送 Enter，观察 `resume_pending=true` 且 `resume_seconds` 在 3 s 内递减到 0、`phase` 离开 Paused；④期间任何飞控键按下都会重置倒计时（预期行为）；⑤若由人类把窗口切回前台，倒计时会重新从 3 s 开始；⑥不得用 OS 脚本/AppleScript 强制激活用户窗口，记录失焦时间点与原因（通常是其它应用抢焦点），证据中注明该段为"后台恢复"。
 
 **实测**：逐米真实碰撞 1176 m / 1201 样本、0 失败段；脚本语义输入全程 Result、5/5、碰撞/越界/漏检/触水 0、计分/引导失步 0 次，112.6 s（走廊 10.2/10.4 s，略慢于上轮因 C4/C5 改为终点门计分）。真实按键全程仍 NOT_RUN。
+
+## R7b 爬升柱卡住（2026-10-20，DEV-FLIGHT）
+
+PMO 打包 R7b（integration `9600be5`）真实按键已 5/5 到 C5（约 206 s，含 3 次失焦安全暂停与恢复）。route4 在 nav-07 爬升柱顶停住 320 s 不完成，`guide_off_corridor=true`、`progress=0`。
+
+**根因**：①交接不一致——C3（nav-06 终点）接受窗 R150，而竖直柱走廊半宽只有 100 cm；route4 在离轴约 1.03 m 处被 C3 接受，于是爬升一开始就"离开走廊"，进度永远为 0。route3 在离轴更近处到达，所以 12 s 完成。②日志 `pos` 是 **model 空间**（相对 mat 起点，约偏 (55,79,11) cm），而 `guide_*` 是 **WORLD**；PMO 读到的"距引导点 9/14 cm"在 WORLD 中实际约 104 cm。柱轴本身就是显示的引导 XY（`Path` 两点同 XY，按高度投影），高度带覆盖整柱，这部分没有问题。
+
+**修复**：
+- 竖直柱（下降/爬升）接受半径 150 cm，走廊半宽 250 cm（真实碰撞测得 ≥29.9 m）；mat 落地柱保持 150 cm（起降区器材）。nav-10 林口段改为从 ±13 m 漏斗收窄到 ±1.8 m、高度带 ±2 m，以容纳 nav-09 的 pass-through 窗；林间走廊越门判据只用 1×R。
+- `ValidateGuidanceStructure` 新增交接不变量：前一段可接受的每个位姿（transit pass-through 取 2R，其余 R；高度窗）必须已在下一段走廊起点内，否则 `HANDOFF_WINDOW_EXCEEDS_NEXT_CORRIDOR`，`BeginMission` 拒绝开始。
+- Inspect 新增 `guide_point_planar_distance_cm`、`guide_point_height_delta_cm`、`guide_target_distance_cm`（由 WORLD `actor_cm` 计算）；**QA 比较引导时必须用 `actor_cm_*` 或这些字段，不要用 `position_cm_*`（model 空间）**。
+- 回归测试 `AeroSim.Flight.Navigation.ColumnHandoffAndClimbCompletes`：分别按 PMO 引用坐标与换算后的真实 WORLD 位姿重放 (25343,-5986,-6057)→(25345,-5986,338)，爬升全程不离走廊并完成；下降柱在离制动点 1.4 m 处接受后同样不离走廊并完成 C2。
+
+**实测**：逐米真实碰撞 1178 m / 1203 样本、0 失败段（下降/爬升柱 ±2.5 m 实测可用 ≥29.9 m；nav-10 漏斗余量 ≥16.9 m）；脚本语义输入全程 Result 5/5、碰撞/越界/漏检/触水/失步 0，112.3 s。真实按键全程（含落地）仍 NOT_RUN。

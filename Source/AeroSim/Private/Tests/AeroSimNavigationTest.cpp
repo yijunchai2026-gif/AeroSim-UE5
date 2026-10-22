@@ -122,7 +122,7 @@ bool FAeroSimNavigationContractTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Five scored legs; intermediate guides never score"), Scored, 5);
     const FPhase4GuidanceLeg& Descent = Route[LegIndexOf(Mission, TEXT("nav-05-offshore-descent"))];
     TestTrue(TEXT("Descent column locks XY at C2"), FVector::Dist2D(Descent.Path[0], Mission.Task.Checkpoints[1].Position) < 1.0);
-    TestTrue(TEXT("Descent column is slow (<=100 cm/s)"), Descent.MaxTrackPlanarSpeedCm <= 100.0F && Descent.SafetyHalfWidthCm <= 100.0F);
+    TestTrue(TEXT("Descent column is slow (<=100 cm/s)"), Descent.MaxTrackPlanarSpeedCm <= 100.0F && Descent.SafetyHalfWidthCm <= 250.0F && Descent.AcceptRadiusCm <= 150.0F);
     const FPhase4GuidanceLeg& Brake = Route[LegIndexOf(Mission, TEXT("nav-04-cross-cliff-out"))];
     TestTrue(TEXT("Brake to <=100 cm/s before descending"), Brake.MaxAcceptPlanarSpeedCm <= 100.0F);
     TestTrue(TEXT("Cliff is crossed at a positive altitude, never on a descending chord"), Brake.Path[0].Z >= 0 && FMath::IsNearlyEqual(Brake.Path[0].Z, Brake.Path.Last().Z));
@@ -737,6 +737,60 @@ bool FAeroSimNavigationDescentSyncTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Re-centred braked pose scores C2 without climbing back up"), Mission.NextCheckpointIndex, 2);
     TestEqual(TEXT("...and completes the column in the same frame"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-06-alongshore-low-water")));
     TestTrue(TEXT("Invariant after scoring"), Mission.IsScoreGuidanceConsistent());
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAeroSimNavigationClimbHandoffTest, "AeroSim.Flight.Navigation.ColumnHandoffAndClimbCompletes",
+    EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FAeroSimNavigationClimbHandoffTest::RunTest(const FString& Parameters)
+{
+    using namespace AeroSimNavigationTests;
+    // PMO R7b route4: climb from C3 to the top and stop; the leg never completed (off_corridor, progress 0).
+    // The logged pos was MODEL space; WORLD = model + launch-mat origin (55,79,10.87). Both the PMO-quoted
+    // coordinates and the true WORLD replay must complete; the descent column is checked the same way.
+    const FVector Origin(55.0, 79.0, 10.87);
+    const FVector Model[2][2] = {{FVector(25343, -5986, -6057), FVector(25345, -5986, 338)},
+                                 {FVector(25343, -5986, -6057) - Origin, FVector(25345, -5986, 338) - Origin}};
+    for (int32 Case = 0; Case < 2; ++Case)
+    {
+        FPhase4MissionSession Mission = StartMission();
+        TestTrue(TEXT("Reach the along-shore leg"), WalkUntil(Mission, TEXT("nav-06-alongshore-low-water")));
+        const FVector Bottom = Model[Case][0] + Origin, Top = Model[Case][1] + Origin;
+        // Arrive at C3 off the nominal axis (as logged), braked, then climb straight up and stop.
+        const FPhase4GuidanceLeg Shore = Mission.GetGuidanceRoute()[Mission.GetGuidanceLegIndex()];
+        for (float Along = 0; Along <= Shore.GetLength() - 300.0F; Along += 50)
+            Mission.Observe(.05F, EFlightPhase::Flight, Shore.Evaluate(Along), FVector::ZeroVector, FRotator::ZeroRotator);
+        for (float U = 0; U <= 1.0F && Mission.NextCheckpointIndex < 3; U += .05F)
+            Mission.Observe(.05F, EFlightPhase::Flight, FMath::Lerp(Shore.Evaluate(Shore.GetLength() - 300.0F), Bottom, static_cast<double>(U)), FVector::ZeroVector, FRotator::ZeroRotator);
+        AddInfo(FString::Printf(TEXT("case %d C3 pose %s planar offset %.0f cm"), Case, *Bottom.ToCompactString(), FVector::Dist2D(Bottom, Mission.Task.Checkpoints[2].Position)));
+        TestEqual(TEXT("C3 scored at the logged pose"), Mission.NextCheckpointIndex, 3);
+        TestEqual(TEXT("Climb column active"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-07-sea-climb")));
+        TestFalse(TEXT("A pose C3 accepted is never off the climb corridor"), Mission.GetCurrentGuidanceTarget().bOffCorridor);
+        for (float Z = Bottom.Z; Z <= Top.Z && Mission.GetCurrentGuidanceTarget().LegId == FName(TEXT("nav-07-sea-climb")); Z += 40.0F)
+        {
+            Mission.Observe(.05F, EFlightPhase::Flight, FVector(FMath::Lerp(Bottom.X, Top.X, (Z - Bottom.Z) / (Top.Z - Bottom.Z)), Bottom.Y, Z), FVector(0, 0, 600), FRotator::ZeroRotator);
+            if (!TestFalse(TEXT("Never off corridor during the straight climb"), Mission.GetCurrentGuidanceTarget().bOffCorridor)) break;
+        }
+        for (int32 Frame = 0; Frame < 5; ++Frame) Mission.Observe(.05F, EFlightPhase::Flight, Top, FVector::ZeroVector, FRotator::ZeroRotator);
+        TestEqual(TEXT("Stopping at the logged top completes the climb"), Mission.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-08-cross-cliff-in")));
+    }
+    // Same hand-off for the descent column: accepted 1.4 m off the offshore brake point.
+    FPhase4MissionSession Down = StartMission();
+    TestTrue(TEXT("Reach the brake point"), WalkUntil(Down, TEXT("nav-04-cross-cliff-out")));
+    const FPhase4GuidanceLeg Brake = Down.GetGuidanceRoute()[Down.GetGuidanceLegIndex()];
+    const FVector Off = Brake.Path.Last() + FVector(100, 100, 0);
+    for (float Along = 0; Along <= Brake.GetLength(); Along += 50)
+        Down.Observe(.05F, EFlightPhase::Flight, Brake.Evaluate(Along) + FVector(100, 100, 0) * (Along / Brake.GetLength()), FVector::ZeroVector, FRotator::ZeroRotator);
+    TestEqual(TEXT("Descent column active"), Down.GetCurrentGuidanceTarget().LegId, FName(TEXT("nav-05-offshore-descent")));
+    for (float Z = Off.Z; Z >= Down.Task.Checkpoints[1].Position.Z && Down.GetCurrentGuidanceTarget().LegId == FName(TEXT("nav-05-offshore-descent")); Z -= 40.0F)
+    {
+        Down.Observe(.05F, EFlightPhase::Flight, FVector(Off.X, Off.Y, Z), FVector(0, 0, -60), FRotator::ZeroRotator);
+        if (!TestFalse(TEXT("Descent from the accepted brake pose stays on corridor"), Down.GetCurrentGuidanceTarget().bOffCorridor)) break;
+    }
+    TestEqual(TEXT("Descent completes 1.4 m off axis (inside the 1.5 m window)"), Down.NextCheckpointIndex, 2);
+    // Structural hand-off invariant is part of ValidateGuidanceStructure (BeginMission refuses otherwise).
+    FString Failure;
+    TestTrue(TEXT("Every hand-off window fits the next corridor"), Down.Task.ValidateGuidanceStructure(Down.GetGuidanceRoute(), Failure));
     return true;
 }
 
