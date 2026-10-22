@@ -106,8 +106,10 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
             TestTrue(TEXT("Clear cloud layer is a shallow fair-weather band"), Clouds->LayerBottomAltitude >= 1.2F && Clouds->LayerHeight <= 2.0F);
             TestTrue(TEXT("Clear coverage bias is sparse but not empty (engine default -0.2 = broken cumulus)"), bCoverage && Coverage < -.25F && Coverage > -.42F);
             const auto* Post = SeaSkyTest::Find<UPostProcessComponent>(Coast);
-            TestTrue(TEXT("Dynamic GI (Lumen) supplies sky occlusion and bounce for shaded ground"), Post && Post->Settings.bOverride_DynamicGlobalIlluminationMethod
-                && Post->Settings.DynamicGlobalIlluminationMethod == EDynamicGlobalIlluminationMethod::Lumen);
+            // R9: software Lumen is inert without mesh distance fields (removed for the R7c hitch),
+            // so GI is explicitly off and the understory is sky-light driven (measured on the bridge).
+            TestTrue(TEXT("No inert Lumen GI pass without distance fields"), Post && Post->Settings.bOverride_DynamicGlobalIlluminationMethod
+                && Post->Settings.DynamicGlobalIlluminationMethod == EDynamicGlobalIlluminationMethod::None);
             // R6b perf P0: Lumen for GI only, reduced gather, sky captured per weather change only.
             TestTrue(TEXT("Reflections stay screen-space under Lumen GI"), Post && Post->Settings.bOverride_ReflectionMethod && Post->Settings.ReflectionMethod == EReflectionMethod::ScreenSpace);
             TestTrue(TEXT("Lumen final gather runs at reduced quality"), Post && Post->Settings.bOverride_LumenFinalGatherQuality && Post->Settings.LumenFinalGatherQuality <= .5F);
@@ -116,8 +118,8 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
             TestTrue(TEXT("Sky light is not recaptured every frame"), Sky && !Sky->bRealTimeCapture);
             TestTrue(TEXT("No distance-field shadows/AO from the sun or sky light"), Sky && !Sky->CastShadows
                 && SeaSkyTest::Find<UDirectionalLightComponent>(Coast) && !SeaSkyTest::Find<UDirectionalLightComponent>(Coast)->bUseRayTracedDistanceFieldShadows);
-            TestTrue(TEXT("Clear understory gets extra warm bounce"), Post && Post->Settings.bOverride_IndirectLightingIntensity && Post->Settings.IndirectLightingIntensity > 1.2F
-                && Sky && Sky->GetLightColor().R > Sky->GetLightColor().B);
+            TestTrue(TEXT("Clear understory gets a brighter, warm sky term"), Sky && Sky->Intensity > 1.5F
+                && Sky->GetLightColor().R > Sky->GetLightColor().G && Sky->GetLightColor().G > Sky->GetLightColor().B);
             TestTrue(TEXT("Cloud evolution frozen for a deterministic baseline"), bWind && Wind == 0.0F);
         }
     }
@@ -292,7 +294,11 @@ bool FCoastalShoreMaskTest::RunTest(const FString& Parameters)
             ++Offshore;
             const FLinearColor C = V.Color.ReinterpretAsLinear();
             // Foam terms are gated by contact*exp(-d/...) and shoal; offshore must be deep, far and non-shoal.
-            if (C.A > .01F || C.R < .99F || C.B < .99F) ++OffshoreFoamGates;
+            if (C.A > .01F || C.R < .99F || C.B < .99F)
+            {
+                if (OffshoreFoamGates < 3) AddInfo(FString::Printf(TEXT("offshore gate at %s mask %s"), *V.Position.ToString(), *C.ToString()));
+                ++OffshoreFoamGates;
+            }
         }
         if (FMath::Abs(V.Position.Y) < 60000 && V.Position.X > LocalShore && V.Position.X < LocalShore + 600)
         {
@@ -332,6 +338,8 @@ bool FCoastalShoreMaskTest::RunTest(const FString& Parameters)
     }
     AddInfo(FString::Printf(TEXT("perimeter land-side waterline vertices with swash contact %d"), WaterlineLandContact));
     TestTrue(TEXT("Perimeter waterline carries swash contact on both sides"), WaterlineLandContact > 10);
+    AddInfo(FString::Printf(TEXT("actual terrain waterline points %d"), Coast->GetWaterlinePointCount()));
+    TestTrue(TEXT("Foam distance uses the actual terrain/cliff waterline triangles"), Coast->GetWaterlinePointCount() > 1000);
     AddInfo(FString::Printf(TEXT("false shallow beyond shelf %d, perimeter surf vertices %d"), FalseShallow, PerimeterSurf));
     TestEqual(TEXT("No shallow colour over the 175 m floor beyond the shelf"), FalseShallow, 0);
     TestTrue(TEXT("North/south/west perimeter shores carry surf contact"), PerimeterSurf > 20);
