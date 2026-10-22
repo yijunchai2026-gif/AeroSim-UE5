@@ -294,7 +294,8 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "float m1=clamp(dot(M1,L)/.13,.65,1.4), m2=clamp(dot(M2,L)/.077,.75,1.3);"
         "c*=lerp(1,m1*m2,.25+.3*(1-fineMix));"
         "c*=1+.24*(float3(nC,nD,nE)-.5);"
-        "c=lerp(c,TRI*float3(1.12,1.06,.92),cliffFace);"
+        // R8: steep cap faces match the cliff rock tone (was a pale-gold sandstone that read untextured).
+        "c=lerp(c,TRI*float3(.66,.62,.55),cliffFace);"
         "return min(c,float3(.6,.5,.4));"));
     auto* Normal=Make(CMOT_Float3,TEXT(
         // R3: grass normals mix a 1.37x/37 deg second sample by noise (no periodic bands in
@@ -303,7 +304,7 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "float3 n=en*b.x+sn*b.y+WN*b.z+RN*b.w; n.xy*=lerp(.15,1,normalFade);"
         "float detailFade=1-smoothstep(200.0,800.0,D);"
         "float2 d=(DN.xy*lerp(.25,.6,nA)+DN2.xy*lerp(.6,.25,nA))*detailFade*.75;"
-        "n.xy*=1-cliffFace; d*=1-cliffFace;"
+        "n.xy*=1-.6*cliffFace; d*=1-.6*cliffFace;"
         "return normalize(float3(n.xy+d,max(n.z,.2)));"));
     auto* Rough=Make(CMOT_Float1,TEXT(
         "float r=lerp(.86,ER.r,fineMix)*b.x+lerp(.84,SR.r,fineMix)*b.y+lerp(.9,WR.r,fineMix)*b.z+lerp(.8,RR.r,fineMix)*b.w;"
@@ -425,7 +426,22 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
             "return normalize(VN+(normalize(TN)-flat)*.85);");
         { FCustomInput I; I.InputName = TEXT("VN"); I.Input.Connect(0, GeometryNormal); Rebased->Inputs.Add(I); }
         { FCustomInput I; I.InputName = TEXT("TN"); I.Input.Connect(0, CliffUnit); Rebased->Inputs.Add(I); }
-        BaseExpression = CliffColor; NormalExpression = Rebased; RoughnessExpression = CliffRough; RoughnessOutput = TEXT("");
+        // R8 (QA: streak strip near the waterline): WorldAlignedTexture weights its projections by the
+        // interpolated vertex normal; where a crease makes that normal disagree with the true facet
+        // (e.g. talus -> vertical face), the top projection smears vertically. There the colour is
+        // re-projected with facet-true triplanar weights from screen derivatives of world position.
+        auto* FacetTexture = Node<UMaterialExpressionTextureObjectParameter>(Material);
+        FacetTexture->ParameterName = TEXT("FacetRockColor"); FacetTexture->Texture = Textures[Base]; FacetTexture->SamplerType = SAMPLERTYPE_Color;
+        auto* FacetColor = Node<UMaterialExpressionCustom>(Material); FacetColor->OutputType = CMOT_Float3;
+        FacetColor->Code = TEXT("float3 f=normalize(cross(ddx(P),ddy(P))); float mis=saturate((abs(VN.z)-abs(f.z))*2.5);"
+            "float3 w=pow(abs(f),4.0); w/=max(dot(w,1),1e-4); float s=1.0/350.0;"
+            "float3 t=Texture2DSample(Tex,TexSampler,P.yz*s).rgb*w.x+Texture2DSample(Tex,TexSampler,P.xz*s).rgb*w.y+Texture2DSample(Tex,TexSampler,P.xy*s).rgb*w.z;"
+            "return lerp(C,t*float3(1.12,1.06,.92),mis);");
+        { FCustomInput I; I.InputName = TEXT("P"); I.Input.Connect(0, CliffWorld); FacetColor->Inputs.Add(I); }
+        { FCustomInput I; I.InputName = TEXT("VN"); I.Input.Connect(0, GeometryNormal); FacetColor->Inputs.Add(I); }
+        { FCustomInput I; I.InputName = TEXT("C"); I.Input.Connect(0, CliffColor); FacetColor->Inputs.Add(I); }
+        { FCustomInput I; I.InputName = TEXT("Tex"); I.Input.Connect(0, FacetTexture); FacetColor->Inputs.Add(I); }
+        BaseExpression = FacetColor; NormalExpression = Rebased; RoughnessExpression = CliffRough; RoughnessOutput = TEXT("");
     }
     else
     {
