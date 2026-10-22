@@ -298,10 +298,10 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             // Foam002 (ambientCG CC0) opacity, advected with the same current, gives the
             // white water crisp bubbly edges instead of a soft smeared sheet.
             + TEXT("float tex=Texture2DSample(FoamTex,FoamTexSampler,(P.xy+drift)/220.0).r;")
-            + TEXT("float f=surge+churn*.65+patches+breaker+residue+swash+streak;")
+            + TEXT("float f=surge+churn+patches+breaker+residue+swash+streak;")
             // Sharpening only up close; far away the mip-averaged value is used directly, so distant
             // foam cannot pop on/off between frames (R8 overview flicker at the cliff base).
-            + TEXT("float x=f*(.40+.95*tex); return saturate(lerp(smoothstep(.12,.85,x),x,smoothstep(3000,20000,length(P-C))));");
+            + TEXT("float x=f*(.60+.90*tex)*1.5; return saturate(lerp(smoothstep(.10,.70,x),x*1.2,smoothstep(3000,20000,length(P-C))));");
     case ECoastalWaterShader::Scattering:
         // Input Mask. Greener shallows over the platform, deep blue-grey offshore (per cm); a
         // turbid surf-zone term keeps the waterline from reading as clear glass over rock.
