@@ -1643,7 +1643,10 @@ float NearStandDensity(const float X, const float Y)
     const float OuterEdge = 25000.0F + 10000.0F * (Fbm(X + 5000, Y, 16000.0F) - .5F) + 3000.0F * (Fbm(X - 900, Y + 400, 4800.0F) - .5F);
     const float WestEdge = -29000.0F + 11000.0F * (Fbm(Y, X, 14000.0F) - .5F) + 3000.0F * (Fbm(Y + 700, X, 4500.0F) - .5F);
     const float EastEdge = NearEastEdge(Y) - 1800.0F * Fbm(Y, 300.0F, 4200.0F) - 8000.0F * FMath::Max(0.0F, Fbm(Y - 2000.0F, 900.0F, 11000.0F) - .38F);
-    const float Inside = FMath::Min(FMath::Min(AbsY - FieldEdge, OuterEdge - AbsY), FMath::Min(X - WestEdge, EastEdge - X));
+    // R10: erode the distance-to-edge field itself with 25-60 m noise, so every side (incl. the
+    // north grove) gets bays and promontories rather than four straight edges.
+    const float Erosion = 3200.0F * (Fbm(X + 11000.0F, Y - 3000.0F, 3600.0F) - .35F) + 1400.0F * (Fbm(X - 2700.0F, Y + 5100.0F, 1500.0F) - .5F);
+    const float Inside = FMath::Min(FMath::Min(AbsY - FieldEdge, OuterEdge - AbsY), FMath::Min(X - WestEdge, EastEdge - X)) - (Y > 0 ? 1.4F : 1.0F) * Erosion;
     if (Inside <= 0)
     {
         // Outside the core stands, woodland-class ground (DEV-TERRAIN habitat) carries a looser
@@ -1767,12 +1770,13 @@ const FLayout& GetLayout()
         for (const FCorridorSample& Sample : Layout.Corridor)
         {
             if (Sample.Distance < Next) continue;
-            Next = Sample.Distance + Random.FRandRange(560, 800);
+            Next = Sample.Distance + Random.FRandRange(420, 1150); // irregular along-lane spacing
             const int32 Archetype = CorridorTrees[Random.RandRange(0, CorridorTrees.Num() - 1)];
             const float FlankScale = Random.FRandRange(.9F, 1.12F), FlankGirth = Random.FRandRange(.85F, 1.25F);
             const float Radius = Archetypes[Archetype].BreastRadius * FlankScale * FlankGirth;
             const FVector2D Normal(-Sample.Tangent.Y, Sample.Tangent.X);
-            const FVector2D P = Sample.Point + Normal * Side * (Sample.HalfWidth + Radius + Random.FRandRange(10, 70));
+            // Staggered setback (0.1-1.5 m beyond the lane edge) plus along-lane jitter: no straight rows.
+            const FVector2D P = Sample.Point + Normal * Side * (Sample.HalfWidth + Radius + Random.FRandRange(10, 150)) + Sample.Tangent * Random.FRandRange(-120, 120);
             if (NearStandDensity(P.X, P.Y) <= 0 || IsProtected(P, 400)) continue;
             if (!Clear(P, Radius + 120)) continue;
             {
@@ -1789,11 +1793,12 @@ const FLayout& GetLayout()
         }
     }
     // 2. Fixed-density stand fill: jittered 5.0 m lattice with Poisson-style rejection.
-    constexpr float Cell = 450.0F;
+    constexpr float Cell = 395.0F;
     for (float GX = -45000; GX < 12500; GX += Cell)
         for (float GY = -41000; GY < 41000; GY += Cell)
         {
-            const FVector2D P(GX + Random.FRandRange(.1F, .9F) * Cell, GY + Random.FRandRange(.1F, .9F) * Cell);
+            // Full-cell jitter plus up to ~1 m overlap into neighbouring cells hides the lattice.
+            const FVector2D P(GX + Random.FRandRange(-.2F, 1.2F) * Cell, GY + Random.FRandRange(-.2F, 1.2F) * Cell);
             const float Density = NearStandDensity(P.X, P.Y);
             const float Roll = Random.FRand(), AgeRoll = Random.FRand(), SpeciesRoll = Random.FRand();
             const float Yaw = Random.FRandRange(0, 2 * PI), LeanYaw = Random.FRandRange(0, 2 * PI), LeanRoll = Random.FRand(), ScaleRoll = Random.FRand();
@@ -1823,7 +1828,9 @@ const FLayout& GetLayout()
             // Corridor: no trunk surface inside the clear width plus 30 cm; no oak limbs, no sapling crowns.
             float HalfWidth = 0;
             const float ToCorridor = CorridorDistance(P, &HalfWidth);
-            const float CorridorClearance = A.Species == ESpecies::CoastLiveOak ? 1100.0F : A.Species == ESpecies::Sapling ? HalfWidth + 160.0F : HalfWidth + TrunkRadius + 30.0F;
+            // Staggered extra setback (0-1.1 m) so the first fill trees do not line up on one clearance line.
+            const float Stagger = 110.0F * FMath::Frac(FMath::Sin(P.X * .013F + P.Y * .017F) * 43758.5453F);
+            const float CorridorClearance = A.Species == ESpecies::CoastLiveOak ? 1100.0F : A.Species == ESpecies::Sapling ? HalfWidth + 160.0F : HalfWidth + TrunkRadius + 30.0F + Stagger;
             if (ToCorridor < CorridorClearance) continue;
             // Density falls off toward the lane: a thinned 6 m band frames the corridor edges.
             if (ToCorridor < CorridorClearance + 600.0F && Roll > Density * .97F * (.25F + .75F * (ToCorridor - CorridorClearance) / 600.0F)) continue;
