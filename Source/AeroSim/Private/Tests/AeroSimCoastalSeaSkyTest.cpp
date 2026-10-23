@@ -28,6 +28,12 @@ template <typename T> T* Find(const AActor* Actor)
     TArray<T*> Items; Actor->GetComponents(Items);
     return Items.IsEmpty() ? nullptr : Items[0];
 }
+UDirectionalLightComponent* FindKey(const AActor* Actor)
+{
+    TArray<UDirectionalLightComponent*> Items; Actor->GetComponents(Items);
+    for (UDirectionalLightComponent* Item : Items) if (Item->GetFName() == TEXT("KeyLight")) return Item;
+    return nullptr;
+}
 UMeshComponent* FindPart(const AActor* Actor, const FName Name)
 {
     TArray<UMeshComponent*> Items; Actor->GetComponents(Items);
@@ -46,7 +52,7 @@ struct FSnapshot
 FSnapshot Capture(const APacificCoastGraybox* Coast)
 {
     FSnapshot S;
-    const auto* Key = Find<UDirectionalLightComponent>(Coast);
+    const auto* Key = FindKey(Coast);
     const auto* Fog = Find<UExponentialHeightFogComponent>(Coast);
     const auto* Sky = Find<USkyAtmosphereComponent>(Coast);
     const auto* Clouds = Find<UVolumetricCloudComponent>(Coast);
@@ -77,7 +83,7 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
     if (TestNotNull(TEXT("Coast spawns"), Coast))
     {
         Coast->ApplyEnvironmentState(Clear);
-        const auto* Key = SeaSkyTest::Find<UDirectionalLightComponent>(Coast);
+        const auto* Key = SeaSkyTest::FindKey(Coast);
         TestTrue(TEXT("Key light is the atmosphere sun at the computed angle"), Key && Key->IsUsedAsAtmosphereSunLight()
             && Key->GetRelativeRotation().Equals(APacificCoastGraybox::GetCoastalSunRotation(Clear), .01F));
         const auto* Fog = SeaSkyTest::Find<UExponentialHeightFogComponent>(Coast);
@@ -117,9 +123,14 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
             const auto* Sky = SeaSkyTest::Find<USkyLightComponent>(Coast);
             TestTrue(TEXT("Sky light is not recaptured every frame"), Sky && !Sky->bRealTimeCapture);
             TestTrue(TEXT("No distance-field shadows/AO from the sun or sky light"), Sky && !Sky->CastShadows
-                && SeaSkyTest::Find<UDirectionalLightComponent>(Coast) && !SeaSkyTest::Find<UDirectionalLightComponent>(Coast)->bUseRayTracedDistanceFieldShadows);
-            TestTrue(TEXT("Clear understory gets a brighter, warm sky term"), Sky && Sky->Intensity > 1.5F
-                && Sky->GetLightColor().R > Sky->GetLightColor().G && Sky->GetLightColor().G > Sky->GetLightColor().B);
+                && SeaSkyTest::FindKey(Coast) && !SeaSkyTest::FindKey(Coast)->bUseRayTracedDistanceFieldShadows);
+            // R10: understory lift is a diffuse-only bounce proxy (no specular, no shadows, not the
+            // atmosphere sun); the sky capture that feeds sea reflections stays near-neutral.
+            const UDirectionalLightComponent* Bounce = nullptr;
+            { TArray<UDirectionalLightComponent*> Lights; Coast->GetComponents(Lights); for (auto* L : Lights) if (L->GetFName() == TEXT("CoastalBounceFill")) Bounce = L; }
+            TestTrue(TEXT("Warm diffuse-only bounce fill for the understory"), Bounce && Bounce->Intensity > 0 && Bounce->SpecularScale == 0.0F
+                && !Bounce->CastShadows && !Bounce->IsUsedAsAtmosphereSunLight() && Bounce->GetLightColor().R > Bounce->GetLightColor().B);
+            TestTrue(TEXT("Sky capture stays near-neutral for sea reflections"), Sky && Sky->Intensity < 1.2F && Sky->GetLightColor().B > .85F);
             TestTrue(TEXT("Cloud evolution frozen for a deterministic baseline"), bWind && Wind == 0.0F);
         }
     }
@@ -133,8 +144,8 @@ bool FCoastalCirrusTest::RunTest(const FString& Parameters)
 {
     const FString Code = APacificCoastGraybox::GetCoastalWaterShaderCode(APacificCoastGraybox::ECoastalWaterShader::Cirrus);
     TestTrue(TEXT("Cirrus field is time-independent (deterministic baseline, no wind)"), !Code.Contains(TEXT("T*"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("*T"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("+T"), ESearchCase::CaseSensitive));
-    TestTrue(TEXT("Cirrus has one prevailing direction (no rotating/swirling streak axis)"), !Code.Contains(TEXT("cos("), ESearchCase::CaseSensitive) && Code.Contains(TEXT("float2 dir=float2(.94,.34)")));
-    TestTrue(TEXT("Cirrus is masked below the horizon and around the sun"), Code.Contains(TEXT("smoothstep(.08,.35,v.z)")) && Code.Contains(TEXT("dot(v,normalize(S))")));
+    TestTrue(TEXT("Cirrus has one prevailing direction (no rotating/swirling streak axis)"), !Code.Contains(TEXT("cos("), ESearchCase::CaseSensitive) && Code.Contains(TEXT("float2 dir=float2(.985,.17)")));
+    TestTrue(TEXT("Cirrus is masked below the horizon and around the sun"), Code.Contains(TEXT("smoothstep(.03,.20,v.z)")) && Code.Contains(TEXT("dot(v,normalize(S))")));
     UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
     APacificCoastGraybox* Coast = World ? World->SpawnActor<APacificCoastGraybox>() : nullptr;
     if (TestNotNull(TEXT("Coast spawns"), Coast))

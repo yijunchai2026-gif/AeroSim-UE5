@@ -284,24 +284,28 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("float cells=noise.f((P.xy+drift)*.0025);")
             + TEXT("float lace=smoothstep(.30,.70,noise.f((P.xy+drift)*.007)*.55+cells*.45);")
             + TEXT("float gaps=smoothstep(.32,.62,noise.f((P.xy+drift)*float2(.0004,.0011)));")
-            + TEXT("float reach=320+1500*crest*contact;")
-            + TEXT("float surge=contact*exp(-d/reach)*lace*(.30+.70*gaps)*(.35+.65*crest);")
-            + TEXT("float churn=contact*exp(-d/170)*(.45+.55*cells)*(.6+.4*gaps);")
-            + TEXT("float patches=contact*exp(-d/650)*lace*gaps*.55;")
+            // R10 (QA: opaque white sheet): real surf is lacy. A marbled network from two ridged
+            // noise octaves (thin bright filaments, >50% open water) breaks up everything except
+            // the actively breaking crest line; residue behind it is thin and fades.
+            + TEXT("float r1=1-abs(2*noise.f((P.xy+drift)*.0042)-1); float r2=1-abs(2*noise.f((P.xy+drift*1.15)*.011+3.7)-1);")
+            + TEXT("float marble=saturate(smoothstep(.72,.94,r1)+smoothstep(.78,.96,r2)*.8);")
+            + TEXT("float reach=260+900*crest*contact;")
+            + TEXT("float surge=contact*exp(-d/reach)*(.35+.65*crest)*lerp(marble,1,.35*exp(-d/120));")
+            + TEXT("float churn=contact*exp(-d/110)*(.5+.5*cells)*(.6+.4*gaps)*.7;")
+            + TEXT("float patches=contact*exp(-d/650)*marble*gaps*.45;")
             // Beach/shelf surf zone from the interpolated depth mask (survives coarse far mesh):
-            // breaker lines where crests reach < ~9 m depth, whitewater swash in the last ~4 m.
+            // only the crest band is solid white; residue behind it is marbled and fades.
             + TEXT("float shallow=1-smoothstep(.05,.50,Mask.b);")
-            + TEXT("float breaker=max(shoal,shallow*contact)*smoothstep(.55,.80,crest)*(.55+.45*lace)*1.5;")
-            + TEXT("float residue=shallow*contact*smoothstep(.30,.60,crest)*lace*.5;")
-            + TEXT("float swash=contact*(1-smoothstep(0,.22,Mask.b))*(.40+.60*crest)*lace*.9;")
-            + TEXT("float streak=contact*exp(-d/1400)*smoothstep(.58,.90,noise.f((P.xy+drift)*float2(.0016,.0035)))*.45;")
-            // Foam002 (ambientCG CC0) opacity, advected with the same current, gives the
-            // white water crisp bubbly edges instead of a soft smeared sheet.
+            + TEXT("float breaker=max(shoal,shallow*contact)*smoothstep(.70,.88,crest)*(.6+.4*lace)*1.2;")
+            + TEXT("float residue=shallow*contact*smoothstep(.35,.70,crest)*marble*.6;")
+            + TEXT("float swash=contact*(1-smoothstep(0,.18,Mask.b))*(.35+.65*crest)*marble*.7;")
+            + TEXT("float streak=contact*exp(-d/1400)*smoothstep(.58,.90,noise.f((P.xy+drift)*float2(.0016,.0035)))*marble*.5;")
+            // Foam002 (ambientCG CC0) opacity, advected with the same current, gives bubbly edges.
             + TEXT("float tex=Texture2DSample(FoamTex,FoamTexSampler,(P.xy+drift)/220.0).r;")
             + TEXT("float f=surge+churn+patches+breaker+residue+swash+streak;")
             // Sharpening only up close; far away the mip-averaged value is used directly, so distant
             // foam cannot pop on/off between frames (R8 overview flicker at the cliff base).
-            + TEXT("float x=f*(.60+.90*tex)*1.5; return saturate(lerp(smoothstep(.10,.70,x),x*1.2,smoothstep(3000,20000,length(P-C))));");
+            + TEXT("float x=f*(.50+.80*tex); return saturate(lerp(smoothstep(.12,.75,x),x,smoothstep(3000,20000,length(P-C))));");
     case ECoastalWaterShader::Scattering:
         // Input Mask. Greener shallows over the platform, deep blue-grey offshore (per cm); a
         // turbid surf-zone term keeps the waterline from reading as clear glass over rock.
@@ -323,23 +327,26 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("return 1-smoothstep(top*.35,top,above);");
     case ECoastalWaterShader::Cirrus:
         // Inputs P (dome world pos), C (camera), S (direction toward the sun). Returns 0..1.
-        // Cirrus uncinus: one prevailing WSW axis, thin fibres at three scales instead of a
-        // broad stretched body (R8: smeared/motion-blur look), and hooked ends - near the end of
-        // each streak segment the cross-axis coordinate bends, so fibres curl like commas.
-        // Low-amplitude warp only, clumped/broken coverage, horizon/sun masked, no time input.
+        // Cirrus uncinus: thin fibres at three scales with hooked ends, low-amplitude warp,
+        // clumped/broken coverage, horizon/sun masked, no time input.
+        // R10 mapping: angular (azimuth, elevation) coordinates so every stroke shares one gently
+        // tilted, near-horizontal direction in every view. A perspective plane made parallel
+        // streaks fan out from a vanishing point (starburst); a direction-dome map stretched
+        // them vertically near the horizon. Two azimuth origins (seams due south / due north)
+        // are blended by the north-south component so no seam is ever visible.
         return NoiseHelpers()
-            + TEXT("float3 v=normalize(P-C); float up=smoothstep(.08,.35,v.z);")
-            + TEXT("float2 q=v.xy/max(v.z,.08)*9000.0*.00015;")
-            + TEXT("float2 p=q+(float2(noise.f(q*.5+1.3),noise.f(q*.5+8.1))-.5)*.25;")
-            + TEXT("float2 dir=float2(.94,.34); float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
-            + TEXT("float seg=frac(r.x*.45+noise.f(float2(r.y*1.3,7.7))*.8); float hook=pow(smoothstep(.62,1.0,seg),2.0);")
-            + TEXT("r.y+=hook*.18;")
-            + TEXT("float fib=noise.f(float2(r.x*.6,r.y*12.0)); float fib2=noise.f(float2(r.x*1.4+4.0,r.y*26.0));")
-            + TEXT("float fib3=noise.f(float2(r.x*3.0+9.0,r.y*55.0));")
-            + TEXT("float body=noise.f(float2(r.x*.35,r.y*2.2)+2.7);")
-            + TEXT("float clump=smoothstep(.55,.80,noise.f(q*.22+7.3));")
-            + TEXT("float breaks=smoothstep(.30,.70,noise.f(float2(r.x*2.5,r.y*.8)+5.5));")
-            + TEXT("float c=smoothstep(.50,.88,body*.30+fib*.30+fib2*.25+fib3*.15)*clump*breaks*(.75+.25*hook);")
+            + TEXT("struct CirrusField { float eval(float2 q, CoastNoise noise) {")
+            + TEXT(" float2 p=q+(float2(noise.f(q*.5+1.3),noise.f(q*.5+8.1))-.5)*.25;")
+            + TEXT(" float2 dir=float2(.985,.17); float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
+            + TEXT(" float seg=frac(r.x*.45+noise.f(float2(r.y*1.3,7.7))*.8); float hook=pow(smoothstep(.62,1.0,seg),2.0); r.y+=hook*.18;")
+            + TEXT(" float fib=noise.f(float2(r.x*.6,r.y*12.0)); float fib2=noise.f(float2(r.x*1.4+4.0,r.y*26.0)); float fib3=noise.f(float2(r.x*3.0+9.0,r.y*55.0));")
+            + TEXT(" float body=noise.f(float2(r.x*.35,r.y*2.2)+2.7); float clump=smoothstep(.48,.72,noise.f(q*.18+7.3));")
+            + TEXT(" float breaks=smoothstep(.30,.70,noise.f(float2(r.x*2.5,r.y*.8)+5.5));")
+            + TEXT(" return smoothstep(.50,.88,body*.30+fib*.30+fib2*.25+fib3*.15)*clump*breaks*(.75+.25*hook); } };")
+            + TEXT("float3 v=normalize(P-C); float up=smoothstep(.03,.20,v.z); float el=asin(saturate(v.z));")
+            + TEXT("CirrusField cf; float c1=cf.eval(float2(atan2(v.x,v.y)*3.0,el*9.0),noise);")
+            + TEXT("float c2=cf.eval(float2(atan2(-v.x,-v.y)*3.0+11.0,el*9.0),noise);")
+            + TEXT("float c=lerp(c2,c1,smoothstep(-.3,.3,v.y));")
             + TEXT("float sun=1-smoothstep(.975,.995,dot(v,normalize(S)));")
             + TEXT("return saturate(c*up*sun);");
     default:
