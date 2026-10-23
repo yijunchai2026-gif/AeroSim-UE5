@@ -118,8 +118,11 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
             TestTrue(TEXT("Sky light is not recaptured every frame"), Sky && !Sky->bRealTimeCapture);
             TestTrue(TEXT("No distance-field shadows/AO from the sun or sky light"), Sky && !Sky->CastShadows
                 && SeaSkyTest::Find<UDirectionalLightComponent>(Coast) && !SeaSkyTest::Find<UDirectionalLightComponent>(Coast)->bUseRayTracedDistanceFieldShadows);
-            TestTrue(TEXT("Clear understory gets a brighter, warm sky term"), Sky && Sky->Intensity > 1.5F
-                && Sky->GetLightColor().R > Sky->GetLightColor().G && Sky->GetLightColor().G > Sky->GetLightColor().B);
+            // R10: understory lift/warmth on the diffuse-only indirect scale; the sky capture that
+            // feeds water reflections stays near-neutral so the sea is not washed milky/beige.
+            TestTrue(TEXT("Clear understory gets a warm diffuse-only lift"), Post && Post->Settings.bOverride_IndirectLightingIntensity && Post->Settings.IndirectLightingIntensity > 2.0F
+                && Post->Settings.bOverride_IndirectLightingColor && Post->Settings.IndirectLightingColor.R > Post->Settings.IndirectLightingColor.B);
+            TestTrue(TEXT("Sky capture stays near-neutral for sea reflections"), Sky && Sky->Intensity < 1.2F && Sky->GetLightColor().B > .9F);
             TestTrue(TEXT("Cloud evolution frozen for a deterministic baseline"), bWind && Wind == 0.0F);
         }
     }

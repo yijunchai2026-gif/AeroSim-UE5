@@ -284,24 +284,28 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("float cells=noise.f((P.xy+drift)*.0025);")
             + TEXT("float lace=smoothstep(.30,.70,noise.f((P.xy+drift)*.007)*.55+cells*.45);")
             + TEXT("float gaps=smoothstep(.32,.62,noise.f((P.xy+drift)*float2(.0004,.0011)));")
-            + TEXT("float reach=320+1500*crest*contact;")
-            + TEXT("float surge=contact*exp(-d/reach)*lace*(.30+.70*gaps)*(.35+.65*crest);")
-            + TEXT("float churn=contact*exp(-d/170)*(.45+.55*cells)*(.6+.4*gaps);")
-            + TEXT("float patches=contact*exp(-d/650)*lace*gaps*.55;")
+            // R10 (QA: opaque white sheet): real surf is lacy. A marbled network from two ridged
+            // noise octaves (thin bright filaments, >50% open water) breaks up everything except
+            // the actively breaking crest line; residue behind it is thin and fades.
+            + TEXT("float r1=1-abs(2*noise.f((P.xy+drift)*.0042)-1); float r2=1-abs(2*noise.f((P.xy+drift*1.15)*.011+3.7)-1);")
+            + TEXT("float marble=saturate(smoothstep(.72,.94,r1)+smoothstep(.78,.96,r2)*.8);")
+            + TEXT("float reach=260+900*crest*contact;")
+            + TEXT("float surge=contact*exp(-d/reach)*(.35+.65*crest)*lerp(marble,1,.35*exp(-d/120));")
+            + TEXT("float churn=contact*exp(-d/110)*(.5+.5*cells)*(.6+.4*gaps)*.7;")
+            + TEXT("float patches=contact*exp(-d/650)*marble*gaps*.45;")
             // Beach/shelf surf zone from the interpolated depth mask (survives coarse far mesh):
-            // breaker lines where crests reach < ~9 m depth, whitewater swash in the last ~4 m.
+            // only the crest band is solid white; residue behind it is marbled and fades.
             + TEXT("float shallow=1-smoothstep(.05,.50,Mask.b);")
-            + TEXT("float breaker=max(shoal,shallow*contact)*smoothstep(.55,.80,crest)*(.55+.45*lace)*1.5;")
-            + TEXT("float residue=shallow*contact*smoothstep(.30,.60,crest)*lace*.5;")
-            + TEXT("float swash=contact*(1-smoothstep(0,.22,Mask.b))*(.40+.60*crest)*lace*.9;")
-            + TEXT("float streak=contact*exp(-d/1400)*smoothstep(.58,.90,noise.f((P.xy+drift)*float2(.0016,.0035)))*.45;")
-            // Foam002 (ambientCG CC0) opacity, advected with the same current, gives the
-            // white water crisp bubbly edges instead of a soft smeared sheet.
+            + TEXT("float breaker=max(shoal,shallow*contact)*smoothstep(.70,.88,crest)*(.6+.4*lace)*1.2;")
+            + TEXT("float residue=shallow*contact*smoothstep(.35,.70,crest)*marble*.6;")
+            + TEXT("float swash=contact*(1-smoothstep(0,.18,Mask.b))*(.35+.65*crest)*marble*.7;")
+            + TEXT("float streak=contact*exp(-d/1400)*smoothstep(.58,.90,noise.f((P.xy+drift)*float2(.0016,.0035)))*marble*.5;")
+            // Foam002 (ambientCG CC0) opacity, advected with the same current, gives bubbly edges.
             + TEXT("float tex=Texture2DSample(FoamTex,FoamTexSampler,(P.xy+drift)/220.0).r;")
             + TEXT("float f=surge+churn+patches+breaker+residue+swash+streak;")
             // Sharpening only up close; far away the mip-averaged value is used directly, so distant
             // foam cannot pop on/off between frames (R8 overview flicker at the cliff base).
-            + TEXT("float x=f*(.60+.90*tex)*1.5; return saturate(lerp(smoothstep(.10,.70,x),x*1.2,smoothstep(3000,20000,length(P-C))));");
+            + TEXT("float x=f*(.50+.80*tex); return saturate(lerp(smoothstep(.12,.75,x),x,smoothstep(3000,20000,length(P-C))));");
     case ECoastalWaterShader::Scattering:
         // Input Mask. Greener shallows over the platform, deep blue-grey offshore (per cm); a
         // turbid surf-zone term keeps the waterline from reading as clear glass over rock.
@@ -329,7 +333,7 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
         // Low-amplitude warp only, clumped/broken coverage, horizon/sun masked, no time input.
         return NoiseHelpers()
             + TEXT("float3 v=normalize(P-C); float up=smoothstep(.08,.35,v.z);")
-            + TEXT("float2 q=v.xy/max(v.z,.08)*9000.0*.00015;")
+            + TEXT("float2 q=v.xy*4.0;") // R10: dome (direction) mapping; a perspective plane made parallel streaks radiate from a vanishing point
             + TEXT("float2 p=q+(float2(noise.f(q*.5+1.3),noise.f(q*.5+8.1))-.5)*.25;")
             + TEXT("float2 dir=float2(.94,.34); float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
             + TEXT("float seg=frac(r.x*.45+noise.f(float2(r.y*1.3,7.7))*.8); float hook=pow(smoothstep(.62,1.0,seg),2.0);")
