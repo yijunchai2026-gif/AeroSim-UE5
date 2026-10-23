@@ -383,6 +383,17 @@ float CoveCapDepth(const float Y)
     return Depth;
 }
 
+// R10 (QA: cove headscarp reads as flat 7.6 m planks): the coastal land columns are redistributed,
+// not added - 57 of the 77 core columns span the flat plateau (~8.8 m) and 20 span the last 70 m
+// before the rim (~3.5 m), so the headscarp, slump and lip carry real relief. The last column
+// remains exactly the rim, so the cliff seam and every rim reconstruction are unchanged.
+float CoastColumnX(const float V, const float Edge)
+{
+    constexpr float Split = 57.0F / 77.0F;
+    const float BandStart = Edge - 7000.0F;
+    return V < Split ? FMath::Lerp(-40000.0F, BandStart, V / Split) : FMath::Lerp(BandStart, Edge, (V - Split) / (1.0F - Split));
+}
+
 float SteppedCoveBlend(const float Run, const float Y, const float X)
 {
     // A slumped bluff rather than a draped sheet: an irregular rock headscarp high on the slope
@@ -393,8 +404,16 @@ float SteppedCoveBlend(const float Run, const float Y, const float X)
     // trays; the body is a smooth, irregular slump again and rock breakup comes from the steep-face
     // and habitat rock layers instead.
     const float Body=Smooth((Run-Scarp-.12F)/.75F+.06F*Noise(X,Y-2700.0F,2300.0F));
-    const float Hummocks=.06F*Noise(X,Y+4100.0F,1500.0F)*Smooth(Run/.3F)*(1.0F-Smooth((Run-.8F)/.2F));
+    // R10: 2-5 m blocky relief on the slump and scarp now that the band has ~3.5 m columns.
+    const float Rubble=.035F*Noise(X*1.4F,Y,420.0F)*Smooth(Run/.12F)*(1.0F-Smooth((Run-.9F)/.1F));
+    const float Hummocks=Rubble+.06F*Noise(X,Y+4100.0F,1500.0F)*Smooth(Run/.3F)*(1.0F-Smooth((Run-.8F)/.2F));
     return FMath::Clamp(.42F*Head+.58F*Body+Hummocks,0.0F,1.0F);
+}
+
+// 1 where coast rows are ~5 m apart (|Y| < 580 m), 0 where they are ~21 m apart.
+float RowDetail(const float Y)
+{
+    return 1.0F - Smooth((FMath::Abs(Y) - 58000.0F) / 3000.0F);
 }
 
 float CliffOutcrop(const float Y, const float Depth)
@@ -415,7 +434,7 @@ float CliffOutcrop(const float Y, const float Depth)
     for (int32 Bed = 0; Bed < UE_ARRAY_COUNT(Thresholds); ++Bed)
     {
         // R9: stronger, shorter dip so beds are not read as level contour bands on low headlands.
-        const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F) + .07F * Noise(Y, Bed * 2700.0F - 5000.0F, 2400.0F);
+        const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F) + .07F * RowDetail(Y) * Noise(Y, Bed * 2700.0F - 5000.0F, 2400.0F);
         const float BedHeight = Thickness[Bed] * (1.0F + .25F * Noise(Y, Bed * 9100.0F, 4700.0F));
         Outcrop += BedHeight * Smooth((Depth - Thresholds[Bed] - Dip) / Widths[Bed]);
     }
@@ -450,7 +469,7 @@ float BenchFootprint(const float Y)
 
 float BenchTotal(const float Y)
 {
-    const float Buttress = 420.0F + 260.0F * Noise(Y, 2900.0F, 1300.0F) + 380.0F * FMath::Abs(Noise(Y, -6100.0F, 470.0F));
+    const float Buttress = 420.0F + 260.0F * Noise(Y, 2900.0F, 1300.0F + 2700.0F * (1.0F - RowDetail(Y))) + 380.0F * RowDetail(Y) * FMath::Abs(Noise(Y, -6100.0F, 470.0F));
     return FMath::Max(0.0F, Buttress) * (1.0F - BenchFootprint(Y));
 }
 
@@ -463,7 +482,10 @@ float BenchStepOut(const float Y, const float Z, const float Top)
     // R8 (QA: ledges read as stacked identical trays / contour bands): fewer ledges whose height
     // wanders strongly along the coast, unequal tread widths and softer, rounded risers.
     const float Count = 3.0F + FMath::Floor(3.0F * (.5F + .5F * Noise(Y, 7300.0F, 5200.0F)));
-    const float Wander = 1.1F * Noise(Y, 5100.0F, 1700.0F) + .5F * Noise(Y, -900.0F, 640.0F);
+    // R10 (QA: north-toe chevrons): beyond |Y| = 600 m coast rows are 20.8 m apart, so variation
+    // shorter than ~50 m aliases into chevrons; it is faded out there.
+    const float Fine = RowDetail(Y);
+    const float Wander = 1.1F * Noise(Y, 5100.0F, 1700.0F + 3300.0F * (1.0F - Fine)) + .5F * Fine * Noise(Y, -900.0F, 640.0F);
     const float T = FMath::Clamp(Down * Count + Wander * Down * (1.0F - Down) * 4.0F, 0.0F, Count);
     const float Ledge = FMath::Clamp(FMath::FloorToFloat(T), 0.0F, Count - 1.0F);
     const float Tread = .45F + .3F * Noise(Y, Ledge * 3100.0F, 2900.0F);
@@ -481,14 +503,14 @@ float BenchStepOut(const float Y, const float Z, const float Top)
 // Match the actual last-column float arithmetic, not only the analytic edge coordinate.
 FVector BaselineRimPosition(const float Y)
 {
-    const float X=FMath::Lerp(-40000.0F,BaselineCliffEdgeX(Y),(1.0F-.6F)/.4F);
+    const float X=CoastColumnX(1.0F,BaselineCliffEdgeX(Y));
     return FVector(X,Y,BaselineLandHeight(X,Y));
 }
 FVector RimPosition(const float Y)
 {
     const float OldEdge=BaselineCliffEdgeX(Y),Edge=APacificCoastGraybox::GetCliffEdgeX(Y);
     const float Start=FMath::Max(10500.0F,OldEdge-4500.0F);
-    const float OldX=FMath::Lerp(-40000.0F,OldEdge,(1.0F-.6F)/.4F);
+    const float OldX=CoastColumnX(1.0F,OldEdge);
     const float X=OldX+Smooth((OldX-Start)/(OldEdge-Start))*(Edge-OldEdge);
     return FVector(X,Y,APacificCoastGraybox::GetCoastalLandHeight(X,Y));
 }
@@ -517,7 +539,7 @@ void BaselineCliffStations(const float RowY, const FVector& Rim, FVector (&Out)[
         // waterline (shore query, foam, DEV-FLIGHT references) is unchanged.
         const float Above = Z - APacificCoastGraybox::SeaLevelCm, Below = -Above;
         const float ReliefFade = FMath::Max(Smooth((Above - 100.0F) / 300.0F), Smooth((Below - 150.0F) / 400.0F));
-        const float Relief = ReliefFade * (90.0F * Noise(RowY, Z * 1.6F, 560.0F) + 55.0F * Noise(RowY + 700.0F, Z * 2.1F, 230.0F) + 35.0F * Noise(RowY - 300.0F, Z, 110.0F));
+        const float Relief = ReliefFade * RowDetail(RowY) * (90.0F * Noise(RowY, Z * 1.6F, 560.0F) + 55.0F * Noise(RowY + 700.0F, Z * 2.1F, 230.0F) + 35.0F * Noise(RowY - 300.0F, Z, 110.0F));
         float X = static_cast<float>(Rim.X) + CliffOutcrop(RowY, Depth) + Bench + Relief * (1.0F - BenchFootprint(RowY));
         if (Weight > 0)
         {
@@ -995,7 +1017,7 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
         for (int32 Column = 0; Column < Columns; ++Column)
         {
             const float U = Column / 192.0F;
-            const float OldX = U <= .6F ? FMath::Lerp(West, -40000.0F, U / .6F) : FMath::Lerp(-40000.0F, OldEdge, (U - .6F) / .4F);
+            const float OldX = U <= .6F ? FMath::Lerp(West, -40000.0F, U / .6F) : CoastColumnX((U - .6F) / .4F, OldEdge);
             const float X=OldX+Smooth((OldX-EditStart)/(OldEdge-EditStart))*(Edge-OldEdge);
             Vertex(FVector(X, Y, GetCoastalLandHeight(X, Y)));
         }
@@ -1203,7 +1225,10 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
         // Keep the scanned hero face clear: blocks that fall in front of it move to its flanks.
         if (FMath::Abs(Y - ScanY) < ScanHalfWidth + 700.0F) Y = ScanY + (Y < ScanY ? -1.0F : 1.0F) * (ScanHalfWidth + 700.0F + FMath::Abs(Y - ScanY) * .8F);
         const float Edge = GetCliffEdgeX(Y);
-        const float Radius = RockRandom.FRandRange(650.0F, 2100.0F);
+        // R10 (QA: a ~15 m flat-faced boulder wedge beside the scan): blocks near the hero cove are
+        // capped at 4-6 m across; elsewhere they stay under ~16 m.
+        const float HeroDistance = FMath::Abs(Y - ScanY);
+        const float Radius = HeroDistance < 9000.0F ? RockRandom.FRandRange(200.0F, 300.0F) : RockRandom.FRandRange(500.0F, 1200.0F);
         const float Peak = RockRandom.FRandRange(-7400.0F, -4600.0F);
         // Blocks sit on the real sloping cliff foot at the waterline (previously buried behind it).
         const float Foot = GetCoastalShoreX(Y) + RockRandom.FRandRange(-300.0F, 700.0F) - Radius * .3F;

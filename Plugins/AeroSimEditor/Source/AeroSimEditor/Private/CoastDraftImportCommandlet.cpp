@@ -249,12 +249,27 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
     // R5a: near-vertical cap faces (cove lip, gully walls) would smear the XY-planar ground UVs into
     // vertical streaks; they take world-aligned triplanar sandstone (same as the cliff) instead.
     auto Pass=[Material](UMaterialExpression* Call){auto* M=Node<UMaterialExpressionMultiply>(Material);UMaterialEditingLibrary::ConnectMaterialExpressions(Call,TEXT("XYZ Texture"),M,TEXT("A"));M->ConstB=1.0F;return M;};
-    UMaterialExpression* SteepColor=Pass(Project(Material,AlignedTexture,Textures[34],TEXT("SteepFaceColor"),SAMPLERTYPE_Color,350.0F));
+    // R10 self-check (shore: vertical streaks on the cove headscarp): WorldAlignedTexture weights its
+    // projections by the interpolated vertex normal, which on the coarse cap disagrees with the steep
+    // facet. Steep land faces use facet-true triplanar weights from screen derivatives instead.
+    auto FacetTriplanar=[Material](UTexture2D* Texture,const TCHAR* Name,float PhysicalCm)->UMaterialExpression*
+    {
+        auto* Object=Node<UMaterialExpressionTextureObjectParameter>(Material);
+        Object->ParameterName=Name;Object->Texture=Texture;Object->SamplerType=SAMPLERTYPE_Color;
+        auto* World=Node<UMaterialExpressionWorldPosition>(Material);
+        auto* Tri=Node<UMaterialExpressionCustom>(Material);Tri->OutputType=CMOT_Float3;
+        Tri->Code=FString::Printf(TEXT("float3 f=normalize(cross(ddx(P),ddy(P))); float3 w=pow(abs(f),4.0); w/=max(dot(w,1),1e-4); float s=1.0/%f;"
+            "return Texture2DSample(Tex,TexSampler,P.yz*s).rgb*w.x+Texture2DSample(Tex,TexSampler,P.xz*s).rgb*w.y+Texture2DSample(Tex,TexSampler,P.xy*s).rgb*w.z;"),PhysicalCm);
+        {FCustomInput I;I.InputName=TEXT("P");I.Input.Connect(0,World);Tri->Inputs.Add(I);}
+        {FCustomInput I;I.InputName=TEXT("Tex");I.Input.Connect(0,Object);Tri->Inputs.Add(I);}
+        return Tri;
+    };
+    UMaterialExpression* SteepColor=FacetTriplanar(Textures[34],TEXT("SteepFaceColor"),350.0F);
     UMaterialExpression* SteepRough=Pass(Project(Material,AlignedTexture,Textures[36],TEXT("SteepFaceRoughness"),SAMPLERTYPE_LinearGrayscale,350.0F));
     // R9 self-check: the cove headscarp (steep land faces) still read pale gold next to the cliff. Steep
     // faces now take the cliff's own macro tone (cliff_side, world-aligned at 23 m) with the sandstone
     // only as luminance detail, matching the rock material's tinted colour.
-    UMaterialExpression* SteepMacro=Pass(Project(Material,AlignedTexture,Textures[3],TEXT("SteepFaceMacro"),SAMPLERTYPE_Color,2300.0F));
+    UMaterialExpression* SteepMacro=FacetTriplanar(Textures[3],TEXT("SteepFaceMacro"),2300.0F);
     // Trunk-base litter (DEV-FLORA GetForestLitterMask) arrives as 1 - vertex alpha on terrain;
     // trail surfaces use their alpha as the worn-core mask, so they read no litter.
     UMaterialExpression* LitterAlpha=nullptr;
@@ -439,7 +454,9 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
         auto* FacetTexture = Node<UMaterialExpressionTextureObjectParameter>(Material);
         FacetTexture->ParameterName = TEXT("FacetRockColor"); FacetTexture->Texture = Textures[Base]; FacetTexture->SamplerType = SAMPLERTYPE_Color;
         auto* FacetColor = Node<UMaterialExpressionCustom>(Material); FacetColor->OutputType = CMOT_Float3;
-        FacetColor->Code = TEXT("float3 f=normalize(cross(ddx(P),ddy(P))); float mis=saturate((abs(VN.z)-abs(f.z))*2.5);"
+        // R10: any strong vertex/facet disagreement (also horizontal slivers under sideways vertex
+        // normals, the orange waterline strip) takes the facet-true projection.
+        FacetColor->Code = TEXT("float3 f=normalize(cross(ddx(P),ddy(P))); float mis=saturate(max((abs(VN.z)-abs(f.z))*2.5,(abs(f.z)-abs(VN.z))*2.5));"
             "float3 w=pow(abs(f),4.0); w/=max(dot(w,1),1e-4); float s=1.0/350.0;"
             "float3 t=Texture2DSample(Tex,TexSampler,P.yz*s).rgb*w.x+Texture2DSample(Tex,TexSampler,P.xz*s).rgb*w.y+Texture2DSample(Tex,TexSampler,P.xy*s).rgb*w.z;"
             // R9: keep the face's own tone (macro cliff_side colour); the re-projected sample only
