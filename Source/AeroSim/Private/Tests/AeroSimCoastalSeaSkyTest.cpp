@@ -144,7 +144,7 @@ bool FCoastalCirrusTest::RunTest(const FString& Parameters)
 {
     const FString Code = APacificCoastGraybox::GetCoastalWaterShaderCode(APacificCoastGraybox::ECoastalWaterShader::Cirrus);
     TestTrue(TEXT("Cirrus field is time-independent (deterministic baseline, no wind)"), !Code.Contains(TEXT("T*"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("*T"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("+T"), ESearchCase::CaseSensitive));
-    TestTrue(TEXT("Cirrus has one prevailing direction (no rotating/swirling streak axis)"), !Code.Contains(TEXT("cos("), ESearchCase::CaseSensitive) && Code.Contains(TEXT("float2 dir=float2(.94,.34)")));
+    TestTrue(TEXT("Cirrus has one prevailing direction (no rotating/swirling streak axis)"), !Code.Contains(TEXT("cos("), ESearchCase::CaseSensitive) && Code.Contains(TEXT("float2 dir=float2(.26,.97)")));
     TestTrue(TEXT("Cirrus is masked below the horizon and around the sun"), Code.Contains(TEXT("smoothstep(.08,.35,v.z)")) && Code.Contains(TEXT("dot(v,normalize(S))")));
     UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
     APacificCoastGraybox* Coast = World ? World->SpawnActor<APacificCoastGraybox>() : nullptr;

@@ -568,8 +568,10 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
     float Indirect[] = {1.0F, 1.0F, 1.0F};
     FLinearColor SkyTint[] = {FLinearColor(1.0F,.95F,.88F), FLinearColor::White, FLinearColor::White};
     FLinearColor IndirectTint[] = {FLinearColor::White, FLinearColor::White, FLinearColor::White};
-    float Bounce[] = {1.6F, 0.0F, 0.0F};
-    FLinearColor BounceTint[] = {FLinearColor(1.0F,.74F,.36F), FLinearColor::White, FLinearColor::White};
+    // Bridge-measured (R10): corridor floor 46.4,41.9,31.0 / forest 45.5,43.0,32.8 (target
+    // 45,42,32); glint lower sea 14.2,51.6,72.9 (R8 19.6,54.3,74.3); field mid-ground matches R8.
+    float Bounce[] = {.28F, 0.0F, 0.0F};
+    FLinearColor BounceTint[] = {FLinearColor(1.0F,.80F,.62F), FLinearColor::White, FLinearColor::White};
     int32 UnderstoryGI = 0; // 0 none (sky light only), 1 Lumen, 2 screen-space GI; Lumen inert without DFs
 #if !UE_BUILD_SHIPPING
     // Development-only measurement overrides (no runtime ramp; read once per weather apply):

@@ -327,7 +327,8 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("return 1-smoothstep(top*.35,top,above);");
     case ECoastalWaterShader::Cirrus:
         // Inputs P (dome world pos), C (camera), S (direction toward the sun). Returns 0..1.
-        // Cirrus uncinus: one prevailing WSW axis, thin fibres at three scales instead of a
+        // Cirrus uncinus: one prevailing SSW->NNE axis (R10: across the mostly E-W review views, so
+        // streaks read as one wind direction instead of converging on the view axis), thin fibres at three scales instead of a
         // broad stretched body (R8: smeared/motion-blur look), and hooked ends - near the end of
         // each streak segment the cross-axis coordinate bends, so fibres curl like commas.
         // Low-amplitude warp only, clumped/broken coverage, horizon/sun masked, no time input.
@@ -335,7 +336,7 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("float3 v=normalize(P-C); float up=smoothstep(.08,.35,v.z);")
             + TEXT("float2 q=v.xy*4.0;") // R10: dome (direction) mapping; a perspective plane made parallel streaks radiate from a vanishing point
             + TEXT("float2 p=q+(float2(noise.f(q*.5+1.3),noise.f(q*.5+8.1))-.5)*.25;")
-            + TEXT("float2 dir=float2(.94,.34); float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
+            + TEXT("float2 dir=float2(.26,.97); float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
             + TEXT("float seg=frac(r.x*.45+noise.f(float2(r.y*1.3,7.7))*.8); float hook=pow(smoothstep(.62,1.0,seg),2.0);")
             + TEXT("r.y+=hook*.18;")
             + TEXT("float fib=noise.f(float2(r.x*.6,r.y*12.0)); float fib2=noise.f(float2(r.x*1.4+4.0,r.y*26.0));")
