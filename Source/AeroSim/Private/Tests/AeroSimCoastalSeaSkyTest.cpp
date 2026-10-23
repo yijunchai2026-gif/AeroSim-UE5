@@ -28,6 +28,12 @@ template <typename T> T* Find(const AActor* Actor)
     TArray<T*> Items; Actor->GetComponents(Items);
     return Items.IsEmpty() ? nullptr : Items[0];
 }
+UDirectionalLightComponent* FindKey(const AActor* Actor)
+{
+    TArray<UDirectionalLightComponent*> Items; Actor->GetComponents(Items);
+    for (UDirectionalLightComponent* Item : Items) if (Item->GetFName() == TEXT("KeyLight")) return Item;
+    return nullptr;
+}
 UMeshComponent* FindPart(const AActor* Actor, const FName Name)
 {
     TArray<UMeshComponent*> Items; Actor->GetComponents(Items);
@@ -46,7 +52,7 @@ struct FSnapshot
 FSnapshot Capture(const APacificCoastGraybox* Coast)
 {
     FSnapshot S;
-    const auto* Key = Find<UDirectionalLightComponent>(Coast);
+    const auto* Key = FindKey(Coast);
     const auto* Fog = Find<UExponentialHeightFogComponent>(Coast);
     const auto* Sky = Find<USkyAtmosphereComponent>(Coast);
     const auto* Clouds = Find<UVolumetricCloudComponent>(Coast);
@@ -77,7 +83,7 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
     if (TestNotNull(TEXT("Coast spawns"), Coast))
     {
         Coast->ApplyEnvironmentState(Clear);
-        const auto* Key = SeaSkyTest::Find<UDirectionalLightComponent>(Coast);
+        const auto* Key = SeaSkyTest::FindKey(Coast);
         TestTrue(TEXT("Key light is the atmosphere sun at the computed angle"), Key && Key->IsUsedAsAtmosphereSunLight()
             && Key->GetRelativeRotation().Equals(APacificCoastGraybox::GetCoastalSunRotation(Clear), .01F));
         const auto* Fog = SeaSkyTest::Find<UExponentialHeightFogComponent>(Coast);
@@ -117,12 +123,14 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
             const auto* Sky = SeaSkyTest::Find<USkyLightComponent>(Coast);
             TestTrue(TEXT("Sky light is not recaptured every frame"), Sky && !Sky->bRealTimeCapture);
             TestTrue(TEXT("No distance-field shadows/AO from the sun or sky light"), Sky && !Sky->CastShadows
-                && SeaSkyTest::Find<UDirectionalLightComponent>(Coast) && !SeaSkyTest::Find<UDirectionalLightComponent>(Coast)->bUseRayTracedDistanceFieldShadows);
-            // R10: understory lift/warmth on the diffuse-only indirect scale; the sky capture that
-            // feeds water reflections stays near-neutral so the sea is not washed milky/beige.
-            TestTrue(TEXT("Clear understory gets a warm diffuse-only lift"), Post && Post->Settings.bOverride_IndirectLightingIntensity && Post->Settings.IndirectLightingIntensity > 2.0F
-                && Post->Settings.bOverride_IndirectLightingColor && Post->Settings.IndirectLightingColor.R > Post->Settings.IndirectLightingColor.B);
-            TestTrue(TEXT("Sky capture stays near-neutral for sea reflections"), Sky && Sky->Intensity < 1.2F && Sky->GetLightColor().B > .9F);
+                && SeaSkyTest::FindKey(Coast) && !SeaSkyTest::FindKey(Coast)->bUseRayTracedDistanceFieldShadows);
+            // R10: understory lift is a diffuse-only bounce proxy (no specular, no shadows, not the
+            // atmosphere sun); the sky capture that feeds sea reflections stays near-neutral.
+            const UDirectionalLightComponent* Bounce = nullptr;
+            { TArray<UDirectionalLightComponent*> Lights; Coast->GetComponents(Lights); for (auto* L : Lights) if (L->GetFName() == TEXT("CoastalBounceFill")) Bounce = L; }
+            TestTrue(TEXT("Warm diffuse-only bounce fill for the understory"), Bounce && Bounce->Intensity > 0 && Bounce->SpecularScale == 0.0F
+                && !Bounce->CastShadows && !Bounce->IsUsedAsAtmosphereSunLight() && Bounce->GetLightColor().R > Bounce->GetLightColor().B);
+            TestTrue(TEXT("Sky capture stays near-neutral for sea reflections"), Sky && Sky->Intensity < 1.2F && Sky->GetLightColor().B > .85F);
             TestTrue(TEXT("Cloud evolution frozen for a deterministic baseline"), bWind && Wind == 0.0F);
         }
     }

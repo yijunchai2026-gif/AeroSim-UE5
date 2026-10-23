@@ -232,5 +232,7 @@ private:
     int32 WaterlinePointCount = 0;
     UPROPERTY(VisibleAnywhere, Category = "Environment")
     TObjectPtr<UStaticMeshComponent> CoastalCirrusDome;
+    UPROPERTY(VisibleAnywhere, Category = "Environment")
+    TObjectPtr<UDirectionalLightComponent> CoastalBounceFill;
     // DEV-SEASKY end
 };
