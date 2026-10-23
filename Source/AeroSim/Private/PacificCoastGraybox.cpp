@@ -671,7 +671,7 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
         && CoastalCirrusDome->GetMaterial(0)->GetName().Contains(TEXT("M_CoastCirrusDraft")))
     {
         // Sparse high streaks for Clear only; hidden under Overcast/Rain decks.
-        const float CirrusOpacity[] = {.20F, 0.0F, 0.0F};
+        const float CirrusOpacity[] = {.32F, 0.0F, 0.0F};
         UMaterialInstanceDynamic* Cirrus = Cast<UMaterialInstanceDynamic>(CoastalCirrusDome->GetMaterial(0));
         if (Cirrus == nullptr)
         {

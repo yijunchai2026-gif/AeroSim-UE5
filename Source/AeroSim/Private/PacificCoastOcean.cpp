@@ -327,24 +327,26 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("return 1-smoothstep(top*.35,top,above);");
     case ECoastalWaterShader::Cirrus:
         // Inputs P (dome world pos), C (camera), S (direction toward the sun). Returns 0..1.
-        // Cirrus uncinus: one prevailing SSW->NNE axis (R10: across the mostly E-W review views, so
-        // streaks read as one wind direction instead of converging on the view axis), thin fibres at three scales instead of a
-        // broad stretched body (R8: smeared/motion-blur look), and hooked ends - near the end of
-        // each streak segment the cross-axis coordinate bends, so fibres curl like commas.
-        // Low-amplitude warp only, clumped/broken coverage, horizon/sun masked, no time input.
+        // Cirrus uncinus: thin fibres at three scales with hooked ends, low-amplitude warp,
+        // clumped/broken coverage, horizon/sun masked, no time input.
+        // R10 mapping: angular (azimuth, elevation) coordinates so every stroke shares one gently
+        // tilted, near-horizontal direction in every view. A perspective plane made parallel
+        // streaks fan out from a vanishing point (starburst); a direction-dome map stretched
+        // them vertically near the horizon. Two azimuth origins (seams due south / due north)
+        // are blended by the north-south component so no seam is ever visible.
         return NoiseHelpers()
-            + TEXT("float3 v=normalize(P-C); float up=smoothstep(.08,.35,v.z);")
-            + TEXT("float2 q=v.xy*4.0;") // R10: dome (direction) mapping; a perspective plane made parallel streaks radiate from a vanishing point
-            + TEXT("float2 p=q+(float2(noise.f(q*.5+1.3),noise.f(q*.5+8.1))-.5)*.25;")
-            + TEXT("float2 dir=float2(.26,.97); float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
-            + TEXT("float seg=frac(r.x*.45+noise.f(float2(r.y*1.3,7.7))*.8); float hook=pow(smoothstep(.62,1.0,seg),2.0);")
-            + TEXT("r.y+=hook*.18;")
-            + TEXT("float fib=noise.f(float2(r.x*.6,r.y*12.0)); float fib2=noise.f(float2(r.x*1.4+4.0,r.y*26.0));")
-            + TEXT("float fib3=noise.f(float2(r.x*3.0+9.0,r.y*55.0));")
-            + TEXT("float body=noise.f(float2(r.x*.35,r.y*2.2)+2.7);")
-            + TEXT("float clump=smoothstep(.55,.80,noise.f(q*.22+7.3));")
-            + TEXT("float breaks=smoothstep(.30,.70,noise.f(float2(r.x*2.5,r.y*.8)+5.5));")
-            + TEXT("float c=smoothstep(.50,.88,body*.30+fib*.30+fib2*.25+fib3*.15)*clump*breaks*(.75+.25*hook);")
+            + TEXT("struct CirrusField { float eval(float2 q, CoastNoise noise) {")
+            + TEXT(" float2 p=q+(float2(noise.f(q*.5+1.3),noise.f(q*.5+8.1))-.5)*.25;")
+            + TEXT(" float2 dir=float2(.985,.17); float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
+            + TEXT(" float seg=frac(r.x*.45+noise.f(float2(r.y*1.3,7.7))*.8); float hook=pow(smoothstep(.62,1.0,seg),2.0); r.y+=hook*.18;")
+            + TEXT(" float fib=noise.f(float2(r.x*.6,r.y*12.0)); float fib2=noise.f(float2(r.x*1.4+4.0,r.y*26.0)); float fib3=noise.f(float2(r.x*3.0+9.0,r.y*55.0));")
+            + TEXT(" float body=noise.f(float2(r.x*.35,r.y*2.2)+2.7); float clump=smoothstep(.48,.72,noise.f(q*.18+7.3));")
+            + TEXT(" float breaks=smoothstep(.30,.70,noise.f(float2(r.x*2.5,r.y*.8)+5.5));")
+            + TEXT(" return smoothstep(.50,.88,body*.30+fib*.30+fib2*.25+fib3*.15)*clump*breaks*(.75+.25*hook); } };")
+            + TEXT("float3 v=normalize(P-C); float up=smoothstep(.03,.20,v.z); float el=asin(saturate(v.z));")
+            + TEXT("CirrusField cf; float c1=cf.eval(float2(atan2(v.x,v.y)*3.0,el*9.0),noise);")
+            + TEXT("float c2=cf.eval(float2(atan2(-v.x,-v.y)*3.0+11.0,el*9.0),noise);")
+            + TEXT("float c=lerp(c2,c1,smoothstep(-.3,.3,v.y));")
             + TEXT("float sun=1-smoothstep(.975,.995,dot(v,normalize(S)));")
             + TEXT("return saturate(c*up*sun);");
     default:
