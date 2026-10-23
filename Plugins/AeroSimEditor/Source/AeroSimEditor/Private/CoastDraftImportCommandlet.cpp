@@ -204,7 +204,11 @@ const TCHAR* Weights = TEXT(
     "float4 h=float4(EH.r,SH.r,WH.r,RH.r)-.5;"
     "float4 hw=w+jitter*.62*saturate(w*3+.1)+h*.35*fineMix*saturate(w*4);"
     "float top=max(max(hw.x,hw.y),max(hw.z,hw.w))-.16;"
-    "float4 b=max(hw-top,0); b/=max(dot(b,1),1e-4);");
+    "float4 b=max(hw-top,0); b/=max(dot(b,1),1e-4);"
+    // R11 (ownership probe: the rust 'plank' band is land at 47-50 deg drawn by the planar stony
+    // layer): facet-true rock projection wherever the slope exceeds ~35 deg (soft 30-45 deg) or the
+    // stony/rock layer wins the habitat blend.
+    "float rockMask=max(cliffFace,max(smoothstep(.866,.707,abs(facet.z)),smoothstep(.45,.65,b.w)));");
 }
 FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Textures, bool bLitterMask, UMaterialFunctionInterface* AlignedTexture)
 {
@@ -316,7 +320,7 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "c*=1+.24*(float3(nC,nD,nE)-.5);"
         // R8: steep cap faces match the cliff rock tone (was a pale-gold sandstone that read untextured).
         "float3 rockTone=lerp(TRI,TRM,.72)*float3(.58,.64,.68)*float3(1.12,1.06,.92)*clamp(dot(TRI,L)/.33,.7,1.3);"
-        "c=lerp(c,rockTone,cliffFace);"
+        "c=lerp(c,rockTone,rockMask);"
         "return min(c,float3(.6,.5,.4));"));
     auto* Normal=Make(CMOT_Float3,TEXT(
         // R3: grass normals mix a 1.37x/37 deg second sample by noise (no periodic bands in
@@ -325,13 +329,13 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "float3 n=en*b.x+sn*b.y+WN*b.z+RN*b.w; n.xy*=lerp(.15,1,normalFade);"
         "float detailFade=1-smoothstep(200.0,800.0,D);"
         "float2 d=(DN.xy*lerp(.25,.6,nA)+DN2.xy*lerp(.6,.25,nA))*detailFade*.75;"
-        "n.xy*=1-.6*cliffFace; d*=1-.6*cliffFace;"
+        "n.xy*=1-.6*rockMask; d*=1-.6*rockMask;"
         "return normalize(float3(n.xy+d,max(n.z,.2)));"));
     auto* Rough=Make(CMOT_Float1,TEXT(
         "float r=lerp(.86,ER.r,fineMix)*b.x+lerp(.84,SR.r,fineMix)*b.y+lerp(.9,WR.r,fineMix)*b.z+lerp(.8,RR.r,fineMix)*b.w;"
         "r*=lerp(1,(DR.r+DR2.r)*.67,nearFade*.5);"
         "r*=lerp(.92,1.08,nC);"
-        "r=lerp(r,TRR.r,cliffFace);"
+        "r=lerp(r,TRR.r,rockMask);"
         "return saturate(r);"));
     return {Color,Normal,Rough};
 }

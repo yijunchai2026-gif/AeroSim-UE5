@@ -406,7 +406,12 @@ float SteppedCoveBlend(const float Run, const float Y, const float X)
     const float Body=Smooth((Run-Scarp-.12F)/.75F+.06F*Noise(X,Y-2700.0F,2300.0F));
     // R10: 2-5 m blocky relief on the slump and scarp now that the band has ~3.5 m columns.
     const float Rubble=.035F*Noise(X*1.4F,Y,420.0F)*Smooth(Run/.12F)*(1.0F-Smooth((Run-.9F)/.1F));
-    const float Hummocks=Rubble+.06F*Noise(X,Y+4100.0F,1500.0F)*Smooth(Run/.3F)*(1.0F-Smooth((Run-.8F)/.2F));
+    // R11: stronger multi-scale relief on the steep cap band (headscarp and upper slump) so its 5.2 m
+    // rows do not read as planes; zero near the rim and inside the hero-scan reach (its rim/cover
+    // contract is fitted to the scan).
+    const float CapBand=Smooth((Run-.06F)/.1F)*(1.0F-Smooth((Run-.62F)/.2F))*Smooth((FMath::Abs(Y-ScanY)-2600.0F)/900.0F);
+    const float CapRelief=CapBand*(.045F*Noise(X*1.2F,Y+1900.0F,900.0F)+.03F*FMath::Abs(Noise(X,Y-3700.0F,330.0F))-.012F);
+    const float Hummocks=Rubble+CapRelief+.06F*Noise(X,Y+4100.0F,1500.0F)*Smooth(Run/.3F)*(1.0F-Smooth((Run-.8F)/.2F));
     return FMath::Clamp(.42F*Head+.58F*Body+Hummocks,0.0F,1.0F);
 }
 
