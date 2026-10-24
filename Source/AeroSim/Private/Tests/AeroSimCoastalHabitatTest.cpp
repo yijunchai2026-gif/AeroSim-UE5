@@ -161,9 +161,18 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
             if (Top.Z > APacificCoastGraybox::SeaLevelCm + 100) ++Emergent;
             if (FMath::Abs(Top.X - APacificCoastGraybox::GetCoastalShoreX(Top.Y)) < 2500) ++NearWaterline;
         }
-        TestEqual(TEXT("Sixty-four talus blocks"), Blocks, 64);
+        TestEqual(TEXT("64 coast blocks plus 24 hero-cove rocks"), Blocks, 88);
         TestTrue(TEXT("At least a quarter of the talus blocks break the sea surface"), Emergent * 4 >= Blocks);
         TestTrue(TEXT("Talus blocks sit at the actual waterline, not buried behind the cliff"), NearWaterline * 10 >= Blocks * 9);
+        int32 CoveRocks = 0;
+        for (int32 Block = 64; Block < Blocks; ++Block)
+        {
+            FBox Extent(ForceInit);
+            for (int32 Vertex = 1; Vertex < 37; ++Vertex) Extent += Section->ProcVertexBuffer[Block * 38 + Vertex].Position;
+            const float Width = static_cast<float>(FMath::Max(Extent.GetSize().X, Extent.GetSize().Y));
+            if (Width >= 350 && Width <= 900 && FMath::Abs(Extent.GetCenter().Y + 19000) > 2100) ++CoveRocks;
+        }
+        TestEqual(TEXT("Hero cove waterline carries 24 rounded 4-6 m rocks clear of the scan face"), CoveRocks, 24);
         AddInfo(FString::Printf(TEXT("Talus: %d blocks, %d emergent, %d within 25 m of the waterline"), Blocks, Emergent, NearWaterline));
     }
 
