@@ -482,7 +482,7 @@ float BenchFootprint(const float Y)
 
 float BenchTotal(const float Y)
 {
-    const float Buttress = 420.0F + 260.0F * Noise(Y, 2900.0F, 1300.0F + 12000.0F * (1.0F - RowDetail(Y))) + 380.0F * RowDetail(Y) * FMath::Abs(Noise(Y, -6100.0F, 470.0F));
+    const float Buttress = 420.0F + 260.0F * Noise(Y, 2900.0F, 1300.0F + 2700.0F * (1.0F - RowDetail(Y))) + 380.0F * RowDetail(Y) * FMath::Abs(Noise(Y, -6100.0F, 470.0F));
     return FMath::Max(0.0F, Buttress) * (1.0F - BenchFootprint(Y));
 }
 
@@ -498,7 +498,7 @@ float BenchStepOut(const float Y, const float Z, const float Top)
     // R10 (QA: north-toe chevrons): beyond |Y| = 600 m coast rows are 20.8 m apart, so variation
     // shorter than ~50 m aliases into chevrons; it is faded out there.
     const float Fine = RowDetail(Y);
-    const float Wander = 1.1F * Noise(Y, 5100.0F, 1700.0F + 15000.0F * (1.0F - Fine)) + .5F * Fine * Noise(Y, -900.0F, 640.0F);
+    const float Wander = 1.1F * Noise(Y, 5100.0F, 1700.0F + 3300.0F * (1.0F - Fine)) + .5F * Fine * Noise(Y, -900.0F, 640.0F);
     const float T = FMath::Clamp(Down * Count + Wander * Down * (1.0F - Down) * 4.0F, 0.0F, Count);
     const float Ledge = FMath::Clamp(FMath::FloorToFloat(T), 0.0F, Count - 1.0F);
     const float Tread = .45F + .3F * Noise(Y, Ledge * 3100.0F, 2900.0F);
@@ -553,10 +553,7 @@ void BaselineCliffStations(const float RowY, const FVector& Rim, FVector (&Out)[
         const float Above = Z - APacificCoastGraybox::SeaLevelCm, Below = -Above;
         const float ReliefFade = FMath::Max(Smooth((Above - 40.0F) / 120.0F), Smooth((Below - 80.0F) / 200.0F));
         const float Relief = ReliefFade * RowDetail(RowY) * (90.0F * Noise(RowY, Z * 1.6F, 560.0F) + 55.0F * Noise(RowY + 700.0F, Z * 2.1F, 230.0F) + 35.0F * Noise(RowY - 300.0F, Z, 110.0F));
-        const float RouteClear = Smooth((FMath::Abs(RowY + 6000.0F) - 2500.0F) / 2000.0F);
-        const float FarRelief = ReliefFade * (1.0F - RowDetail(RowY)) * RouteClear
-            * (420.0F * Noise(RowY, Z * .4F, 5500.0F) + 260.0F * Noise(RowY + 1200.0F, Z * .7F, 3200.0F));
-        float X = static_cast<float>(Rim.X) + CliffOutcrop(RowY, Depth) + Bench + (Relief + FarRelief) * (1.0F - BenchFootprint(RowY));
+        float X = static_cast<float>(Rim.X) + CliffOutcrop(RowY, Depth) + Bench + Relief * (1.0F - BenchFootprint(RowY));
         if (Weight > 0)
         {
             const float Local = Z - ScanZ;
@@ -789,8 +786,8 @@ float DistantRangeHeight(const float X, const float Y)
     for (const FRidgeNode* Chain : {RangeNear, RangeMid, RangeFar})
         for (int32 Node = 0; Node < 4; ++Node)
         {
-            const float Ridge = RoundRidge(Point, Chain[Node], Chain[Node + 1], 18000.0F);
-            constexpr float Seam = 15000.0F;
+            const float Ridge = RoundRidge(Point, Chain[Node], Chain[Node + 1], 6000.0F);
+            constexpr float Seam = 2500.0F;
             const float H = FMath::Clamp(.5F + .5F * (Range - Ridge) / Seam, 0.0F, 1.0F);
             Range = FMath::Lerp(Ridge, Range, H) + Seam * H * (1.0F - H);
         }
@@ -1061,7 +1058,7 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
         const FVector Normal = FVector::CrossProduct(Vertices[C] - Vertices[A], Vertices[B] - Vertices[A]).GetSafeNormal();
         const FVector Center = (Vertices[A] + Vertices[B] + Vertices[C]) / 3.0F;
         // Surface zones follow localized slope/exposure rather than drawing a height contour across the range.
-        const int32 Group = Normal.Z < .88F ? 1 :
+        const int32 Group = Normal.Z < .80F ? 1 :
             (Normal.Z < .91F && Noise(Center.X, Center.Y, 29000.0F) > .12F ? 2 : 0);
         Triangle(A, B, C, Group);
     };
