@@ -105,7 +105,7 @@ Visual Lab 展示 Scene、Build、RHI、Quality、Weather、Time、Seed、Camera
 - **唯一可见主动作**：Hangar、Preflight 和 Result 均使用 `Enter / Space`；`M` 仅保留为调试兼容键，并明确标注，不再承担产品引导。
 - **Hangar**：显示 Aircraft Bay、任务、天气/质量、机型身份和真实资产状态。当前训练机持续显示 `AEROSIM GENERIC · PROTOTYPE / UNVERIFIED`，不将程序化代理写成正式 DJI 资产。
 - **Preflight**：同屏显示输入回中、Camera/vFOV、Environment 和 Display；主按钮写明 `ARM & START`，下一动作明确为 `HOLD LEFT SHIFT TO TAKE OFF`。
-- **Flight HUD**：下一动作、阶段、目标、进度、相机、vFOV、高度、速度和输入入口位于外围；中心飞行走廊保持无遮挡。完整键鼠主路径为：`W/S Pitch`、`A/D Roll`、`Q/E Yaw`、`Left Shift/Left Ctrl Throttle`、`C Camera`、`H RTH`、`R Reset`、`Esc/F10/P Settings`。
+- **Flight HUD**：下一动作、阶段、目标、进度、相机、vFOV、高度、速度和输入入口位于外围；中心飞行走廊保持无遮挡。完整键鼠主路径为：`W/S Pitch`、`A/D Roll`、`Q/E` 或 `←/→ Yaw`、`Left Shift/Left Ctrl` 或 `↑/↓ Throttle`（笔记本布局：方向键相当于 Mode 2 左摇杆）、`I/K/J/L Gimbal`、`C Camera`、`H RTH`、`R Reset`、`Esc/F10/P Settings`。
 - **输入/暂停状态**：Display Settings 打开时安全暂停并清零四轴，面板明确显示 `SAFE PAUSE / INPUT NEUTRAL`；关闭后沿用三秒回中恢复合同。失焦和设备断开仍保持既有安全暂停，不回退 Phase 5/6 边界。
 
 ### 11.1 Display Settings

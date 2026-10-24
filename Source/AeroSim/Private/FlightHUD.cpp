@@ -216,7 +216,7 @@ void AFlightHUD::DrawHUD()
     {
         DrawRect(FLinearColor(0.04F, 0.11F, 0.15F, 0.96F), Right, Top + 132.0F, RightWidth, 292.0F);
         DrawText(
-            FString::Printf(TEXT("02  PREFLIGHT / READY TO FLY\n\n[%s] INPUT CENTERED\n[%s] CAMERA  %s / vFOV %.0f\n[%s] ENVIRONMENT  %s 16:30\n[%s] DISPLAY  %d x %d / %s\n\n[ ENTER / SPACE ]  ARM & START\nNEXT: HOLD LEFT SHIFT TO TAKE OFF\nW/S Forward/back  A/D Sideways  Q/E Turn\nShift/Ctrl Rise/descend  Release to hover\nC Camera  H Home guidance  ESC/F10 Settings  R Reset"),
+            FString::Printf(TEXT("02  PREFLIGHT / READY TO FLY\n\n[%s] INPUT CENTERED\n[%s] CAMERA  %s / vFOV %.0f\n[%s] ENVIRONMENT  %s 16:30\n[%s] DISPLAY  %d x %d / %s\n\n[ ENTER / SPACE ]  ARM & START\nNEXT: HOLD LEFT SHIFT (OR UP ARROW) TO TAKE OFF\nW/S Forward/back  A/D Sideways  Q/E or Left/Right Turn\nShift/Ctrl or Up/Down Rise/descend  Release to hover\nC Camera  H Home guidance  ESC/F10 Settings  R Reset"),
                 Mission.Preflight.bInputCentered ? TEXT("OK") : TEXT("READY"), Mission.Preflight.bCameraChecked ? TEXT("OK") : TEXT("READY"), CameraModeText(Data.CameraMode), Pawn->GetVerticalFov(),
                 Mission.Preflight.bEnvironmentChecked ? TEXT("OK") : TEXT("READY"), WeatherText(Environment.Weather), Mission.Preflight.bQualityChecked ? TEXT("OK") : TEXT("READY"),
                 GameMode->GetAppliedSettings().ResolutionWidth, GameMode->GetAppliedSettings().ResolutionHeight, WindowModeText(GameMode->GetAppliedSettings().WindowMode)),
@@ -228,7 +228,7 @@ void AFlightHUD::DrawHUD()
         && FVector::Dist2D(Pawn->GetActorLocation(), FVector(55, 79, 0)) > FPacificCoastGrayboxContract::TakeoffPadRadiusCm)
     {
         DrawRect(FLinearColor(0.78F, 0.22F, 0.02F, 0.94F), Left, Top + 296.0F, 650.0F, 26.0F);
-        DrawText(FString::Printf(TEXT("OFF PAD (%.1f m from centre) - LIFT (SHIFT) AND RE-CENTRE, THEN LAND"),
+        DrawText(FString::Printf(TEXT("OFF PAD (%.1f m from centre) - LIFT (SHIFT / UP) AND RE-CENTRE, THEN LAND"),
                 FVector::Dist2D(Pawn->GetActorLocation(), FVector(55, 79, 0)) * 0.01F),
             FLinearColor::White, Left + 12.0F, Top + 301.0F, GEngine->GetSmallFont(), 1.0F, false);
     }
@@ -257,7 +257,7 @@ void AFlightHUD::DrawHUD()
     FString NextAction = Mission.GetProgressiveHint();
     if (Mission.Stage == EPhase4MissionStage::Takeoff && Data.Phase == EFlightPhase::Grounded)
     {
-        NextAction = TEXT("NEXT ACTION: HOLD LEFT SHIFT TO RAISE THROTTLE AND TAKE OFF");
+        NextAction = TEXT("NEXT ACTION: HOLD LEFT SHIFT OR UP ARROW TO RAISE THROTTLE AND TAKE OFF");
     }
     else if (Mission.Stage == EPhase4MissionStage::Inspection)
     {

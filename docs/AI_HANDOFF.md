@@ -41,7 +41,7 @@ open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/Prod
 ```
 
 - 在首页一直按 Enter 进入 Flight，然后按 Left Shift 起飞。
-- 按键：W/S 前后，A/D 左右，Left Shift/Left Ctrl 升降。
+- 按键：W/S 前后，A/D 左右，Left Shift/Left Ctrl 或 ↑/↓ 升降，Q/E 或 ←/→ 转机头，I/K/J/L 云台，C 相机，H 返航，R 重置，Esc 暂停。
 - 需要 AI 控制或截图时，在参数里加 `-AeroSimControlBridge`。
 - 包在 `Artifacts/` 下，不在 git 里，要在本机重新生成：`bash tools/pmo/integrate.sh <轮次>`。
 
@@ -243,7 +243,10 @@ AEROSIM_INTEGRATION=/Users/bytedance/Downloads/AeroSim-worktrees/integration \
 |---|---|---|
 | X | W | S |
 | Y | D | A |
-| Z | LeftShift | LeftControl |
+| Z | LeftShift 或 Up | LeftControl 或 Down |
+| 机头（不用于驾驶脚本） | E 或 Right | Q 或 Left |
+
+方向键是给笔记本用户准备的，2026-10-24 按用户要求加入，相当于 Mode 2 左摇杆。云台从方向键改到了 I/K/J/L。控制桥的 `aerosim_press_key` 也接受 `Up`/`Down`/`Left`/`Right`。
 
 **飞行参数（R8 之后）：**
 

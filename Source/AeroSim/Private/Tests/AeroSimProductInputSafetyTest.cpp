@@ -119,7 +119,7 @@ bool FAeroSimProductPhysicalResumeTest::RunTest(const FString& Parameters)
     if (!TestWorld.IsValid()) return false;
     AFlightPawn* Pawn = TestWorld.Pawn;
     const FKey Controls[] = { EKeys::W, EKeys::A, EKeys::Q, EKeys::LeftShift, EKeys::LeftControl,
-        EKeys::Gamepad_LeftX, EKeys::Gamepad_LeftY, EKeys::Gamepad_RightX, EKeys::Gamepad_RightY,
+        EKeys::Up, EKeys::Down, EKeys::Left, EKeys::Right, EKeys::Gamepad_LeftX, EKeys::Gamepad_LeftY, EKeys::Gamepad_RightX, EKeys::Gamepad_RightY,
         EKeys::Gamepad_LeftTriggerAxis, EKeys::Gamepad_RightTriggerAxis };
     for (const FKey& Key : Controls)
     {

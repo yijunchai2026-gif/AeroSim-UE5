@@ -55,7 +55,7 @@ FString PageLabel(EProductPage Page)
 FKey AllowedKey(const FString& Name)
 {
     const FKey Keys[] = {EKeys::W,EKeys::S,EKeys::A,EKeys::D,EKeys::Q,EKeys::E,EKeys::LeftShift,EKeys::LeftControl,
-        EKeys::C,EKeys::Escape,EKeys::Enter,EKeys::SpaceBar,EKeys::F10,EKeys::H,EKeys::R};
+        EKeys::Up,EKeys::Down,EKeys::Left,EKeys::Right,EKeys::C,EKeys::Escape,EKeys::Enter,EKeys::SpaceBar,EKeys::F10,EKeys::H,EKeys::R};
     for(const FKey& Key:Keys) if(Key.GetFName().ToString()==Name) return Key;
     return FKey();
 }

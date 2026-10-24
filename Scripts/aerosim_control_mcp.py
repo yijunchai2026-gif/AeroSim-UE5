@@ -14,7 +14,7 @@ import tempfile
 import time
 import uuid
 
-KEYS = ('W','S','A','D','Q','E','LeftShift','LeftControl','C','Escape','Enter','SpaceBar','F10','H','R')
+KEYS = ('W','S','A','D','Q','E','LeftShift','LeftControl','Up','Down','Left','Right','C','Escape','Enter','SpaceBar','F10','H','R')
 # Mirrors AAeroSimGameMode::ResolveReviewView; 'player' keeps the live player camera.
 VIEWS = ('player','overview','ground','south','north','forest','corridor','glint','cliff','bridge','mountain','shore',
          'launch-low','launch-operator','launch-return')

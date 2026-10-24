@@ -394,12 +394,19 @@ AFlightPawn::AFlightPawn()
     InputSuite.MappingContext->MapKey(InputSuite.YawAction, EKeys::E);
     InputSuite.MappingContext->MapKey(InputSuite.YawAction, EKeys::Q).Modifiers.Add(YawLeftNegate);
     InputSuite.MappingContext->MapKey(InputSuite.YawAction, EKeys::Gamepad_RightX);
+    // Laptop layout: arrow keys mirror a Mode 2 left stick (Left/Right turn, Up/Down rise/descend).
+    UInputModifierNegate* YawLeftArrowNegate = CreateDefaultSubobject<UInputModifierNegate>(TEXT("YawLeftArrowNegate"));
+    InputSuite.MappingContext->MapKey(InputSuite.YawAction, EKeys::Right);
+    InputSuite.MappingContext->MapKey(InputSuite.YawAction, EKeys::Left).Modifiers.Add(YawLeftArrowNegate);
 
     UInputModifierNegate* ThrottleDownNegate = CreateDefaultSubobject<UInputModifierNegate>(TEXT("ThrottleDownNegate"));
     InputSuite.MappingContext->MapKey(InputSuite.ThrottleAction, EKeys::LeftShift);
     InputSuite.MappingContext->MapKey(InputSuite.ThrottleAction, EKeys::LeftControl).Modifiers.Add(ThrottleDownNegate);
     InputSuite.MappingContext->MapKey(InputSuite.ThrottleAction, EKeys::Gamepad_RightTriggerAxis);
     InputSuite.MappingContext->MapKey(InputSuite.ThrottleAction, EKeys::Gamepad_LeftTriggerAxis).Modifiers.Add(ThrottleDownNegate);
+    UInputModifierNegate* ThrottleDownArrowNegate = CreateDefaultSubobject<UInputModifierNegate>(TEXT("ThrottleDownArrowNegate"));
+    InputSuite.MappingContext->MapKey(InputSuite.ThrottleAction, EKeys::Up);
+    InputSuite.MappingContext->MapKey(InputSuite.ThrottleAction, EKeys::Down).Modifiers.Add(ThrottleDownArrowNegate);
 
     InputSuite.MappingContext->MapKey(InputSuite.CameraAction, EKeys::C);
     InputSuite.MappingContext->MapKey(InputSuite.CameraAction, EKeys::Gamepad_FaceButton_Top);
@@ -734,10 +741,11 @@ void AFlightPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
     PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &AFlightPawn::HandleSettingsToggle).bExecuteWhenPaused = true;
     PlayerInputComponent->BindKey(EKeys::H, IE_Pressed, this, &AFlightPawn::HandleReturnToHome);
     PlayerInputComponent->BindKey(EKeys::T, IE_Pressed, this, &AFlightPawn::HandleWeatherCycle);
-    PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &AFlightPawn::HandleUiUp);
-    PlayerInputComponent->BindKey(EKeys::Down, IE_Pressed, this, &AFlightPawn::HandleUiDown);
-    PlayerInputComponent->BindKey(EKeys::Left, IE_Pressed, this, &AFlightPawn::HandleUiLeft);
-    PlayerInputComponent->BindKey(EKeys::Right, IE_Pressed, this, &AFlightPawn::HandleUiRight);
+    // Arrow keys are flight controls (throttle/yaw); the camera gimbal moves with I/K/J/L.
+    PlayerInputComponent->BindKey(EKeys::I, IE_Pressed, this, &AFlightPawn::HandleUiUp);
+    PlayerInputComponent->BindKey(EKeys::K, IE_Pressed, this, &AFlightPawn::HandleUiDown);
+    PlayerInputComponent->BindKey(EKeys::J, IE_Pressed, this, &AFlightPawn::HandleUiLeft);
+    PlayerInputComponent->BindKey(EKeys::L, IE_Pressed, this, &AFlightPawn::HandleUiRight);
     // Widgets consume menu navigation first; only an active flight may interpret D-pad down as RTH.
     PlayerInputComponent->BindKey(EKeys::Gamepad_DPad_Down, IE_Pressed, this, &AFlightPawn::HandleReturnToHome);
 }
@@ -762,7 +770,8 @@ bool AFlightPawn::IsPhysicalInputNeutral() const
     if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
     {
         const FKey Keys[] = { EKeys::W, EKeys::S, EKeys::A, EKeys::D, EKeys::Q, EKeys::E,
-            EKeys::LeftShift, EKeys::RightShift, EKeys::LeftControl, EKeys::RightControl };
+            EKeys::LeftShift, EKeys::RightShift, EKeys::LeftControl, EKeys::RightControl,
+            EKeys::Up, EKeys::Down, EKeys::Left, EKeys::Right };
         for (const FKey& Key : Keys) if (PlayerController->IsInputKeyDown(Key)) return false;
         const FKey Axes[] = { EKeys::Gamepad_LeftX, EKeys::Gamepad_LeftY, EKeys::Gamepad_RightX,
             EKeys::Gamepad_RightY, EKeys::Gamepad_LeftTriggerAxis, EKeys::Gamepad_RightTriggerAxis };

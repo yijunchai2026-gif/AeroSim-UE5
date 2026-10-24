@@ -802,7 +802,7 @@ TSharedRef<SWidget> UAeroSimProductWidget::BuildPreflight()
                         ProductWidget::QualityName(Settings.QualityTier));
                 }), 15, false, ProductWidget::Text)]
             + SVerticalBox::Slot().AutoHeight().Padding(0, 20, 0, 0)
-                [MakeText(ProductWidget::Literal(TEXT("After starting: hold Left Shift to rise. W/S move forward/back, A/D move sideways, Q/E turn, Shift/Ctrl rise/descend. Release controls to brake and hover. C changes camera; arrows move the gimbal; H requests return-home guidance.")), 15, false, ProductWidget::Muted)]
+                [MakeText(ProductWidget::Literal(TEXT("After starting: hold Left Shift (or Up arrow) to rise. W/S move forward/back, A/D move sideways, Q/E or Left/Right arrows turn, Shift/Ctrl or Up/Down arrows rise/descend. Release controls to brake and hover. C changes camera; I/K/J/L move the gimbal; H requests return-home guidance.")), 15, false, ProductWidget::Muted)]
             + SVerticalBox::Slot().AutoHeight().Padding(0, 16, 0, 0)
                 [MakeText(ProductWidget::Literal(TEXT("Esc opens safe settings. Pause, focus loss or disconnect clears input; resuming requires centered controls and a three-second countdown. PROTOTYPE / UNVERIFIED.")), 14, true, ProductWidget::Amber)]
             + SVerticalBox::Slot().AutoHeight().Padding(0, 26, 0, 0).HAlign(HAlign_Left)
@@ -871,7 +871,7 @@ TSharedRef<SWidget> UAeroSimProductWidget::BuildSettings()
     case EProductSettingsCategory::Controls:
         Fields->AddSlot().AutoHeight()[MakeText(BindText([](const AAeroSimGameMode& GameMode)
             { return GameMode.GetProductInputKind() == EProductInputKind::Gamepad ? TEXT("LAST INPUT / GAMEPAD") : TEXT("LAST INPUT / KEYBOARD & MOUSE"); }), 17, true, ProductWidget::Cyan)];
-        Fields->AddSlot().AutoHeight().Padding(0, 18, 0, 0)[MakeText(ProductWidget::Literal(TEXT("W / S          Forward / back\nA / D          Move sideways\nQ / E          Turn\nShift / Ctrl   Rise / descend\nRelease axes   Brake and hover\nC              Camera\nArrow keys     Gimbal (in flight)\nH              Return-home guidance\nR              Reset\nEsc            Safe settings / back")), 15, false, ProductWidget::Text)];
+        Fields->AddSlot().AutoHeight().Padding(0, 18, 0, 0)[MakeText(ProductWidget::Literal(TEXT("W / S          Forward / back\nA / D          Move sideways\nQ / E  or  Left / Right    Turn\nShift / Ctrl  or  Up / Down   Rise / descend\nRelease axes   Brake and hover\nC              Camera\nI / K / J / L  Gimbal (in flight)\nH              Return-home guidance\nR              Reset\nEsc            Safe settings / back")), 15, false, ProductWidget::Text)];
         Fields->AddSlot().AutoHeight().Padding(0, 18, 0, 0)[MakeText(ProductWidget::Literal(TEXT("Menus: arrows / Tab or gamepad D-pad move focus; Enter / Space or Bottom selects. Remapping and per-axis tuning: NOT_IMPLEMENTED. A last-used input label is not a device connection check.")), 13, false, ProductWidget::Muted)];
         break;
     case EProductSettingsCategory::Camera:

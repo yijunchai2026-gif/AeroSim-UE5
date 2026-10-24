@@ -18,6 +18,7 @@ constexpr int32 MaximumDevices = 8;
 const FKey DigitalKeys[] = {
     EKeys::W, EKeys::S, EKeys::A, EKeys::D, EKeys::Q, EKeys::E,
     EKeys::LeftShift, EKeys::RightShift, EKeys::LeftControl, EKeys::RightControl,
+    EKeys::Up, EKeys::Down, EKeys::Left, EKeys::Right,
     EKeys::Gamepad_LeftTrigger, EKeys::Gamepad_RightTrigger
 };
 const FKey AnalogKeys[] = {
