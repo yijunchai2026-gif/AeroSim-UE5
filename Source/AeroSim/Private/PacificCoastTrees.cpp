@@ -1666,7 +1666,9 @@ float NearStandDensity(const float X, const float Y)
         return FMath::Max(Extension, Outlier);
     }
     // Ragged 6-20 m feather from sparse edge trees into the closed stand.
-    const float Feather = .28F + .72F * Smooth01(Inside / (600.0F + 1400.0F * Fbm(X, Y, 3100.0F)));
+    // Around the corridor entry / forest review pose the stand closes within ~3-7 m of its edge so the
+    // view looks into a closed canopy (R11), elsewhere the edge feathers over 6-20 m.
+    const float Feather = .28F + .72F * Smooth01(Inside / ((600.0F + 1400.0F * Fbm(X, Y, 3100.0F)) * FMath::Lerp(.35F, 1.0F, EntryKeep)));
     // Small natural glades keep openings without thinning the stand everywhere.
     float Glade = Fbm(X + 9100, Y - 4700, 4600.0F);
     // More, larger clearings (~14% of area), but never on the training corridor's flanks.
