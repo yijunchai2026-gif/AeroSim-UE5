@@ -439,16 +439,16 @@ float CliffOutcrop(const float Y, const float Depth)
     const float FractureA = FMath::Clamp(.5F + .5F * Noise(Y + 1700.0F, 6200.0F, 1800.0F), 0.0F, 1.0F);
     const float FractureB = FMath::Clamp(.5F + .5F * Noise(Y - 900.0F, 11100.0F, 3300.0F), 0.0F, 1.0F);
     const float RouteClear = Smooth((FMath::Abs(Y + 6000.0F) - 2500.0F) / 2000.0F);
-    Outcrop += RouteClear * (120.0F + 360.0F * FractureA) * Smooth((Depth - .10F) / .08F);
-    Outcrop += RouteClear * (90.0F + 290.0F * FractureB) * Smooth((Depth - .24F) / .10F);
+    Outcrop += RouteClear * (90.0F + 290.0F * FractureB)
+        * Smooth((Depth - (.18F + .10F * FractureA)) / .14F);
     for (int32 Bed = 0; Bed < UE_ARRAY_COUNT(Thresholds); ++Bed)
     {
         // R9: stronger, shorter dip so beds are not read as level contour bands on low headlands.
         // R12: on the 20.8 m outer rows, bed dip and thickness vary only over >150 m so bands stay level
         // instead of zig-zagging across the row triangulation (north-toe chevrons).
         const float Far = 1.0F - RowDetail(Y);
-        const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F + 35000.0F * Far) + .07F * RowDetail(Y) * Noise(Y, Bed * 2700.0F - 5000.0F, 2400.0F);
-        const float BedHeight = Thickness[Bed] * (1.0F + .25F * Noise(Y, Bed * 9100.0F, 4700.0F + 35000.0F * Far));
+        const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F + 12000.0F * Far) + .07F * RowDetail(Y) * Noise(Y, Bed * 2700.0F - 5000.0F, 2400.0F);
+        const float BedHeight = Thickness[Bed] * (1.0F + .25F * Noise(Y, Bed * 9100.0F, 4700.0F + 12000.0F * Far));
         Outcrop += BedHeight * Smooth((Depth - Thresholds[Bed] - Dip) / Widths[Bed]);
     }
     // Every term is non-decreasing with depth, so the face never overhangs: blocks vary along the
