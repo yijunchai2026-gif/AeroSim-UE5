@@ -1099,10 +1099,11 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
         for (const auto& Lobe : Lobes)
         {
             const FVector RootDir(FMath::Cos(Lobe.Key), FMath::Sin(Lobe.Key), 0);
-            const float Reach = R0 * FMath::Lerp(1.8F, 2.4F, (Lobe.Value - .05F) / .02F);
-            const TArray<FVector> Path = {RootDir * R0 * .55F + FVector(0, 0, 15), RootDir * R0 * 1.15F + FVector(0, 0, 4),
-                RootDir * Reach * .8F + FVector(0, 0, -4), RootDir * Reach + FVector(0, 0, -15)};
-            Sweep(Out.Bark, Path, [&](int32 Ring, float) { return R0 * FMath::Lerp(.30F, .06F, Ring / 3.0F); },
+            const float Reach = R0 * FMath::Lerp(2.0F, 2.7F, (Lobe.Value - .05F) / .02F);
+            // R11: taller, thicker swells that stay above the surrounding ground for most of their run.
+            const TArray<FVector> Path = {RootDir * R0 * .5F + FVector(0, 0, 38), RootDir * R0 * 1.1F + FVector(0, 0, 16),
+                RootDir * Reach * .75F + FVector(0, 0, 4), RootDir * Reach + FVector(0, 0, -12)};
+            Sweep(Out.Bark, Path, [&](int32 Ring, float) { return R0 * FMath::Lerp(.38F, .08F, Ring / 3.0F); },
                 Lod == 0 ? 6 : 4, 1.0F, K.TileV, [](int32) { return FVector4f(.1F, 0, 0, 1); });
         }
     }
@@ -1646,7 +1647,11 @@ float NearStandDensity(const float X, const float Y)
     // R10: erode the distance-to-edge field itself with 25-60 m noise, so every side (incl. the
     // north grove) gets bays and promontories rather than four straight edges.
     const float Erosion = 3200.0F * (Fbm(X + 11000.0F, Y - 3000.0F, 3600.0F) - .35F) + 1400.0F * (Fbm(X - 2700.0F, Y + 5100.0F, 1500.0F) - .5F);
-    const float Inside = FMath::Min(FMath::Min(AbsY - FieldEdge, OuterEdge - AbsY), FMath::Min(X - WestEdge, EastEdge - X)) - (Y > 0 ? 1.4F : 1.0F) * Erosion;
+    // R11: the review poses' stand edge (south, around the corridor entry) is exempt, so the
+    // forest view keeps a closed crown ceiling; the north grove also gets a 150-300 m outline shape.
+    const float NorthShape = Y > 0 ? 7000.0F * (Fbm(X - 15000.0F, 2100.0F, 22000.0F) - .45F) + 4000.0F * (Fbm(X + 8000.0F, 900.0F, 11000.0F) - .5F) : 0.0F;
+    const float Inside = FMath::Min(FMath::Min(AbsY - FieldEdge, OuterEdge - AbsY - NorthShape), FMath::Min(X - WestEdge, EastEdge - X))
+        - (Y > 0 ? 1.4F : EntryKeep) * Erosion;
     if (Inside <= 0)
     {
         // Outside the core stands, woodland-class ground (DEV-TERRAIN habitat) carries a looser
@@ -1793,12 +1798,12 @@ const FLayout& GetLayout()
         }
     }
     // 2. Fixed-density stand fill: jittered 5.0 m lattice with Poisson-style rejection.
-    constexpr float Cell = 395.0F;
+    constexpr float Cell = 400.0F;
     for (float GX = -45000; GX < 12500; GX += Cell)
         for (float GY = -41000; GY < 41000; GY += Cell)
         {
             // Full-cell jitter plus up to ~1 m overlap into neighbouring cells hides the lattice.
-            const FVector2D P(GX + Random.FRandRange(-.2F, 1.2F) * Cell, GY + Random.FRandRange(-.2F, 1.2F) * Cell);
+            const FVector2D P(GX + Random.FRandRange(-.1F, 1.1F) * Cell, GY + Random.FRandRange(-.1F, 1.1F) * Cell);
             const float Density = NearStandDensity(P.X, P.Y);
             const float Roll = Random.FRand(), AgeRoll = Random.FRand(), SpeciesRoll = Random.FRand();
             const float Yaw = Random.FRandRange(0, 2 * PI), LeanYaw = Random.FRandRange(0, 2 * PI), LeanRoll = Random.FRand(), ScaleRoll = Random.FRand();
@@ -1834,7 +1839,9 @@ const FLayout& GetLayout()
             if (ToCorridor < CorridorClearance) continue;
             // Density falls off toward the lane: a thinned 6 m band frames the corridor edges.
             if (ToCorridor < CorridorClearance + 600.0F && Roll > Density * .97F * (.25F + .75F * (ToCorridor - CorridorClearance) / 600.0F)) continue;
-            const float Spacing = A.Species == ESpecies::CoastLiveOak ? 330.0F : A.Species == ESpecies::Sapling ? 70.0F : A.Age == EAge::Pole ? 110.0F : 135.0F;
+            // Poles and mature trees compete for the same spacing so the denser candidate grid does not
+            // tilt the stand toward thin poles (R10b spindly crowns).
+            const float Spacing = A.Species == ESpecies::CoastLiveOak ? 330.0F : A.Species == ESpecies::Sapling ? 70.0F : 130.0F;
             if (!Clear(P, Spacing)) continue;
             // Oaks keep conifer trunks out of their low spreading limbs.
             if (A.Species != ESpecies::CoastLiveOak && A.Species != ESpecies::Sapling)
