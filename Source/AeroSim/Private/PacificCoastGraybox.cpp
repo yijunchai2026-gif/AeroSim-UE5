@@ -595,7 +595,7 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
     const FLinearColor FogColor[] = {FLinearColor(.80F,.72F,.62F), FLinearColor(.30F,.36F,.41F), FLinearColor(.12F,.20F,.28F)};
     // Clear: thin low haze with a soft top (R8: flat white band), not an opaque bank.
     const float LayerDensity[] = {.003F, .03F, .05F}, LayerOffset[] = {0.0F, 1500.0F, 2500.0F}, LayerFalloff[] = {.7F, .5F, .35F};
-    const float CloudBottomKm[] = {1.6F, .7F, .45F}, CloudHeightKm[] = {1.6F, 2.4F, 3.5F};
+    const float CloudBottomKm[] = {.75F, .55F, .4F}, CloudHeightKm[] = {3.8F, 3.9F, 4.2F};
     const float WaterRoughness[] = {.07F, .11F, .16F}, WaveScale[] = {1.0F, 1.2F, 1.45F};
 
     KeyLight->SetRelativeRotation(GetCoastalSunRotation(State));
@@ -657,7 +657,7 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
             // as broken cumulus). Clear (-0.33) sits below it for ~10-20% sparse (R5a: -0.43 left none)
             // fair-weather cumulus; Overcast/Rain raise it. Wind frozen so the seed-21630
             // comparison baseline does not evolve between captures.
-            Clouds->SetScalarParameterValue(TEXT("Cloud_GlobalCoverage"), -.40F + .90F * State.GetCloudCover());
+            Clouds->SetScalarParameterValue(TEXT("Cloud_GlobalCoverage"), -.24F + .78F * State.GetCloudCover());
             Clouds->SetScalarParameterValue(TEXT("WindMultiplier"), 0.0F);
         }
     }
