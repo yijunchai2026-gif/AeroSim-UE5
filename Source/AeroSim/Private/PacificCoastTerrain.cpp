@@ -438,8 +438,9 @@ float CliffOutcrop(const float Y, const float Depth)
     Outcrop += TalusReach * FMath::Square(Smooth((Depth - .32F) / .55F));
     const float FractureA = FMath::Clamp(.5F + .5F * Noise(Y + 1700.0F, 6200.0F, 1800.0F), 0.0F, 1.0F);
     const float FractureB = FMath::Clamp(.5F + .5F * Noise(Y - 900.0F, 11100.0F, 3300.0F), 0.0F, 1.0F);
-    Outcrop += (120.0F + 360.0F * FractureA) * Smooth((Depth - .10F) / .08F);
-    Outcrop += (90.0F + 290.0F * FractureB) * Smooth((Depth - .24F) / .10F);
+    const float RouteClear = Smooth((FMath::Abs(Y + 6000.0F) - 2500.0F) / 2000.0F);
+    Outcrop += RouteClear * (120.0F + 360.0F * FractureA) * Smooth((Depth - .10F) / .08F);
+    Outcrop += RouteClear * (90.0F + 290.0F * FractureB) * Smooth((Depth - .24F) / .10F);
     for (int32 Bed = 0; Bed < UE_ARRAY_COUNT(Thresholds); ++Bed)
     {
         // R9: stronger, shorter dip so beds are not read as level contour bands on low headlands.
