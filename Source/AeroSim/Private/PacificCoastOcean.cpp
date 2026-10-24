@@ -289,8 +289,8 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("float crest=saturate(sw.H(P,T,A,C)*k*.5+.5);")
             + TEXT("float c1=saturate(sw.H(P,T-1.5,A,C)*k*.5+.5), c2=saturate(sw.H(P,T-3.0,A,C)*k*.5+.5), c3=saturate(sw.H(P,T-4.5,A,C)*k*.5+.5);")
             + TEXT("float linger=max(max(smoothstep(.55,.85,c1)*.85,smoothstep(.55,.85,c2)*.60),smoothstep(.55,.85,c3)*.35);")
-            // Lateral current for the near-rock lace; the residue rides the swell toward shore.
-            + TEXT("float2 drift=float2(-.75,-.66)*T*160; float2 shore=float2(-.93,-.37)*T*120;")
+            // Near-rock lace and residue share a 1.2 m/s shore-dominant current.
+            + TEXT("float2 drift=float2(-.95,-.31)*T*120; float2 shore=float2(-.95,-.31)*T*120;")
             + TEXT("float cells=noise.f((P.xy+drift)*.0025);")
             + TEXT("float lace=smoothstep(.30,.70,noise.f((P.xy+drift)*.007)*.55+cells*.45);")
             + TEXT("float gaps=smoothstep(.32,.62,noise.f((P.xy+drift)*float2(.0004,.0011)));")
