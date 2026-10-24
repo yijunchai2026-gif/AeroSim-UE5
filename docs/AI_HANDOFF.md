@@ -20,12 +20,20 @@
 
 另外，无人机必须能用**真实按键**飞完约 2 分钟（100–130 s）的任务航线，并降落在停机坪上。
 
-**当前结论（2026-10-24）：** 还没有达到 3A。
+**当前结论（2026-10-25，R12）：** 还没有达到 3A。
 
 - R0–R11 共十余轮视觉 QA，每轮 U1–U6 都是 FAIL，但每轮都有可量化的改进。
 - **验收只由用户本人签字。** 任何 AI 都不得写「3A 已达成」或「验收通过」。
 
-**最新完成的一轮是 R11**（集成分支提交 `02874d5`，后面另有文档提交）：
+**最新完成的一轮是 R12**（集成提交 `cb3c4e8`，源码指纹 `410838f7b176`）：
+
+- Python 92/92、静态 10/10、Build、81 项 Automation、Package、Shaders 全部通过。
+- 真实按键闭环航线到达 Result / `nav-15-land-on-mat`：361.62 s，未使用 teleport。
+- shore / cliff 已补齐 600 ms × 8 动态序列，实际跨度 4.255 / 4.298 s；涌入和消退完整可见。
+- 林下亮度、冠层色块、近地草、冠层摆动均有改善；shore 顶部沙丘感、rim 锈带、远山条纹、north grove 方块感仍未关闭。
+- 详细证据见 `docs/coast-aaa-qa/R12/qa-hero.md` 与 `qa-motion.md`。U1–U6 仍不得写 PASS。
+
+**上一轮 R11**（集成分支提交 `02874d5`，后面另有文档提交）：
 
 - 门禁全部通过。
 - 真实按键飞完全航线并降落：5/5 检查点、0 事故、418 s。
@@ -37,8 +45,8 @@
 **快速运行 R11（给人看）：**
 
 ```bash
-# 最新包：R11 + 方向键操控，在 flight worktree 打包
-open -n "/Users/bytedance/Downloads/AeroSim-worktrees/flight/Artifacts/ProductShell/AAA/R11-arrows/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
+# 最新包：R12 集成包（包含方向键操控）
+open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/ProductShell/AAA/R12/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
 # 纯 R11 包（没有方向键）
 open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/ProductShell/AAA/R11/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
 ```
