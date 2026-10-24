@@ -193,7 +193,8 @@ const TCHAR* Weights = TEXT(
     // pattern (QA 'honeycomb') can read at 20-200 m; procedural mottling supplies the variation.
     "float3 EF2=lerp(float3(.419,.297,.196),EF,.5), SF2=lerp(float3(.080,.048,.008),SF,.5), WF2=lerp(float3(.173,.076,.035),WF,.5), RF2=lerp(float3(.306,.178,.080),RF,.45);"
     "float3 EC=lerp(lerp(ED,E2D,swap),EF2,1-fineMix), SC=lerp(lerp(SD,S2D,1-swap),SF2,1-fineMix);"
-    "float3 WC=lerp(WD,WF2,1-fineMix), RC=lerp(RD,RF2,1-fineMix);"
+    "float3 RDt=lerp(RD,RT,smoothstep(.95,.8,abs(normalize(cross(ddx(WP),ddy(WP))).z)));"
+    "float3 WC=lerp(WD,WF2,1-fineMix), RC=lerp(RDt,RF2,1-fineMix);"
     "float3 w3=saturate(VC.rgb); float4 w=float4(w3,saturate(1-w3.r-w3.g-w3.b));"
     "float steep=smoothstep(.87,.70,VN.z+(nB-.5)*.10);"
     "w.w=max(w.w,steep); w.z=max(w.z,LIT*.85); w/=max(dot(w,1),1e-3);"
@@ -208,7 +209,13 @@ const TCHAR* Weights = TEXT(
     // R11 (ownership probe: the rust 'plank' band is land at 47-50 deg drawn by the planar stony
     // layer): facet-true rock projection wherever the slope exceeds ~35 deg (soft 30-45 deg) or the
     // stony/rock layer wins the habitat blend.
-    "float rockMask=max(cliffFace,max(smoothstep(.866,.707,abs(facet.z)),smoothstep(.45,.65,b.w)));");
+    // R12 (QA: rust plaid rectangles on inland scree): the rock projection is confined to the coastal
+    // cliff/cove band (world X east of ~40-90 m from the coast plateau edge, not the far N/S collar);
+    // inland stony patches keep the stony layer, now sampled with facet-true triplanar weights.
+    // Coastal 20-35 deg slopes also show irregular strata breaks of rock through the soil.
+    "float coast=smoothstep(4000.0,9000.0,WP.x)*(1-smoothstep(150000.0,170000.0,abs(WP.y)));"
+    "float strata=coast*smoothstep(.74,.9,sin((WP.z+260.0*nC+90.0*nA)/170.0)*.5+.5)*smoothstep(.97,.88,abs(facet.z))*smoothstep(.35,.6,nB);"
+    "float rockMask=saturate(max(cliffFace,coast*max(smoothstep(.866,.707,abs(facet.z)),smoothstep(.45,.65,b.w)))+.45*strata);");
 }
 FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Textures, bool bLitterMask, UMaterialFunctionInterface* AlignedTexture)
 {
@@ -274,6 +281,7 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
     // faces now take the cliff's own macro tone (cliff_side, world-aligned at 23 m) with the sandstone
     // only as luminance detail, matching the rock material's tinted colour.
     UMaterialExpression* SteepMacro=FacetTriplanar(Textures[3],TEXT("SteepFaceMacro"),2300.0F);
+    UMaterialExpression* StonyTriplanar=FacetTriplanar(Textures[25],TEXT("StonyGroundTriplanar"),400.0F);
     // Trunk-base litter (DEV-FLORA GetForestLitterMask) arrives as 1 - vertex alpha on terrain;
     // trail surfaces use their alpha as the worn-core mask, so they read no litter.
     UMaterialExpression* LitterAlpha=nullptr;
@@ -293,6 +301,7 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         FCustomInput TIn;TIn.InputName=TEXT("TRI");TIn.Input.Connect(0,SteepColor);C->Inputs.Add(TIn);
         FCustomInput TRIn;TRIn.InputName=TEXT("TRR");TRIn.Input.Connect(0,SteepRough);C->Inputs.Add(TRIn);
         FCustomInput TMIn;TMIn.InputName=TEXT("TRM");TMIn.Input.Connect(0,SteepMacro);C->Inputs.Add(TMIn);
+        FCustomInput RTIn;RTIn.InputName=TEXT("RT");RTIn.Input.Connect(0,StonyTriplanar);C->Inputs.Add(RTIn);
         FCustomInput LIn;LIn.InputName=TEXT("LIT");LIn.Input.Connect(0,LitterAlpha);C->Inputs.Add(LIn);
         return C;
     };
@@ -319,7 +328,12 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "c*=lerp(1,m1*m2,.25+.3*(1-fineMix));"
         "c*=1+.24*(float3(nC,nD,nE)-.5);"
         // R8: steep cap faces match the cliff rock tone (was a pale-gold sandstone that read untextured).
-        "float3 rockTone=lerp(TRI,TRM,.72)*float3(.58,.64,.68)*float3(1.12,1.06,.92)*clamp(dot(TRI,L)/.33,.7,1.3);"
+        // R12: coastal grass toward Bay Area tawny/olive (QA: orange dune band); rock detail fades to the
+        // 23 m macro with distance so the 3.5 m sandstone tile never reads as a woven grid.
+        "c=lerp(c,dot(c,L)*float3(1.08,1.0,.80),.3*coast);"
+        "float3 rockTone=lerp(lerp(TRI,TRM,.72),TRM,1-fineMix)*float3(.58,.64,.68)*float3(1.10,1.05,.95)*lerp(1,clamp(dot(TRI,L)/.33,.7,1.3),fineMix);"
+        // R12 self-check: the coastal rock read saturated orange; pull it toward tawny sandstone.
+        "rockTone=lerp(rockTone,dot(rockTone,L)*float3(1.06,1.0,.88),.35);"
         "c=lerp(c,rockTone,rockMask);"
         "return min(c,float3(.6,.5,.4));"));
     auto* Normal=Make(CMOT_Float3,TEXT(

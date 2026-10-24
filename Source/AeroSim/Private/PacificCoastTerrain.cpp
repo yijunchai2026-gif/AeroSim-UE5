@@ -439,15 +439,18 @@ float CliffOutcrop(const float Y, const float Depth)
     for (int32 Bed = 0; Bed < UE_ARRAY_COUNT(Thresholds); ++Bed)
     {
         // R9: stronger, shorter dip so beds are not read as level contour bands on low headlands.
-        const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F) + .07F * RowDetail(Y) * Noise(Y, Bed * 2700.0F - 5000.0F, 2400.0F);
-        const float BedHeight = Thickness[Bed] * (1.0F + .25F * Noise(Y, Bed * 9100.0F, 4700.0F));
+        // R12: on the 20.8 m outer rows, bed dip and thickness vary only over >150 m so bands stay level
+        // instead of zig-zagging across the row triangulation (north-toe chevrons).
+        const float Far = 1.0F - RowDetail(Y);
+        const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F + 12000.0F * Far) + .07F * RowDetail(Y) * Noise(Y, Bed * 2700.0F - 5000.0F, 2400.0F);
+        const float BedHeight = Thickness[Bed] * (1.0F + .25F * Noise(Y, Bed * 9100.0F, 4700.0F + 12000.0F * Far));
         Outcrop += BedHeight * Smooth((Depth - Thresholds[Bed] - Dip) / Widths[Bed]);
     }
     // Every term is non-decreasing with depth, so the face never overhangs: blocks vary along the
     // coast only and ramp in once below the rim.
     const float Interior = Smooth(Depth / .07F);
     // No sub-7 m term: short-wavelength block noise serrated the waterline row by row.
-    const float Blocks = 450.0F + 380.0F * Noise(Y, 14000.0F, 2100.0F);
+    const float Blocks = 450.0F + 380.0F * Noise(Y, 14000.0F, 2100.0F + 14000.0F * (1.0F - RowDetail(Y)));
     // Only the hero cove receives these finite, unequal bedrock ribs and their supported
     // rubble tongue. Every displacement ramps monotonically with depth: no floating blocks
     // or overhanging support fiction. Different onsets prevent a row of repeated folds.
@@ -1223,9 +1226,11 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
     // R3: 64 unequal blocks; half gather at the eroded cove centres as a supported talus/rubble
     // foot, several breaking the surface (peaks up to ~19 m above the sea).
     const float CoveCentres[] = {-47000.0F, -19000.0F, 19000.0F, 54000.0F};
-    for (int32 Rock = 0; Rock < 64; ++Rock)
+    // R12 (QA: cove boulders were removed rather than rebuilt): 64 coast blocks plus a field of 24
+    // rounded 4-6 m rocks along the hero cove waterline, on both flanks of the scan.
+    for (int32 Rock = 0; Rock < 88; ++Rock)
     {
-        float Y = Rock % 2 == 0 ? FMath::Clamp(CoveCentres[(Rock / 2) % 4] + RockRandom.FRandRange(-6500.0F, 6500.0F), -57000.0F, 57000.0F)
+        float Y = Rock >= 64 ? ScanY + (Rock % 2 == 0 ? -1.0F : 1.0F) * RockRandom.FRandRange(ScanHalfWidth + 300.0F, 9000.0F) : Rock % 2 == 0 ? FMath::Clamp(CoveCentres[(Rock / 2) % 4] + RockRandom.FRandRange(-6500.0F, 6500.0F), -57000.0F, 57000.0F)
             : RockRandom.FRandRange(-57000.0F, 57000.0F);
         // Keep the scanned hero face clear: blocks that fall in front of it move to its flanks.
         if (FMath::Abs(Y - ScanY) < ScanHalfWidth + 700.0F) Y = ScanY + (Y < ScanY ? -1.0F : 1.0F) * (ScanHalfWidth + 700.0F + FMath::Abs(Y - ScanY) * .8F);
@@ -1234,7 +1239,10 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
         // capped at 4-6 m across; elsewhere they stay under ~16 m.
         const float HeroDistance = FMath::Abs(Y - ScanY);
         const float Radius = HeroDistance < 9000.0F ? RockRandom.FRandRange(200.0F, 300.0F) : RockRandom.FRandRange(500.0F, 1200.0F);
-        const float Peak = RockRandom.FRandRange(-7400.0F, -4600.0F);
+        const bool bSmall = Radius <= 300.0F;
+        // Small cove rocks are rounded and sit at the waterline (crown 0.6-3.2 m above still water).
+        const float Peak = bSmall ? APacificCoastGraybox::SeaLevelCm + RockRandom.FRandRange(60.0F, 320.0F) : RockRandom.FRandRange(-7400.0F, -4600.0F);
+        const float FootZ = bSmall ? APacificCoastGraybox::SeaLevelCm - 450.0F : -11100.0F;
         // Blocks sit on the real sloping cliff foot at the waterline (previously buried behind it).
         const float Foot = GetCoastalShoreX(Y) + RockRandom.FRandRange(-300.0F, 700.0F) - Radius * .3F;
         const int32 BaseIndex = TalusVertices.Num();
@@ -1243,18 +1251,18 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
         // nine jittered corners with a bulging waist, a leaning, chamfered and flattened crown, and
         // a footing sunk well below the waterline. 38 vertices per block; the crown is the last.
         constexpr int32 Corners = 9, Rings = 4;
-        TalusVertices.Add(FVector(Edge - 300.0F, Y, -15500.0F));
+        TalusVertices.Add(bSmall ? FVector(Foot - 100.0F, Y, APacificCoastGraybox::SeaLevelCm - 900.0F) : FVector(Edge - 300.0F, Y, -15500.0F));
         const FVector2D Lean(RockRandom.FRandRange(-.35F, .35F) * Radius, RockRandom.FRandRange(-.35F, .35F) * Radius);
         const float RingT[Rings] = {0.0F, RockRandom.FRandRange(.38F, .52F), RockRandom.FRandRange(.72F, .82F), RockRandom.FRandRange(.9F, .96F)};
-        const float RingScale[Rings] = {1.05F, RockRandom.FRandRange(1.0F, 1.25F), RockRandom.FRandRange(.72F, .9F), RockRandom.FRandRange(.38F, .55F)};
+        const float RingScale[Rings] = {1.05F, RockRandom.FRandRange(1.0F, 1.25F), RockRandom.FRandRange(bSmall ? .82F : .72F, .9F), RockRandom.FRandRange(bSmall ? .5F : .38F, bSmall ? .62F : .55F)};
         float Jitter[Corners];
-        for (int32 Corner = 0; Corner < Corners; ++Corner) Jitter[Corner] = RockRandom.FRandRange(.68F, 1.2F);
+        for (int32 Corner = 0; Corner < Corners; ++Corner) Jitter[Corner] = RockRandom.FRandRange(bSmall ? .85F : .68F, bSmall ? 1.1F : 1.2F);
         for (int32 Ring = 0; Ring < Rings; ++Ring)
             for (int32 Corner = 0; Corner < Corners; ++Corner)
             {
                 const float Angle = Rotation + (Corner + RockRandom.FRandRange(-.3F, .3F)) * (2.0F * PI / Corners);
                 const float R = Radius * RingScale[Ring] * FMath::Lerp(Jitter[Corner], RockRandom.FRandRange(.7F, 1.2F), .35F);
-                const float Height = FMath::Lerp(-11100.0F, Peak, RingT[Ring]) + (Ring > 0 ? RockRandom.FRandRange(-120.0F, 120.0F) : 0.0F);
+                const float Height = FMath::Lerp(FootZ, Peak, RingT[Ring]) + (Ring > 0 ? RockRandom.FRandRange(-120.0F, 120.0F) : 0.0F);
                 const FVector2D Shift = Lean * RingT[Ring];
                 TalusVertices.Add(FVector(Foot + Shift.X + FMath::Cos(Angle) * R, Y + Shift.Y + FMath::Sin(Angle) * R * 1.3F, Height));
             }

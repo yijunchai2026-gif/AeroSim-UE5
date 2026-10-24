@@ -23,7 +23,7 @@ bool FReviewPoseOwnershipTest::RunTest(const FString& Parameters)
     if (!TestNotNull(TEXT("Coast"), Coast)) { World->DestroyWorld(false); return false; }
     constexpr int32 Width = 1440, Height = 900, ActiveTop = 45, ActiveHeight = 810;
     const float TanHalf = FMath::Tan(FMath::DegreesToRadians(30.0F));
-    for (const TCHAR* View : {TEXT("cliff"), TEXT("shore")})
+    for (const TCHAR* View : {TEXT("cliff"), TEXT("shore"), TEXT("north")})
     {
         FVector Location; FRotator Rotation;
         if (!AAeroSimGameMode::ResolveReviewView(View, 8, Location, Rotation)) continue;
