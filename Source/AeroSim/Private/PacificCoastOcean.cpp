@@ -299,7 +299,7 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("float marble=saturate(smoothstep(.72,.94,r1)+smoothstep(.78,.96,r2)*.8);")
             + TEXT("float s1=1-abs(2*noise.f((P.xy-shore)*.0038+5.1)-1); float s2=1-abs(2*noise.f((P.xy-shore)*.010+9.3)-1);")
             + TEXT("float smarble=saturate(smoothstep(.60,.90,s1)+smoothstep(.70,.94,s2)*.8);")
-            + TEXT("float fringe=contact*exp(-d/320)*(.55+.45*marble)*(.60+.40*gaps)*2.2;")
+            + TEXT("float fringe=contact*exp(-d/320)*(.55+.45*marble)*(.60+.40*gaps)*(.20+.80*cycle)*2.2;")
             + TEXT("float reach=300+1100*crest*contact;")
             + TEXT("float surge=contact*exp(-d/reach)*(.30+.70*crest)*(.25+.75*cycle)*lerp(saturate(marble*1.35),1,.25*exp(-d/100));")
             + TEXT("float patches=contact*exp(-d/650)*marble*gaps*.40;")
