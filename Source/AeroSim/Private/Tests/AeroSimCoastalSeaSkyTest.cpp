@@ -128,7 +128,7 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
             // atmosphere sun); the sky capture that feeds sea reflections stays near-neutral.
             const UDirectionalLightComponent* Bounce = nullptr;
             { TArray<UDirectionalLightComponent*> Lights; Coast->GetComponents(Lights); for (auto* L : Lights) if (L->GetFName() == TEXT("CoastalBounceFill")) Bounce = L; }
-            TestTrue(TEXT("Warm diffuse-only bounce fill for the understory"), Bounce && Bounce->Intensity >= .31F && Bounce->SpecularScale == 0.0F
+            TestTrue(TEXT("Warm diffuse-only bounce fill for the understory"), Bounce && Bounce->Intensity >= .44F && Bounce->SpecularScale == 0.0F
                 && !Bounce->CastShadows && !Bounce->IsUsedAsAtmosphereSunLight() && Bounce->GetLightColor().R > Bounce->GetLightColor().G
                 && Bounce->GetLightColor().G > Bounce->GetLightColor().B);
             TestTrue(TEXT("Sky capture stays near-neutral for sea reflections"), Sky && Sky->Intensity < 1.2F && Sky->GetLightColor().B > .85F);
@@ -262,6 +262,8 @@ bool FCoastalWaveSpectrumTest::RunTest(const FString& Parameters)
     const FString Foam = APacificCoastGraybox::GetCoastalWaterShaderCode(APacificCoastGraybox::ECoastalWaterShader::Foam);
     TestTrue(TEXT("Foam lace and residue move shoreward at 1.2 m/s"), Foam.Contains(TEXT("float2 drift=float2(-.95,-.31)*T*120"))
         && Foam.Contains(TEXT("float2 shore=float2(-.95,-.31)*T*120")));
+    TestTrue(TEXT("Foam completes a bounded surge and recede cycle"), Foam.Contains(TEXT("float cycle=smoothstep"))
+        && Foam.Contains(TEXT("(1-cycle)")));
     int32 Geometric = 0; for (const FWave& W : Waves) Geometric += W.WavelengthCm >= 1200 ? 1 : 0;
     auto Count = [](const FString& Code) { int32 N = 0, From = 0; while ((From = Code.Find(TEXT("float th="), ESearchCase::CaseSensitive, ESearchDir::FromStart, From)) != INDEX_NONE) { ++N; ++From; } return N; };
     TestEqual(TEXT("WPO contains every geometric component"), Count(Offset), Geometric);
