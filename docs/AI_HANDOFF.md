@@ -54,7 +54,7 @@ open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/Prod
 
 1. **先读文档。** 依次读 `AGENTS.md`（仓库总规则）、`docs/COAST_AAA_PROGRAM.md`（团队章程、U1–U6、MCP 视觉测试协议、用户裁决记录）、`docs/COAST_AAA_TASK_BOARD.md`，然后读本文件。
 2. **不准碰用户主检出。**
-   - `/Users/bytedance/Downloads/AeroSim` 检出的分支是 `aime/20261016-1435-product-shell`，里面有 **79 个未提交文件**，都是用户自己的工作。
+   - `/Users/bytedance/Downloads/AeroSim` 是用户本人使用的检出，分支是 `aime/20261016-1435-product-shell`。2026-10-24 用户自己把它 reset 到了 `origin/main`（`f079290`），工作区干净，以前那 79 个未提交文件已由用户有意丢弃。不管里面现在有什么改动，都视为用户本人的工作。
    - 不要在里面 checkout、merge、reset、stash、clean 或编辑任何文件。
    - 唯一允许的是纯 ref 操作：`git -C /Users/bytedance/Downloads/AeroSim branch -f main <commit>`，前提是 `main` 没有被任何工作区检出（先用 `git worktree list` 确认）。
    - 其余工作都在 `AeroSim-worktrees/` 下的 worktree 中进行。
