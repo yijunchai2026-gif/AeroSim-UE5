@@ -802,7 +802,7 @@ void BuildFirBranchlets(FSkeleton& K, FRandomStream& Random)
             const FVector Attach = PathPoint(Limb, S);
             const FVector Ahead = (PathPoint(Limb, FMath::Min(1.0F, S + .04F)) - Attach).GetSafeNormal();
             const float U = (Attach.Z - K.CrownBase) / FMath::Max(1.0F, CrownTop - K.CrownBase);
-            const float GroupLength = Random.FRandRange(56, 84) * Scale * (Limb.Level == 2 ? .8F : 1.0F) * FMath::Lerp(1.0F, .96F, U);
+            const float GroupLength = Random.FRandRange(75, 105) * Scale * (Limb.Level == 2 ? .8F : 1.0F) * FMath::Lerp(1.0F, 1.16F, U);
             // Group axis leaves the limb sideways and droops; tips near the limb end turn up.
             const FVector Axis = Turn(Ahead, Side * Random.FRandRange(28, 58), -Random.FRandRange(10, 26) + (S > .85F ? 18.0F : 0.0F));
             const FVector Lift(0, 0, Side * Random.FRandRange(6, 18) * (Random.FRand() < .5F ? 1 : -1));
@@ -854,14 +854,14 @@ void BuildPineTerminals(FSkeleton& K, FRandomStream& Random)
         // Mass centre sits just beyond the tip; cards radiate in a hemisphere with jittered,
         // non-coplanar centres (thin where it joins the twig, thick on the outside).
         const FVector Centre = Tip + TipDir * 24.0F * Mass;
-        const int32 Cards = FMath::Clamp(FMath::RoundToInt((Limb.Level == 1 ? 6 : 5) * K.FoliageDensity), 2, 9);
+        const int32 Cards = FMath::Clamp(FMath::RoundToInt((Limb.Level == 1 ? 8 : 7) * K.FoliageDensity), 2, 9);
         for (int32 Card = 0; Card < Cards; ++Card)
         {
             const float Yaw = Card * 360.0F / Cards + Random.FRandRange(-25, 25);
             const FVector Out = (TipDir * .55F + Turn(TipDir, Yaw, Random.FRandRange(-35, 50)) * .85F + FVector(0, 0, .2F)).GetSafeNormal();
             const FVector At = Centre + Random.VRand() * Random.FRandRange(4, 14) * Mass - Out * 10.0F;
             const FVector Across = FVector::CrossProduct(Out, Random.VRand()).GetSafeNormal();
-            AddClusterCard(K, Id, At, Out, Across, Random.FRandRange(92, 124) * Mass, Card == 0 ? 1 : 2, C.Wind, C.Occlusion, Card == 0 ? 20.0F : 0.0F);
+            AddClusterCard(K, Id, At, Out, Across, Random.FRandRange(115, 155) * Mass, Card == 0 ? 1 : 2, C.Wind, C.Occlusion, Card == 0 ? 20.0F : 0.0F);
         }
         // One radial clump faces outward across the mass.
         // The radial clump stands upright facing out of the crown (horizontal normal), never lying flat.
@@ -961,7 +961,7 @@ void EmitHeroFoliage(const FSkeleton& K, int32 Lod, FLod& Out)
         {
             const FCluster& C = K.Clusters[T.Cluster];
             if (Lod == 1 && T.Rank >= FMath::Max(1, FMath::CeilToInt(C.Cards * .45F))) continue;
-            const float Grow = Lod == 1 ? 1.25F : 1.0F;
+            const float Grow = Lod == 1 ? 1.42F : 1.0F;
             EnvelopeCard(Out.Leaf, T.Origin - T.Dir * T.Length * (Grow - 1) * .5F, T.Dir, T.Across, T.Length * Grow,
                 K.Islands[T.Island % K.IslandCount], C.Center, FVector4f(T.Occlusion, T.Wind, 0, 1), Lod == 0 ? T.Fold : 0.0F);
         }
@@ -1646,12 +1646,12 @@ float NearStandDensity(const float X, const float Y)
     const float EastEdge = NearEastEdge(Y) - 1800.0F * Fbm(Y, 300.0F, 4200.0F) - 8000.0F * FMath::Max(0.0F, Fbm(Y - 2000.0F, 900.0F, 11000.0F) - .38F);
     // R10: erode the distance-to-edge field itself with 25-60 m noise, so every side (incl. the
     // north grove) gets bays and promontories rather than four straight edges.
-    const float Erosion = 3200.0F * (Fbm(X + 11000.0F, Y - 3000.0F, 3600.0F) - .35F) + 1400.0F * (Fbm(X - 2700.0F, Y + 5100.0F, 1500.0F) - .5F);
+    const float Erosion = 3200.0F * (Fbm(X + 11000.0F, Y - 3000.0F, 3600.0F) - .25F) + 1400.0F * (Fbm(X - 2700.0F, Y + 5100.0F, 1500.0F) - .4F);
     // R11: the review poses' stand edge (south, around the corridor entry) is exempt, so the
     // forest view keeps a closed crown ceiling; the north grove also gets a 150-300 m outline shape.
-    const float NorthShape = Y > 0 ? 7000.0F * (Fbm(X - 15000.0F, 2100.0F, 22000.0F) - .45F) + 4000.0F * (Fbm(X + 8000.0F, 900.0F, 11000.0F) - .5F) : 0.0F;
+    const float NorthShape = Y > 0 ? 7000.0F * (Fbm(X - 15000.0F, 2100.0F, 22000.0F) - .45F) + 4000.0F * (Fbm(X + 8000.0F, 900.0F, 11000.0F) - .5F) + 3200.0F * (Fbm(X * 1.5F, Y * 1.5F, 2800.0F) - .48F) : 0.0F;
     const float Inside = FMath::Min(FMath::Min(AbsY - FieldEdge, OuterEdge - AbsY - NorthShape), FMath::Min(X - WestEdge, EastEdge - X))
-        - (Y > 0 ? 1.9F : EntryKeep) * Erosion;
+        - (Y > 0 ? 2.6F : EntryKeep) * Erosion;
     if (Inside <= 0)
     {
         // Outside the core stands, woodland-class ground (DEV-TERRAIN habitat) carries a looser

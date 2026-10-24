@@ -40,7 +40,7 @@ FLinearColor APacificCoastGraybox::GetForestLitterMask(const float X, const floa
                 const FArchetype& A = Archetypes[Tree.Archetype];
                 const bool bOak = A.Species == ESpecies::CoastLiveOak;
                 // R9: contact-scale reach so neighbouring trees no longer merge into one dark carpet.
-                const float Reach = (bOak ? 170.0F : A.Species == ESpecies::Sapling ? 50.0F : 110.0F) * Tree.Scale * Tree.Girth;
+                const float Reach = (bOak ? 320.0F : A.Species == ESpecies::Sapling ? 80.0F : 240.0F) * Tree.Scale * Tree.Girth;
                 const float D = FVector2D::Distance(FVector2D(X, Y), FVector2D(Tree.Base)) - A.CollarRadius * Tree.Scale * Tree.Girth;
                 const float W = FMath::Pow(FMath::Clamp(1.0F - D / Reach, 0.0F, 1.0F), 1.5F);
                 (bOak ? Oak : Conifer) = FMath::Max(bOak ? Oak : Conifer, W);
@@ -51,7 +51,7 @@ FLinearColor APacificCoastGraybox::GetForestLitterMask(const float X, const floa
     const float Lane = CorridorDistance(FVector2D(X, Y), &HalfWidth);
     const float LaneClear = FMath::SmoothStep(HalfWidth - 60.0F, HalfWidth + 80.0F, Lane);
     const float Patch = FMath::SmoothStep(.30F, .62F, FMath::Frac(FMath::Sin(X * .0031F + FMath::Sin(Y * .0023F)) * 1.7F + .5F));
-    const float Keep = LaneClear * FMath::Lerp(.55F, 1.0F, Patch);
+    const float Keep = LaneClear * FMath::Lerp(.80F, 1.0F, Patch);
     return FLinearColor(Conifer * Keep, Oak * Keep, 0, 1);
 }
 
@@ -241,7 +241,7 @@ void APacificCoastGraybox::BuildCoastalHabitat()
                 if (CorridorDistance(FVector2D(Tree.Base), &LaneHalf) < LaneHalf + 150.0F) continue; // no rug in the lane
             }
             // Contact-scale rings only (DEV-TERRAIN's ground litter mask carries the continuous forest floor).
-            const float Radius = (A.Species == ESpecies::CoastLiveOak ? LitterRandom.FRandRange(170, 250) : LitterRandom.FRandRange(120, 190)) * Tree.Scale * Tree.Girth;
+            const float Radius = (A.Species == ESpecies::CoastLiveOak ? LitterRandom.FRandRange(300, 480) : LitterRandom.FRandRange(220, 380)) * Tree.Scale * Tree.Girth;
             const float H = Radius * .5F;
             const float DX = (GetCoastalLandHeight(Tree.Base.X + H, Tree.Base.Y) - GetCoastalLandHeight(Tree.Base.X - H, Tree.Base.Y)) / (2 * H);
             const float DY = (GetCoastalLandHeight(Tree.Base.X, Tree.Base.Y + H) - GetCoastalLandHeight(Tree.Base.X, Tree.Base.Y - H)) / (2 * H);
