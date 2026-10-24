@@ -326,7 +326,8 @@ bool FCoastalTreeCorridorTest::RunTest(const FString& Parameters)
     }
     // Trunk-base litter mask for the ground material (DEV-TERRAIN).
     {
-        const FPlacedTree* Fir = Layout.Trees.FindByPredicate([&](const FPlacedTree& T) { return T.bNearForest && Archetypes[T.Archetype].Species == ESpecies::DouglasFir; });
+        // A stand fir away from the corridor (lane trees deliberately carry no litter).
+        const FPlacedTree* Fir = Layout.Trees.FindByPredicate([&](const FPlacedTree& T) { return T.bNearForest && !T.bCorridorFlank && Archetypes[T.Archetype].Species == ESpecies::DouglasFir && CorridorDistance(FVector2D(T.Base)) > 1500; });
         if (TestNotNull(TEXT("A near fir exists"), Fir))
         {
             const FLinearColor AtBase = APacificCoastGraybox::GetForestLitterMask(Fir->Base.X + Archetypes[Fir->Archetype].CollarRadius, Fir->Base.Y);
