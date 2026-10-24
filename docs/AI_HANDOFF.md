@@ -32,7 +32,18 @@
 - QA-HERO 和 QA-MOTION 都已完成，报告在 `docs/coast-aaa-qa/R11/`。
 - 结果和下一轮（R12）简报要点见第 8 节。
 
-**远端 `main`：** 用户同意之后才推送。推送前用 `git ls-remote origin refs/heads/main` 核对远端当前在哪个提交。
+**远端 `main`：** 2026-10-24 经用户同意，R11 和本文档已推送到 `origin/main`。以后再推送仍要先征得用户同意，推送前用 `git ls-remote origin refs/heads/main` 核对远端当前在哪个提交。
+
+**快速运行 R11（给人看）：**
+
+```bash
+open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/ProductShell/AAA/R11/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
+```
+
+- 在首页一直按 Enter 进入 Flight，然后按 Left Shift 起飞。
+- 按键：W/S 前后，A/D 左右，Left Shift/Left Ctrl 升降。
+- 需要 AI 控制或截图时，在参数里加 `-AeroSimControlBridge`。
+- 包在 `Artifacts/` 下，不在 git 里，要在本机重新生成：`bash tools/pmo/integrate.sh <轮次>`。
 
 ---
 
