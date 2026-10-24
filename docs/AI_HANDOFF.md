@@ -32,15 +32,18 @@
 - QA-HERO 和 QA-MOTION 都已完成，报告在 `docs/coast-aaa-qa/R11/`。
 - 结果和下一轮（R12）简报要点见第 8 节。
 
-**远端 `main`：** 2026-10-24 经用户同意，R11 和本文档已推送到 `origin/main`。以后再推送仍要先征得用户同意，推送前用 `git ls-remote origin refs/heads/main` 核对远端当前在哪个提交。
+**远端 `main`：** 2026-10-24 经用户同意，R11、方向键操控补丁（`4aa1be9`）和本文档已推送到 `origin/main`。以后再推送仍要先征得用户同意，推送前用 `git ls-remote origin refs/heads/main` 核对远端当前在哪个提交。
 
 **快速运行 R11（给人看）：**
 
 ```bash
+# 最新包：R11 + 方向键操控，在 flight worktree 打包
+open -n "/Users/bytedance/Downloads/AeroSim-worktrees/flight/Artifacts/ProductShell/AAA/R11-arrows/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
+# 纯 R11 包（没有方向键）
 open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/ProductShell/AAA/R11/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
 ```
 
-- 在首页一直按 Enter 进入 Flight，然后按 Left Shift 起飞。
+- 在首页一直按 Enter 进入 Flight，然后按 Left Shift 或 ↑ 起飞。
 - 按键：W/S 前后，A/D 左右，Left Shift/Left Ctrl 或 ↑/↓ 升降，Q/E 或 ←/→ 转机头，I/K/J/L 云台，C 相机，H 返航，R 重置，Esc 暂停。
 - 需要 AI 控制或截图时，在参数里加 `-AeroSimControlBridge`。
 - 包在 `Artifacts/` 下，不在 git 里，要在本机重新生成：`bash tools/pmo/integrate.sh <轮次>`。
@@ -322,11 +325,21 @@ AEROSIM_INTEGRATION=/Users/bytedance/Downloads/AeroSim-worktrees/integration \
 | R8 | 去掉崩塌体托盘、岩面按面投影；圆形远景树冠壳、树干粗细变化；定向卷云、远海涌浪；**飞行：限制点按幅度和刹车、OFF PAD 提示** | 地面变暗（回归）；全屏黑帧事故 |
 | R9 | 天光补林下、按地形计算泡沫距离；树根隆起、不规则林缘；岩带色调 | 两项量化目标首次达标；出现不透明泡沫片和果园行 |
 | R10 / R10b | 大理石纹泡沫、按天空方向映射的卷云、中性天光加 0-specular 补光；错开走廊退距；R10b 岩石投影改为 >35° 生效 | 海面发白修复；出现**山坡锈色格子**；泡沫过少 |
+| R11 补丁（`4aa1be9`） | 笔记本方向键布局：↑/↓ 升降，←/→ 转向，云台改到 I/K/J/L。方向键加入暂停恢复时的按键回中检查、控制桥按键白名单和 HUD 提示。在 R11-arrows 包上用控制桥实测通过 | 用户反馈「操控不太对」后追加；场景没有变化 |
 | R11 | 岩石投影只限海岸带、内陆碎石按坡度采样、恢复 24 块海湾圆石；树冠闭合、树根加粗；常驻碎泡沫边、浪后残留、漂移 | 格子消失；海湾和泡沫迄今最好；树冠仍偏稀，摆动变大；林下略暗；岸边仍像沙丘 |
 
 ---
 
 ## 8. 第 11 轮（R11）：已完成（合并、打包、真实按键验证、两轮 QA）
+
+**R11 之后的操控补丁（`4aa1be9`）：**
+
+- 用户用笔记本试飞，按 Shift/Ctrl 不方便，于是加了方向键：↑/↓ 升降，←/→ 转机头，相当于 Mode 2 左摇杆；WASD 不变。
+- 原本在方向键上的相机云台改到 I/K/J/L。
+- 包 `flight/Artifacts/ProductShell/AAA/R11-arrows` 的门禁全部通过：Python 92、静态 10/10、Automation 0 失败、打包和 shader 通过。
+- 用控制桥在包里实测：↑ 起飞爬升约 13 m，→ 转向 50.6°，W 沿新机头方向前进，↓ 下降。
+- 用户还没给出手感反馈。如果要调爬升、下降、转向速度或刹车，参数在 `FlightPawn.cpp` 的 `AeroSimFlight` 命名空间里，见 R8 精确悬停。
+- **已知未改：** 手柄映射不是标准 Mode 2。现在转向在右摇杆 X，平移在左摇杆 X，和习惯相反。是否改成标准布局要先问用户。
 
 **集成过程：**
 
