@@ -143,7 +143,7 @@ void APacificCoastGraybox::BuildCoastalHabitat()
     // DEV-FLORA by DEV-TERRAIN): dense tufts within ~25 m thinning out to 60 m, kept off the
     // apron/mat, the access path, trails and boardwalk; species follow the habitat weights.
     FRandomStream Ground(77113);
-    constexpr float GrassCell = 115.0F;
+    constexpr float GrassCell = 80.0F;
     for (float GX = -6000; GX < 6000; GX += GrassCell)
         for (float GY = -6000; GY < 6000; GY += GrassCell)
         {

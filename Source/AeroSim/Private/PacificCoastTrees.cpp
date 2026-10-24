@@ -276,10 +276,10 @@ float CollarRadius(float Z, float Theta, float BaseRadius, const TArray<TPair<fl
 {
     const float Zc = FMath::Max(Z, 0.0F);
     // Concave root collar: sharp flare in the lowest ~30 cm, so the base reads as rooted, not a cylinder.
-    float Flare = .18F * FMath::Exp(-Zc / 30.0F) + .03F * FMath::Exp(-Zc / 90.0F);
+    float Flare = .195F * FMath::Exp(-Zc / 30.0F) + .03F * FMath::Exp(-Zc / 90.0F);
     float Buttress = 0;
     for (const auto& Lobe : Lobes) Buttress += Lobe.Value * FMath::Pow(FMath::Max(0.0F, FMath::Cos(Theta - Lobe.Key)), 6.0F);
-    return BaseRadius * (1.0F + Flare + Buttress * FMath::Exp(-Zc / 45.0F));
+    return BaseRadius * FMath::Min(1.30F, 1.0F + Flare + Buttress * FMath::Exp(-Zc / 45.0F));
 }
 
 void AddConiferBranches(FSkeleton& K, FRandomStream& Random, bool bPine, bool bSapling, float Wind0)
@@ -733,8 +733,8 @@ FVector Turn(const FVector& D, float YawDegrees, float PitchDegrees)
 void AddClusterCard(FSkeleton& K, int32 Cluster, const FVector& Origin, const FVector& Along, const FVector& Across, float Length,
     int32 Island, float Wind, float Occlusion, float Fold)
 {
-    // Subtle sway on branchlet cards (QA-MOTION R5a/R6b): weight capped at .15 (~0.4 cm gust).
-    FTuft Tuft{Origin, Along.GetSafeNormal(), Across, FVector::UpVector, Length, Occlusion, FMath::Min(Wind, .15F), Island};
+    // Subtle sway on branchlet cards (QA-MOTION R5a/R6b): weight capped at .065 to restore the R10b motion envelope.
+    FTuft Tuft{Origin, Along.GetSafeNormal(), Across, FVector::UpVector, Length, Occlusion, FMath::Min(Wind, .065F), Island};
     Tuft.Cluster = Cluster; Tuft.Fold = Fold;
     K.Tufts.Add(Tuft);
 }
@@ -1055,7 +1055,7 @@ void EmitHeroFoliage(const FSkeleton& K, int32 Lod, FLod& Out)
             const FVector Across = FVector::CrossProduct(Normal, Tangent).GetSafeNormal();
             const FIsland& Island = K.Islands[ShellIsland % K.IslandCount];
             const FVector Origin = Island.bCentered ? At : At - Tangent * CardSize * .5F;
-            EnvelopeCard(Out.Leaf, Origin, Tangent, Across, CardSize, Island, Centre, FVector4f(FMath::Lerp(.75F, 1.0F, Occlusion), FMath::Min(Wind, .15F), 0, 1), 0);
+            EnvelopeCard(Out.Leaf, Origin, Tangent, Across, CardSize, Island, Centre, FVector4f(FMath::Lerp(.75F, 1.0F, Occlusion), FMath::Min(Wind, .065F), 0, 1), 0);
         }
     }
 }
@@ -1651,7 +1651,7 @@ float NearStandDensity(const float X, const float Y)
     // forest view keeps a closed crown ceiling; the north grove also gets a 150-300 m outline shape.
     const float NorthShape = Y > 0 ? 7000.0F * (Fbm(X - 15000.0F, 2100.0F, 22000.0F) - .45F) + 4000.0F * (Fbm(X + 8000.0F, 900.0F, 11000.0F) - .5F) : 0.0F;
     const float Inside = FMath::Min(FMath::Min(AbsY - FieldEdge, OuterEdge - AbsY - NorthShape), FMath::Min(X - WestEdge, EastEdge - X))
-        - (Y > 0 ? 1.4F : EntryKeep) * Erosion;
+        - (Y > 0 ? 1.9F : EntryKeep) * Erosion;
     if (Inside <= 0)
     {
         // Outside the core stands, woodland-class ground (DEV-TERRAIN habitat) carries a looser
@@ -1678,8 +1678,8 @@ float NearStandDensity(const float X, const float Y)
     // Habitat shapes only the outer ~40 m of each stand: the dense training core is never erased.
     const float Hostile = (Habitat.Rock + Habitat.Shore + FMath::Max(0.0F, Habitat.ExposedGrass - .55F) * Smooth01(Habitat.SunExposure / .5F))
         * (1.0F - Smooth01(Inside / 4000.0F));
-    // Natural clumping: 0.88-1.0 density modulation at ~25 m scale.
-    const float Clump = .88F + .12F * Smooth01((Fbm(X - 4100, Y + 2600, 2600.0F) - .35F) / .3F);
+    // Natural clumping: 0.93-1.0 density modulation at ~25 m scale.
+    const float Clump = .93F + .07F * Smooth01((Fbm(X - 4100, Y + 2600, 2600.0F) - .35F) / .3F);
     return Feather * Clump * (1.0F - Smooth01((Glade - .60F) / .06F)) * (1.0F - Smooth01((Hostile - .25F) / .35F));
 }
 
