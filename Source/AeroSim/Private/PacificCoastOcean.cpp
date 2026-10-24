@@ -275,34 +275,41 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
         // b=depth/40 m, a=shoal (reef) factor. Foam follows the swell crest that actually
         // reaches the rock and drifts shoreward with it; open water never receives foam
         // because every term is gated by rock contact or shoal depth.
-        return EmitWaves(false, false, true) + NoiseHelpers()
-            + TEXT("float d=Mask.r*10000; float contact=Mask.g; float shoal=MaskA;")
-            + TEXT("float crest=saturate(h/(A*42+1)*.5+.5);")
-            // Persistent patches translate with a shoreward + longshore current (1.6 m/s; the
-            // longshore part reads as lateral screen motion in cliff views). Gaps move with it.
-            + TEXT("float2 drift=float2(-.75,-.66)*T*160;")
+        // R11 duty cycle: (1) a persistent lacy fringe at every rock/shore contact, independent
+        // of the swell phase, so foam reads in any still; (2) marbled residue that lingers 3-6 s
+        // after each surge - the swell crest is also evaluated 1.5/3/4.5 s in the past and the
+        // residue keeps the decayed maximum; (3) residue advects shoreward along the swell travel
+        // direction (it does not churn in place); (4) surge peak denser but still marbled.
+        // Everything is a pure function of position and time: nothing accumulates at runtime.
+        return NoiseHelpers()
+            + TEXT("struct SwellField { float H(float3 P, float T, float A, float3 C) {")
+            + EmitWaves(false, false, true)
+            + TEXT(" return h; } }; SwellField sw;")
+            + TEXT("float d=Mask.r*10000; float contact=Mask.g; float shoal=MaskA; float k=1.0/(A*42+1);")
+            + TEXT("float crest=saturate(sw.H(P,T,A,C)*k*.5+.5);")
+            + TEXT("float c1=saturate(sw.H(P,T-1.5,A,C)*k*.5+.5), c2=saturate(sw.H(P,T-3.0,A,C)*k*.5+.5), c3=saturate(sw.H(P,T-4.5,A,C)*k*.5+.5);")
+            + TEXT("float linger=max(max(smoothstep(.55,.85,c1)*.85,smoothstep(.55,.85,c2)*.60),smoothstep(.55,.85,c3)*.35);")
+            // Lateral current for the near-rock lace; the residue rides the swell toward shore.
+            + TEXT("float2 drift=float2(-.75,-.66)*T*160; float2 shore=float2(-.93,-.37)*T*120;")
             + TEXT("float cells=noise.f((P.xy+drift)*.0025);")
             + TEXT("float lace=smoothstep(.30,.70,noise.f((P.xy+drift)*.007)*.55+cells*.45);")
             + TEXT("float gaps=smoothstep(.32,.62,noise.f((P.xy+drift)*float2(.0004,.0011)));")
-            // R10 (QA: opaque white sheet): real surf is lacy. A marbled network from two ridged
-            // noise octaves (thin bright filaments, >50% open water) breaks up everything except
-            // the actively breaking crest line; residue behind it is thin and fades.
             + TEXT("float r1=1-abs(2*noise.f((P.xy+drift)*.0042)-1); float r2=1-abs(2*noise.f((P.xy+drift*1.15)*.011+3.7)-1);")
             + TEXT("float marble=saturate(smoothstep(.72,.94,r1)+smoothstep(.78,.96,r2)*.8);")
-            + TEXT("float reach=260+900*crest*contact;")
-            + TEXT("float surge=contact*exp(-d/reach)*(.35+.65*crest)*lerp(marble,1,.35*exp(-d/120));")
-            + TEXT("float churn=contact*exp(-d/110)*(.5+.5*cells)*(.6+.4*gaps)*.7;")
-            + TEXT("float patches=contact*exp(-d/650)*marble*gaps*.45;")
-            // Beach/shelf surf zone from the interpolated depth mask (survives coarse far mesh):
-            // only the crest band is solid white; residue behind it is marbled and fades.
+            + TEXT("float s1=1-abs(2*noise.f((P.xy-shore)*.0038+5.1)-1); float s2=1-abs(2*noise.f((P.xy-shore)*.010+9.3)-1);")
+            + TEXT("float smarble=saturate(smoothstep(.66,.92,s1)+smoothstep(.74,.95,s2)*.8);")
+            + TEXT("float fringe=contact*exp(-d/160)*(.40+.60*marble)*(.55+.45*gaps)*.75;")
+            + TEXT("float reach=300+1100*crest*contact;")
+            + TEXT("float surge=contact*exp(-d/reach)*(.30+.70*crest)*lerp(saturate(marble*1.25),1,.30*exp(-d/120));")
+            + TEXT("float patches=contact*exp(-d/650)*marble*gaps*.40;")
             + TEXT("float shallow=1-smoothstep(.05,.50,Mask.b);")
             + TEXT("float breaker=max(shoal,shallow*contact)*smoothstep(.70,.88,crest)*(.6+.4*lace)*1.2;")
-            + TEXT("float residue=shallow*contact*smoothstep(.35,.70,crest)*marble*.6;")
+            + TEXT("float residue=contact*max(shallow,exp(-d/900))*linger*smarble*.85;")
             + TEXT("float swash=contact*(1-smoothstep(0,.18,Mask.b))*(.35+.65*crest)*marble*.7;")
-            + TEXT("float streak=contact*exp(-d/1400)*smoothstep(.58,.90,noise.f((P.xy+drift)*float2(.0016,.0035)))*marble*.5;")
+            + TEXT("float streak=contact*exp(-d/1400)*smoothstep(.58,.90,noise.f((P.xy-shore)*float2(.0016,.0035)))*smarble*.5;")
             // Foam002 (ambientCG CC0) opacity, advected with the same current, gives bubbly edges.
             + TEXT("float tex=Texture2DSample(FoamTex,FoamTexSampler,(P.xy+drift)/220.0).r;")
-            + TEXT("float f=surge+churn+patches+breaker+residue+swash+streak;")
+            + TEXT("float f=fringe+surge+patches+breaker+residue+swash+streak;")
             // Sharpening only up close; far away the mip-averaged value is used directly, so distant
             // foam cannot pop on/off between frames (R8 overview flicker at the cliff base).
             + TEXT("float x=f*(.50+.80*tex); return saturate(lerp(smoothstep(.12,.75,x),x,smoothstep(3000,20000,length(P-C))));");
