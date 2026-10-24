@@ -330,10 +330,10 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         // R8: steep cap faces match the cliff rock tone (was a pale-gold sandstone that read untextured).
         // R12: coastal grass toward Bay Area tawny/olive (QA: orange dune band); rock detail fades to the
         // 23 m macro with distance so the 3.5 m sandstone tile never reads as a woven grid.
-        "c=lerp(c,dot(c,L)*float3(1.08,1.0,.80),.3*coast);"
+        "c=lerp(c,dot(c,L)*float3(1.03,1.0,.97),.3*coast);"
         "float3 rockTone=lerp(lerp(TRI,TRM,.72),TRM,1-fineMix)*float3(.58,.64,.68)*float3(1.10,1.05,.95)*lerp(1,clamp(dot(TRI,L)/.33,.7,1.3),fineMix);"
         // R12 self-check: the coastal rock read saturated orange; pull it toward tawny sandstone.
-        "rockTone=lerp(rockTone,dot(rockTone,L)*float3(1.06,1.0,.88),.35);"
+        "rockTone=lerp(rockTone,dot(rockTone,L)*float3(1.02,1.0,.97),.35);"
         "c=lerp(c,rockTone,rockMask);"
         "return min(c,float3(.6,.5,.4));"));
     auto* Normal=Make(CMOT_Float3,TEXT(
@@ -440,7 +440,7 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
         Lower->Code = TEXT("float n=sin(P.x*.0021+sin(P.y*.0013)*2.1)*.5+sin(P.y*.0047+P.x*.0011)*.5; return 1-smoothstep(-3200.0,-2400.0,P.z+n*500.0);");
         { FCustomInput I; I.InputName = TEXT("P"); I.Input.Connect(0, CliffWorld); Lower->Inputs.Add(I); }
         auto* Tan = Node<UMaterialExpressionMultiply>(Material); Tan->A.Connect(0, BaseExpression);
-        auto* TanTint = Node<UMaterialExpressionConstant3Vector>(Material); TanTint->Constant = FLinearColor(1.12F, 1.06F, .92F); Tan->B.Connect(0, TanTint);
+        auto* TanTint = Node<UMaterialExpressionConstant3Vector>(Material); TanTint->Constant = FLinearColor(1.02F, 1.0F, .98F); Tan->B.Connect(0, TanTint);
         auto* CliffColor = Node<UMaterialExpressionLinearInterpolate>(Material); CliffColor->A.Connect(0, Tan);
         CliffColor->B.Connect(0, FaceColor); bool bFace = true;
         CliffColor->Alpha.Connect(0, Lower);
@@ -479,7 +479,7 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
             "float3 t=Texture2DSample(Tex,TexSampler,P.yz*s).rgb*w.x+Texture2DSample(Tex,TexSampler,P.xz*s).rgb*w.y+Texture2DSample(Tex,TexSampler,P.xy*s).rgb*w.z;"
             // R9: keep the face's own tone (macro cliff_side colour); the re-projected sample only
             // contributes luminance detail, so these pixels never turn pale, untextured gold.
-            "float detail=clamp(dot(t,float3(.3,.59,.11))/.33,.6,1.4); return lerp(C,M*float3(1.12,1.06,.92)*detail,mis);");
+            "float detail=clamp(dot(t,float3(.3,.59,.11))/.33,.6,1.4); return lerp(C,M*float3(1.02,1.0,.98)*detail,mis);");
         { FCustomInput I; I.InputName = TEXT("P"); I.Input.Connect(0, CliffWorld); FacetColor->Inputs.Add(I); }
         { FCustomInput I; I.InputName = TEXT("VN"); I.Input.Connect(0, GeometryNormal); FacetColor->Inputs.Add(I); }
         { FCustomInput I; I.InputName = TEXT("C"); I.Input.Connect(0, CliffColor); FacetColor->Inputs.Add(I); }
