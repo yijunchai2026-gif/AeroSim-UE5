@@ -143,7 +143,7 @@ void APacificCoastGraybox::BuildCoastalHabitat()
     // DEV-FLORA by DEV-TERRAIN): dense tufts within ~25 m thinning out to 60 m, kept off the
     // apron/mat, the access path, trails and boardwalk; species follow the habitat weights.
     FRandomStream Ground(77113);
-    constexpr float GrassCell = 80.0F;
+    constexpr float GrassCell = 65.0F;
     for (float GX = -6000; GX < 6000; GX += GrassCell)
         for (float GY = -6000; GY < 6000; GY += GrassCell)
         {
@@ -151,14 +151,20 @@ void APacificCoastGraybox::BuildCoastalHabitat()
             const float Roll = Ground.FRand(), Pick = Ground.FRand(), ScaleRoll = Ground.FRand(), Yaw = Ground.FRandRange(0, 360);
             const float Distance = P.Size();
             if (Distance > 6000 || Distance < 950) continue; // keep the 14 x 12 m work surface clear
-            if (Roll > FMath::Lerp(.80F, .18F, FMath::Clamp((Distance - 2500.0F) / 3500.0F, 0.0F, 1.0F))) continue;
-            if (P.X > GetCliffEdgeX(P.Y) - 400 || IsWalkway(P, 160)) continue;
+            if (Roll > FMath::Lerp(.88F, .24F, FMath::Clamp((Distance - 2500.0F) / 3500.0F, 0.0F, 1.0F))) continue;
+            if (P.X > GetCliffEdgeX(P.Y) - 400 || IsWalkway(P, 180) || IsProtected(P, 250)) continue;
+            float HalfWidth = 0;
+            if (CorridorDistance(P, &HalfWidth) < HalfWidth + 160) continue;
             const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(P.X, P.Y);
             if (Habitat.Rock + Habitat.Shore > .4F) continue;
-            const int32 Kind = Pick < Habitat.ExposedGrass * .8F ? 6 : 7;
+            const float ScrubChance = FMath::SmoothStep(1800.0F, 5200.0F, Distance) * FMath::Lerp(.08F, .20F, 1.0F - Habitat.ExposedGrass);
+            const bool bScrub = Pick < ScrubChance;
+            const int32 Kind = bScrub ? (Ground.RandRange(0, 1) == 0 ? 2 : Ground.RandRange(3, 5)) : (Pick < Habitat.ExposedGrass * .8F ? 6 : 7);
             const FKind& K = Kinds[Kind];
             if (!K.Mesh) continue;
-            Instances[Kind].Add(FTransform(FRotator(0, Yaw, 0), FVector(P.X, P.Y, GetCoastalLandHeight(P.X, P.Y) - 2.0F), FVector(FMath::Lerp(K.MinScale, K.MaxScale, ScaleRoll))));
+            const float Scale = bScrub ? FMath::Lerp(K.MinScale * .45F, K.MaxScale * .62F, ScaleRoll)
+                : FMath::Lerp(K.MinScale, K.MaxScale, ScaleRoll);
+            Instances[Kind].Add(FTransform(FRotator(0, Yaw, 0), FVector(P.X, P.Y, GetCoastalLandHeight(P.X, P.Y) - 3.0F), FVector(Scale)));
         }
     // Worn corridor floor: a terrain-following path ribbon (1.6 m core, soft 0.8 m shoulders)
     // down the training lane so the route reads from the `corridor` pose. Same gravel/earth

@@ -1066,8 +1066,13 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
     const int32 TrunkSides = Lod == 0 ? 14 : Lod == 1 ? 8 : Lod == 2 ? 5 : 3;
     TArray<TPair<float, float>> Lobes;
     FRandomStream LobeRandom(Seed);
-    const int32 LobeCount = LobeRandom.RandRange(4, 6);
-    for (int32 L = 0; L < LobeCount; ++L) Lobes.Add({L * 2 * PI / LobeCount + LobeRandom.FRandRange(-.35F, .35F), LobeRandom.FRandRange(.05F, .07F)});
+    const int32 LobeCount = LobeRandom.RandRange(K.Species == ESpecies::CoastLiveOak ? 4 : 3, 5);
+    float RootAngle = LobeRandom.FRandRange(0, 2 * PI);
+    for (int32 L = 0; L < LobeCount; ++L)
+    {
+        RootAngle += (2 * PI / LobeCount) * LobeRandom.FRandRange(.58F, 1.42F);
+        Lobes.Add({RootAngle, LobeRandom.FRandRange(.035F, K.Species == ESpecies::CoastLiveOak ? .09F : .075F)});
+    }
     // Physical bark tiling: whole repeats around the circumference so the seam closes.
     const float URepeats = FMath::Clamp(FMath::RoundToFloat(2 * PI * K.Breast / K.TileU * 1.6F), 2.0F, 4.0F);
     const float Height = K.Height;
@@ -1099,11 +1104,16 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
         for (const auto& Lobe : Lobes)
         {
             const FVector RootDir(FMath::Cos(Lobe.Key), FMath::Sin(Lobe.Key), 0);
-            const float Reach = R0 * FMath::Lerp(2.0F, 2.7F, (Lobe.Value - .05F) / .02F);
-            // R11: taller, thicker swells that stay above the surrounding ground for most of their run.
-            const TArray<FVector> Path = {RootDir * R0 * .5F + FVector(0, 0, 38), RootDir * R0 * 1.1F + FVector(0, 0, 16),
-                RootDir * Reach * .75F + FVector(0, 0, 4), RootDir * Reach + FVector(0, 0, -12)};
-            Sweep(Out.Bark, Path, [&](int32 Ring, float) { return R0 * FMath::Lerp(.38F, .08F, Ring / 3.0F); },
+            const FVector Side(-RootDir.Y, RootDir.X, 0);
+            const float Strength = FMath::Clamp(Lobe.Value / .09F, .35F, 1.0F);
+            const float SpeciesRun = K.Species == ESpecies::CoastLiveOak ? 3.25F : K.Species == ESpecies::MontereyPine ? 2.75F : 2.35F;
+            const float Reach = R0 * FMath::Lerp(1.35F, SpeciesRun, Strength);
+            const float Bend = FMath::Sin(Lobe.Key * 2.37F + K.Height * .0013F) * R0;
+            const TArray<FVector> Path = {RootDir * R0 * .60F + Side * Bend * .08F + FVector(0, 0, 9),
+                RootDir * R0 * 1.05F + Side * Bend * .28F + FVector(0, 0, 2),
+                RootDir * Reach * .68F + Side * Bend * .52F + FVector(0, 0, -8),
+                RootDir * Reach + Side * Bend * .35F + FVector(0, 0, -22)};
+            Sweep(Out.Bark, Path, [&](int32 Ring, float) { return R0 * FMath::Lerp(.28F, .025F, Ring / 3.0F); },
                 Lod == 0 ? 6 : 4, 1.0F, K.TileV, [](int32) { return FVector4f(.1F, 0, 0, 1); });
         }
     }
