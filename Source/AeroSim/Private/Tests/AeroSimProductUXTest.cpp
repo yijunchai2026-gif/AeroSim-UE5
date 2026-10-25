@@ -2,6 +2,7 @@
 
 #include "AeroSimRuntimeContract.h"
 #include "Misc/AutomationTest.h"
+#include "Misc/ConfigCacheIni.h"
 #include "Phase4Mission.h"
 #include "ProductUX.h"
 
@@ -27,10 +28,17 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FProductDisplayTransactionTest, "AeroSim.Produc
 bool FProductDisplayTransactionTest::RunTest(const FString& Parameters)
 {
     static_cast<void>(Parameters);
-    TestEqual(TEXT("Three P0 resolutions"), FProductDisplaySettings::SupportedResolutions().Num(), 3);
-    TestTrue(TEXT("1280x720 supported"), FProductDisplaySettings::SupportedResolutions().Contains(FIntPoint(1280, 720)));
-    TestTrue(TEXT("1440x900 supported"), FProductDisplaySettings::SupportedResolutions().Contains(FIntPoint(1440, 900)));
-    TestTrue(TEXT("1920x1080 supported"), FProductDisplaySettings::SupportedResolutions().Contains(FIntPoint(1920, 1080)));
+    const TArray<FIntPoint> Resolutions = FProductDisplaySettings::SupportedResolutions();
+    TestEqual(TEXT("Five desktop resolutions"), Resolutions.Num(), 5);
+    TestTrue(TEXT("1280x720 supported"), Resolutions.Contains(FIntPoint(1280, 720)));
+    TestTrue(TEXT("1440x900 supported"), Resolutions.Contains(FIntPoint(1440, 900)));
+    TestTrue(TEXT("1920x1080 supported"), Resolutions.Contains(FIntPoint(1920, 1080)));
+    TestTrue(TEXT("2560x1440 supported"), Resolutions.Contains(FIntPoint(2560, 1440)));
+    TestTrue(TEXT("3840x2160 supported"), Resolutions.Contains(FIntPoint(3840, 2160)));
+    bool bHighDpi = false;
+    TestTrue(TEXT("High-DPI game mode config exists"), GConfig != nullptr && GConfig->GetBool(
+        TEXT("/Script/Engine.UserInterfaceSettings"), TEXT("bAllowHighDPIInGameMode"), bHighDpi, GEngineIni));
+    TestTrue(TEXT("High-DPI game mode enabled"), bHighDpi);
     TestEqual(TEXT("Three window modes"), FProductDisplaySettings::SupportedWindowModes().Num(), 3);
 
     FPhase7Settings Applied;

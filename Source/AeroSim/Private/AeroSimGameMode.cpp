@@ -315,7 +315,7 @@ void AAeroSimGameMode::StartPlay()
             }
             ConfigureProductInputMode();
         }
-        ApplyProductConfiguration(AppliedSettings, false);
+        ApplyProductConfiguration(AppliedSettings, false, true);
 
         FString ScreenshotPath;
         if (FParse::Value(FCommandLine::Get(), TEXT("AeroSimScreenshot="), ScreenshotPath))
@@ -436,16 +436,41 @@ EAeroSimProductSurface AAeroSimGameMode::GetProductSurface() const
     return EAeroSimProductSurface::Flight;
 }
 
-void AAeroSimGameMode::ApplyDisplayConfiguration(const FPhase7Settings& Settings, const bool bSaveEngineSettings)
+void AAeroSimGameMode::ApplyDisplayConfiguration(const FPhase7Settings& Settings, const bool bSaveEngineSettings,
+    const bool bCheckForCommandLineOverrides)
 {
     if (!Settings.IsValid() || GEngine == nullptr || GEngine->GetGameUserSettings() == nullptr) return;
     UGameUserSettings* UserSettings = GEngine->GetGameUserSettings();
     EWindowMode::Type Mode = EWindowMode::Windowed;
-    if (Settings.WindowMode == EPhase7WindowMode::Borderless) Mode = EWindowMode::WindowedFullscreen;
-    else if (Settings.WindowMode == EPhase7WindowMode::Fullscreen) Mode = EWindowMode::Fullscreen;
-    UserSettings->SetScreenResolution(FIntPoint(Settings.ResolutionWidth, Settings.ResolutionHeight));
+    if (Settings.WindowMode == EPhase7WindowMode::Borderless)
+    {
+#if PLATFORM_MAC
+        Mode = EWindowMode::Windowed;
+#else
+        Mode = EWindowMode::WindowedFullscreen;
+#endif
+    }
+    else if (Settings.WindowMode == EPhase7WindowMode::Fullscreen)
+    {
+#if PLATFORM_MAC
+        Mode = EWindowMode::Windowed;
+#else
+        Mode = EWindowMode::Fullscreen;
+#endif
+    }
+    FIntPoint Resolution(Settings.ResolutionWidth, Settings.ResolutionHeight);
+    bool bUseDesktopResolution = Mode == EWindowMode::WindowedFullscreen;
+#if PLATFORM_MAC
+    bUseDesktopResolution |= Settings.WindowMode != EPhase7WindowMode::Windowed;
+#endif
+    if (bUseDesktopResolution)
+    {
+        const FIntPoint DesktopResolution = UserSettings->GetDesktopResolution();
+        if (DesktopResolution.X > 0 && DesktopResolution.Y > 0) Resolution = DesktopResolution;
+    }
+    UserSettings->SetScreenResolution(Resolution);
     UserSettings->SetFullscreenMode(Mode);
-    UserSettings->ApplyResolutionSettings(false);
+    UserSettings->ApplyResolutionSettings(bCheckForCommandLineOverrides);
     if (bSaveEngineSettings)
     {
         UserSettings->ConfirmVideoMode();
@@ -475,7 +500,7 @@ void AAeroSimGameMode::LoadProductSettings()
         bLoaded = FFileHelper::LoadFileToString(Payload, *(Path + TEXT(".bak"))) && FPhase7SaveCodec::DecodeAndMigrate(Payload, Loaded, Error);
     }
     AppliedSettings = bLoaded ? Loaded : FPhase7Settings();
-    ApplyDisplayConfiguration(AppliedSettings, false);
+    ApplyDisplayConfiguration(AppliedSettings, false, true);
 }
 
 void AAeroSimGameMode::ToggleDisplaySettings()
@@ -733,10 +758,11 @@ bool AAeroSimGameMode::StageProductSetting(const EProductSettingField Field, con
     return true;
 }
 
-void AAeroSimGameMode::ApplyProductConfiguration(const FPhase7Settings& Settings, const bool bSaveEngineSettings)
+void AAeroSimGameMode::ApplyProductConfiguration(const FPhase7Settings& Settings, const bool bSaveEngineSettings,
+    const bool bCheckForCommandLineOverrides)
 {
     if (!Settings.IsValid()) return;
-    ApplyDisplayConfiguration(Settings, bSaveEngineSettings);
+    ApplyDisplayConfiguration(Settings, bSaveEngineSettings, bCheckForCommandLineOverrides);
     if (Graybox != nullptr) Graybox->SetCoastalQuality(Settings.QualityTier == EPhase7QualityTier::DesktopHigh);
     if (GEngine != nullptr && GEngine->GetGameUserSettings() != nullptr)
     {

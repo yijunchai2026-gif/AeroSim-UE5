@@ -79,10 +79,12 @@ public:
     void CancelDisplaySettings();
 
 private:
-    void ApplyDisplayConfiguration(const FPhase7Settings& Settings, bool bSaveEngineSettings);
+    void ApplyDisplayConfiguration(const FPhase7Settings& Settings, bool bSaveEngineSettings,
+        bool bCheckForCommandLineOverrides = false);
     bool SaveProductSettings();
     void LoadProductSettings();
-    void ApplyProductConfiguration(const FPhase7Settings& Settings, bool bSaveEngineSettings);
+    void ApplyProductConfiguration(const FPhase7Settings& Settings, bool bSaveEngineSettings,
+        bool bCheckForCommandLineOverrides = false);
     void ConfigureProductInputMode();
     bool IsMissionActive() const;
     void CloseLabWorkspace();
