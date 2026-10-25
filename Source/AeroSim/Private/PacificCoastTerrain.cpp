@@ -1054,14 +1054,11 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
             }
         }
     }
-    auto LandTriangle = [&Vertices, &Triangle](int32 A, int32 B, int32 C)
+    auto LandTriangle = [&Triangle](int32 A, int32 B, int32 C)
     {
-        const FVector Normal = FVector::CrossProduct(Vertices[C] - Vertices[A], Vertices[B] - Vertices[A]).GetSafeNormal();
-        const FVector Center = (Vertices[A] + Vertices[B] + Vertices[C]) / 3.0F;
-        // Surface zones follow localized slope/exposure rather than drawing a height contour across the range.
-        const int32 Group = Normal.Z < .80F ? 1 :
-            (Normal.Z < .91F && Noise(Center.X, Center.Y, 29000.0F) > .12F ? 2 : 0);
-        Triangle(A, B, C, Group);
+        // Keep the continuous upland surface in one section. Per-triangle material sections created
+        // kilometer-scale sawtooth patches at grazing angles; the ground material owns variation.
+        Triangle(A, B, C, 0);
     };
     for(int32 Row=0;Row<Rows-1;++Row)
     {
