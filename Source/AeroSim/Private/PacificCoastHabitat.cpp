@@ -162,8 +162,8 @@ void APacificCoastGraybox::BuildCoastalHabitat()
             const int32 Kind = bScrub ? (Ground.RandRange(0, 1) == 0 ? 2 : Ground.RandRange(3, 5)) : (Pick < Habitat.ExposedGrass * .8F ? 6 : 7);
             const FKind& K = Kinds[Kind];
             if (!K.Mesh) continue;
-            const float Scale = bScrub ? FMath::Lerp(K.MinScale * .45F, K.MaxScale * .62F, ScaleRoll)
-                : FMath::Lerp(K.MinScale, K.MaxScale, ScaleRoll);
+            const float Scale = bScrub ? FMath::Lerp(K.MinScale * .68F, K.MaxScale * .88F, ScaleRoll)
+                : FMath::Lerp(K.MinScale * 1.08F, K.MaxScale * 1.18F, ScaleRoll);
             Instances[Kind].Add(FTransform(FRotator(0, Yaw, 0), FVector(P.X, P.Y, GetCoastalLandHeight(P.X, P.Y) - 3.0F), FVector(Scale)));
         }
     // Worn corridor floor: a terrain-following path ribbon (1.6 m core, soft 0.8 m shoulders)
