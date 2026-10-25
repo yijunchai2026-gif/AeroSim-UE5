@@ -20,8 +20,10 @@ bool FCoastalWildlifeCompositionTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Cattle herd count"), Coast->GetCoastalCattleCount(), 4);
 
     const TCHAR* ComponentNames[] = {
-        TEXT("CoastalWhales"), TEXT("CoastalWolves"), TEXT("CoastalBear"),
-        TEXT("CoastalDeer"), TEXT("CoastalDeerAntlers"), TEXT("CoastalCattle")};
+        TEXT("CoastalWhales"), TEXT("CoastalWhaleDarkDetails"), TEXT("CoastalWhaleLightDetails"),
+        TEXT("CoastalWolves"), TEXT("CoastalBear"),
+        TEXT("CoastalDeer"), TEXT("CoastalDeerAntlers"), TEXT("CoastalCattle"),
+        TEXT("CoastalWildlifeDarkDetails"), TEXT("CoastalWildlifeLightDetails")};
     int32 TotalTriangles = 0;
     for (const TCHAR* Name : ComponentNames)
     {

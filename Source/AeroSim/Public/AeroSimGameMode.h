@@ -31,6 +31,8 @@ public:
     void SetProductInputKind(EProductInputKind Kind);
     bool NavigateProductPage(EProductPage Page);
     void ActivatePrimaryAction();
+    /** Direct control intent from a menu starts flight without making that same held key fail neutral gating. */
+    void StartFlightFromControlIntent();
     void HandleProductBack();
     void SetSettingsCategory(EProductSettingsCategory Category);
     bool StageProductSetting(EProductSettingField Field, int32 Delta);

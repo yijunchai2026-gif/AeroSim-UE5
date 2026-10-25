@@ -29,6 +29,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/GameUserSettings.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Framework/Application/SlateApplication.h"
 #include "HAL/PlatformMisc.h"
 #include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
@@ -304,6 +305,12 @@ void AAeroSimGameMode::StartPlay()
             }
         }
 
+        // Packaged play opens in a ready-to-control flight instead of hiding controls behind four
+        // menu confirmations. Explicit product-view captures and -AeroSimStartMenu retain the shell.
+        if (!GIsAutomationTesting && !FApp::IsUnattended() && ProductUxView.IsEmpty()
+            && !FParse::Param(FCommandLine::Get(), TEXT("AeroSimStartMenu")))
+            StartFlightFromControlIntent();
+
         if (APlayerController* Controller = World->GetFirstPlayerController())
         {
             ProductWidget = CreateWidget<UAeroSimProductWidget>(Controller, UAeroSimProductWidget::StaticClass());
@@ -578,10 +585,14 @@ void AAeroSimGameMode::ConfigureProductInputMode()
     Controller->bEnableClickEvents = !bFlight;
     if (bFlight)
     {
+        if (ProductWidget != nullptr && ProductWidget->IsActivated()) ProductWidget->DeactivateWidget();
         Controller->SetInputMode(FInputModeGameOnly());
+        if (FSlateApplication::IsInitialized())
+            FSlateApplication::Get().SetAllUserFocusToGameViewport(EFocusCause::SetDirectly);
     }
     else
     {
+        if (ProductWidget != nullptr && !ProductWidget->IsActivated()) ProductWidget->ActivateWidget();
         FInputModeGameAndUI Mode;
         Mode.SetHideCursorDuringCapture(false);
         Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
@@ -666,6 +677,33 @@ void AAeroSimGameMode::ActivatePrimaryAction()
         break;
     default: break;
     }
+    RefreshProductWidget();
+    ConfigureProductInputMode();
+}
+
+void AAeroSimGameMode::StartFlightFromControlIntent()
+{
+    if (Shell.Page == EProductPage::Flight) return;
+    if (Shell.Page == EProductPage::Result || Shell.Page == EProductPage::Replay
+        || Shell.Page == EProductPage::Settings || Shell.Page == EProductPage::VisualLab) return;
+
+    if (Phase4Mission.Stage == EPhase4MissionStage::Hangar)
+    {
+        Phase4Mission.EnterPreflight();
+        MissionFlow.Transition(EAeroSimMissionState::Preflight);
+    }
+    if (Phase4Mission.Stage == EPhase4MissionStage::Preflight)
+    {
+        // This path is entered by a deliberate flight-control key. Treat that key as intent rather
+        // than a stuck device; subsequent runtime neutral/resume checks remain unchanged.
+        Phase4Mission.SetPreflightComplete(true);
+        if (!Phase4Mission.BeginMission() || !MissionFlow.Transition(EAeroSimMissionState::Flight)) return;
+    }
+    Shell.Page = EProductPage::Flight;
+    Shell.Status = TEXT("FLIGHT CONTROLS ACTIVE");
+    if (AFlightPawn* Pawn = GetWorld() != nullptr && GetWorld()->GetFirstPlayerController() != nullptr
+        ? Cast<AFlightPawn>(GetWorld()->GetFirstPlayerController()->GetPawn()) : nullptr)
+        Pawn->SetSafePaused(false);
     RefreshProductWidget();
     ConfigureProductInputMode();
 }

@@ -89,7 +89,7 @@ void FinalizeNormals(FMesh& Mesh)
     for (FVector& Normal : Mesh.Normals) Normal.Normalize();
 }
 
-void AddWhale(FMesh& Mesh, const FVector& Origin, const float Yaw, const float Scale)
+void AddWhale(FMesh& Mesh, FMesh& Dark, FMesh& Light, const FVector& Origin, const float Yaw, const float Scale)
 {
     auto P = [Scale](const FVector& Value) { return Value * Scale; };
     AddEllipsoid(Mesh, Origin, P(FVector(900, 250, 245)), Yaw, P(FVector(0, 0, 130)), 14, 8);
@@ -99,7 +99,12 @@ void AddWhale(FMesh& Mesh, const FVector& Origin, const float Yaw, const float S
     AddEllipsoid(Mesh, Origin, P(FVector(340, 105, 38)), Yaw - 18.0F, P(FVector(-1130, -155, 145)), 10, 4);
     AddLimb(Mesh, Origin, Yaw, P(FVector(80, 200, 90)), P(FVector(-120, 620, 15)), 85 * Scale, 24 * Scale, 7);
     AddLimb(Mesh, Origin, Yaw, P(FVector(80, -200, 90)), P(FVector(-120, -620, 15)), 85 * Scale, 24 * Scale, 7);
-    AddLimb(Mesh, Origin, Yaw, P(FVector(-230, 0, 320)), P(FVector(-420, 0, 540)), 95 * Scale, 8 * Scale, 6);
+    AddEllipsoid(Light, Origin, P(FVector(720, 185, 120)), Yaw, P(FVector(120, 0, 25)), 14, 6);
+    AddEllipsoid(Dark, Origin, P(FVector(34, 18, 18)), Yaw, P(FVector(610, 232, 230)), 8, 4);
+    AddEllipsoid(Dark, Origin, P(FVector(34, 18, 18)), Yaw, P(FVector(610, -232, 230)), 8, 4);
+    AddLimb(Dark, Origin, Yaw, P(FVector(690, 246, 120)), P(FVector(890, 214, 105)), 10 * Scale, 4 * Scale, 5);
+    AddLimb(Dark, Origin, Yaw, P(FVector(690, -246, 120)), P(FVector(890, -214, 105)), 10 * Scale, 4 * Scale, 5);
+    AddLimb(Light, Origin, Yaw, P(FVector(-230, 0, 320)), P(FVector(-420, 0, 540)), 95 * Scale, 8 * Scale, 6);
 }
 
 void AddQuadrupedLegs(FMesh& Mesh, const FVector& Origin, const float Yaw, const float Scale,
@@ -117,7 +122,7 @@ void AddQuadrupedLegs(FMesh& Mesh, const FVector& Origin, const float Yaw, const
     }
 }
 
-void AddWolf(FMesh& Mesh, const FVector& Origin, const float Yaw, const float Scale)
+void AddWolf(FMesh& Mesh, FMesh& Dark, FMesh& Light, const FVector& Origin, const float Yaw, const float Scale)
 {
     AddEllipsoid(Mesh, Origin, FVector(165, 58, 68) * Scale, Yaw, FVector(0, 0, 120) * Scale, 10, 6);
     AddEllipsoid(Mesh, Origin, FVector(68, 55, 58) * Scale, Yaw, FVector(175, 0, 165) * Scale, 9, 5);
@@ -126,9 +131,15 @@ void AddWolf(FMesh& Mesh, const FVector& Origin, const float Yaw, const float Sc
     AddLimb(Mesh, Origin, Yaw, FVector(152, -34, 208) * Scale, FVector(164, -36, 280) * Scale, 28 * Scale, 3 * Scale, 5);
     AddLimb(Mesh, Origin, Yaw, FVector(-145, 0, 145) * Scale, FVector(-285, 18, 205) * Scale, 28 * Scale, 12 * Scale, 6);
     AddQuadrupedLegs(Mesh, Origin, Yaw, Scale, 105, -105, 38, 105, 3, 18, 34);
+    AddEllipsoid(Light, Origin, FVector(105, 48, 48) * Scale, Yaw, FVector(90, 0, 93) * Scale, 9, 5);
+    AddEllipsoid(Dark, Origin, FVector(24, 15, 14) * Scale, Yaw, FVector(239, 0, 151) * Scale, 8, 4);
+    for (const float Side : {-1.0F, 1.0F})
+        AddEllipsoid(Dark, Origin, FVector(13, 8, 8) * Scale, Yaw, FVector(220, Side * 35, 178) * Scale, 7, 4);
+    for (const FVector& Paw : {FVector(112,38,6), FVector(112,-38,6), FVector(-112,38,6), FVector(-112,-38,6)})
+        AddEllipsoid(Dark, Origin, FVector(28, 17, 8) * Scale, Yaw, Paw * Scale, 7, 4);
 }
 
-void AddBear(FMesh& Mesh, const FVector& Origin, const float Yaw, const float Scale)
+void AddBear(FMesh& Mesh, FMesh& Dark, FMesh& Light, const FVector& Origin, const float Yaw, const float Scale)
 {
     AddEllipsoid(Mesh, Origin, FVector(245, 118, 135) * Scale, Yaw, FVector(0, 0, 165) * Scale, 12, 7);
     AddEllipsoid(Mesh, Origin, FVector(105, 95, 98) * Scale, Yaw, FVector(230, 0, 205) * Scale, 10, 6);
@@ -136,15 +147,32 @@ void AddBear(FMesh& Mesh, const FVector& Origin, const float Yaw, const float Sc
     AddEllipsoid(Mesh, Origin, FVector(34) * Scale, Yaw, FVector(205, 78, 285) * Scale, 7, 4);
     AddEllipsoid(Mesh, Origin, FVector(34) * Scale, Yaw, FVector(205, -78, 285) * Scale, 7, 4);
     AddQuadrupedLegs(Mesh, Origin, Yaw, Scale, 145, -135, 76, 128, 5, 34, 24);
+    AddEllipsoid(Light, Origin, FVector(120, 74, 74) * Scale, Yaw, FVector(132, 0, 112) * Scale, 10, 5);
+    AddEllipsoid(Dark, Origin, FVector(34, 24, 20) * Scale, Yaw, FVector(347, 0, 181) * Scale, 8, 4);
+    for (const float Side : {-1.0F, 1.0F})
+        AddEllipsoid(Dark, Origin, FVector(14, 9, 9) * Scale, Yaw, FVector(288, Side * 51, 224) * Scale, 7, 4);
+    for (const FVector& Paw : {FVector(158,76,8), FVector(158,-76,8), FVector(-145,76,8), FVector(-145,-76,8)})
+        AddEllipsoid(Dark, Origin, FVector(42, 31, 12) * Scale, Yaw, Paw * Scale, 8, 4);
 }
 
-void AddDeer(FMesh& Mesh, FMesh& Antlers, const FVector& Origin, const float Yaw, const float Scale, const bool bAntlered)
+void AddDeer(FMesh& Mesh, FMesh& Antlers, FMesh& Dark, FMesh& Light, const FVector& Origin, const float Yaw, const float Scale, const bool bAntlered)
 {
     AddEllipsoid(Mesh, Origin, FVector(185, 62, 88) * Scale, Yaw, FVector(0, 0, 155) * Scale, 10, 6);
     AddLimb(Mesh, Origin, Yaw, FVector(125, 0, 180) * Scale, FVector(185, 0, 285) * Scale, 45 * Scale, 32 * Scale, 7);
     AddEllipsoid(Mesh, Origin, FVector(72, 44, 46) * Scale, Yaw, FVector(220, 0, 315) * Scale, 9, 5);
     AddLimb(Mesh, Origin, Yaw, FVector(-160, 0, 175) * Scale, FVector(-245, 0, 225) * Scale, 18 * Scale, 3 * Scale, 5);
     AddQuadrupedLegs(Mesh, Origin, Yaw, Scale, 120, -120, 42, 132, 4, 11, 20);
+    AddEllipsoid(Light, Origin, FVector(55, 30, 28) * Scale, Yaw, FVector(-160, 0, 184) * Scale, 8, 4);
+    AddEllipsoid(Dark, Origin, FVector(19, 14, 12) * Scale, Yaw, FVector(277, 0, 306) * Scale, 7, 4);
+    for (const float Side : {-1.0F, 1.0F})
+        AddEllipsoid(Dark, Origin, FVector(11, 7, 7) * Scale, Yaw, FVector(255, Side * 34, 330) * Scale, 7, 4);
+    for (const FVector& Hoof : {FVector(120,42,5), FVector(120,-42,5), FVector(-120,42,5), FVector(-120,-42,5)})
+        AddEllipsoid(Dark, Origin, FVector(18, 12, 7) * Scale, Yaw, Hoof * Scale, 7, 4);
+    for (const FVector& Spot : {FVector(15,55,205), FVector(-35,57,180), FVector(-85,50,220), FVector(65,52,165)})
+    {
+        AddEllipsoid(Light, Origin, FVector(15, 7, 12) * Scale, Yaw, Spot * Scale, 7, 4);
+        AddEllipsoid(Light, Origin, FVector(15, 7, 12) * Scale, Yaw, FVector(Spot.X, -Spot.Y, Spot.Z) * Scale, 7, 4);
+    }
     if (!bAntlered) return;
     for (const float Side : {-1.0F, 1.0F})
     {
@@ -154,7 +182,7 @@ void AddDeer(FMesh& Mesh, FMesh& Antlers, const FVector& Origin, const float Yaw
     }
 }
 
-void AddCow(FMesh& Mesh, const FVector& Origin, const float Yaw, const float Scale)
+void AddCow(FMesh& Mesh, FMesh& Dark, FMesh& Light, const FVector& Origin, const float Yaw, const float Scale)
 {
     AddEllipsoid(Mesh, Origin, FVector(235, 105, 115) * Scale, Yaw, FVector(0, 0, 175) * Scale, 12, 7);
     AddLimb(Mesh, Origin, Yaw, FVector(155, 0, 195) * Scale, FVector(220, 0, 240) * Scale, 68 * Scale, 52 * Scale, 7);
@@ -163,47 +191,59 @@ void AddCow(FMesh& Mesh, const FVector& Origin, const float Yaw, const float Sca
     AddLimb(Mesh, Origin, Yaw, FVector(285, -52, 292) * Scale, FVector(335, -88, 318) * Scale, 13 * Scale, 2 * Scale, 5);
     AddLimb(Mesh, Origin, Yaw, FVector(-210, 0, 205) * Scale, FVector(-275, 15, 75) * Scale, 16 * Scale, 5 * Scale, 5);
     AddQuadrupedLegs(Mesh, Origin, Yaw, Scale, 145, -145, 70, 145, 4, 26, 16);
+    AddEllipsoid(Light, Origin, FVector(105, 72, 58) * Scale, Yaw, FVector(275, 0, 235) * Scale, 10, 5);
+    AddEllipsoid(Dark, Origin, FVector(42, 35, 24) * Scale, Yaw, FVector(350, 0, 230) * Scale, 8, 4);
+    for (const float Side : {-1.0F, 1.0F})
+        AddEllipsoid(Dark, Origin, FVector(13, 8, 8) * Scale, Yaw, FVector(315, Side * 50, 264) * Scale, 7, 4);
+    for (const FVector& Hoof : {FVector(148,70,5), FVector(148,-70,5), FVector(-148,70,5), FVector(-148,-70,5)})
+        AddEllipsoid(Dark, Origin, FVector(26, 20, 9) * Scale, Yaw, Hoof * Scale, 7, 4);
+    AddEllipsoid(Light, Origin, FVector(110, 16, 74) * Scale, Yaw, FVector(15, 101, 185) * Scale, 9, 5);
+    AddEllipsoid(Light, Origin, FVector(72, 15, 58) * Scale, Yaw, FVector(-105, -102, 205) * Scale, 9, 5);
 }
 }
 
 void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
 {
     using namespace CoastalWildlife;
-    FMesh Whales, Wolves, Bears, Deer, Antlers, Cattle;
+    FMesh Whales, WhaleDarkDetails, WhaleLightDetails, Wolves, Bears, Deer, Antlers, Cattle, DarkDetails, LightDetails;
 
     const FVector WhaleOrigins[] = {
         FVector(47000, -61000, SeaLevelCm - 95), FVector(60000, 36000, SeaLevelCm - 190)};
     const float WhaleYaw[] = {32.0F, -18.0F};
     const float WhaleScale[] = {1.0F, .78F};
     for (int32 Index = 0; Index < UE_ARRAY_COUNT(WhaleOrigins); ++Index)
-        AddWhale(Whales, WhaleOrigins[Index], WhaleYaw[Index], WhaleScale[Index]);
+        AddWhale(Whales, WhaleDarkDetails, WhaleLightDetails, WhaleOrigins[Index], WhaleYaw[Index], WhaleScale[Index]);
 
     const FVector2D WolfXY[] = {{-30500, 33500}, {-32100, 34700}, {-28900, 35700}};
     for (int32 Index = 0; Index < UE_ARRAY_COUNT(WolfXY); ++Index)
-        AddWolf(Wolves, FVector(WolfXY[Index].X, WolfXY[Index].Y, GetCoastalLandHeight(WolfXY[Index].X, WolfXY[Index].Y)),
+        AddWolf(Wolves, DarkDetails, LightDetails, FVector(WolfXY[Index].X, WolfXY[Index].Y, GetCoastalLandHeight(WolfXY[Index].X, WolfXY[Index].Y)),
             35.0F + Index * 24.0F, .9F + Index * .06F);
 
     const FVector2D BearXY(-35500, 38200);
-    AddBear(Bears, FVector(BearXY.X, BearXY.Y, GetCoastalLandHeight(BearXY.X, BearXY.Y)), 118.0F, 1.08F);
+    AddBear(Bears, DarkDetails, LightDetails, FVector(BearXY.X, BearXY.Y, GetCoastalLandHeight(BearXY.X, BearXY.Y)), 118.0F, 1.08F);
 
     const FVector2D DeerXY[] = {{-21800,31500}, {-23200,32200}, {-20500,33000}, {-24500,30700}, {-19400,31400}};
     for (int32 Index = 0; Index < UE_ARRAY_COUNT(DeerXY); ++Index)
-        AddDeer(Deer, Antlers, FVector(DeerXY[Index].X, DeerXY[Index].Y, GetCoastalLandHeight(DeerXY[Index].X, DeerXY[Index].Y)),
+        AddDeer(Deer, Antlers, DarkDetails, LightDetails, FVector(DeerXY[Index].X, DeerXY[Index].Y, GetCoastalLandHeight(DeerXY[Index].X, DeerXY[Index].Y)),
             105.0F + Index * 31.0F, .88F + (Index % 3) * .08F, Index == 0 || Index == 3);
 
     const FVector2D CowXY[] = {{-21500,34500}, {-23200,35300}, {-19700,35900}, {-24800,34100}};
     for (int32 Index = 0; Index < UE_ARRAY_COUNT(CowXY); ++Index)
-        AddCow(Cattle, FVector(CowXY[Index].X, CowXY[Index].Y, GetCoastalLandHeight(CowXY[Index].X, CowXY[Index].Y)),
+        AddCow(Cattle, DarkDetails, LightDetails, FVector(CowXY[Index].X, CowXY[Index].Y, GetCoastalLandHeight(CowXY[Index].X, CowXY[Index].Y)),
             70.0F + Index * 37.0F, .95F + (Index % 2) * .08F);
 
     struct FBatch { const TCHAR* Name; FMesh* Mesh; FLinearColor Color; float DrawDistance; };
     FBatch Batches[] = {
         {TEXT("CoastalWhales"), &Whales, FLinearColor(.095F,.14F,.17F), 220000.0F},
+        {TEXT("CoastalWhaleDarkDetails"), &WhaleDarkDetails, FLinearColor(.012F,.018F,.021F), 220000.0F},
+        {TEXT("CoastalWhaleLightDetails"), &WhaleLightDetails, FLinearColor(.63F,.68F,.66F), 220000.0F},
         {TEXT("CoastalWolves"), &Wolves, FLinearColor(.24F,.27F,.25F), 120000.0F},
         {TEXT("CoastalBear"), &Bears, FLinearColor(.19F,.105F,.055F), 120000.0F},
         {TEXT("CoastalDeer"), &Deer, FLinearColor(.42F,.24F,.105F), 120000.0F},
         {TEXT("CoastalDeerAntlers"), &Antlers, FLinearColor(.67F,.57F,.40F), 120000.0F},
-        {TEXT("CoastalCattle"), &Cattle, FLinearColor(.17F,.12F,.08F), 120000.0F}};
+        {TEXT("CoastalCattle"), &Cattle, FLinearColor(.17F,.12F,.08F), 120000.0F},
+        {TEXT("CoastalWildlifeDarkDetails"), &DarkDetails, FLinearColor(.012F,.009F,.007F), 120000.0F},
+        {TEXT("CoastalWildlifeLightDetails"), &LightDetails, FLinearColor(.68F,.64F,.53F), 120000.0F}};
     for (FBatch& Batch : Batches)
     {
         FinalizeNormals(*Batch.Mesh);
@@ -218,6 +258,7 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
         Component->SetMaterial(0, Material);
         CoastalColorParts.Add(Component);
         CoastalPartColors.Add(Batch.Color);
+        if (FString(Batch.Name).Contains(TEXT("CoastalWhale"))) CoastalWhaleAnimatedParts.Add(Component);
         ++GeneratedPrimitiveCount;
     }
     CoastalWhaleCount = UE_ARRAY_COUNT(WhaleOrigins);

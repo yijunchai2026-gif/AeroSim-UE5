@@ -537,3 +537,17 @@ R16 在 R15 环境基础上加入确定性程序化动物，不引入外部资�
 - 最终包：`Artifacts/ProductShell/AAA/R16/Package/Mac/AeroSim.app`。
 
 当前没有骨骼动画、AI 漫游、毛发或音效；这些属于后续独立范围。最终视觉验收仍由用户决定。
+
+## 15. R17 输入焦点、动物细节与飞行 HUD（2026-10-25）
+
+R17 修复打包应用进入 Flight 后仍由 CommonUI Widget 持有焦点、导致 Enhanced Input 收不到键盘输入的问题，并完成动物模型与 HUD 的一轮增量。
+
+- 输入：普通打包启动默认直接进入 Flight；`-AeroSimStartMenu` 和显式产品视图仍保留菜单。Flight 会停用 ProductWidget、使用 GameOnly input mode，并把 Slate 焦点交给 `SViewport`；非 Flight 页面重新启用 Widget。
+- 实机：`slate_focus=SViewport`、`viewport_focus=true`、`mouse_captured=true`、`mapping_active=true`。12 个键位 `W/S/A/D/Q/E/LeftShift/LeftControl/Up/Down/Left/Right` 的 mapped/semantic peak 均为 1。
+- 航线：真实按键闭环覆盖 15/15 航段，437.3 s 到达 Result，0 press error、0 capture error、0 safe pause。
+- 动物：新增鲸鱼腹部/眼/口线与海面起伏；狼、熊、鹿、牛新增眼鼻、耳、蹄/掌、胸腹、斑点等细节批次。仍为 NoCollision 的程序化低多边形模型。
+- UI：Flight HUD 底部新增完整键盘控制提示和最近动物/距离提示，使用 Canvas 绘制，不创建抢焦点的交互控件。
+- 门禁：Python 92/92；Mac Development Build 通过；全量 Automation 94/94、0 failed；Package ExitCode 0。
+- 报告：`docs/coast-aaa-qa/R17/qa-input-wildlife-ui.md`；包：`Artifacts/ProductShell/AAA/R17/Package/Mac/AeroSim.app`。
+
+R17 仍没有骨骼蒙皮、毛发、复杂步态、AI 漫游或音效，不能声明达到 3A，也不代表用户视觉验收通过。下一轮优先将物种拆为独立实例/骨骼结构，引入不同相位动画和近景高质量材质。

@@ -140,7 +140,8 @@ bool FPacificCoastRouteProgress::IsComplete() const
 
 APacificCoastGraybox::APacificCoastGraybox()
 {
-    PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.TickInterval = 1.0F / 30.0F;
     Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
     SetRootComponent(Root);
 
@@ -460,6 +461,15 @@ void APacificCoastGraybox::BeginPlay()
     }
     ApplyCoastalMaterials();
     ApplyEnvironmentState(AppliedEnvironmentState);
+}
+
+void APacificCoastGraybox::Tick(const float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    const float Time = GetWorld() != nullptr ? GetWorld()->GetTimeSeconds() : 0.0F;
+    const FVector Offset(42.0F * FMath::Sin(Time * .18F), 28.0F * FMath::Cos(Time * .14F), 26.0F * FMath::Sin(Time * .62F));
+    for (UProceduralMeshComponent* Component : CoastalWhaleAnimatedParts)
+        if (Component != nullptr) Component->SetRelativeLocation(Offset);
 }
 
 void APacificCoastGraybox::ApplyEnvironmentState(const FEnvironmentState& State)

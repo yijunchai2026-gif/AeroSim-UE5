@@ -5,6 +5,7 @@
 #include "Phase2Systems.h"
 #include "PacificCoastGraybox.generated.h"
 
+class UProceduralMeshComponent;
 class USkyAtmosphereComponent;
 class UMeshComponent;
 class UMaterialInterface;
@@ -100,6 +101,7 @@ class AEROSIM_API APacificCoastGraybox final : public AActor
 public:
     APacificCoastGraybox();
     virtual void BeginPlay() override;
+    virtual void Tick(float DeltaSeconds) override;
 
     void SetCoastalQuality(bool bHigh);
     static float GetCliffEdgeX(float Y);
@@ -147,6 +149,8 @@ private:
     void ApplyCoastalMaterials();
     UPROPERTY(Transient)
     TArray<TObjectPtr<UMeshComponent>> CoastalColorParts;
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UProceduralMeshComponent>> CoastalWhaleAnimatedParts;
     TArray<FLinearColor> CoastalPartColors;
     UPROPERTY(VisibleAnywhere, Category = "Environment")
     TObjectPtr<UVolumetricCloudComponent> CoastalClouds;
