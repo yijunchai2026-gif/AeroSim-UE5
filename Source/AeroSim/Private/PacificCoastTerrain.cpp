@@ -449,7 +449,10 @@ float CliffOutcrop(const float Y, const float Depth)
         const float Far = 1.0F - RowDetail(Y);
         const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F + 12000.0F * Far) + .07F * RowDetail(Y) * Noise(Y, Bed * 2700.0F - 5000.0F, 2400.0F);
         const float BedHeight = Thickness[Bed] * (1.0F + .25F * Noise(Y, Bed * 9100.0F, 4700.0F + 12000.0F * Far));
-        Outcrop += BedHeight * Smooth((Depth - Thresholds[Bed] - Dip) / Widths[Bed]);
+        const float FineJitter = .018F * RowDetail(Y) * Noise(Y, 800.0F, 1500.0F)
+            + .012F * (1.0F - RowDetail(Y)) * Noise(Y, -2400.0F, 14000.0F);
+        Outcrop += BedHeight * Smooth((Depth - (Thresholds[Bed] + FineJitter) - Dip)
+            / (Widths[Bed] * (1.0F + 3.0F * FMath::Abs(FineJitter))));
     }
     // Every term is non-decreasing with depth, so the face never overhangs: blocks vary along the
     // coast only and ramp in once below the rim.
@@ -780,7 +783,8 @@ const FRidgeNode RangeFar[] = {{FVector2D(-640000,-700000),38000,150000},{FVecto
 float DistantRangeHeight(const float X, const float Y)
 {
     const float Edge = FMath::Min(FMath::Min(RangeEast - X, X - RangeWest), RangeHalfY - FMath::Abs(Y));
-    const float Interior = Smooth(Edge / 90000.0F);
+    const float EdgeJitter = Edge + 18000.0F * Noise(X - 7000.0F, Y + 11000.0F, 70000.0F);
+    const float Interior = Smooth(EdgeJitter / 90000.0F);
     const FVector2D Point(X + 9000.0F * Noise(X, Y, 120000.0F), Y + 12000.0F * Noise(X + 5000.0F, Y, 140000.0F));
     float Range = 0;
     for (const FRidgeNode* Chain : {RangeNear, RangeMid, RangeFar})
@@ -791,8 +795,8 @@ float DistantRangeHeight(const float X, const float Y)
             const float H = FMath::Clamp(.5F + .5F * (Range - Ridge) / Seam, 0.0F, 1.0F);
             Range = FMath::Lerp(Ridge, Range, H) + Seam * H * (1.0F - H);
         }
-    Range = Range * (1.0F + .12F * Noise(X, Y, 60000.0F)) + 900.0F * Noise(X, Y, 33000.0F);
-    const float RootedRange = APacificCoastGraybox::SeaLevelCm - 5000.0F + Range;
+    Range = Range * (1.0F + .09F * Noise(X, Y, 73000.0F)) + 700.0F * Noise(X + 13000.0F, Y - 9000.0F, 29000.0F);
+    const float RootedRange = APacificCoastGraybox::SeaLevelCm - 7000.0F + Range;
     return FMath::Lerp(SubmergedRim, RootedRange, Interior);
 }
 }

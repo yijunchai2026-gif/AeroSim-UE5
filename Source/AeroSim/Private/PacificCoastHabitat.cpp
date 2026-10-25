@@ -110,17 +110,23 @@ void APacificCoastGraybox::BuildCoastalHabitat()
     FRandomStream Random(55021);
     // ~1 shrub/fern per 10 m² of stand (QA R0 target), grass only where light reaches the floor.
     constexpr float Cell = 300.0F;
-    for (float GX = -45000; GX < 12500; GX += Cell)
-        for (float GY = -41000; GY < 41000; GY += Cell)
+    for (float GX = -52000; GX < 12500; GX += Cell)
+        for (float GY = -48000; GY < 48000; GY += Cell)
         {
             const FVector2D P(GX + Random.FRandRange(0, Cell), GY + Random.FRandRange(0, Cell));
             const float Pick = Random.FRand(), Roll = Random.FRand(), ScaleRoll = Random.FRand(), Yaw = Random.FRandRange(0, 360);
             const float Density = NearStandDensity(P.X, P.Y);
             // Grass fringe extends ~12 m out from the stand edge into the field.
             const float Fringe = Density > 0 ? 0 : NearStandDensity(P.X, P.Y + (P.Y > 0 ? 1200 : -1200));
-            if (Density <= 0 && Fringe <= 0) continue;
             int32 Kind;
-            if (Density <= 0) { if (Roll > .55F) continue; Kind = Pick < .55F ? 6 : 7; }
+            if (Density <= 0 && Fringe <= 0)
+            {
+                // Sparse exposed-grass tufts continue across open ground so large fields retain
+                // parallax without turning the whole landscape into a costly dense instance carpet.
+                if (Roll > .04F) continue;
+                Kind = 7;
+            }
+            else if (Density <= 0) { if (Roll > .55F) continue; Kind = Pick < .55F ? 6 : 7; }
             else if (Density > .75F)
             {   // Closed stand: ferns dominate, scattered broad shrubs, little grass.
                 if (Roll > .92F) continue;

@@ -503,3 +503,20 @@ MOTION：
 | `docs/tasks/AAA-R5-NAVIGATION-GAP.md` | 飞行和导航的历次根因分析（含 R8 悬停） |
 | `docs/coast-aaa-qa/R*/qa-hero.md`、`qa-motion.md` | 历轮 QA 报告归档 |
 | `Artifacts/ProductShell/AAA/R*/` | 本机产物：包、日志、路线日志、证据帧（gitignored） |
+
+
+---
+
+## 13. R15 连续视觉优化（2026-10-25）
+
+R15 在 R14 分辨率修复之后继续处理六项残留，工作分支仍为 `aime/1792907214-r14-visual-fixes`，未经用户要求不 push。
+
+- 地形：岸壁层理阈值加入近/远空间扰动；远山边界加入低频 jitter，根部从海平面下 50 m 调到 70 m，并降低规则噪声。
+- 树木：LOD2 树干从 5 边提升到 8 边；LOD2 增加低成本三边地表根；north grove 生境和生成范围扩展。
+- 地被：开放地以 4% 接受率布置低成本 exposed-grass tufts，避免恢复 R13 曾触发预算的高密度实例方案。
+- 天空：卷云三层纤维使用不同 shear / rotated coordinates / low-frequency drift，方位和仰角 warp 进一步分离，并提高稀疏阈值。
+- 门禁：Python 92/92；Mac Development Build 通过；全量 Automation 92 项 0 failed；最终 SeaSky 定向 Automation 7 项 0 failed；Package ExitCode 0。
+- 证据：`Artifacts/ProductShell/AAA/R15/qa-final/` 24 张；`docs/coast-aaa-qa/R15/qa-hero.md`、`qa-motion.md`。
+- 最终包：`Artifacts/ProductShell/AAA/R15/Package/Mac/AeroSim.app`。
+
+当前仍不能声明 3A 或用户验收通过。主要残留是远山低模轮廓、卷云顶部弱平行节奏、开阔地缺少真正近景碎石/decal，以及 cliff / shore 前景大平面。

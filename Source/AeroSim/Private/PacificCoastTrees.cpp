@@ -1063,7 +1063,7 @@ void EmitHeroFoliage(const FSkeleton& K, int32 Lod, FLod& Out)
 void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrossed = true)
 {
     const bool bOak = K.Species == ESpecies::CoastLiveOak;
-    const int32 TrunkSides = Lod == 0 ? 14 : Lod == 1 ? 8 : Lod == 2 ? 5 : 3;
+    const int32 TrunkSides = Lod == 0 ? 14 : Lod <= 2 ? 8 : 3;
     TArray<TPair<float, float>> Lobes;
     FRandomStream LobeRandom(Seed);
     const int32 LobeCount = LobeRandom.RandRange(K.Species == ESpecies::CoastLiveOak ? 4 : 3, 5);
@@ -1096,9 +1096,9 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
             return FVector4f(FMath::Min(FMath::Clamp(Z / 90.0F, 0.0F, 1.0F), Shade), FMath::Square(FMath::Max(Z, 0.0F) / Height) * .12F, 0, 1);
         });
     // R9 surface root swells: low, mostly buried ridges along each buttress lobe that run out and
-    // down into the soil (LOD0/1). They read as a rooted base, never as legs (they start inside
+    // down into the soil (LOD0/1, plus a simplified LOD2 profile). They read as a rooted base, never as legs (they start inside
     // the collar at <=15 cm height and end 15 cm below grade).
-    if (Lod <= 1 && K.Height >= 500)
+    if (Lod <= 2 && K.Height >= 500)
     {
         const float R0 = K.TrunkRadius.IsValidIndex(1) ? K.TrunkRadius[1] : K.Breast;
         for (const auto& Lobe : Lobes)
@@ -1114,7 +1114,7 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
                 RootDir * Reach * .68F + Side * Bend * .52F + FVector(0, 0, -8),
                 RootDir * Reach + Side * Bend * .35F + FVector(0, 0, -22)};
             Sweep(Out.Bark, Path, [&](int32 Ring, float) { return R0 * FMath::Lerp(.28F, .025F, Ring / 3.0F); },
-                Lod == 0 ? 6 : 4, 1.0F, K.TileV, [](int32) { return FVector4f(.1F, 0, 0, 1); });
+                Lod == 0 ? 6 : Lod == 1 ? 4 : 3, 1.0F, K.TileV, [](int32) { return FVector4f(.1F, 0, 0, 1); });
         }
     }
     for (const FLimb& Limb : K.Limbs)
@@ -1666,7 +1666,7 @@ float NearStandDensity(const float X, const float Y)
     {
         // Outside the core stands, woodland-class ground (DEV-TERRAIN habitat) carries a looser
         // forest out along shaded slopes and gullies, so stands have no drawn outline.
-        if (AbsY < FieldEdge || AbsY > 40000.0F || X < -44000.0F || X > EastEdge) return 0;
+        if (AbsY < FieldEdge || AbsY > 48000.0F || X < -52000.0F || X > EastEdge) return 0;
         const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(X, Y);
         const float Woodland = Habitat.Woodland + .5F * Habitat.ShelteredGrass - .6F * Habitat.Rock;
         const float Reach = 1.0F - Smooth01(-Inside / 9000.0F);
@@ -1811,8 +1811,8 @@ const FLayout& GetLayout()
     }
     // 2. Fixed-density stand fill: jittered 5.0 m lattice with Poisson-style rejection.
     constexpr float Cell = 400.0F;
-    for (float GX = -45000; GX < 12500; GX += Cell)
-        for (float GY = -41000; GY < 41000; GY += Cell)
+    for (float GX = -52000; GX < 12500; GX += Cell)
+        for (float GY = -48000; GY < 48000; GY += Cell)
         {
             // Full-cell jitter plus up to ~1 m overlap into neighbouring cells hides the lattice.
             const FVector2D P(GX + Random.FRandRange(-.1F, 1.1F) * Cell, GY + Random.FRandRange(-.1F, 1.1F) * Cell);
