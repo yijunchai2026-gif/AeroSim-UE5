@@ -1893,8 +1893,8 @@ const FLayout& GetLayout()
             const float Roll = Distant.FRand(), Pick = Distant.FRand(), Yaw = Distant.FRandRange(0, 2 * PI), ScaleRoll = Distant.FRand();
             if (DistantCount >= 6000 || NearStandDensity(P.X, P.Y) > 0) continue;
             const bool bMid = P.X > -70000 && FMath::Abs(P.Y) < 70000;
-            // Far ridge: coarser 18 m sampling keeps the instance count bounded.
-            if (!bMid && (FMath::FloorToInt(GX / 900) % 2 || FMath::FloorToInt(GY / 900) % 2)) continue;
+            // Far ridge: stochastic 25% acceptance keeps the count bounded without visible rows.
+            if (!bMid && Distant.FRand() > .25F) continue;
             const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(P.X, P.Y);
             const float Woodland = Habitat.Woodland + .25F * Habitat.ShelteredGrass;
             if (Woodland < .30F || Roll > Smooth01((Woodland - .30F) / .45F) * .85F) continue;

@@ -441,7 +441,7 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
         Lower->Code = TEXT("float n=sin(P.x*.0021+sin(P.y*.0013)*2.1)*.5+sin(P.y*.0047+P.x*.0011)*.5; return 1-smoothstep(-3200.0,-2400.0,P.z+n*500.0);");
         { FCustomInput I; I.InputName = TEXT("P"); I.Input.Connect(0, CliffWorld); Lower->Inputs.Add(I); }
         auto* Tan = Node<UMaterialExpressionMultiply>(Material); Tan->A.Connect(0, BaseExpression);
-        auto* TanTint = Node<UMaterialExpressionConstant3Vector>(Material); TanTint->Constant = FLinearColor(1.12F, 1.06F, .92F); Tan->B.Connect(0, TanTint);
+        auto* TanTint = Node<UMaterialExpressionConstant3Vector>(Material); TanTint->Constant = FLinearColor(1.02F, 1.00F, .98F); Tan->B.Connect(0, TanTint);
         auto* CliffColor = Node<UMaterialExpressionLinearInterpolate>(Material); CliffColor->A.Connect(0, Tan);
         CliffColor->B.Connect(0, FaceColor); bool bFace = true;
         CliffColor->Alpha.Connect(0, Lower);
