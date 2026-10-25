@@ -354,9 +354,9 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT("float3 v=normalize(P-C); float up=smoothstep(.02,.14,v.z); float el=asin(saturate(v.z));")
             + TEXT("CirrusField cf; float c1=cf.eval(float2(atan2(v.x,v.y)*3.0,el*9.0),noise);")
             + TEXT("float c2=cf.eval(float2(atan2(-v.x,-v.y)*3.0+11.0,el*9.0),noise);")
-            + TEXT("float c=lerp(c2,c1,smoothstep(-.3,.3,v.y)); float c3=cf.eval(float2(atan2(v.x,v.y)*4.2+5.7,el*13.0+2.1),noise); c=max(c,c3*.58);")
+            + TEXT("float c=lerp(c2,c1,smoothstep(-.3,.3,v.y)); float c3=cf.eval(float2(atan2(v.x,v.y)*4.2+5.7,el*13.0+2.1),noise); c=max(c,c3*.35);")
             + TEXT("float sun=1-smoothstep(.975,.995,dot(v,normalize(S)));")
-            + TEXT("return saturate(c*up*sun*1.15);");
+            + TEXT("return saturate(c*up*sun);");
     default:
         return TEXT("return 0;");
     }
