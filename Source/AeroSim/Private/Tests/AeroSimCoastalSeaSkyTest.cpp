@@ -148,7 +148,8 @@ bool FCoastalCirrusTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Cirrus field is time-independent (deterministic baseline, no wind)"), !Code.Contains(TEXT("T*"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("*T"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("+T"), ESearchCase::CaseSensitive));
     TestTrue(TEXT("Cirrus has one prevailing direction (no rotating/swirling streak axis)"), !Code.Contains(TEXT("cos("), ESearchCase::CaseSensitive) && Code.Contains(TEXT("float2 dir=float2(.94,.342)")));
     TestTrue(TEXT("Cirrus is masked below the horizon and around the sun"), Code.Contains(TEXT("smoothstep(.02,.14,v.z)")) && Code.Contains(TEXT("dot(v,normalize(S))")));
-    TestTrue(TEXT("Cirrus combines a secondary high-altitude filament layer"), Code.Contains(TEXT("float c3=cf.eval")) && Code.Contains(TEXT("c=max(c,c3*.35)")));
+    TestTrue(TEXT("Cirrus breaks azimuth repetition without adding time dependence"), Code.Contains(TEXT("float az=atan2(v.x,v.y)")) && Code.Contains(TEXT("float warp=(v.x*v.y)*.31+sin(az*1.73)*.08")) && Code.Contains(TEXT("az*2.73+warp")) && !Code.Contains(TEXT("atan2(v.x,v.y)*3.0")));
+    TestTrue(TEXT("Cirrus combines a secondary high-altitude filament layer"), Code.Contains(TEXT("float c3=cf.eval")) && Code.Contains(TEXT("az*4.07+5.7+warp*.6")) && Code.Contains(TEXT("c=max(c,c3*.35)")));
     UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
     APacificCoastGraybox* Coast = World ? World->SpawnActor<APacificCoastGraybox>() : nullptr;
     if (TestNotNull(TEXT("Coast spawns"), Coast))

@@ -792,7 +792,8 @@ float DistantRangeHeight(const float X, const float Y)
             Range = FMath::Lerp(Ridge, Range, H) + Seam * H * (1.0F - H);
         }
     Range = Range * (1.0F + .12F * Noise(X, Y, 60000.0F)) + 900.0F * Noise(X, Y, 33000.0F);
-    return FMath::Lerp(SubmergedRim, FMath::Max(Range, 0.0F), Interior);
+    const float RootedRange = APacificCoastGraybox::SeaLevelCm + Range;
+    return FMath::Lerp(SubmergedRim, RootedRange, Interior);
 }
 }
 

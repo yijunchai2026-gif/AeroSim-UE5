@@ -1082,10 +1082,10 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
             const float Base = K.TrunkRadius[Ring];
             if (K.Species != ESpecies::CoastLiveOak && K.Height < 500) return Base; // seedlings: no collar
             const float Section = K.bHeroShape ? 1.0F + .035F * Smooth01((Z - 450.0F) / 350.0F) * FMath::Sin(Theta * 2 + Z * .001F) : 1.0F;
-            // LOD2+ keep the smooth flare (no buttress lobes) so mid-distance bases never read as cylinders.
+            // LOD2 keeps low collar lobes without separate surface-root geometry; LOD3 stays smooth.
             // Far trunks are thinned (LOD2 x0.8, LOD3 x0.55) so from 300 m+ the crowns, not poles, dominate.
             const float Far = Lod == 2 ? .8F : Lod == 3 ? .55F : 1.0F;
-            return Section * Far * (Lod >= 2 ? Base * (1.0F + .18F * FMath::Exp(-FMath::Max(Z, 0.0F) / 30.0F)) : CollarRadius(Z, Theta, Base, Lobes));
+            return Section * Far * (Lod == 2 ? CollarRadius(Z, Theta, Base, Lobes) : Lod >= 3 ? Base * (1.0F + .18F * FMath::Exp(-FMath::Max(Z, 0.0F) / 30.0F)) : CollarRadius(Z, Theta, Base, Lobes));
         }, TrunkSides, URepeats, K.TileV,
         [&](int32 Ring)
         {
@@ -1659,7 +1659,7 @@ float NearStandDensity(const float X, const float Y)
     const float Erosion = 3200.0F * (Fbm(X + 11000.0F, Y - 3000.0F, 3600.0F) - .25F) + 1400.0F * (Fbm(X - 2700.0F, Y + 5100.0F, 1500.0F) - .4F);
     // R11: the review poses' stand edge (south, around the corridor entry) is exempt, so the
     // forest view keeps a closed crown ceiling; the north grove also gets a 150-300 m outline shape.
-    const float NorthShape = Y > 0 ? 7000.0F * (Fbm(X - 15000.0F, 2100.0F, 22000.0F) - .45F) + 4000.0F * (Fbm(X + 8000.0F, 900.0F, 11000.0F) - .5F) + 3200.0F * (Fbm(X * 1.5F, Y * 1.5F, 2800.0F) - .48F) : 0.0F;
+    const float NorthShape = Y > 0 ? 7000.0F * (Fbm(X - 15000.0F, Y + 2100.0F, 22000.0F) - .45F) + 4000.0F * (Fbm(X + 8000.0F, Y + 900.0F, 11000.0F) - .5F) + 3200.0F * (Fbm(X * 1.5F, Y * 1.5F, 2800.0F) - .48F) : 0.0F;
     const float Inside = FMath::Min(FMath::Min(AbsY - FieldEdge, OuterEdge - AbsY - NorthShape), FMath::Min(X - WestEdge, EastEdge - X))
         - (Y > 0 ? 2.6F : EntryKeep) * Erosion;
     if (Inside <= 0)

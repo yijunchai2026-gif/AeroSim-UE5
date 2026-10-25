@@ -50,7 +50,9 @@ FLinearColor APacificCoastGraybox::GetForestLitterMask(const float X, const floa
     float HalfWidth = 0;
     const float Lane = CorridorDistance(FVector2D(X, Y), &HalfWidth);
     const float LaneClear = FMath::SmoothStep(HalfWidth - 60.0F, HalfWidth + 80.0F, Lane);
-    const float Patch = FMath::SmoothStep(.30F, .62F, FMath::Frac(FMath::Sin(X * .0031F + FMath::Sin(Y * .0023F)) * 1.7F + .5F));
+    const float CoarsePatch = FMath::PerlinNoise2D(FVector2D(X / 3600.0F + 5.7F, Y / 3600.0F - 2.1F));
+    const float FinePatch = FMath::PerlinNoise2D(FVector2D(X / 1400.0F - 8.3F, Y / 1400.0F + 4.6F));
+    const float Patch = FMath::SmoothStep(.34F, .68F, .5F + .5F * (.68F * CoarsePatch + .32F * FinePatch));
     const float Keep = LaneClear * FMath::Lerp(.80F, 1.0F, Patch);
     return FLinearColor(Conifer * Keep, Oak * Keep, 0, 1);
 }

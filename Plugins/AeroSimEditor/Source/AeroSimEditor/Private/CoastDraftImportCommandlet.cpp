@@ -325,7 +325,8 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "float3 r=rT*clamp(dot(RC,L)/.2073,.55,1.25);"
         "float3 c=e*b.x+s*b.y+wl*b.z+r*b.w;"
         "float m1=clamp(dot(M1,L)/.13,.65,1.4), m2=clamp(dot(M2,L)/.077,.75,1.3);"
-        "c*=lerp(1,m1*m2,.25+.3*(1-fineMix));"
+        "float macro=lerp(m1,m2,.35); c*=lerp(1,macro,.14+.18*(1-fineMix));"
+        "float openPatch=smoothstep(.57,.76,nC*.65+nD*.35); c=lerp(c,c*float3(.78,.86,.68),openPatch*(1-L.z)*.16);"
         "c*=1+.24*(float3(nC,nD,nE)-.5);"
         // R8: steep cap faces match the cliff rock tone (was a pale-gold sandstone that read untextured).
         // R12: coastal grass toward Bay Area tawny/olive (QA: orange dune band); rock detail fades to the
@@ -479,7 +480,7 @@ bool BuildMaterial(const TCHAR* Name, const TArray<UTexture2D*>& Textures, int32
             "float3 t=Texture2DSample(Tex,TexSampler,P.yz*s).rgb*w.x+Texture2DSample(Tex,TexSampler,P.xz*s).rgb*w.y+Texture2DSample(Tex,TexSampler,P.xy*s).rgb*w.z;"
             // R9: keep the face's own tone (macro cliff_side colour); the re-projected sample only
             // contributes luminance detail, so these pixels never turn pale, untextured gold.
-            "float detail=clamp(dot(t,float3(.3,.59,.11))/.33,.6,1.4); return lerp(C,M*float3(1.12,1.06,.92)*detail,mis);");
+            "float detail=clamp(dot(t,float3(.3,.59,.11))/.33,.72,1.24); return lerp(C,M*float3(1.02,1.00,.98)*detail,mis);");
         { FCustomInput I; I.InputName = TEXT("P"); I.Input.Connect(0, CliffWorld); FacetColor->Inputs.Add(I); }
         { FCustomInput I; I.InputName = TEXT("VN"); I.Input.Connect(0, GeometryNormal); FacetColor->Inputs.Add(I); }
         { FCustomInput I; I.InputName = TEXT("C"); I.Input.Connect(0, CliffColor); FacetColor->Inputs.Add(I); }
