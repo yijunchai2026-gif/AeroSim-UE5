@@ -20,34 +20,35 @@
 
 另外，无人机必须能用**真实按键**飞完约 2 分钟（100–130 s）的任务航线，并降落在停机坪上。
 
-**当前结论（2026-10-25，R13）：** 还没有达到 3A。
+**当前结论（2026-10-25，R14）：** 还没有达到 3A。
 
-- R0–R11 共十余轮视觉 QA，每轮 U1–U6 都是 FAIL，但每轮都有可量化的改进。
-- **验收只由用户本人签字。** 任何 AI 都不得写「3A 已达成」或「验收通过」。
+- R0–R14 已完成多轮视觉 QA，每轮都有可量化改进，但最终验收只由用户本人签字。
+- **任何 AI 都不得写「3A 已达成」或「验收通过」。**
 
-**最新完成的一轮是 R13**（集成提交 `ceb31d7`，源码指纹 `26bc063ce077`）：
+**最新完成的一轮是 R14**（实现提交 `6f14695`，源码指纹 `0ceaa0092278`）：
 
-- Python 92/92、静态 10/10、Build、81 项 Automation、Package 与 cooked shader 检查全部通过。
-- 真实按键闭环航线到达 Result / `nav-15-land-on-mat`：538.75 s，未使用 teleport，`mission_incident=0`；耗时仍明显高于 100–130 s 产品目标。
-- shore / cliff 已完成 600 ms × 8 动态序列，实际跨度 4.288 / 4.262 s。
-- 用户本轮提出的地表、湾区云层和树根均有改善：近地草/低灌木尺度更可读，晴天形成 marine layer + broken cumulus + cirrus 层次，根瓣与根脊改为不对称、弯曲并埋地。
-- 仍不能关闭的问题：开阔地宏观覆盖偏稀、卷云存在程序化长直线、树基中景仍偏圆柱；north grove、岸壁锈带和远山条纹也未解决。
-- 详细证据见 `docs/coast-aaa-qa/R13/qa-hero.md` 与 `qa-motion.md`。U1–U6 仍不得写 PASS。
+- 用户要求开工前推送 R13 并删除多余 worktree；`origin/aime/coast-aaa-integration` 已推到 `47a652a`，旧 terrain/flora/seasky/flight/art worktree 已删除，必要的 dirty 内容先 stash 保存。
+- Python 92/92、UE 5.8.3 Mac Development Build、Automation（0 failed）、Package 全部通过。
+- 真实按键闭环航线到达 Result / `nav-15-land-on-mat`：492.7 s，未使用 teleport，终态 `mission_incident=0`；仍明显高于 100–130 s 产品目标。
+- shore / cliff 已完成 600 ms × 8 动态序列。
+- 修复了山体周期木纹 mask、岩面木纹式投影、顶面逐三角材质 section、远山海面 shelf、远景树棋盘抽样、卷云整数方位重复、LOD2 树基和 north grove 单轴噪声等来源。
+- 最终图中木纹和大块三角材质缝明显减弱，但仍不能关闭：开阔地宏观覆盖偏稀、卷云长丝重复、中距离树基圆柱、north grove 大块外轮廓、岸壁横向层带、远山低模规则轮廓与局部海面硬边。
+- 详细证据见 `docs/coast-aaa-qa/R14/qa-hero.md` 与 `qa-motion.md`。U1–U6 仍不得写 PASS。
 
-**上一轮 R12**（集成提交 `cb3c4e8`，源码指纹 `410838f7b176`）：
+**上一轮 R13**（集成提交 `47a652a`）：
 
-- 门禁全部通过，真实按键闭环航线到达 Result / `nav-15-land-on-mat`：361.62 s。
-- 完整报告在 `docs/coast-aaa-qa/R12/`。
+- 用户明确要求后已推送到 `origin/aime/coast-aaa-integration`。
+- 完整报告在 `docs/coast-aaa-qa/R13/`。
 
 **远端 `main`：** 2026-10-24 经用户同意，R11、方向键操控补丁（`4aa1be9`）和本文档已推送到 `origin/main`。以后再推送仍要先征得用户同意，推送前用 `git ls-remote origin refs/heads/main` 核对远端当前在哪个提交。
 
 **快速运行最新包（给人看）：**
 
 ```bash
-# 最新包：R13 集成包（包含方向键操控）
+# 最新包：R14 worktree（包含 R14 地形、植被、天空和材质修复）
+open -n "/Users/bytedance/Downloads/AeroSim-worktrees/r14/Artifacts/ProductShell/AAA/R14/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
+# R13 集成包
 open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/ProductShell/AAA/R13/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
-# 纯 R11 包（没有方向键）
-open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/ProductShell/AAA/R11/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
 ```
 
 - 在首页一直按 Enter 进入 Flight，然后按 Left Shift 或 ↑ 起飞。
@@ -89,15 +90,11 @@ open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/Prod
 | 路径 | 分支 | 负责人 / 用途 |
 |---|---|---|
 | `/Users/bytedance/Downloads/AeroSim` | `aime/20261016-1435-product-shell` | **用户主检出，禁止触碰** |
-| `AeroSim-worktrees/integration` | `aime/coast-aaa-integration` | PMO：合并、打包、真实按键验证、转录 QA 报告 |
-| `AeroSim-worktrees/terrain` | `aime/coast-aaa-terrain` | DEV-TERRAIN：地形、悬崖、岩石、海湾礁石、地面材质（U5、U6） |
-| `AeroSim-worktrees/flora` | `aime/coast-aaa-flora` | DEV-FLORA：树形、树根、树皮、密度、走廊、落叶、林缘（U1、U2） |
-| `AeroSim-worktrees/seasky` | `aime/coast-aaa-seasky` | DEV-SEASKY：海面、泡沫、浪花、天空、云、整体光照和林下补光（U3、U4） |
-| `AeroSim-worktrees/flight` | `aime/coast-aaa-flight` | DEV-FLIGHT：飞行模型、15 段导航、任务判定、HUD |
-| `AeroSim-worktrees/art-flora` | `aime/coast-aaa-art-flora` | 素材泳道（CC0 调研与导入建议），目前空闲 |
-| `AeroSim-worktrees/art-surface` | `aime/coast-aaa-art-surface` | 素材泳道，目前空闲 |
-| `AeroSim-worktrees/r6-hero-cove` | `aime/20261019-0047-r6-hero-cove` | Codex 的，**不要动** |
+| `AeroSim-worktrees/integration` | `aime/coast-aaa-integration` | R13 集成分支；已按用户要求推送到 `47a652a` |
+| `AeroSim-worktrees/r14` | `aime/1792907214-r14-visual-fixes` | R14 开发、打包、视觉 QA 与真实输入航线 |
 | `AeroSim-worktrees/HANDOFF-FROM-CLAUDE/` | 不在 git 里 | 交接文档工作副本、`pmo-tools/` 脚本备份、旧 diff |
+
+旧 terrain / flora / seasky / flight / art worktree 已在 R14 开工前按用户要求删除；有 dirty 内容的旧 worktree 先 stash 保存后再删除。
 
 **远端：** `origin = https://github.com/yijunchai2026-gif/AeroSim-UE5.git`，使用 Git LFS，`.git/lfs/objects` 约 7 GB。
 
