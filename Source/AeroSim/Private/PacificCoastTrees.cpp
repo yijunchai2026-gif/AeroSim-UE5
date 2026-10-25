@@ -276,10 +276,10 @@ float CollarRadius(float Z, float Theta, float BaseRadius, const TArray<TPair<fl
 {
     const float Zc = FMath::Max(Z, 0.0F);
     // Concave root collar: sharp flare in the lowest ~30 cm, so the base reads as rooted, not a cylinder.
-    float Flare = .18F * FMath::Exp(-Zc / 30.0F) + .03F * FMath::Exp(-Zc / 90.0F);
+    float Flare = .195F * FMath::Exp(-Zc / 30.0F) + .03F * FMath::Exp(-Zc / 90.0F);
     float Buttress = 0;
     for (const auto& Lobe : Lobes) Buttress += Lobe.Value * FMath::Pow(FMath::Max(0.0F, FMath::Cos(Theta - Lobe.Key)), 6.0F);
-    return BaseRadius * (1.0F + Flare + Buttress * FMath::Exp(-Zc / 45.0F));
+    return BaseRadius * FMath::Min(1.30F, 1.0F + Flare + Buttress * FMath::Exp(-Zc / 45.0F));
 }
 
 void AddConiferBranches(FSkeleton& K, FRandomStream& Random, bool bPine, bool bSapling, float Wind0)
@@ -733,8 +733,8 @@ FVector Turn(const FVector& D, float YawDegrees, float PitchDegrees)
 void AddClusterCard(FSkeleton& K, int32 Cluster, const FVector& Origin, const FVector& Along, const FVector& Across, float Length,
     int32 Island, float Wind, float Occlusion, float Fold)
 {
-    // Subtle sway on branchlet cards (QA-MOTION R5a/R6b): weight capped at .15 (~0.4 cm gust).
-    FTuft Tuft{Origin, Along.GetSafeNormal(), Across, FVector::UpVector, Length, Occlusion, FMath::Min(Wind, .15F), Island};
+    // Subtle sway on branchlet cards (QA-MOTION R5a/R6b): weight capped at .065 to restore the R10b motion envelope.
+    FTuft Tuft{Origin, Along.GetSafeNormal(), Across, FVector::UpVector, Length, Occlusion, FMath::Min(Wind, .065F), Island};
     Tuft.Cluster = Cluster; Tuft.Fold = Fold;
     K.Tufts.Add(Tuft);
 }
@@ -802,7 +802,7 @@ void BuildFirBranchlets(FSkeleton& K, FRandomStream& Random)
             const FVector Attach = PathPoint(Limb, S);
             const FVector Ahead = (PathPoint(Limb, FMath::Min(1.0F, S + .04F)) - Attach).GetSafeNormal();
             const float U = (Attach.Z - K.CrownBase) / FMath::Max(1.0F, CrownTop - K.CrownBase);
-            const float GroupLength = Random.FRandRange(56, 84) * Scale * (Limb.Level == 2 ? .8F : 1.0F) * FMath::Lerp(1.0F, .96F, U);
+            const float GroupLength = Random.FRandRange(75, 105) * Scale * (Limb.Level == 2 ? .8F : 1.0F) * FMath::Lerp(1.0F, 1.16F, U);
             // Group axis leaves the limb sideways and droops; tips near the limb end turn up.
             const FVector Axis = Turn(Ahead, Side * Random.FRandRange(28, 58), -Random.FRandRange(10, 26) + (S > .85F ? 18.0F : 0.0F));
             const FVector Lift(0, 0, Side * Random.FRandRange(6, 18) * (Random.FRand() < .5F ? 1 : -1));
@@ -854,14 +854,14 @@ void BuildPineTerminals(FSkeleton& K, FRandomStream& Random)
         // Mass centre sits just beyond the tip; cards radiate in a hemisphere with jittered,
         // non-coplanar centres (thin where it joins the twig, thick on the outside).
         const FVector Centre = Tip + TipDir * 24.0F * Mass;
-        const int32 Cards = FMath::Clamp(FMath::RoundToInt((Limb.Level == 1 ? 6 : 5) * K.FoliageDensity), 2, 9);
+        const int32 Cards = FMath::Clamp(FMath::RoundToInt((Limb.Level == 1 ? 8 : 7) * K.FoliageDensity), 2, 9);
         for (int32 Card = 0; Card < Cards; ++Card)
         {
             const float Yaw = Card * 360.0F / Cards + Random.FRandRange(-25, 25);
             const FVector Out = (TipDir * .55F + Turn(TipDir, Yaw, Random.FRandRange(-35, 50)) * .85F + FVector(0, 0, .2F)).GetSafeNormal();
             const FVector At = Centre + Random.VRand() * Random.FRandRange(4, 14) * Mass - Out * 10.0F;
             const FVector Across = FVector::CrossProduct(Out, Random.VRand()).GetSafeNormal();
-            AddClusterCard(K, Id, At, Out, Across, Random.FRandRange(92, 124) * Mass, Card == 0 ? 1 : 2, C.Wind, C.Occlusion, Card == 0 ? 20.0F : 0.0F);
+            AddClusterCard(K, Id, At, Out, Across, Random.FRandRange(115, 155) * Mass, Card == 0 ? 1 : 2, C.Wind, C.Occlusion, Card == 0 ? 20.0F : 0.0F);
         }
         // One radial clump faces outward across the mass.
         // The radial clump stands upright facing out of the crown (horizontal normal), never lying flat.
@@ -961,7 +961,7 @@ void EmitHeroFoliage(const FSkeleton& K, int32 Lod, FLod& Out)
         {
             const FCluster& C = K.Clusters[T.Cluster];
             if (Lod == 1 && T.Rank >= FMath::Max(1, FMath::CeilToInt(C.Cards * .45F))) continue;
-            const float Grow = Lod == 1 ? 1.25F : 1.0F;
+            const float Grow = Lod == 1 ? 1.42F : 1.0F;
             EnvelopeCard(Out.Leaf, T.Origin - T.Dir * T.Length * (Grow - 1) * .5F, T.Dir, T.Across, T.Length * Grow,
                 K.Islands[T.Island % K.IslandCount], C.Center, FVector4f(T.Occlusion, T.Wind, 0, 1), Lod == 0 ? T.Fold : 0.0F);
         }
@@ -1055,7 +1055,7 @@ void EmitHeroFoliage(const FSkeleton& K, int32 Lod, FLod& Out)
             const FVector Across = FVector::CrossProduct(Normal, Tangent).GetSafeNormal();
             const FIsland& Island = K.Islands[ShellIsland % K.IslandCount];
             const FVector Origin = Island.bCentered ? At : At - Tangent * CardSize * .5F;
-            EnvelopeCard(Out.Leaf, Origin, Tangent, Across, CardSize, Island, Centre, FVector4f(FMath::Lerp(.75F, 1.0F, Occlusion), FMath::Min(Wind, .15F), 0, 1), 0);
+            EnvelopeCard(Out.Leaf, Origin, Tangent, Across, CardSize, Island, Centre, FVector4f(FMath::Lerp(.75F, 1.0F, Occlusion), FMath::Min(Wind, .065F), 0, 1), 0);
         }
     }
 }
@@ -1066,8 +1066,13 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
     const int32 TrunkSides = Lod == 0 ? 14 : Lod == 1 ? 8 : Lod == 2 ? 5 : 3;
     TArray<TPair<float, float>> Lobes;
     FRandomStream LobeRandom(Seed);
-    const int32 LobeCount = LobeRandom.RandRange(4, 6);
-    for (int32 L = 0; L < LobeCount; ++L) Lobes.Add({L * 2 * PI / LobeCount + LobeRandom.FRandRange(-.35F, .35F), LobeRandom.FRandRange(.05F, .07F)});
+    const int32 LobeCount = LobeRandom.RandRange(K.Species == ESpecies::CoastLiveOak ? 4 : 3, 5);
+    float RootAngle = LobeRandom.FRandRange(0, 2 * PI);
+    for (int32 L = 0; L < LobeCount; ++L)
+    {
+        RootAngle += (2 * PI / LobeCount) * LobeRandom.FRandRange(.58F, 1.42F);
+        Lobes.Add({RootAngle, LobeRandom.FRandRange(.035F, K.Species == ESpecies::CoastLiveOak ? .09F : .075F)});
+    }
     // Physical bark tiling: whole repeats around the circumference so the seam closes.
     const float URepeats = FMath::Clamp(FMath::RoundToFloat(2 * PI * K.Breast / K.TileU * 1.6F), 2.0F, 4.0F);
     const float Height = K.Height;
@@ -1099,11 +1104,16 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
         for (const auto& Lobe : Lobes)
         {
             const FVector RootDir(FMath::Cos(Lobe.Key), FMath::Sin(Lobe.Key), 0);
-            const float Reach = R0 * FMath::Lerp(2.0F, 2.7F, (Lobe.Value - .05F) / .02F);
-            // R11: taller, thicker swells that stay above the surrounding ground for most of their run.
-            const TArray<FVector> Path = {RootDir * R0 * .5F + FVector(0, 0, 38), RootDir * R0 * 1.1F + FVector(0, 0, 16),
-                RootDir * Reach * .75F + FVector(0, 0, 4), RootDir * Reach + FVector(0, 0, -12)};
-            Sweep(Out.Bark, Path, [&](int32 Ring, float) { return R0 * FMath::Lerp(.38F, .08F, Ring / 3.0F); },
+            const FVector Side(-RootDir.Y, RootDir.X, 0);
+            const float Strength = FMath::Clamp(Lobe.Value / .09F, .35F, 1.0F);
+            const float SpeciesRun = K.Species == ESpecies::CoastLiveOak ? 3.25F : K.Species == ESpecies::MontereyPine ? 2.75F : 2.35F;
+            const float Reach = R0 * FMath::Lerp(1.35F, SpeciesRun, Strength);
+            const float Bend = FMath::Sin(Lobe.Key * 2.37F + K.Height * .0013F) * R0;
+            const TArray<FVector> Path = {RootDir * R0 * .60F + Side * Bend * .08F + FVector(0, 0, 9),
+                RootDir * R0 * 1.05F + Side * Bend * .28F + FVector(0, 0, 2),
+                RootDir * Reach * .68F + Side * Bend * .52F + FVector(0, 0, -8),
+                RootDir * Reach + Side * Bend * .35F + FVector(0, 0, -22)};
+            Sweep(Out.Bark, Path, [&](int32 Ring, float) { return R0 * FMath::Lerp(.28F, .025F, Ring / 3.0F); },
                 Lod == 0 ? 6 : 4, 1.0F, K.TileV, [](int32) { return FVector4f(.1F, 0, 0, 1); });
         }
     }
@@ -1646,12 +1656,12 @@ float NearStandDensity(const float X, const float Y)
     const float EastEdge = NearEastEdge(Y) - 1800.0F * Fbm(Y, 300.0F, 4200.0F) - 8000.0F * FMath::Max(0.0F, Fbm(Y - 2000.0F, 900.0F, 11000.0F) - .38F);
     // R10: erode the distance-to-edge field itself with 25-60 m noise, so every side (incl. the
     // north grove) gets bays and promontories rather than four straight edges.
-    const float Erosion = 3200.0F * (Fbm(X + 11000.0F, Y - 3000.0F, 3600.0F) - .35F) + 1400.0F * (Fbm(X - 2700.0F, Y + 5100.0F, 1500.0F) - .5F);
+    const float Erosion = 3200.0F * (Fbm(X + 11000.0F, Y - 3000.0F, 3600.0F) - .25F) + 1400.0F * (Fbm(X - 2700.0F, Y + 5100.0F, 1500.0F) - .4F);
     // R11: the review poses' stand edge (south, around the corridor entry) is exempt, so the
     // forest view keeps a closed crown ceiling; the north grove also gets a 150-300 m outline shape.
-    const float NorthShape = Y > 0 ? 7000.0F * (Fbm(X - 15000.0F, 2100.0F, 22000.0F) - .45F) + 4000.0F * (Fbm(X + 8000.0F, 900.0F, 11000.0F) - .5F) : 0.0F;
+    const float NorthShape = Y > 0 ? 7000.0F * (Fbm(X - 15000.0F, 2100.0F, 22000.0F) - .45F) + 4000.0F * (Fbm(X + 8000.0F, 900.0F, 11000.0F) - .5F) + 3200.0F * (Fbm(X * 1.5F, Y * 1.5F, 2800.0F) - .48F) : 0.0F;
     const float Inside = FMath::Min(FMath::Min(AbsY - FieldEdge, OuterEdge - AbsY - NorthShape), FMath::Min(X - WestEdge, EastEdge - X))
-        - (Y > 0 ? 1.4F : EntryKeep) * Erosion;
+        - (Y > 0 ? 2.6F : EntryKeep) * Erosion;
     if (Inside <= 0)
     {
         // Outside the core stands, woodland-class ground (DEV-TERRAIN habitat) carries a looser
@@ -1678,8 +1688,8 @@ float NearStandDensity(const float X, const float Y)
     // Habitat shapes only the outer ~40 m of each stand: the dense training core is never erased.
     const float Hostile = (Habitat.Rock + Habitat.Shore + FMath::Max(0.0F, Habitat.ExposedGrass - .55F) * Smooth01(Habitat.SunExposure / .5F))
         * (1.0F - Smooth01(Inside / 4000.0F));
-    // Natural clumping: 0.88-1.0 density modulation at ~25 m scale.
-    const float Clump = .88F + .12F * Smooth01((Fbm(X - 4100, Y + 2600, 2600.0F) - .35F) / .3F);
+    // Natural clumping: 0.93-1.0 density modulation at ~25 m scale.
+    const float Clump = .93F + .07F * Smooth01((Fbm(X - 4100, Y + 2600, 2600.0F) - .35F) / .3F);
     return Feather * Clump * (1.0F - Smooth01((Glade - .60F) / .06F)) * (1.0F - Smooth01((Hostile - .25F) / .35F));
 }
 

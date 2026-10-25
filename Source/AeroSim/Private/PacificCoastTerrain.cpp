@@ -436,6 +436,11 @@ float CliffOutcrop(const float Y, const float Depth)
     // supported apron rather than a vertical wall; its reach varies irregularly along the coast.
     const float TalusReach = 3600.0F + 1800.0F * Noise(Y, 4400.0F, 9300.0F) + 700.0F * Noise(Y, -2600.0F, 3100.0F);
     Outcrop += TalusReach * FMath::Square(Smooth((Depth - .32F) / .55F));
+    const float FractureA = FMath::Clamp(.5F + .5F * Noise(Y + 1700.0F, 6200.0F, 1800.0F), 0.0F, 1.0F);
+    const float FractureB = FMath::Clamp(.5F + .5F * Noise(Y - 900.0F, 11100.0F, 3300.0F), 0.0F, 1.0F);
+    const float RouteClear = Smooth((FMath::Abs(Y + 6000.0F) - 2500.0F) / 2000.0F);
+    Outcrop += RouteClear * (90.0F + 290.0F * FractureB)
+        * Smooth((Depth - (.18F + .10F * FractureA)) / .14F);
     for (int32 Bed = 0; Bed < UE_ARRAY_COUNT(Thresholds); ++Bed)
     {
         // R9: stronger, shorter dip so beds are not read as level contour bands on low headlands.
@@ -546,7 +551,7 @@ void BaselineCliffStations(const float RowY, const FVector& Rim, FVector (&Out)[
         // relief breaks every station plane. It fades out within 1-4 m of still water so the
         // waterline (shore query, foam, DEV-FLIGHT references) is unchanged.
         const float Above = Z - APacificCoastGraybox::SeaLevelCm, Below = -Above;
-        const float ReliefFade = FMath::Max(Smooth((Above - 100.0F) / 300.0F), Smooth((Below - 150.0F) / 400.0F));
+        const float ReliefFade = FMath::Max(Smooth((Above - 40.0F) / 120.0F), Smooth((Below - 80.0F) / 200.0F));
         const float Relief = ReliefFade * RowDetail(RowY) * (90.0F * Noise(RowY, Z * 1.6F, 560.0F) + 55.0F * Noise(RowY + 700.0F, Z * 2.1F, 230.0F) + 35.0F * Noise(RowY - 300.0F, Z, 110.0F));
         float X = static_cast<float>(Rim.X) + CliffOutcrop(RowY, Depth) + Bench + Relief * (1.0F - BenchFootprint(RowY));
         if (Weight > 0)

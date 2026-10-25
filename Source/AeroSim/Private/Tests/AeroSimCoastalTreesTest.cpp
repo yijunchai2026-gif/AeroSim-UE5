@@ -66,7 +66,7 @@ bool FCoastalTreeArchetypeTest::RunTest(const FString& Parameters)
         // Saplings (<5 m) are seedlings without a buttressed collar; their thin stem is exempt.
         if (A.Species != ESpecies::Sapling)
         {
-            TestTrue(TEXT("Root collar flares visibly"), A.CollarRadius >= 1.08F * A.BreastRadius);
+            TestTrue(TEXT("Root collar flares visibly"), A.CollarRadius >= 1.20F * A.BreastRadius);
             TestTrue(TEXT("Root collar stays within ~1.3x the trunk radius"), A.CollarRadius <= 1.30F * A.BreastRadius);
         }
         TestTrue(TEXT("Trunk continues below grade so no gap can open on slopes"), A.BuriedDepth >= 50);

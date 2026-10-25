@@ -1,6 +1,6 @@
 # AeroSim 海岸场景 3A 迭代：给后续 AI 的完整交接指令
 
-- **最后更新：** 2026-10-24。交接人是 Claude（PMO / 集成）。
+- **最后更新：** 2026-10-25。交接人是 Claude（PMO / 集成）。
 - **仓库内副本：** `docs/AI_HANDOFF.md`，随 `main` 推送。
 - **本机工作副本：** `/Users/bytedance/Downloads/AeroSim-worktrees/HANDOFF-FROM-CLAUDE/AI-HANDOFF.md`。这份不在 git 里，可能比仓库内副本新。
 - **用户沟通：** 用中文。结论先行，数字要真实，不夸大。
@@ -20,25 +20,32 @@
 
 另外，无人机必须能用**真实按键**飞完约 2 分钟（100–130 s）的任务航线，并降落在停机坪上。
 
-**当前结论（2026-10-24）：** 还没有达到 3A。
+**当前结论（2026-10-25，R13）：** 还没有达到 3A。
 
 - R0–R11 共十余轮视觉 QA，每轮 U1–U6 都是 FAIL，但每轮都有可量化的改进。
 - **验收只由用户本人签字。** 任何 AI 都不得写「3A 已达成」或「验收通过」。
 
-**最新完成的一轮是 R11**（集成分支提交 `02874d5`，后面另有文档提交）：
+**最新完成的一轮是 R13**（集成提交 `ceb31d7`，源码指纹 `26bc063ce077`）：
 
-- 门禁全部通过。
-- 真实按键飞完全航线并降落：5/5 检查点、0 事故、418 s。
-- QA-HERO 和 QA-MOTION 都已完成，报告在 `docs/coast-aaa-qa/R11/`。
-- 结果和下一轮（R12）简报要点见第 8 节。
+- Python 92/92、静态 10/10、Build、81 项 Automation、Package 与 cooked shader 检查全部通过。
+- 真实按键闭环航线到达 Result / `nav-15-land-on-mat`：538.75 s，未使用 teleport，`mission_incident=0`；耗时仍明显高于 100–130 s 产品目标。
+- shore / cliff 已完成 600 ms × 8 动态序列，实际跨度 4.288 / 4.262 s。
+- 用户本轮提出的地表、湾区云层和树根均有改善：近地草/低灌木尺度更可读，晴天形成 marine layer + broken cumulus + cirrus 层次，根瓣与根脊改为不对称、弯曲并埋地。
+- 仍不能关闭的问题：开阔地宏观覆盖偏稀、卷云存在程序化长直线、树基中景仍偏圆柱；north grove、岸壁锈带和远山条纹也未解决。
+- 详细证据见 `docs/coast-aaa-qa/R13/qa-hero.md` 与 `qa-motion.md`。U1–U6 仍不得写 PASS。
+
+**上一轮 R12**（集成提交 `cb3c4e8`，源码指纹 `410838f7b176`）：
+
+- 门禁全部通过，真实按键闭环航线到达 Result / `nav-15-land-on-mat`：361.62 s。
+- 完整报告在 `docs/coast-aaa-qa/R12/`。
 
 **远端 `main`：** 2026-10-24 经用户同意，R11、方向键操控补丁（`4aa1be9`）和本文档已推送到 `origin/main`。以后再推送仍要先征得用户同意，推送前用 `git ls-remote origin refs/heads/main` 核对远端当前在哪个提交。
 
-**快速运行 R11（给人看）：**
+**快速运行最新包（给人看）：**
 
 ```bash
-# 最新包：R11 + 方向键操控，在 flight worktree 打包
-open -n "/Users/bytedance/Downloads/AeroSim-worktrees/flight/Artifacts/ProductShell/AAA/R11-arrows/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
+# 最新包：R13 集成包（包含方向键操控）
+open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/ProductShell/AAA/R13/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
 # 纯 R11 包（没有方向键）
 open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/ProductShell/AAA/R11/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
 ```
