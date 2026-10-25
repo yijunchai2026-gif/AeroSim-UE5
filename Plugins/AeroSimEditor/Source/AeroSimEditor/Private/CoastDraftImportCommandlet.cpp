@@ -326,7 +326,7 @@ FLandSurface BuildLandSurface(UMaterial* Material, const TArray<UTexture2D*>& Te
         "float3 c=e*b.x+s*b.y+wl*b.z+r*b.w;"
         "float m1=clamp(dot(M1,L)/.13,.65,1.4), m2=clamp(dot(M2,L)/.077,.75,1.3);"
         "float macro=lerp(m1,m2,.35); c*=lerp(1,macro,.14+.18*(1-fineMix));"
-        "float openPatch=smoothstep(.57,.76,nC*.65+nD*.35); c=lerp(c,c*float3(.78,.86,.68),openPatch*(1-L.z)*.16);"
+        "float openPatch=smoothstep(.48,.68,nC*.65+nD*.35); c=lerp(c,c*float3(.70,.82,.60),openPatch*(1-L.z)*.25);"
         "c*=1+.24*(float3(nC,nD,nE)-.5);"
         // R8: steep cap faces match the cliff rock tone (was a pale-gold sandstone that read untextured).
         // R12: coastal grass toward Bay Area tawny/olive (QA: orange dune band); rock detail fades to the

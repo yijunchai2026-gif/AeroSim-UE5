@@ -792,7 +792,7 @@ float DistantRangeHeight(const float X, const float Y)
             Range = FMath::Lerp(Ridge, Range, H) + Seam * H * (1.0F - H);
         }
     Range = Range * (1.0F + .12F * Noise(X, Y, 60000.0F)) + 900.0F * Noise(X, Y, 33000.0F);
-    const float RootedRange = APacificCoastGraybox::SeaLevelCm + Range;
+    const float RootedRange = APacificCoastGraybox::SeaLevelCm - 5000.0F + Range;
     return FMath::Lerp(SubmergedRim, RootedRange, Interior);
 }
 }
@@ -1178,9 +1178,9 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
                 // Same aspect rule as the land habitat: dry grass on sun-facing slopes, dark cover on shaded ones.
                 const float Grade = FMath::Sqrt(GX * GX + GY * GY);
                 const float Facing = Grade > 1e-4F ? (-GX * .45F + GY * .89F) / Grade : 0.0F;
-                const float Shade = Smooth(.5F + .5F * Facing + .2F * Noise(X, Y, 40000.0F)) * Smooth(Grade / .1F);
+                const float Shade = Smooth(.42F + .30F * Facing + .16F * Noise(X, Y, 52000.0F)) * Smooth(Grade / .18F);
                 const float Rock = Smooth((Grade - .65F) / .3F);
-                RangeColors.Add(FLinearColor((1.0F - Shade) * (1.0F - Rock), .35F * Shade * (1.0F - Rock), .65F * Shade * (1.0F - Rock), 1.0F));
+                RangeColors.Add(FLinearColor(.55F - .18F * Shade, .28F + .18F * Shade, .12F + .22F * Rock, 1.0F));
             }
         for (int32 Row = 0; Row < RangeRows - 1; ++Row)
             for (int32 Column = 0; Column < RangeColumns - 1; ++Column)

@@ -350,13 +350,13 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
             + TEXT(" float fib=noise.f(float2(r.x*.6,r.y*12.0)); float fib2=noise.f(float2(r.x*1.4+4.0,r.y*26.0)); float fib3=noise.f(float2(r.x*3.0+9.0,r.y*55.0));")
             + TEXT(" float body=noise.f(float2(r.x*.35,r.y*2.2)+2.7); float clump=smoothstep(.42,.68,noise.f(q*.18+7.3));")
             + TEXT(" float breaks=smoothstep(.30,.70,noise.f(float2(r.x*2.5,r.y*.8)+5.5));")
-            + TEXT(" return smoothstep(.46,.84,body*.30+fib*.30+fib2*.25+fib3*.15)*clump*breaks*(.75+.25*hook); } };")
+            + TEXT(" return smoothstep(.58,.88,body*.50+fib*.20+fib2*.18+fib3*.12)*clump*breaks*(.75+.25*hook); } };")
             + TEXT("float3 v=normalize(P-C); float up=smoothstep(.02,.14,v.z); float el=asin(saturate(v.z)); float az=atan2(v.x,v.y); float warp=(v.x*v.y)*.31+sin(az*1.73)*.08;")
             + TEXT("CirrusField cf; float c1=cf.eval(float2(az*2.73+warp,el*8.63),noise);")
             + TEXT("float c2=cf.eval(float2(atan2(-v.x,-v.y)*3.17+11.0-warp,el*9.21),noise);")
             + TEXT("float c=lerp(c2,c1,smoothstep(-.3,.3,v.y)); float c3=cf.eval(float2(az*4.07+5.7+warp*.6,el*12.71+2.1),noise); c=max(c,c3*.35);")
             + TEXT("float sun=1-smoothstep(.975,.995,dot(v,normalize(S)));")
-            + TEXT("return saturate(c*up*sun);");
+            + TEXT("return saturate(c*up*sun*.60);");
     default:
         return TEXT("return 0;");
     }

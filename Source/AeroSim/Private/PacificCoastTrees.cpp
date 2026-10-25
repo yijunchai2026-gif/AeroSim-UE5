@@ -1659,7 +1659,7 @@ float NearStandDensity(const float X, const float Y)
     const float Erosion = 3200.0F * (Fbm(X + 11000.0F, Y - 3000.0F, 3600.0F) - .25F) + 1400.0F * (Fbm(X - 2700.0F, Y + 5100.0F, 1500.0F) - .4F);
     // R11: the review poses' stand edge (south, around the corridor entry) is exempt, so the
     // forest view keeps a closed crown ceiling; the north grove also gets a 150-300 m outline shape.
-    const float NorthShape = Y > 0 ? 7000.0F * (Fbm(X - 15000.0F, Y + 2100.0F, 22000.0F) - .45F) + 4000.0F * (Fbm(X + 8000.0F, Y + 900.0F, 11000.0F) - .5F) + 3200.0F * (Fbm(X * 1.5F, Y * 1.5F, 2800.0F) - .48F) : 0.0F;
+    const float NorthShape = Y > 0 ? 11000.0F * (Fbm(X - 15000.0F, Y + 2100.0F, 22000.0F) - .45F) + 7000.0F * (Fbm(X + 8000.0F, Y + 900.0F, 11000.0F) - .5F) + 4500.0F * (Fbm(X * 1.5F, Y * 1.5F, 2800.0F) - .48F) : 0.0F;
     const float Inside = FMath::Min(FMath::Min(AbsY - FieldEdge, OuterEdge - AbsY - NorthShape), FMath::Min(X - WestEdge, EastEdge - X))
         - (Y > 0 ? 2.6F : EntryKeep) * Erosion;
     if (Inside <= 0)
