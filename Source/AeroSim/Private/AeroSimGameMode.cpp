@@ -988,6 +988,9 @@ bool AAeroSimGameMode::ResolveReviewView(const FString& Name, const int32 Step, 
     else if (Name == TEXT("glint")) { Location = FVector(26000 + Step*60, -8000 - Step*40, APacificCoastGraybox::SeaLevelCm + 600); Rotation = FRotator(-4,-35,0); }
     else if (Name == TEXT("corridor")) { Location = FVector(-15609 - Step*18, -6895 - Step*36, 250); Rotation = FRotator(-3,-117.3F,0); }
     else if (Name == TEXT("cliff")) { Location = FVector(33000 + Step*120, -25000 + Step*120, -1500); Rotation = FRotator(-3,160,0); }
+    else if (Name == TEXT("wildlife-whale")) { Location = FVector(52000 + Step*10, -65000 + Step*15, APacificCoastGraybox::SeaLevelCm + 520); Rotation = FRotator(2, 141, 0); }
+    else if (Name == TEXT("wildlife-predators")) { Location = FVector(-28700 + Step*12, 31800 + Step*10, APacificCoastGraybox::GetCoastalLandHeight(-28700,31800) + 330); Rotation = FRotator(-6, 126, 0); }
+    else if (Name == TEXT("wildlife-herd")) { Location = FVector(-18700 + Step*12, 28800 + Step*15, APacificCoastGraybox::GetCoastalLandHeight(-18700,28800) + 360); Rotation = FRotator(-7, 128, 0); }
     else return false;
     return true;
 }

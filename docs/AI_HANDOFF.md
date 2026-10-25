@@ -520,3 +520,20 @@ R15 在 R14 分辨率修复之后继续处理六项残留，工作分支仍为 `
 - 最终包：`Artifacts/ProductShell/AAA/R15/Package/Mac/AeroSim.app`。
 
 当前仍不能声明 3A 或用户验收通过。主要残留是远山低模轮廓、卷云顶部弱平行节奏、开阔地缺少真正近景碎石/decal，以及 cliff / shore 前景大平面。
+
+
+---
+
+## 14. R16 Pacific Coast 动物（2026-10-25）
+
+R16 在 R15 环境基础上加入确定性程序化动物，不引入外部资产，也不改变飞行碰撞与任务逻辑。
+
+- `PacificCoastWildlife.cpp`：2 条鲸鱼、3 只狼、1 只熊、5 只鹿、4 头牛；每个物种合并为一个程序化网格批次，鹿角单独批次。
+- 鲸鱼位于外海，狼/熊和鹿/牛位于北侧相邻的山地草坡。动物使用可辨识的静态动作姿态，不开启 Tick。
+- 动物组件全部 `NoCollision`，总三角形预算由 `AeroSim.Coastal.Wildlife.Composition` 自动化测试限制在 20,000 以下。
+- 新增控制桥评审视角：`wildlife-whale`、`wildlife-predators`、`wildlife-herd`。
+- 验证：Python 92/92；Mac Development Build 通过；Wildlife 定向 Automation 1/1；全量 Automation 93 项 0 failed；Package ExitCode 0。
+- 证据：`Artifacts/ProductShell/AAA/R16/qa-wildlife/`；报告：`docs/coast-aaa-qa/R16/qa-wildlife.md`。
+- 最终包：`Artifacts/ProductShell/AAA/R16/Package/Mac/AeroSim.app`。
+
+当前没有骨骼动画、AI 漫游、毛发或音效；这些属于后续独立范围。最终视觉验收仍由用户决定。

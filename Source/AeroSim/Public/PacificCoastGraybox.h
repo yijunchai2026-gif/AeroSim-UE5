@@ -114,6 +114,11 @@ public:
     // DEV-FLORA end
     static constexpr float SeaLevelCm = -6500.0F;
     int32 GetCoastalTreeCount() const { return CoastalTreeCount; }
+    int32 GetCoastalWhaleCount() const { return CoastalWhaleCount; }
+    int32 GetCoastalWolfCount() const { return CoastalWolfCount; }
+    int32 GetCoastalBearCount() const { return CoastalBearCount; }
+    int32 GetCoastalDeerCount() const { return CoastalDeerCount; }
+    int32 GetCoastalCattleCount() const { return CoastalCattleCount; }
 
     int32 GetGeneratedPrimitiveCount() const { return GeneratedPrimitiveCount; }
     int32 GetGeneratedGateCount() const { return GeneratedGateCount; }
@@ -134,6 +139,8 @@ private:
     void BuildCoastalTerrain(UMaterialInterface* Material);
     void BuildCoastalTrees(UMaterialInterface* Material);
     void BuildCoastalOcean(UMaterialInterface* Material);
+    // Lightweight deterministic wildlife batches: ocean whales and habitat-placed land animals.
+    void BuildCoastalWildlife(UMaterialInterface* Material);
     // DEV-FLORA: instanced forest-floor understory (ferns, shrubs, edge grass) for the near stands.
     void BuildCoastalHabitat();
     // DEV-FLORA end
@@ -150,6 +157,11 @@ private:
     UPROPERTY(Transient)
     TObjectPtr<UMaterialInterface> CoastalGravelMaterial;
     int32 CoastalTreeCount = 0;
+    int32 CoastalWhaleCount = 0;
+    int32 CoastalWolfCount = 0;
+    int32 CoastalBearCount = 0;
+    int32 CoastalDeerCount = 0;
+    int32 CoastalCattleCount = 0;
 
     UStaticMeshComponent* AddBox(
         const FName Name,
