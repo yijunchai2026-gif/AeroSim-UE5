@@ -213,7 +213,7 @@ const TCHAR* Weights = TEXT(
     // cliff/cove band (world X east of ~40-90 m from the coast plateau edge, not the far N/S collar);
     // inland stony patches keep the stony layer, now sampled with facet-true triplanar weights.
     // Coastal 20-35 deg slopes also show irregular strata breaks of rock through the soil.
-    "float coast=smoothstep(4000.0,9000.0,WP.x)*(1-smoothstep(150000.0,170000.0,abs(WP.y)));"
+    "float coast=smoothstep(4000.0,9000.0,WP.x)*(1-smoothstep(24000.0,50000.0,WP.x))*(1-smoothstep(150000.0,170000.0,abs(WP.y)));"
     "float strata=coast*smoothstep(.74,.9,sin((WP.z+260.0*nC+90.0*nA)/170.0)*.5+.5)*smoothstep(.97,.88,abs(facet.z))*smoothstep(.35,.6,nB);"
     "float rockMask=saturate(coast*max(cliffFace,max(smoothstep(.866,.707,abs(facet.z)),smoothstep(.45,.65,b.w)))+.45*strata);");
 }
