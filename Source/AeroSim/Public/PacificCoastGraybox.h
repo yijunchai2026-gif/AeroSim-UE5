@@ -121,6 +121,13 @@ public:
     int32 GetCoastalBearCount() const { return CoastalBearCount; }
     int32 GetCoastalDeerCount() const { return CoastalDeerCount; }
     int32 GetCoastalCattleCount() const { return CoastalCattleCount; }
+    int32 GetCoastalWildlifeAnimatedBatchCount() const { return CoastalWildlifeAnimatedBatches.Num(); }
+    int32 GetCoastalWildlifeAnimatedRangeCount() const
+    {
+        int32 Count = 0;
+        for (const FCoastalWildlifeAnimatedBatch& Batch : CoastalWildlifeAnimatedBatches) Count += Batch.Ranges.Num();
+        return Count;
+    }
 
     int32 GetGeneratedPrimitiveCount() const { return GeneratedPrimitiveCount; }
     int32 GetGeneratedGateCount() const { return GeneratedGateCount; }
@@ -143,6 +150,27 @@ private:
     void BuildCoastalOcean(UMaterialInterface* Material);
     // Lightweight deterministic wildlife batches: ocean whales and habitat-placed land animals.
     void BuildCoastalWildlife(UMaterialInterface* Material);
+    void UpdateCoastalWildlifeAnimation(float DeltaSeconds);
+    enum class ECoastalWildlifeKind : uint8 { Whale, Wolf, Bear, Deer, Cattle };
+    struct FCoastalWildlifeVertexRange
+    {
+        int32 StartVertex = 0;
+        int32 EndVertex = 0;
+        FVector Origin = FVector::ZeroVector;
+        float Yaw = 0.0F;
+        float Scale = 1.0F;
+        float Phase = 0.0F;
+        ECoastalWildlifeKind Kind = ECoastalWildlifeKind::Deer;
+    };
+    struct FCoastalWildlifeAnimatedBatch
+    {
+        TObjectPtr<UProceduralMeshComponent> Component;
+        TArray<FVector> BaseVertices;
+        TArray<FVector> Normals;
+        TArray<FVector2D> UV;
+        TArray<FLinearColor> Colors;
+        TArray<FCoastalWildlifeVertexRange> Ranges;
+    };
     // DEV-FLORA: instanced forest-floor understory (ferns, shrubs, edge grass) for the near stands.
     void BuildCoastalHabitat();
     // DEV-FLORA end
@@ -151,6 +179,8 @@ private:
     TArray<TObjectPtr<UMeshComponent>> CoastalColorParts;
     UPROPERTY(Transient)
     TArray<TObjectPtr<UProceduralMeshComponent>> CoastalWhaleAnimatedParts;
+    TArray<FCoastalWildlifeAnimatedBatch> CoastalWildlifeAnimatedBatches;
+    float CoastalWildlifeAnimationTime = 0.0F;
     TArray<FLinearColor> CoastalPartColors;
     UPROPERTY(VisibleAnywhere, Category = "Environment")
     TObjectPtr<UVolumetricCloudComponent> CoastalClouds;

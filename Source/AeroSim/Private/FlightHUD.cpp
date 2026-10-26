@@ -277,7 +277,7 @@ void AFlightHUD::DrawHUD()
         if (Distance < NearestDistance) { NearestDistance = Distance; Nearest = &Wildlife[Index]; }
     }
     const FString WildlifeStatus = NearestDistance < 20000.0F
-        ? FString::Printf(TEXT("WILDLIFE NEARBY: %s / %.0f M"), Nearest->Label, NearestDistance / 100.0F)
+        ? FString::Printf(TEXT("LIVING HABITAT: %s / %.0f M / OBSERVE QUIETLY"), Nearest->Label, NearestDistance / 100.0F)
         : FString::Printf(TEXT("WILDLIFE: NEAREST %s / %.0f M"), Nearest->Label, NearestDistance / 100.0F);
     DrawText(FString::Printf(TEXT("%s   |   H RTH   ESC/F10 SETTINGS   C CAMERA   R RESET\nCONTROLS  W/S PITCH  A/D ROLL  Q/E YAW  SHIFT/CTRL THROTTLE  ARROWS THROTTLE/YAW   |   %s"), *NextAction, *WildlifeStatus),
         FLinearColor::White, Margin.X + 12.0F, Canvas->ClipY - Margin.Y - 57.0F, GEngine->GetSmallFont(), 1.0F, false);

@@ -466,10 +466,56 @@ void APacificCoastGraybox::BeginPlay()
 void APacificCoastGraybox::Tick(const float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
-    const float Time = GetWorld() != nullptr ? GetWorld()->GetTimeSeconds() : 0.0F;
-    const FVector Offset(42.0F * FMath::Sin(Time * .18F), 28.0F * FMath::Cos(Time * .14F), 26.0F * FMath::Sin(Time * .62F));
-    for (UProceduralMeshComponent* Component : CoastalWhaleAnimatedParts)
-        if (Component != nullptr) Component->SetRelativeLocation(Offset);
+    UpdateCoastalWildlifeAnimation(DeltaSeconds);
+}
+
+void APacificCoastGraybox::UpdateCoastalWildlifeAnimation(const float DeltaSeconds)
+{
+    CoastalWildlifeAnimationTime += FMath::Min(DeltaSeconds, 0.1F);
+    for (FCoastalWildlifeAnimatedBatch& Batch : CoastalWildlifeAnimatedBatches)
+    {
+        if (Batch.Component == nullptr || Batch.BaseVertices.IsEmpty()) continue;
+        TArray<FVector> Vertices = Batch.BaseVertices;
+        for (const FCoastalWildlifeVertexRange& Range : Batch.Ranges)
+        {
+            const float Time = CoastalWildlifeAnimationTime;
+            const float Scale = FMath::Max(Range.Scale, 0.01F);
+            const FRotator Rotation(0.0F, Range.Yaw, 0.0F);
+            const FRotator InverseRotation(0.0F, -Range.Yaw, 0.0F);
+            const float BreathRate = Range.Kind == ECoastalWildlifeKind::Bear ? 0.72F : 1.08F;
+            const float GaitRate = Range.Kind == ECoastalWildlifeKind::Wolf ? 1.65F : 0.88F;
+            const float Breath = FMath::Sin(Time * BreathRate + Range.Phase);
+            const float Gait = FMath::Sin(Time * GaitRate + Range.Phase);
+            for (int32 Index = Range.StartVertex; Index < Range.EndVertex && Vertices.IsValidIndex(Index); ++Index)
+            {
+                FVector Local = InverseRotation.RotateVector(Batch.BaseVertices[Index] - Range.Origin) / Scale;
+                if (Range.Kind == ECoastalWildlifeKind::Whale)
+                {
+                    const float TailWeight = FMath::SmoothStep<double>(0.0F, 1.0F, FMath::Clamp((-Local.X - 430.0F) / 720.0F, 0.0F, 1.0F));
+                    Local.Y += TailWeight * 48.0F * FMath::Sin(Time * 1.05F + Range.Phase);
+                    Local.Z += 24.0F * FMath::Sin(Time * .58F + Range.Phase);
+                    Local.X += 22.0F * FMath::Sin(Time * .18F + Range.Phase);
+                }
+                else
+                {
+                    const float HeadStart = Range.Kind == ECoastalWildlifeKind::Bear ? 150.0F : 95.0F;
+                    const float TailStart = Range.Kind == ECoastalWildlifeKind::Bear ? -150.0F : -90.0F;
+                    const float HeadWeight = FMath::SmoothStep<double>(0.0F, 1.0F, FMath::Clamp((Local.X - HeadStart) / 150.0F, 0.0F, 1.0F));
+                    const float TailWeight = FMath::SmoothStep<double>(0.0F, 1.0F, FMath::Clamp((TailStart - Local.X) / 170.0F, 0.0F, 1.0F));
+                    const float LegWeight = 1.0F - FMath::SmoothStep<double>(45.0F, 125.0F, Local.Z);
+                    const float TorsoWeight = FMath::SmoothStep<double>(55.0F, 150.0F, Local.Z) * (1.0F - HeadWeight * .65F);
+                    const float SidePhase = Local.Y >= 0.0F ? 1.0F : -1.0F;
+                    Local.Z += TorsoWeight * Breath * (Range.Kind == ECoastalWildlifeKind::Bear ? 7.0F : 4.5F);
+                    Local.Z += HeadWeight * 7.0F * FMath::Sin(Time * .46F + Range.Phase);
+                    Local.Y += TailWeight * 12.0F * FMath::Sin(Time * 1.32F + Range.Phase);
+                    Local.X += LegWeight * SidePhase * Gait * 4.5F;
+                    Local.Z += LegWeight * FMath::Max(0.0F, Gait * SidePhase) * 2.5F;
+                }
+                Vertices[Index] = Range.Origin + Rotation.RotateVector(Local * Scale);
+            }
+        }
+        Batch.Component->UpdateMeshSection_LinearColor(0, Vertices, Batch.Normals, Batch.UV, Batch.Colors, {});
+    }
 }
 
 void APacificCoastGraybox::ApplyEnvironmentState(const FEnvironmentState& State)

@@ -551,3 +551,17 @@ R17 修复打包应用进入 Flight 后仍由 CommonUI Widget 持有焦点、导
 - 报告：`docs/coast-aaa-qa/R17/qa-input-wildlife-ui.md`；包：`Artifacts/ProductShell/AAA/R17/Package/Mac/AeroSim.app`。
 
 R17 仍没有骨骼蒙皮、毛发、复杂步态、AI 漫游或音效，不能声明达到 3A，也不代表用户视觉验收通过。下一轮优先将物种拆为独立实例/骨骼结构，引入不同相位动画和近景高质量材质。
+
+## 16. R18 动物独立生命感与曲面细化（2026-10-26）
+
+R18 将 R17 的整批动物起伏改为逐只动物、跨材质层同步的确定性动画，并提高主要躯干和头部曲面细分。
+
+- 动画组织：10 个程序化材质批次、47 个实例范围；身体、深色/浅色细节与鹿角按同一动物相位同步。
+- 动作：鲸鱼独立起伏、游移和尾摆；陆地动物具备物种差异化呼吸、头尾微动及交替承重。
+- 形体：提高鲸鱼、狼、熊、鹿、牛主要躯干和头部的环向/纵向细分，减少近景多面体轮廓。
+- UI：接近动物栖息地时显示 `LIVING HABITAT / OBSERVE QUIETLY`，保持 Canvas 非交互绘制。
+- 预算：动物总计 21,850 triangles，自动化上限 30,000；全部保持 NoCollision。
+- 门禁：Python 92/92；全量 Automation 94/94、0 failed；Package ExitCode 0；最终包 12 键映射全部 mapped/semantic peak=1。
+- 报告：`docs/coast-aaa-qa/R18/qa-wildlife-motion.md`；包：`Artifacts/ProductShell/AAA/R18/Package/Mac/AeroSim.app`。
+
+当前仍是程序化网格与 CPU 顶点形变，没有真实扫描资产、骨骼蒙皮、毛发、完整行为树或实录音效，不能声明已经与真实一致。下一轮应优先升级关节/骨骼结构、脚底 IK、行为状态机和近景材质。
