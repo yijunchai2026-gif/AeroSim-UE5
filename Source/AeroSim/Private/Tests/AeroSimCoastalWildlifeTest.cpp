@@ -37,6 +37,12 @@ bool FCoastalWildlifeCompositionTest::RunTest(const FString& Parameters)
         TestNotNull(FString::Printf(TEXT("%s has a production mesh"), Name), Match->GetSkeletalMeshAsset());
         TestEqual(FString::Printf(TEXT("%s uses single-node animation"), Name), Match->GetAnimationMode(), EAnimationMode::AnimationSingleNode);
         TestEqual(FString::Printf(TEXT("%s never blocks flight"), Name), Match->GetCollisionEnabled(), ECollisionEnabled::NoCollision);
+        if (Match->GetName().StartsWith(TEXT("CoastalDeerAsset")))
+        {
+            const FVector DeerLocation = Match->GetRelativeLocation();
+            const double TerrainHeight = APacificCoastGraybox::GetCoastalLandHeight(DeerLocation.X, DeerLocation.Y);
+            TestTrue(FString::Printf(TEXT("%s hooves remain above the terrain surface"), Name), DeerLocation.Z >= TerrainHeight + 40.0);
+        }
     }
 
     FVector Location;

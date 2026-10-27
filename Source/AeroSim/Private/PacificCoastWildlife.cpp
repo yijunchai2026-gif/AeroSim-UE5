@@ -277,7 +277,7 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
         const FVector2D DeerXY[] = {{-21800,31500}, {-23500,32200}, {-20200,32900}, {-25100,31000}, {-18700,31800}};
         for (int32 Index = 0; Index < UE_ARRAY_COUNT(DeerXY); ++Index)
         {
-            const FVector Origin(DeerXY[Index].X, DeerXY[Index].Y, GetCoastalLandHeight(DeerXY[Index].X, DeerXY[Index].Y));
+            const FVector Origin(DeerXY[Index].X, DeerXY[Index].Y, GetCoastalLandHeight(DeerXY[Index].X, DeerXY[Index].Y) + 42.0F);
             AddAssetAnimal(*FString::Printf(TEXT("CoastalDeerAsset%02d"), Index + 1), DeerMesh.Object, DeerAnimation.Object,
                 Origin, FRotator(0, 20.0F + Index * 31.0F, 0), FVector(.28F + (Index % 2) * .025F), Index * .45F);
         }
