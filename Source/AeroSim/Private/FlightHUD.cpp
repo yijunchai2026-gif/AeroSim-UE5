@@ -267,8 +267,8 @@ void AFlightHUD::DrawHUD()
     struct FWildlifeCue { const TCHAR* Label; FVector Location; };
     const FWildlifeCue Wildlife[] = {
         {TEXT("WHALES OFFSHORE"), FVector(47000,-61000,APacificCoastGraybox::SeaLevelCm)},
-        {TEXT("WOLVES + BEAR"), FVector(-31000,35000,0)},
-        {TEXT("DEER + CATTLE"), FVector(-22000,33500,0)}};
+        {TEXT("BEAR HABITAT"), FVector(-35500,38200,0)},
+        {TEXT("DEER HERD"), FVector(-21800,31500,0)}};
     const FWildlifeCue* Nearest = &Wildlife[0];
     float NearestDistance = FVector::Dist2D(PawnLocation, Nearest->Location);
     for (int32 Index = 1; Index < UE_ARRAY_COUNT(Wildlife); ++Index)

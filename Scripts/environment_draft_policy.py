@@ -15,8 +15,31 @@ TEXTURES|={f'T_FloraTrunkLitter_{channel}' for channel in ('BaseColor','Alpha','
 MESHES={'SM_CoastGrassSmallDraft','SM_CoastGrassTallDraft','SM_CoastGrassTinyDraft','SM_CoastShrubADraft','SM_CoastShrubBDraft',
         'SM_FloraFernADraft','SM_FloraFernBDraft','SM_FloraRooibosADraft','SM_FloraRooibosBDraft'}
 MESHES.add(HERO_NAME)
+def _validate_wildlife_assets(root:Path, actual:set[str])->list[str]:
+    prefix='Content/ThirdParty/Wildlife/'
+    wildlife={path for path in actual if path.startswith(prefix)}
+    if not wildlife:return []
+    try:
+        manifest=json.loads((root/'docs/third-party-wildlife-assets.json').read_text())
+        if manifest.get('schema')!='aerosim.third-party-wildlife.assets/v1':return ['Invalid wildlife asset manifest']
+        if manifest.get('license')!='CC-BY-4.0':return ['Unapproved wildlife asset license']
+        entries=manifest['assets'];expected={entry['path'] for entry in entries}
+        if len(entries)!=len(expected) or wildlife!=expected:return ['Unmanifested or missing wildlife assets']
+        for entry in entries:
+            path=Path(entry['path'])
+            if path.suffix!='.uasset' or '..' in path.parts or not entry['path'].startswith(prefix):return ['Wildlife asset outside the fixed third-party path']
+            if hashlib.sha256((root/path).read_bytes()).hexdigest()!=entry['sha256']:return ['Wildlife asset hash mismatch: '+entry['path']]
+        sources=manifest['sources']
+        if {source['model_uid'] for source in sources}!={'3adff88544344a58a8c93b10aaf05451','4cff1e63f4e941198b3d56300b3393b9','f4912be9163a4f45b2480df8ccb8b2c6'}:return ['Wildlife source receipts are incomplete']
+        if any(source.get('license')!='CC-BY-4.0' or len(source.get('archive_sha256',''))!=64 for source in sources):return ['Unapproved wildlife source receipt']
+    except (OSError,ValueError,KeyError,TypeError):return ['Missing or malformed wildlife asset manifest']
+    return []
+
 def validate_environment_draft(root:Path, manifest_override=None)->list[str]:
-    actual={str(p.relative_to(root)) for p in (root/'Content').rglob('*') if p.is_file() and p.suffix in ('.uasset','.umap')}
+    all_assets={str(p.relative_to(root)) for p in (root/'Content').rglob('*') if p.is_file() and p.suffix in ('.uasset','.umap')}
+    wildlife_errors=_validate_wildlife_assets(root, all_assets)
+    if wildlife_errors:return wildlife_errors
+    actual={path for path in all_assets if not path.startswith('Content/ThirdParty/Wildlife/')}
     if not actual:return []
     try:
         manifest=manifest_override if manifest_override is not None else json.loads((root/'docs/environment-draft-assets.json').read_text())

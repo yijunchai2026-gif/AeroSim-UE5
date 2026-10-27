@@ -1,0 +1,456 @@
+{
+  "schema": "aerosim.third-party-wildlife.assets/v1",
+  "generated_at": "2026-10-27",
+  "license": "CC-BY-4.0",
+  "sources": [
+    {
+      "species": "bear",
+      "title": "Animated Bear 3D Model",
+      "creator": "AnimalMesh 3D (AnimalMesh3D)",
+      "model_uid": "3adff88544344a58a8c93b10aaf05451",
+      "url": "https://sketchfab.com/3d-models/animated-bear-3d-model-3adff88544344a58a8c93b10aaf05451",
+      "license": "CC-BY-4.0",
+      "archive_sha256": "ca8d8d929df51410732c1612cb9f47b7f6b598e2199bda5ac0dabcbea34e63e7"
+    },
+    {
+      "species": "deer",
+      "title": "Animated Deer",
+      "creator": "igor-lir (igor-lir)",
+      "model_uid": "4cff1e63f4e941198b3d56300b3393b9",
+      "url": "https://sketchfab.com/3d-models/animated-deer-4cff1e63f4e941198b3d56300b3393b9",
+      "license": "CC-BY-4.0",
+      "archive_sha256": "296d6ef0cc008470a211b895cf01b6f3184feed43715debf852cb3d30454c574"
+    },
+    {
+      "species": "whale",
+      "title": "Humpback Whale (Swimming)",
+      "creator": "Connlan Immure (Connlan_Immure)",
+      "model_uid": "f4912be9163a4f45b2480df8ccb8b2c6",
+      "url": "https://sketchfab.com/3d-models/humpback-whale-swimming-f4912be9163a4f45b2480df8ccb8b2c6",
+      "license": "CC-BY-4.0",
+      "archive_sha256": "f7f5480b890ca944933f3af11b240cb5d7281050cc8d197bd22522856e1c4f37"
+    }
+  ],
+  "assets": [
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_001.uasset",
+      "sha256": "81c4074741779809bc988e52f96dff108df30eee9370c046be9b379a6cc8599e"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_Animated.uasset",
+      "sha256": "18e260f63050879ee24dc74a3c151578035a97aa87422c311b14622f532acf77"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedAttack_Run_01_AttackF.uasset",
+      "sha256": "d5ac7bef11f53e29339def74552a6ca38e49edd00e06d21660124b648a116a39"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedAttack_Run_01_Turn.uasset",
+      "sha256": "f3c152bb7c5fd1fb9b1a45f341d613d0eff4d5fbe2cb39179036e3470dc6488e"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedAttack_StandAngry_01_High.uasset",
+      "sha256": "95ab86227581330d7e0e75b129864c2a9195b9b67e5c82a576f791776610a416"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedAttack_StandAngry_01_Low.uasset",
+      "sha256": "925457f88a5e56b02c27222871462f6331771399490e79bb9ca8d60006f7a864"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedAttack_StandAngry_02_High.uasset",
+      "sha256": "fd3beea3bb231628f9a2d530e2e16a5a85f958ecd41716d9b06a3f5fc2bd5890"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedCanonBall.uasset",
+      "sha256": "9b3d508e28e0b558b264710e432177817cdd0bb17721da53096b1c7d0f564f60"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedDeath_Lying_R01.uasset",
+      "sha256": "10f4350e24fb177680860677a49f8e393316b5c642cf3d5e4b04a9226c3d6d3a"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedDeath_Lying_R01_DeathPose.uasset",
+      "sha256": "80ad0ec984bccd9ac3dd4c0b209c32ee0de9c9fd4c51b249af44d1a4b2c5196c"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedDeath_Sitting_R01.uasset",
+      "sha256": "bba61d66fcf29226908f77e32d7632a0710f5067a772c8c2770c7b1d404647bf"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedDeath_Sitting_R01_poses.uasset",
+      "sha256": "f332d064c4b19f76963220058dff33536c1923a01cb86254bed4e9796ba9c9ae"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedDeath_StandHind_F01.uasset",
+      "sha256": "fdb0b49b5bbac457b8f5a1ea3e3abdd5c7d3d9e87f52ff5e396dbb3242faef7b"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedDeath_StandHind_F01_poses.uasset",
+      "sha256": "337a78e926f99290fc10d0f40ec457f9d58d03e5f6ab2c51bc282afd8f8b1b86"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedDeath_Stand_R01.uasset",
+      "sha256": "043f0350e98666a2a81b7acaf6714747198064d6cb28fb17c2f16b48303bc406"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedDeath_Stand_R01_poses.uasset",
+      "sha256": "27d1e41d38c8b7d4161d85edcccc4342b10f3dd28cc696198be7598d7bffb02f"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedHit_Lying_R01.uasset",
+      "sha256": "89b39b6fc55c0b16f975d30027b717d90729877da904ea97d969ad2eabc316ef"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedHit_Sitting_F01.uasset",
+      "sha256": "cd986e0f8faad2f1296e2d5d936766a13cf00cf33436feab1b729e4a8434ef41"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedHit_StandHind_F01.uasset",
+      "sha256": "5a1ccf3a0131db1fff8e47d55cb3227bd055526a61c7b84c4e331922e7f1a572"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedHit_Stand_F01.uasset",
+      "sha256": "f5413c5dd0e7b93e7057d20e245f83dbc3c2d1968cb541ff392df489c9c83600"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedHit_Walk_L01.uasset",
+      "sha256": "1257b105af7cab41a33071144571b290afd7ef21501a0230c8f7870635a7dec6"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedLoco_RunL.uasset",
+      "sha256": "0b183cc69da66e80670c8d35459fe2d5151d854749690fc1b17a72ccb657db5a"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedLying_Breathing_01.uasset",
+      "sha256": "0ca15aacef4fae783d299b422e6b052e030700fa18089dd317ec3aaaa8865f6c"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedLying_Idle_01.uasset",
+      "sha256": "7afcdb8411073a5082140ad8e803bf24d065140de0ac4ec955f54b9f61438db0"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedLying_Idle_02.uasset",
+      "sha256": "8d23cddda9b074466f7475ce2fa6f535fc12a4cfd6831c64fe7dbbe82df1e9ce"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedRun.uasset",
+      "sha256": "16688aa0cb060d9ad98c7ce00cabc945ad5bc41204a00fbbb2b5a178f9aa6c4f"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedRunR.uasset",
+      "sha256": "1026daf4ddac08a84e655677681722f3e1071e70112eeece3199c3d177f2e499"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedSittingSpec_Breathing01.uasset",
+      "sha256": "32456f5fa3d228e1847ef25a792ebbafe28b9b39cb48d73b1c132f624714e570"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedSitting_Breathing_01.uasset",
+      "sha256": "9e419e5cf7cb55b6e744e26123e729b8802fc1b94d5f239afa40068f8a370a28"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedSitting_Idle_01.uasset",
+      "sha256": "7c7e156b2d5d8fc57b556a580718d71baac0be1edd6531c6737d30fef373fe8f"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedSitting_Idle_02.uasset",
+      "sha256": "db6620409ebfd32af88c78d551d16e3580e97ce1c7b5746a7c2a6718ee598368"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedSneak.uasset",
+      "sha256": "8e9427aa97c0c57aa9027dda6216368210aafacdc280ff7f1d60b940b38cb7fa"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedSneakL.uasset",
+      "sha256": "b6956a43c5248b404675183efe8c5c44c311d66c0bb41e0cfd7af49307f75987"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedSneakR.uasset",
+      "sha256": "926ab41c6a6fd51dc709133859d374f2c8b4d684c7086fe5fbfa600cef16932e"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedSprint.uasset",
+      "sha256": "5b0f4497471619cae85ce90c3845856dd41e1d4600f978a998b0f3326d6ef6a6"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedSprintL.uasset",
+      "sha256": "a74fe898976513d2df9cd2de91197d93a543c1392c7ee63ad8b70a6f8ac712c1"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedSprintR.uasset",
+      "sha256": "bf578011be609a6cb2939fc39427b23302f57ef54e309eca3a008871fbec693a"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedStandAngry_Breathing_01.uasset",
+      "sha256": "8760ef836d90b73a808867f5ca2ec2e07a0aa793d8a89833a1afb2817c5e67af"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedStandAngry_Breathing_02.uasset",
+      "sha256": "77970bbc1b8b9a4d1b95ba4aa9e2739086b59c1c3eca921c03d64b552a94c4f2"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedStandHind_Breathing_01.uasset",
+      "sha256": "0224ffa81dfaa1cf8db3602f288429cf47514b601e8852383f241f30e2c6b7b0"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedStandHind_Idle_01.uasset",
+      "sha256": "fe06e193c7d56cc383dcda5069e835ca72f83b81d53b3a8ab129407969837b4a"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedStandHind_Idle_02.uasset",
+      "sha256": "42567291089ac2f26a00088fa86cfdd4dc9d57dce46b7ac270fe0202cf12f556"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedStand_Breathing_01.uasset",
+      "sha256": "a51a1727219180629d5fa2a5f54e958986998cbfcbb28b4a2bf6d21b7594e0f2"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedStand_Eating_01.uasset",
+      "sha256": "f793bd027e54d60f8c8c0499cf0250f32944d19312907397c27f406ade52245a"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedStand_Idle_01.uasset",
+      "sha256": "b817b98b3b9f3d3fc1e8d7ca6fb2f36a66c001f000b2804f8456f37ad120ca36"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedStand_Idle_02.uasset",
+      "sha256": "06434910f6e761d06c414c31c6dabb620bbc269da82fa6861db809cada663cd6"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Lying_to_Sitting.uasset",
+      "sha256": "2511a562fe6960de015b641707e3c0d77397cd349da39b483d219554314f5442"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Lying_to_Stand.uasset",
+      "sha256": "21f10548b0c76eb1ecd947ba87c6f41a755e05faa3eff28d9bd20322a18bdb6f"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Lying_to_StandHind.uasset",
+      "sha256": "b0bfda5f55cb495c57d255a25fb25ad8f0a8ef582560239e1b11ed5bf13b639f"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Sitting_to_Lying.uasset",
+      "sha256": "2c5f0fef3ad38ada14c51c977e8c70f3d2e7fb319b65243886bd9451f7c38384"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Sitting_to_Stand.uasset",
+      "sha256": "01e5448364bde8caa95b268c26f53e253eebf5955c20057855e54a956e8d6c65"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Sitting_to_StandHind.uasset",
+      "sha256": "7a7e62b7cef0581820edb590055d4476abe4613e16a508e36e40bdbeddffbd36"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_StandAngry_to_Stand.uasset",
+      "sha256": "c44686309f32e1e2068a3801ad2801071d4101e9681c6c2e6e07f084bb21f377"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_StandHind_to_Lying.uasset",
+      "sha256": "a1dd789060b81ff9226a31f10d638beb49ae9e9f661ef1f88739282bef403d76"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_StandHind_to_Sitting.uasset",
+      "sha256": "00c6d43178451a0ba17845f1b4026d481e395336ae0cec6dc56f0fe4069a5b6f"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_StandHind_to_Stand.uasset",
+      "sha256": "d7b8e51d57fee37ddd3aca1d071cc31fad3528502322a632e7678b8987f470d5"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_Lying.uasset",
+      "sha256": "e6508965e4153aca3193a885b4a1b7eec9d7b81873e642b4e7813853d12a5dda"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_Run.uasset",
+      "sha256": "683499a6fe392a749e503ae42be921c49e35892eb4b50434dc7deaa9d71e1deb"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_Run_3f.uasset",
+      "sha256": "1a20575ba3dc068070a50382961b78906b8902d8ecafbaa45eae3425247ff0cd"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_Sitting.uasset",
+      "sha256": "f252677665c102777d53a07a01a8b67c1b78febf406a759a5fa94f699c2b7bb7"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_Sneak.uasset",
+      "sha256": "7a2cb79f380d43a981f4f033404d68a3748cd2fd3265967b229c15eb2cc2d41b"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_Sneak_3f.uasset",
+      "sha256": "88d1e58350ae19cccd4bc70591e2193fb271a240a395564968361093c2571f2a"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_Sprint.uasset",
+      "sha256": "1e6d91d1794c710000b5914a995e99c0da505e991a41032b341fffec27945b89"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_Sprint_3f.uasset",
+      "sha256": "68074343eae2cc4a58e701d31e23dec1639dcaaae016e8fa89ab1eb05ae68078"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_StandAngry.uasset",
+      "sha256": "ced8e71618b9c5c71f7106d609af6adc4470086acfd47e746f996c38edc15817"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_StandHind.uasset",
+      "sha256": "e73eb64e90686d4fe47de6cfb3641d1416095efef83a2c7e397f70a614c72bb6"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_Trot.uasset",
+      "sha256": "2be3e8604533932c301b17aa7f36bc6381836f7bdf61fc272d0cf7a0aa77a5b1"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_Trot_3f.uasset",
+      "sha256": "817aa6aa0f90ee5e452457afcdc4c223ed4a2b1b58ecb7a599c1d169ce855df2"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_Walk.uasset",
+      "sha256": "ffbad0b183d1235317a957e111cd794fd3449670fb13ade20223f1bbc1dca990"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_WalkSlow.uasset",
+      "sha256": "a12ddbc59b4a7569fac2de6ded5be0c3af4ae0e0d792b5531580b4018693bbe8"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_WalkSlow_3f.uasset",
+      "sha256": "4a93aa0a7738122b54a30a6ca68064cf95b2aa23d57eb409a77113fbd678164d"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_Stand_to_Walk_3f.uasset",
+      "sha256": "7f04f3c1619052b195dc2686afad5a91e4943a518aa195073d6de0d57f518c60"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_TurnL.uasset",
+      "sha256": "b669a619c473f428921f07025577e738d533b0989d614c805a481b08e7b56fc4"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrans_TurnR.uasset",
+      "sha256": "3631b268af126b437664cc808ddd283a254ffb40e539dab81105e3b4c4b410c6"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrot.uasset",
+      "sha256": "e0e89d787f3b4c275a474f7eea4a0ef840bbb682907f308b3c2b7b8e9fff9b6a"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrotL.uasset",
+      "sha256": "41535355651faeb3c73a547c2d4f95f2a3bfd5d35163a6632cbc15ae928d219c"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedTrotR.uasset",
+      "sha256": "e0f332a26e4072b7c55eda8984aa6bc5ae725e684d2ebceab2119b4f15873dbe"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedWalk.uasset",
+      "sha256": "5f6d42e850b1842ab6eeb44488e6eb0454ac6f2cb9dfe21bb5f83a464f6647bb"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedWalkL.uasset",
+      "sha256": "2f451e549110510982ce34c071faffcfa081160d7438f0d57d7d4ea21b09c71c"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedWalkR.uasset",
+      "sha256": "3c8a342f223a7767fdc8ecfee2a94eb39aadec29a7e5942335c751274676c996"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedWalkSlow.uasset",
+      "sha256": "831fec3d8423d58631f48a3c700a1d4663a3625f3df1ef1e2fe4625f93346b4d"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedWalkSlowL.uasset",
+      "sha256": "5c956e7b916be95e9ae359557ec62f423e2a1ec46e1c92ed218d0914cb6a92cb"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_AnimatedWalkSlowR.uasset",
+      "sha256": "7efd9726d927153c5a353d81a36c928ca2bb3384d7d476e6481735fcdcfcd135"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_Animated_Skeleton.uasset",
+      "sha256": "ba3de2227c153dfe65e7360cd45239512203ac5f6281d7d80a9209ed82f063e0"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_color.uasset",
+      "sha256": "0aae5453e9b6c3d421e4d06abfc2b4aae1ed95f524e6eb57c0e75d3258594c2e"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_fur_Inst.uasset",
+      "sha256": "eebb856c4d3b7406bf29a48889379eaa92fd7f23389d314932f35425410150be"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Bear/Bear_fur_color.uasset",
+      "sha256": "9d0ceb6108226892853414c22da443618b9d29bfbb4656480d9fcef8f662f518"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Deer/deer_animation/Materials/deer_animation_material_0.uasset",
+      "sha256": "3a80e89ce593b7573c6ac00ee9bc3fb300e3870cd46359566e6f09465666caaa"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Deer/deer_animation/SkeletalMeshes/deer_animation.uasset",
+      "sha256": "113ea990424f087ed7458aca790cf21d0cc614ae9cbe073c996659aa338446f9"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Deer/deer_animation/SkeletalMeshes/deer_animation_Anim.uasset",
+      "sha256": "f85cb0eaa24d5a74cb158ded982073469f6e977116a1ff663579ca2e9d739879"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Deer/deer_animation/SkeletalMeshes/deer_animation_PhysicsAsset.uasset",
+      "sha256": "0ca87bbb942983ab7970991b2fa43e53d425aed8ba8e1a84c5ddf6f6aa8853ed"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Deer/deer_animation/SkeletalMeshes/deer_animation_Skeleton.uasset",
+      "sha256": "eb4b8f4f1c4b97b0bb987717630b9b9488fb8fd363ba88faedecfe4153487633"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Deer/deer_animation/Textures/deer_animation_texture_0.uasset",
+      "sha256": "6d40e5fe3ad9332e35baa254958a2b48b048fe6787bf605b7c8d31285a878fcb"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Whale/Forward_Swim.uasset",
+      "sha256": "d679de1b74ac3ce6f79f740891017edbb3addaca74ec52d13566fe3a59e5fc4e"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Whale/Forward_Swim_Anim.uasset",
+      "sha256": "db98b50576b6b2791d7283384f905d7dd8b5f9f00c1f3268afa00eddbb18cac1"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Whale/Forward_Swim_Skeleton.uasset",
+      "sha256": "58917879a0f70b8d148c48d44199f5c3447e51f47ae9ea4eed9c0db7adb5222a"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Whale/Idle_Swim.uasset",
+      "sha256": "6b0a1338789a97c6b0e02f9ae6682d10bc5557d95a1e98799d06e69604a6831b"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Whale/Idle_Swim_Anim.uasset",
+      "sha256": "72e2b9cd540a4145ccdabac4ed48deaabf654ebea10dc99fc832ccf55f9d610f"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Whale/Idle_Swim_Skeleton.uasset",
+      "sha256": "b50ab5d9da5343142f236e6c8926f1f4ecdb1be70b81503344d2715cadfec183"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Whale/M_Whale_PBR.uasset",
+      "sha256": "b0d9a765cc8c434c6c90f17ebc79feae4a8491b3ff4df591e4736a6c019bfeb9"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Whale/StingrayPBS1.uasset",
+      "sha256": "d6a392a80036f93d9dc6c88f8242680b8e20f6823dbf2b4d9fb55476779d8813"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Whale/Textures/lambert1_ambient_occlusion.uasset",
+      "sha256": "ca5f8f99270311c9d9d2aa8cca2dad205f502b77726d3dedd1f2c77c3b6c1128"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Whale/Textures/lambert1_normal_base.uasset",
+      "sha256": "773eee480a5fdd41a2710698ae162c950bd5a8fbb16e217b75b989da27ec1deb"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Whale/Textures/whaleskintestFBX_Low_lambert1_BaseColor.uasset",
+      "sha256": "8de302ee09be1a2c39e74f1a746688e9f29e0f251725489241c7f2f7c18c06da"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Whale/Textures/whaleskintestFBX_Low_lambert1_Roughness.uasset",
+      "sha256": "5399232b3a9e1ec0c1c06c482011a722312c81d3fabe719552daebe00e50881d"
+    }
+  ]
+}

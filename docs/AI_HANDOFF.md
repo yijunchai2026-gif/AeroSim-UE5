@@ -1,6 +1,6 @@
 # AeroSim 海岸场景 3A 迭代：给后续 AI 的完整交接指令
 
-- **最后更新：** 2026-10-25。交接人是 Claude（PMO / 集成）。
+- **最后更新：** 2026-10-27。交接人是 Claude（PMO / 集成）。
 - **仓库内副本：** `docs/AI_HANDOFF.md`，随 `main` 推送。
 - **本机工作副本：** `/Users/bytedance/Downloads/AeroSim-worktrees/HANDOFF-FROM-CLAUDE/AI-HANDOFF.md`。这份不在 git 里，可能比仓库内副本新。
 - **用户沟通：** 用中文。结论先行，数字要真实，不夸大。
@@ -20,20 +20,19 @@
 
 另外，无人机必须能用**真实按键**飞完约 2 分钟（100–130 s）的任务航线，并降落在停机坪上。
 
-**当前结论（2026-10-25，R14）：** 还没有达到 3A。
+**当前结论（2026-10-27，R19）：** 还没有达到 3A。
 
-- R0–R14 已完成多轮视觉 QA，每轮都有可量化改进，但最终验收只由用户本人签字。
+- R0–R19 已完成多轮视觉 QA，每轮都有可量化改进，但最终验收只由用户本人签字。
 - **任何 AI 都不得写「3A 已达成」或「验收通过」。**
 
-**最新完成的一轮是 R14**（实现提交 `6f14695`，源码指纹 `0ceaa0092278`）：
+**最新完成的一轮是 R19**：只保留熊、鹿和鲸鱼，移除狼与牛；三类动物已替换为可追溯的 CC BY 4.0 Skeletal Mesh / Animation 资产。
 
-- 用户要求开工前推送 R13 并删除多余 worktree；`origin/aime/coast-aaa-integration` 已推到 `47a652a`，旧 terrain/flora/seasky/flight/art worktree 已删除，必要的 dirty 内容先 stash 保存。
-- Python 92/92、UE 5.8.3 Mac Development Build、Automation（0 failed）、Package 全部通过。
-- 真实按键闭环航线到达 Result / `nav-15-land-on-mat`：492.7 s，未使用 teleport，终态 `mission_incident=0`；仍明显高于 100–130 s 产品目标。
-- shore / cliff 已完成 600 ms × 8 动态序列。
-- 修复了山体周期木纹 mask、岩面木纹式投影、顶面逐三角材质 section、远山海面 shelf、远景树棋盘抽样、卷云整数方位重复、LOD2 树基和 north grove 单轴噪声等来源。
-- 最终图中木纹和大块三角材质缝明显减弱，但仍不能关闭：开阔地宏观覆盖偏稀、卷云长丝重复、中距离树基圆柱、north grove 大块外轮廓、岸壁横向层带、远山低模规则轮廓与局部海面硬边。
-- 详细证据见 `docs/coast-aaa-qa/R14/qa-hero.md` 与 `qa-motion.md`。U1–U6 仍不得写 PASS。
+- 数量固定为鲸鱼 2、熊 1、鹿 5；狼和牛均为 0；全部 `NoCollision`。
+- 来源、作者、CC BY 4.0 attribution 和归档 hash 见 `THIRD_PARTY_ASSETS.md`；105 个导入资产的逐文件 hash 见 `docs/third-party-wildlife-assets.json`。
+- Python 92/92、静态门禁 10/10、UE 5.8.3 Mac Development Build、Automation 94/94（0 failed）、Package 和 Shader 检查全部通过。
+- 打包实机保持 `SViewport` 焦点、viewport focus、mouse capture 与 Enhanced Input mapping active。
+- 详细证据见 `docs/coast-aaa-qa/R19/qa-third-party-wildlife.md`；最终包在 `Artifacts/ProductShell/AAA/R19/Package/Mac/AeroSim.app`。
+- 这些结果只构成技术验收，不替代用户最终视觉验收。
 
 **上一轮 R13**（集成提交 `47a652a`）：
 
@@ -45,10 +44,8 @@
 **快速运行最新包（给人看）：**
 
 ```bash
-# 最新包：R14 worktree（包含 R14 地形、植被、天空和材质修复）
-open -n "/Users/bytedance/Downloads/AeroSim-worktrees/r14/Artifacts/ProductShell/AAA/R14/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
-# R13 集成包
-open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/ProductShell/AAA/R13/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
+# 最新包：R19 worktree（熊、鹿、鲸鱼第三方骨骼资产）
+open -n "/Users/bytedance/Downloads/AeroSim-worktrees/r14/Artifacts/ProductShell/AAA/R19/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
 ```
 
 - 在首页一直按 Enter 进入 Flight，然后按 Left Shift 或 ↑ 起飞。
@@ -565,3 +562,17 @@ R18 将 R17 的整批动物起伏改为逐只动物、跨材质层同步的确�
 - 报告：`docs/coast-aaa-qa/R18/qa-wildlife-motion.md`；包：`Artifacts/ProductShell/AAA/R18/Package/Mac/AeroSim.app`。
 
 当前仍是程序化网格与 CPU 顶点形变，没有真实扫描资产、骨骼蒙皮、毛发、完整行为树或实录音效，不能声明已经与真实一致。下一轮应优先升级关节/骨骼结构、脚底 IK、行为状态机和近景材质。
+
+
+## 17. R19 熊、鹿、鲸鱼第三方资产替换（2026-10-27）
+
+R19 按用户确认的物种范围只保留熊、鹿和鲸鱼，移除狼与牛，并用可追溯的第三方骨骼资产替换 R18 程序化动物。
+
+- 数量：2 条鲸鱼、1 只熊、5 只鹿；狼与牛为 0。
+- 实现：`USkeletalMeshComponent` + 循环 `AnimSequence`；全部 `NoCollision`，资产缺失时保留程序化安全回退。
+- 资产：三套 Sketchfab CC BY 4.0 资产；作者、来源、归档 hash 见 `THIRD_PARTY_ASSETS.md`，105 个导入 `.uasset` 的逐文件 hash 见 `docs/third-party-wildlife-assets.json`。
+- 鲸鱼：重建 BaseColor / Roughness / Normal / AO PBR 材质，并修正翻滚方向与海面高度，使深色背部朝上。
+- 门禁：Python 92/92；静态 10/10；Automation 94/94、0 failed；Mac Development Build、Package、Shader 检查通过；打包实机输入焦点正常。
+- 报告：`docs/coast-aaa-qa/R19/qa-third-party-wildlife.md`；包：`Artifacts/ProductShell/AAA/R19/Package/Mac/AeroSim.app`。
+
+R19 的自动化与截图是技术证据，不构成最终视觉验收，也不能据此声明达到 3A。

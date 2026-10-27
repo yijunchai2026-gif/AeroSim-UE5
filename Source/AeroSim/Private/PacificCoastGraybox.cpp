@@ -483,7 +483,7 @@ void APacificCoastGraybox::UpdateCoastalWildlifeAnimation(const float DeltaSecon
             const FRotator Rotation(0.0F, Range.Yaw, 0.0F);
             const FRotator InverseRotation(0.0F, -Range.Yaw, 0.0F);
             const float BreathRate = Range.Kind == ECoastalWildlifeKind::Bear ? 0.72F : 1.08F;
-            const float GaitRate = Range.Kind == ECoastalWildlifeKind::Wolf ? 1.65F : 0.88F;
+            const float GaitRate = 0.88F;
             const float Breath = FMath::Sin(Time * BreathRate + Range.Phase);
             const float Gait = FMath::Sin(Time * GaitRate + Range.Phase);
             for (int32 Index = Range.StartVertex; Index < Range.EndVertex && Vertices.IsValidIndex(Index); ++Index)

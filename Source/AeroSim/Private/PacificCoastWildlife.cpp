@@ -1,7 +1,10 @@
 #include "PacificCoastGraybox.h"
 
+#include "Animation/AnimSequence.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Materials/MaterialInterface.h"
 #include "ProceduralMeshComponent.h"
+#include "UObject/ConstructorHelpers.h"
 
 namespace CoastalWildlife
 {
@@ -230,7 +233,65 @@ void AddCow(FMesh& Mesh, FMesh& Dark, FMesh& Light, const FVector& Origin, const
 void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
 {
     using namespace CoastalWildlife;
-    FMesh Whales, WhaleDarkDetails, WhaleLightDetails, Wolves, Bears, Deer, Antlers, Cattle, DarkDetails, LightDetails;
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> WhaleMesh(TEXT("/Game/ThirdParty/Wildlife/Whale/Idle_Swim.Idle_Swim"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> WhaleAnimation(TEXT("/Game/ThirdParty/Wildlife/Whale/Idle_Swim_Anim.Idle_Swim_Anim"));
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> BearMesh(TEXT("/Game/ThirdParty/Wildlife/Bear/Bear_Animated.Bear_Animated"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> BearAnimation(TEXT("/Game/ThirdParty/Wildlife/Bear/Bear_AnimatedStand_Idle_01.Bear_AnimatedStand_Idle_01"));
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> DeerMesh(TEXT("/Game/ThirdParty/Wildlife/Deer/deer_animation/SkeletalMeshes/deer_animation.deer_animation"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> DeerAnimation(TEXT("/Game/ThirdParty/Wildlife/Deer/deer_animation/SkeletalMeshes/deer_animation_Anim.deer_animation_Anim"));
+
+    if (WhaleMesh.Succeeded() && WhaleAnimation.Succeeded() && BearMesh.Succeeded()
+        && BearAnimation.Succeeded() && DeerMesh.Succeeded() && DeerAnimation.Succeeded())
+    {
+        const auto AddAssetAnimal = [this](const FName Name, USkeletalMesh* Mesh, UAnimSequence* Animation,
+            const FVector& Location, const FRotator& Rotation, const FVector& Scale, const float Phase)
+        {
+            USkeletalMeshComponent* Component = CreateDefaultSubobject<USkeletalMeshComponent>(Name);
+            Component->SetupAttachment(Root);
+            Component->SetSkeletalMeshAsset(Mesh);
+            Component->SetRelativeLocation(Location);
+            Component->SetRelativeRotation(Rotation);
+            Component->SetRelativeScale3D(Scale);
+            Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+            Component->SetGenerateOverlapEvents(false);
+            Component->SetCastShadow(true);
+            Component->bReceivesDecals = false;
+            Component->LDMaxDrawDistance = 220000.0F;
+            Component->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+            Component->PlayAnimation(Animation, true);
+            Component->SetPosition(Phase, false);
+            Component->SetPlayRate(1.0F);
+            return Component;
+        };
+
+        AddAssetAnimal(TEXT("CoastalWhaleAssetA"), WhaleMesh.Object, WhaleAnimation.Object,
+            FVector(47000, -61000, SeaLevelCm - 40), FRotator(0, 122, 180), FVector(100.0F), 0.0F);
+        AddAssetAnimal(TEXT("CoastalWhaleAssetB"), WhaleMesh.Object, WhaleAnimation.Object,
+            FVector(60000, 36000, SeaLevelCm - 100), FRotator(0, 72, 180), FVector(78.0F), 1.2F);
+
+        const FVector2D BearXY(-35500, 38200);
+        AddAssetAnimal(TEXT("CoastalBearAsset"), BearMesh.Object, BearAnimation.Object,
+            FVector(BearXY.X, BearXY.Y, GetCoastalLandHeight(BearXY.X, BearXY.Y)),
+            FRotator(0, 128, 0), FVector(1.15F), 0.6F);
+
+        const FVector2D DeerXY[] = {{-21800,31500}, {-23500,32200}, {-20200,32900}, {-25100,31000}, {-18700,31800}};
+        for (int32 Index = 0; Index < UE_ARRAY_COUNT(DeerXY); ++Index)
+        {
+            const FVector Origin(DeerXY[Index].X, DeerXY[Index].Y, GetCoastalLandHeight(DeerXY[Index].X, DeerXY[Index].Y));
+            AddAssetAnimal(*FString::Printf(TEXT("CoastalDeerAsset%02d"), Index + 1), DeerMesh.Object, DeerAnimation.Object,
+                Origin, FRotator(0, 20.0F + Index * 31.0F, 0), FVector(.28F + (Index % 2) * .025F), Index * .45F);
+        }
+
+        CoastalWhaleCount = 2;
+        CoastalWolfCount = 0;
+        CoastalBearCount = 1;
+        CoastalDeerCount = UE_ARRAY_COUNT(DeerXY);
+        CoastalCattleCount = 0;
+        GeneratedPrimitiveCount += 8;
+        return;
+    }
+
+    FMesh Whales, WhaleDarkDetails, WhaleLightDetails, Bears, Deer, Antlers, DarkDetails, LightDetails;
 
     const FVector WhaleOrigins[] = {
         FVector(47000, -61000, SeaLevelCm - 95), FVector(60000, 36000, SeaLevelCm - 190)};
@@ -245,21 +306,6 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
         RecordRange(Whales, StartVertex, WhaleOrigins[Index], WhaleYaw[Index], WhaleScale[Index], Index * 2.31F, 0);
         RecordRange(WhaleDarkDetails, DarkStart, WhaleOrigins[Index], WhaleYaw[Index], WhaleScale[Index], Index * 2.31F, 0);
         RecordRange(WhaleLightDetails, LightStart, WhaleOrigins[Index], WhaleYaw[Index], WhaleScale[Index], Index * 2.31F, 0);
-    }
-
-    const FVector2D WolfXY[] = {{-30500, 33500}, {-32100, 34700}, {-28900, 35700}};
-    for (int32 Index = 0; Index < UE_ARRAY_COUNT(WolfXY); ++Index)
-    {
-        const FVector Origin(WolfXY[Index].X, WolfXY[Index].Y, GetCoastalLandHeight(WolfXY[Index].X, WolfXY[Index].Y));
-        const float Yaw = 35.0F + Index * 24.0F;
-        const float Scale = .9F + Index * .06F;
-        const int32 StartVertex = Wolves.Vertices.Num();
-        const int32 DarkStart = DarkDetails.Vertices.Num();
-        const int32 LightStart = LightDetails.Vertices.Num();
-        AddWolf(Wolves, DarkDetails, LightDetails, Origin, Yaw, Scale);
-        RecordRange(Wolves, StartVertex, Origin, Yaw, Scale, .73F + Index * 1.87F, 1);
-        RecordRange(DarkDetails, DarkStart, Origin, Yaw, Scale, .73F + Index * 1.87F, 1);
-        RecordRange(LightDetails, LightStart, Origin, Yaw, Scale, .73F + Index * 1.87F, 1);
     }
 
     const FVector2D BearXY(-35500, 38200);
@@ -289,32 +335,14 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
         if (Antlers.Vertices.Num() > AntlerStart) RecordRange(Antlers, AntlerStart, Origin, Yaw, Scale, Phase, 3);
     }
 
-    const FVector2D CowXY[] = {{-21500,34500}, {-23200,35300}, {-19700,35900}, {-24800,34100}};
-    for (int32 Index = 0; Index < UE_ARRAY_COUNT(CowXY); ++Index)
-    {
-        const FVector Origin(CowXY[Index].X, CowXY[Index].Y, GetCoastalLandHeight(CowXY[Index].X, CowXY[Index].Y));
-        const float Yaw = 70.0F + Index * 37.0F;
-        const float Scale = .95F + (Index % 2) * .08F;
-        const int32 StartVertex = Cattle.Vertices.Num();
-        const int32 DarkStart = DarkDetails.Vertices.Num();
-        const int32 LightStart = LightDetails.Vertices.Num();
-        AddCow(Cattle, DarkDetails, LightDetails, Origin, Yaw, Scale);
-        const float Phase = 1.11F + Index * 1.61F;
-        RecordRange(Cattle, StartVertex, Origin, Yaw, Scale, Phase, 4);
-        RecordRange(DarkDetails, DarkStart, Origin, Yaw, Scale, Phase, 4);
-        RecordRange(LightDetails, LightStart, Origin, Yaw, Scale, Phase, 4);
-    }
-
     struct FBatch { const TCHAR* Name; FMesh* Mesh; FLinearColor Color; float DrawDistance; };
     FBatch Batches[] = {
         {TEXT("CoastalWhales"), &Whales, FLinearColor(.095F,.14F,.17F), 220000.0F},
         {TEXT("CoastalWhaleDarkDetails"), &WhaleDarkDetails, FLinearColor(.012F,.018F,.021F), 220000.0F},
         {TEXT("CoastalWhaleLightDetails"), &WhaleLightDetails, FLinearColor(.63F,.68F,.66F), 220000.0F},
-        {TEXT("CoastalWolves"), &Wolves, FLinearColor(.24F,.27F,.25F), 120000.0F},
         {TEXT("CoastalBear"), &Bears, FLinearColor(.19F,.105F,.055F), 120000.0F},
         {TEXT("CoastalDeer"), &Deer, FLinearColor(.42F,.24F,.105F), 120000.0F},
         {TEXT("CoastalDeerAntlers"), &Antlers, FLinearColor(.67F,.57F,.40F), 120000.0F},
-        {TEXT("CoastalCattle"), &Cattle, FLinearColor(.17F,.12F,.08F), 120000.0F},
         {TEXT("CoastalWildlifeDarkDetails"), &DarkDetails, FLinearColor(.012F,.009F,.007F), 120000.0F},
         {TEXT("CoastalWildlifeLightDetails"), &LightDetails, FLinearColor(.68F,.64F,.53F), 120000.0F}};
     for (FBatch& Batch : Batches)
@@ -355,8 +383,8 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
         ++GeneratedPrimitiveCount;
     }
     CoastalWhaleCount = UE_ARRAY_COUNT(WhaleOrigins);
-    CoastalWolfCount = UE_ARRAY_COUNT(WolfXY);
+    CoastalWolfCount = 0;
     CoastalBearCount = 1;
     CoastalDeerCount = UE_ARRAY_COUNT(DeerXY);
-    CoastalCattleCount = UE_ARRAY_COUNT(CowXY);
+    CoastalCattleCount = 0;
 }
