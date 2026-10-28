@@ -17,7 +17,7 @@ import uuid
 KEYS = ('W','S','A','D','Q','E','LeftShift','LeftControl','Up','Down','Left','Right','C','Escape','Enter','SpaceBar','F10','H','R')
 # Mirrors AAeroSimGameMode::ResolveReviewView; 'player' keeps the live player camera.
 VIEWS = ('player','overview','ground','south','north','forest','corridor','glint','cliff','bridge','mountain','shore',
-         'wildlife-whale','wildlife-predators','wildlife-herd','launch-low','launch-operator','launch-return')
+         'wildlife-whale','wildlife-predators','wildlife-herd','wildlife-eagle','launch-low','launch-operator','launch-return')
 VIEW_MODES = ('lit','lighting_only','detail_lighting','unlit')
 PREVIEW_WIDTH = 1280
 SEQUENCE_PREVIEW_WIDTH = 960

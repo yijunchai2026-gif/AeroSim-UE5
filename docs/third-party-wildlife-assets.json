@@ -1,6 +1,6 @@
 {
   "schema": "aerosim.third-party-wildlife.assets/v1",
-  "generated_at": "2026-10-27",
+  "generated_at": "2026-10-28",
   "license": "CC-BY-4.0",
   "sources": [
     {
@@ -14,12 +14,12 @@
     },
     {
       "species": "deer",
-      "title": "Animated Deer",
-      "creator": "igor-lir (igor-lir)",
-      "model_uid": "4cff1e63f4e941198b3d56300b3393b9",
-      "url": "https://sketchfab.com/3d-models/animated-deer-4cff1e63f4e941198b3d56300b3393b9",
+      "title": "Deer Animation",
+      "creator": "DarryleH (DarryleH)",
+      "model_uid": "347e5d4fbee14e53811c5df2221be8d0",
+      "url": "https://sketchfab.com/3d-models/deer-animation-347e5d4fbee14e53811c5df2221be8d0",
       "license": "CC-BY-4.0",
-      "archive_sha256": "296d6ef0cc008470a211b895cf01b6f3184feed43715debf852cb3d30454c574"
+      "archive_sha256": "bf554a3c4a8b3684af8886427293e8def35ed2af7e21296eaf6903d77007bb5c"
     },
     {
       "species": "whale",
@@ -29,6 +29,15 @@
       "url": "https://sketchfab.com/3d-models/humpback-whale-swimming-f4912be9163a4f45b2480df8ccb8b2c6",
       "license": "CC-BY-4.0",
       "archive_sha256": "f7f5480b890ca944933f3af11b240cb5d7281050cc8d197bd22522856e1c4f37"
+    },
+    {
+      "species": "eagle",
+      "title": "animated EAGLE",
+      "creator": "Asim3d (Asim3d)",
+      "model_uid": "8fb150270adb45aa9653e857f3fa351b",
+      "url": "https://sketchfab.com/3d-models/animated-eagle-8fb150270adb45aa9653e857f3fa351b",
+      "license": "CC-BY-4.0",
+      "archive_sha256": "eab311f0b33813b1cafad77027d5a65c2806a8795f95d7e9304103ce8f216559"
     }
   ],
   "assets": [
@@ -381,28 +390,56 @@
       "sha256": "9d0ceb6108226892853414c22da443618b9d29bfbb4656480d9fcef8f662f518"
     },
     {
-      "path": "Content/ThirdParty/Wildlife/Deer/deer_animation/Materials/deer_animation_material_0.uasset",
-      "sha256": "3a80e89ce593b7573c6ac00ee9bc3fb300e3870cd46359566e6f09465666caaa"
+      "path": "Content/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/Materials/Tyriese_Miller_C_Deer_Idlebody_tex.uasset",
+      "sha256": "7e507081353dde8a46b69c425418bf130c0765bd13cec9a011246a2d6be55416"
     },
     {
-      "path": "Content/ThirdParty/Wildlife/Deer/deer_animation/SkeletalMeshes/deer_animation.uasset",
-      "sha256": "113ea990424f087ed7458aca790cf21d0cc614ae9cbe073c996659aa338446f9"
+      "path": "Content/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/Object_119.uasset",
+      "sha256": "35505c6ddcef0d13a89be7e46d0e9db583a16564cbbdbedc6684a37f74f1f412"
     },
     {
-      "path": "Content/ThirdParty/Wildlife/Deer/deer_animation/SkeletalMeshes/deer_animation_Anim.uasset",
-      "sha256": "f85cb0eaa24d5a74cb158ded982073469f6e977116a1ff663579ca2e9d739879"
+      "path": "Content/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/Object_119_PhysicsAsset.uasset",
+      "sha256": "b932d4019ef1af807a935e3039953aee46755b79efc1d2018464bf290a0ee044"
     },
     {
-      "path": "Content/ThirdParty/Wildlife/Deer/deer_animation/SkeletalMeshes/deer_animation_PhysicsAsset.uasset",
-      "sha256": "0ca87bbb942983ab7970991b2fa43e53d425aed8ba8e1a84c5ddf6f6aa8853ed"
+      "path": "Content/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/_rootJoint_Skeleton.uasset",
+      "sha256": "10910ae32fb16bda053c8ef36079ca88a776248f2019677e596d46b12ddde6a5"
     },
     {
-      "path": "Content/ThirdParty/Wildlife/Deer/deer_animation/SkeletalMeshes/deer_animation_Skeleton.uasset",
-      "sha256": "eb4b8f4f1c4b97b0bb987717630b9b9488fb8fd363ba88faedecfe4153487633"
+      "path": "Content/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalIdleDeer.uasset",
+      "sha256": "e1a71ec2a8310635f538b7be35f8d020b30b097a6ef2869ce178528862d8e1cc"
     },
     {
-      "path": "Content/ThirdParty/Wildlife/Deer/deer_animation/Textures/deer_animation_texture_0.uasset",
-      "sha256": "6d40e5fe3ad9332e35baa254958a2b48b048fe6787bf605b7c8d31285a878fcb"
+      "path": "Content/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalRundeer.uasset",
+      "sha256": "3fabd9cba7fa0b82f5f78d177869a98f99c3130f040c264316e100ef41d69bce"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalWalkdeer.uasset",
+      "sha256": "8ef5120725b5459bdfff41032ade10d60fb6738b62c2c4a7e0e0173fdc7a904e"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Eagle/animated-eagle/Materials/lambert4SG.uasset",
+      "sha256": "70d63234777e542e12b5f7258c2d454b43dda9db001ab3d79532ed48ee058d7e"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Eagle/animated-eagle/SkeletalMeshes/animated-eagle.uasset",
+      "sha256": "57b09dffa6c487840be050fa6b948fcf343a3efaea94fcc95a9149140926ae5e"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Eagle/animated-eagle/SkeletalMeshes/animated-eagle_Anim.uasset",
+      "sha256": "1ed4aa47308485df3fc033114c72e90641f53e6dae166e73aa3821940c7f53a9"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Eagle/animated-eagle/SkeletalMeshes/animated-eagle_PhysicsAsset.uasset",
+      "sha256": "4ec9b36b201d651aa93500b0e87291128cdd0e070f65eb9f124677ba62c71ba9"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Eagle/animated-eagle/SkeletalMeshes/animated-eagle_Skeleton.uasset",
+      "sha256": "c284ed93bb4e968a40749eeaffcf2b2f43f5198c20da0ecfc29f4db960f3d1db"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/Eagle/animated-eagle/Textures/animated-eagle_texture_0.uasset",
+      "sha256": "2905670528c1d294c06a6bb013f9bfef654eff8c8bd38f0a09d148ad470b03b3"
     },
     {
       "path": "Content/ThirdParty/Wildlife/Whale/Forward_Swim.uasset",

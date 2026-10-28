@@ -18,6 +18,7 @@ class USceneComponent;
 class USkyLightComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
+class UAnimSequence;
 class USkeletalMeshComponent;
 enum class EFlightPhase : uint8;
 
@@ -122,8 +123,11 @@ public:
     int32 GetCoastalBearCount() const { return CoastalBearCount; }
     int32 GetCoastalDeerCount() const { return CoastalDeerCount; }
     int32 GetCoastalCattleCount() const { return CoastalCattleCount; }
+    int32 GetCoastalEagleCount() const { return CoastalEagleCount; }
     int32 GetCoastalWildlifeAnimatedBatchCount() const { return CoastalWildlifeAnimatedBatches.Num(); }
     int32 GetCoastalWildlifeAutonomousCount() const { return CoastalWildlifeAutonomousStates.Num(); }
+    bool IsCoastalWildlifeAlert() const { return bCoastalWildlifeAlert; }
+    bool IsCoastalEagleAttacking() const { return bCoastalEagleAttacking; }
     int32 GetCoastalWildlifeAnimatedRangeCount() const
     {
         int32 Count = 0;
@@ -153,7 +157,8 @@ private:
     // Lightweight deterministic wildlife batches: ocean whales and habitat-placed land animals.
     void BuildCoastalWildlife(UMaterialInterface* Material);
     void UpdateCoastalWildlifeAnimation(float DeltaSeconds);
-    enum class ECoastalWildlifeKind : uint8 { Whale, Wolf, Bear, Deer, Cattle };
+    enum class ECoastalWildlifeKind : uint8 { Whale, Wolf, Bear, Deer, Cattle, Eagle };
+    enum class ECoastalWildlifeBehavior : uint8 { Roaming, Alert, Fleeing, Attacking, Recovering };
     struct FCoastalWildlifeVertexRange
     {
         int32 StartVertex = 0;
@@ -176,6 +181,10 @@ private:
     struct FCoastalWildlifeAutonomousState
     {
         TObjectPtr<USkeletalMeshComponent> Component;
+        TObjectPtr<UAnimSequence> IdleAnimation;
+        TObjectPtr<UAnimSequence> TravelAnimation;
+        TObjectPtr<UAnimSequence> FastAnimation;
+        TObjectPtr<UAnimSequence> CurrentAnimation;
         FVector Anchor = FVector::ZeroVector;
         FVector2D RoamRadius = FVector2D::ZeroVector;
         float Speed = 0.0F;
@@ -183,6 +192,11 @@ private:
         float GroundOffset = 0.0F;
         float YawBias = 0.0F;
         float Roll = 0.0F;
+        float NominalTravelSpeed = 1.0F;
+        FVector Velocity = FVector::ZeroVector;
+        float BehaviorTime = 0.0F;
+        float MotionStartTime = 0.0F;
+        ECoastalWildlifeBehavior Behavior = ECoastalWildlifeBehavior::Roaming;
         ECoastalWildlifeKind Kind = ECoastalWildlifeKind::Deer;
     };
     // DEV-FLORA: instanced forest-floor understory (ferns, shrubs, edge grass) for the near stands.
@@ -211,6 +225,9 @@ private:
     int32 CoastalBearCount = 0;
     int32 CoastalDeerCount = 0;
     int32 CoastalCattleCount = 0;
+    int32 CoastalEagleCount = 0;
+    bool bCoastalWildlifeAlert = false;
+    bool bCoastalEagleAttacking = false;
 
     UStaticMeshComponent* AddBox(
         const FName Name,

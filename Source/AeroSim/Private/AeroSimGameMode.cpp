@@ -1029,6 +1029,7 @@ bool AAeroSimGameMode::ResolveReviewView(const FString& Name, const int32 Step, 
     else if (Name == TEXT("wildlife-whale")) { Location = FVector(52000 + Step*10, -65000 + Step*15, APacificCoastGraybox::SeaLevelCm + 520); Rotation = FRotator(2, 141, 0); }
     else if (Name == TEXT("wildlife-predators")) { Location = FVector(-34400 + Step*8, 37100 + Step*7, APacificCoastGraybox::GetCoastalLandHeight(-34400,37100) + 210); Rotation = FRotator(-5, 132, 0); }
     else if (Name == TEXT("wildlife-herd")) { Location = FVector(-20500 + Step*8, 30200 + Step*8, APacificCoastGraybox::GetCoastalLandHeight(-20500,30200) + 220); Rotation = FRotator(-6, 135, 0); }
+    else if (Name == TEXT("wildlife-eagle")) { Location = FVector(-27750 + Step*5, 33800 + Step*5, APacificCoastGraybox::GetCoastalLandHeight(-27750,33800) + 2050); Rotation = FRotator(-4, 137, 0); }
     else return false;
     return true;
 }

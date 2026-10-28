@@ -30,7 +30,7 @@ def _validate_wildlife_assets(root:Path, actual:set[str])->list[str]:
             if path.suffix!='.uasset' or '..' in path.parts or not entry['path'].startswith(prefix):return ['Wildlife asset outside the fixed third-party path']
             if hashlib.sha256((root/path).read_bytes()).hexdigest()!=entry['sha256']:return ['Wildlife asset hash mismatch: '+entry['path']]
         sources=manifest['sources']
-        if {source['model_uid'] for source in sources}!={'3adff88544344a58a8c93b10aaf05451','4cff1e63f4e941198b3d56300b3393b9','f4912be9163a4f45b2480df8ccb8b2c6'}:return ['Wildlife source receipts are incomplete']
+        if {source['model_uid'] for source in sources}!={'3adff88544344a58a8c93b10aaf05451','347e5d4fbee14e53811c5df2221be8d0','f4912be9163a4f45b2480df8ccb8b2c6','8fb150270adb45aa9653e857f3fa351b'}:return ['Wildlife source receipts are incomplete']
         if any(source.get('license')!='CC-BY-4.0' or len(source.get('archive_sha256',''))!=64 for source in sources):return ['Unapproved wildlife source receipt']
     except (OSError,ValueError,KeyError,TypeError):return ['Missing or malformed wildlife asset manifest']
     return []
