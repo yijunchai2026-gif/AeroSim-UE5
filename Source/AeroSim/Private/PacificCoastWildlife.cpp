@@ -236,7 +236,7 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
     static ConstructorHelpers::FObjectFinder<USkeletalMesh> WhaleMesh(TEXT("/Game/ThirdParty/Wildlife/Whale/Idle_Swim.Idle_Swim"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> WhaleAnimation(TEXT("/Game/ThirdParty/Wildlife/Whale/Idle_Swim_Anim.Idle_Swim_Anim"));
     static ConstructorHelpers::FObjectFinder<USkeletalMesh> BearMesh(TEXT("/Game/ThirdParty/Wildlife/Bear/Bear_Animated.Bear_Animated"));
-    static ConstructorHelpers::FObjectFinder<UAnimSequence> BearAnimation(TEXT("/Game/ThirdParty/Wildlife/Bear/Bear_AnimatedStand_Idle_01.Bear_AnimatedStand_Idle_01"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> BearAnimation(TEXT("/Game/ThirdParty/Wildlife/Bear/Bear_AnimatedWalkSlow.Bear_AnimatedWalkSlow"));
     static ConstructorHelpers::FObjectFinder<USkeletalMesh> DeerMesh(TEXT("/Game/ThirdParty/Wildlife/Deer/deer_animation/SkeletalMeshes/deer_animation.deer_animation"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> DeerAnimation(TEXT("/Game/ThirdParty/Wildlife/Deer/deer_animation/SkeletalMeshes/deer_animation_Anim.deer_animation_Anim"));
 
@@ -244,7 +244,8 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
         && BearAnimation.Succeeded() && DeerMesh.Succeeded() && DeerAnimation.Succeeded())
     {
         const auto AddAssetAnimal = [this](const FName Name, USkeletalMesh* Mesh, UAnimSequence* Animation,
-            const FVector& Location, const FRotator& Rotation, const FVector& Scale, const float Phase)
+            const FVector& Location, const FRotator& Rotation, const FVector& Scale, const float Phase,
+            const ECoastalWildlifeKind Kind, const FVector2D& RoamRadius, const float Speed, const float GroundOffset)
         {
             USkeletalMeshComponent* Component = CreateDefaultSubobject<USkeletalMeshComponent>(Name);
             Component->SetupAttachment(Root);
@@ -260,26 +261,43 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
             Component->SetAnimationMode(EAnimationMode::AnimationSingleNode);
             Component->PlayAnimation(Animation, true);
             Component->SetPosition(Phase, false);
-            Component->SetPlayRate(1.0F);
+            Component->SetPlayRate(Kind == ECoastalWildlifeKind::Bear ? 0.72F : 1.0F);
+
+            const FVector2D InitialVelocity(RoamRadius.X * FMath::Cos(Phase), -RoamRadius.Y * FMath::Sin(Phase));
+            FCoastalWildlifeAutonomousState& State = CoastalWildlifeAutonomousStates.AddDefaulted_GetRef();
+            State.Component = Component;
+            State.Anchor = Location;
+            State.RoamRadius = RoamRadius;
+            State.Speed = Speed;
+            State.Phase = Phase;
+            State.GroundOffset = GroundOffset;
+            State.YawBias = Rotation.Yaw - FMath::RadiansToDegrees(FMath::Atan2(InitialVelocity.Y, InitialVelocity.X));
+            State.Roll = Rotation.Roll;
+            State.Kind = Kind;
             return Component;
         };
 
         AddAssetAnimal(TEXT("CoastalWhaleAssetA"), WhaleMesh.Object, WhaleAnimation.Object,
-            FVector(47000, -61000, SeaLevelCm - 40), FRotator(0, 122, 180), FVector(100.0F), 0.0F);
+            FVector(47000, -61000, SeaLevelCm - 40), FRotator(0, 122, 180), FVector(100.0F), 0.0F,
+            ECoastalWildlifeKind::Whale, FVector2D(4200.0F, 2100.0F), 0.045F, -40.0F);
         AddAssetAnimal(TEXT("CoastalWhaleAssetB"), WhaleMesh.Object, WhaleAnimation.Object,
-            FVector(60000, 36000, SeaLevelCm - 100), FRotator(0, 72, 180), FVector(78.0F), 1.2F);
+            FVector(60000, 36000, SeaLevelCm - 100), FRotator(0, 72, 180), FVector(78.0F), 1.2F,
+            ECoastalWildlifeKind::Whale, FVector2D(3300.0F, 1700.0F), 0.052F, -100.0F);
 
         const FVector2D BearXY(-35500, 38200);
         AddAssetAnimal(TEXT("CoastalBearAsset"), BearMesh.Object, BearAnimation.Object,
             FVector(BearXY.X, BearXY.Y, GetCoastalLandHeight(BearXY.X, BearXY.Y)),
-            FRotator(0, 128, 0), FVector(1.15F), 0.6F);
+            FRotator(0, 128, 0), FVector(1.15F), 0.6F,
+            ECoastalWildlifeKind::Bear, FVector2D(850.0F, 560.0F), 0.075F, 0.0F);
 
         const FVector2D DeerXY[] = {{-21800,31500}, {-23500,32200}, {-20200,32900}, {-25100,31000}, {-18700,31800}};
         for (int32 Index = 0; Index < UE_ARRAY_COUNT(DeerXY); ++Index)
         {
             const FVector Origin(DeerXY[Index].X, DeerXY[Index].Y, GetCoastalLandHeight(DeerXY[Index].X, DeerXY[Index].Y) + 42.0F);
             AddAssetAnimal(*FString::Printf(TEXT("CoastalDeerAsset%02d"), Index + 1), DeerMesh.Object, DeerAnimation.Object,
-                Origin, FRotator(0, 20.0F + Index * 31.0F, 0), FVector(.28F + (Index % 2) * .025F), Index * .45F);
+                Origin, FRotator(0, 20.0F + Index * 31.0F, 0), FVector(.28F + (Index % 2) * .025F), Index * .45F,
+                ECoastalWildlifeKind::Deer, FVector2D(620.0F + Index * 28.0F, 360.0F + (Index % 2) * 55.0F),
+                0.13F + Index * 0.006F, 42.0F);
         }
 
         CoastalWhaleCount = 2;

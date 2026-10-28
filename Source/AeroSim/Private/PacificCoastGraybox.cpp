@@ -6,6 +6,7 @@
 #include "Components/SceneComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Components/VolumetricCloudComponent.h"
@@ -472,6 +473,30 @@ void APacificCoastGraybox::Tick(const float DeltaSeconds)
 void APacificCoastGraybox::UpdateCoastalWildlifeAnimation(const float DeltaSeconds)
 {
     CoastalWildlifeAnimationTime += FMath::Min(DeltaSeconds, 0.1F);
+    for (FCoastalWildlifeAutonomousState& State : CoastalWildlifeAutonomousStates)
+    {
+        if (State.Component == nullptr) continue;
+        const float Time = CoastalWildlifeAnimationTime;
+        const float Theta = State.Phase + Time * State.Speed;
+        FVector Location = State.Anchor;
+        Location.X += State.RoamRadius.X * (FMath::Sin(Theta) - FMath::Sin(State.Phase));
+        Location.Y += State.RoamRadius.Y * (FMath::Cos(Theta) - FMath::Cos(State.Phase));
+        if (State.Kind == ECoastalWildlifeKind::Whale)
+        {
+            Location.Z = SeaLevelCm + State.GroundOffset
+                + 55.0F * (FMath::Sin(Time * 0.24F + State.Phase) - FMath::Sin(State.Phase));
+        }
+        else
+        {
+            Location.Z = GetCoastalLandHeight(Location.X, Location.Y) + State.GroundOffset;
+        }
+
+        const FVector2D Velocity(
+            State.RoamRadius.X * State.Speed * FMath::Cos(Theta),
+            -State.RoamRadius.Y * State.Speed * FMath::Sin(Theta));
+        const float Heading = FMath::RadiansToDegrees(FMath::Atan2(Velocity.Y, Velocity.X)) + State.YawBias;
+        State.Component->SetRelativeLocationAndRotation(Location, FRotator(0.0F, Heading, State.Roll));
+    }
     for (FCoastalWildlifeAnimatedBatch& Batch : CoastalWildlifeAnimatedBatches)
     {
         if (Batch.Component == nullptr || Batch.BaseVertices.IsEmpty()) continue;

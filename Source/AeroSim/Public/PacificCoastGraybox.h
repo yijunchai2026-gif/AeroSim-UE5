@@ -18,6 +18,7 @@ class USceneComponent;
 class USkyLightComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
+class USkeletalMeshComponent;
 enum class EFlightPhase : uint8;
 
 // DEV-TERRAIN begin (RD-08 terrain owner): habitat classification shared with DEV-FLORA / materials.
@@ -122,6 +123,7 @@ public:
     int32 GetCoastalDeerCount() const { return CoastalDeerCount; }
     int32 GetCoastalCattleCount() const { return CoastalCattleCount; }
     int32 GetCoastalWildlifeAnimatedBatchCount() const { return CoastalWildlifeAnimatedBatches.Num(); }
+    int32 GetCoastalWildlifeAutonomousCount() const { return CoastalWildlifeAutonomousStates.Num(); }
     int32 GetCoastalWildlifeAnimatedRangeCount() const
     {
         int32 Count = 0;
@@ -171,6 +173,18 @@ private:
         TArray<FLinearColor> Colors;
         TArray<FCoastalWildlifeVertexRange> Ranges;
     };
+    struct FCoastalWildlifeAutonomousState
+    {
+        TObjectPtr<USkeletalMeshComponent> Component;
+        FVector Anchor = FVector::ZeroVector;
+        FVector2D RoamRadius = FVector2D::ZeroVector;
+        float Speed = 0.0F;
+        float Phase = 0.0F;
+        float GroundOffset = 0.0F;
+        float YawBias = 0.0F;
+        float Roll = 0.0F;
+        ECoastalWildlifeKind Kind = ECoastalWildlifeKind::Deer;
+    };
     // DEV-FLORA: instanced forest-floor understory (ferns, shrubs, edge grass) for the near stands.
     void BuildCoastalHabitat();
     // DEV-FLORA end
@@ -180,6 +194,7 @@ private:
     UPROPERTY(Transient)
     TArray<TObjectPtr<UProceduralMeshComponent>> CoastalWhaleAnimatedParts;
     TArray<FCoastalWildlifeAnimatedBatch> CoastalWildlifeAnimatedBatches;
+    TArray<FCoastalWildlifeAutonomousState> CoastalWildlifeAutonomousStates;
     float CoastalWildlifeAnimationTime = 0.0F;
     TArray<FLinearColor> CoastalPartColors;
     UPROPERTY(VisibleAnywhere, Category = "Environment")

@@ -20,6 +20,7 @@ bool FCoastalWildlifeCompositionTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Cattle are excluded from the accepted habitat"), Coast->GetCoastalCattleCount(), 0);
     TestEqual(TEXT("Procedural wildlife animation is disabled after asset replacement"), Coast->GetCoastalWildlifeAnimatedBatchCount(), 0);
     TestEqual(TEXT("No procedural wildlife ranges remain active"), Coast->GetCoastalWildlifeAnimatedRangeCount(), 0);
+    TestEqual(TEXT("All accepted wildlife instances have deterministic autonomous motion"), Coast->GetCoastalWildlifeAutonomousCount(), 8);
 
     const TCHAR* ComponentNames[] = {
         TEXT("CoastalWhaleAssetA"), TEXT("CoastalWhaleAssetB"), TEXT("CoastalBearAsset"),
