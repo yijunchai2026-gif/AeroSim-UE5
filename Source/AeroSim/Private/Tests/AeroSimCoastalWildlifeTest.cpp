@@ -7,6 +7,9 @@
 #include "AeroSimGameMode.h"
 #include "PacificCoastGraybox.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/Texture2D.h"
+#include "Engine/World.h"
+#include "Materials/MaterialInterface.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCoastalWildlifeCompositionTest,
     "AeroSim.Coastal.Wildlife.Composition",
@@ -21,6 +24,8 @@ bool FCoastalWildlifeCompositionTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Wolves are excluded from the accepted habitat"), Coast->GetCoastalWolfCount(), 0);
     TestEqual(TEXT("One bear inhabits the mountain"), Coast->GetCoastalBearCount(), 1);
     TestEqual(TEXT("Deer herd count"), Coast->GetCoastalDeerCount(), 5);
+    TestNotNull(TEXT("Deer coat texture exists"), LoadObject<UTexture2D>(nullptr,
+        TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/Textures/T_DeerFur_Albedo.T_DeerFur_Albedo")));
     TestEqual(TEXT("Cattle are excluded from the accepted habitat"), Coast->GetCoastalCattleCount(), 0);
     TestEqual(TEXT("One eagle patrols the wildlife habitat"), Coast->GetCoastalEagleCount(), 1);
     TestEqual(TEXT("Procedural wildlife animation is disabled after asset replacement"), Coast->GetCoastalWildlifeAnimatedBatchCount(), 0);
@@ -66,8 +71,58 @@ bool FCoastalWildlifeCompositionTest::RunTest(const FString& Parameters)
         {
             const FVector DeerLocation = Match->GetRelativeLocation();
             const double TerrainHeight = APacificCoastGraybox::GetCoastalLandHeight(DeerLocation.X, DeerLocation.Y);
-            TestTrue(FString::Printf(TEXT("%s hooves remain above the terrain surface"), Name), DeerLocation.Z >= TerrainHeight + 8.0);
+            TestTrue(FString::Printf(TEXT("%s hooves remain above the terrain surface"), Name), DeerLocation.Z >= TerrainHeight);
+            const UMaterialInterface* DeerMaterial = Match->GetMaterial(0);
+            TestTrue(FString::Printf(TEXT("%s keeps its imported coat material"), Name),
+                DeerMaterial != nullptr && DeerMaterial->GetPathName().Contains(TEXT("M_DeerCoat")));
         }
+    }
+
+    UWorld* WildlifeWorld = UWorld::CreateWorld(EWorldType::Game, false);
+    if (TestNotNull(TEXT("Wildlife grounding test world"), WildlifeWorld))
+    {
+        FActorSpawnParameters Spawn;
+        Spawn.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+        APacificCoastGraybox* LiveCoast = WildlifeWorld->SpawnActor<APacificCoastGraybox>(
+            FVector::ZeroVector, FRotator::ZeroRotator, Spawn);
+        if (TestNotNull(TEXT("Live wildlife coast"), LiveCoast))
+        {
+            TInlineComponentArray<USkeletalMeshComponent*> LiveComponents(LiveCoast);
+            constexpr float TickSeconds = 1.0F / 30.0F;
+            for (int32 Frame = 0; Frame < 90; ++Frame)
+            {
+                for (USkeletalMeshComponent* Component : LiveComponents)
+                {
+                    Component->TickAnimation(TickSeconds, false);
+                    Component->RefreshBoneTransforms();
+                }
+                LiveCoast->Tick(TickSeconds);
+            }
+            static const FName DeerFootBones[] = {
+                TEXT("tyriese_miller_c_deer_idle_toetip_back_l_011"),
+                TEXT("tyriese_miller_c_deer_idle_toetip_back_r_018"),
+                TEXT("tyriese_miller_c_deer_idle_toetip_front_l_042"),
+                TEXT("tyriese_miller_c_deer_idle_toetip_front_r_048")};
+            for (USkeletalMeshComponent* Component : LiveComponents)
+            {
+                if (!Component->GetName().StartsWith(TEXT("CoastalDeerAsset")))
+                {
+                    continue;
+                }
+                float MinimumClearance = TNumericLimits<float>::Max();
+                for (const FName FootBone : DeerFootBones)
+                {
+                    const FVector FootLocation = Component->GetBoneLocation(FootBone, EBoneSpaces::WorldSpace);
+                    const float TerrainHeight = APacificCoastGraybox::GetCoastalLandHeight(FootLocation.X, FootLocation.Y);
+                    MinimumClearance = FMath::Min(MinimumClearance, FootLocation.Z - TerrainHeight);
+                }
+                TestTrue(FString::Printf(TEXT("%s animated hooves do not penetrate terrain"), *Component->GetName()),
+                    MinimumClearance >= -1.0F);
+                TestTrue(FString::Printf(TEXT("%s animated stance keeps a hoof on terrain"), *Component->GetName()),
+                    MinimumClearance <= 4.0F);
+            }
+        }
+        WildlifeWorld->DestroyWorld(false);
     }
 
     FVector Location;

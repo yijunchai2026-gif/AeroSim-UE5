@@ -390,6 +390,10 @@
       "sha256": "9d0ceb6108226892853414c22da443618b9d29bfbb4656480d9fcef8f662f518"
     },
     {
+      "path": "Content/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/Materials/M_DeerCoat.uasset",
+      "sha256": "ab17da5696272eb644667566bd91eacbd20317b2341525f569bd7db6154aac3e"
+    },
+    {
       "path": "Content/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/Materials/Tyriese_Miller_C_Deer_Idlebody_tex.uasset",
       "sha256": "7e507081353dde8a46b69c425418bf130c0765bd13cec9a011246a2d6be55416"
     },
@@ -416,6 +420,10 @@
     {
       "path": "Content/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalWalkdeer.uasset",
       "sha256": "8ef5120725b5459bdfff41032ade10d60fb6738b62c2c4a7e0e0173fdc7a904e"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/Textures/T_DeerFur_Albedo.uasset",
+      "sha256": "0c87770b06b56e7b65401f9cc4178b57127cef8b51fa91ca06ace6f3641f1f04"
     },
     {
       "path": "Content/ThirdParty/Wildlife/Eagle/animated-eagle/Materials/lambert4SG.uasset",

@@ -29,7 +29,7 @@
 
 - 数量固定为鲸鱼 2、熊 1、鹿 5、老鹰 1；狼和牛均为 0；全部 `NoCollision`。
 - 来源、作者、CC BY 4.0 attribution 和归档 hash 见 `THIRD_PARTY_ASSETS.md`；导入资产的逐文件 hash 见 `docs/third-party-wildlife-assets.json`。
-- UE 5.8.3 Mac Development Build、Automation 90/90（0 failed）、Package 通过；相关 Python 测试 26/26、静态检查 966/966。
+- UE 5.8.3 Mac Development Build、Automation 87/87（0 failed）、Package 通过；相关 Python 测试 27/27、静态检查 966/966。
 - 详细证据见 `docs/coast-aaa-qa/R21/qa-wildlife-interaction.md`；最新本地包在 `Artifacts/ProductShell/CoastalPackage/Mac/AeroSim.app`。
 - 这些结果只构成技术验收，不替代用户最终视觉验收。
 
@@ -599,8 +599,9 @@ R21 加入老鹰、鹿群警觉/逃离/个体避让、熊警觉和老鹰攻击�
 - 根因：R19 鹿源 GLB 没有 skin，UE `AnimSequence` 的 bone track 数为 0；现已替换为带 50 个 joints、Idle/Walk/Run 三套骨骼动画的 Deer Animation 资产。
 - 状态动画：鹿按 Alert/Walk/Flee 切换 Idle/Walk/Run；熊按警觉/巡游切换 Idle/Walk；鲸鱼使用 Forward Swim；老鹰保持骨骼拍翼。
 - 运动同步：用加速度限制和平滑旋转替代瞬时速度/朝向变化，并按实际水平速度调节动画 PlayRate，降低滑步与漂移。
-- 门禁：关键动物动画必须存在、时长有效，并在 Editor Automation 中包含 bone tracks。
-- 验证：Mac Development Build 通过；Product Package ExitCode 0；UE 全量 Automation 90 succeeded、0 failed；Python 相关测试 27/27；静态检查 966/966。
+- 贴地与纹理补丁：按四个 toe-tip 骨骼逐帧校正鹿的组件高度；补充独立 `M_DeerCoat` 与可重导入鹿毛 Albedo，修复白模/统一色覆盖。
+- 门禁：关键动物动画必须存在、时长有效，并在 Editor Automation 中包含 bone tracks；鹿贴地测试会创建运行时 World、推进 90 帧并验证 toe-tip 最小离地间隙为 -1 至 4 cm。
+- 验证：Mac Development Build 通过；Product Package ExitCode 0；UE 全量 Automation 87 succeeded、0 failed；Python 相关测试 27/27；静态检查 966/966。
 - 报告：`docs/coast-aaa-qa/R21/qa-wildlife-interaction.md`；本地包：`Artifacts/ProductShell/CoastalPackage/Mac/AeroSim.app`。
 
 R21 证明骨骼动画链路和行为状态切换已工作，但当前仍没有脚底 IK、近景毛发和完整导航行为树；最终视觉与运动自然度仍由用户验收。

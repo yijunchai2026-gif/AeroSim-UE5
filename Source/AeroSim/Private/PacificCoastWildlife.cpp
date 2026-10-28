@@ -2,7 +2,6 @@
 
 #include "Animation/AnimSequence.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "ProceduralMeshComponent.h"
 #include "UObject/ConstructorHelpers.h"
@@ -244,16 +243,17 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
     static ConstructorHelpers::FObjectFinder<UAnimSequence> DeerIdleAnimation(TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalIdleDeer.deer-animation-skeletalIdleDeer"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> DeerWalkAnimation(TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalWalkdeer.deer-animation-skeletalWalkdeer"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> DeerRunAnimation(TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalRundeer.deer-animation-skeletalRundeer"));
+    static ConstructorHelpers::FObjectFinder<UMaterialInterface> DeerCoatMaterial(TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/Materials/M_DeerCoat.M_DeerCoat"));
     static ConstructorHelpers::FObjectFinder<USkeletalMesh> EagleMesh(TEXT("/Game/ThirdParty/Wildlife/Eagle/animated-eagle/SkeletalMeshes/animated-eagle.animated-eagle"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> EagleAnimation(TEXT("/Game/ThirdParty/Wildlife/Eagle/animated-eagle/SkeletalMeshes/animated-eagle_Anim.animated-eagle_Anim"));
 
     if (WhaleMesh.Succeeded() && WhaleAnimation.Succeeded() && BearMesh.Succeeded()
         && BearIdleAnimation.Succeeded() && BearWalkAnimation.Succeeded() && BearRunAnimation.Succeeded()
         && DeerMesh.Succeeded() && DeerIdleAnimation.Succeeded()
-        && DeerWalkAnimation.Succeeded() && DeerRunAnimation.Succeeded()
+        && DeerWalkAnimation.Succeeded() && DeerRunAnimation.Succeeded() && DeerCoatMaterial.Succeeded()
         && EagleMesh.Succeeded() && EagleAnimation.Succeeded())
     {
-        const auto AddAssetAnimal = [this, Material](const FName Name, USkeletalMesh* Mesh,
+        const auto AddAssetAnimal = [this, DeerCoat = DeerCoatMaterial.Object](const FName Name, USkeletalMesh* Mesh,
             UAnimSequence* IdleAnimation, UAnimSequence* TravelAnimation, UAnimSequence* FastAnimation,
             const FVector& Location, const FRotator& Rotation, const FVector& Scale, const float Phase,
             const ECoastalWildlifeKind Kind, const FVector2D& RoamRadius, const float Speed,
@@ -291,11 +291,9 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
             State.Roll = Rotation.Roll;
             State.NominalTravelSpeed = NominalTravelSpeed;
             State.Kind = Kind;
-            if (Kind == ECoastalWildlifeKind::Deer && Material != nullptr)
+            if (Kind == ECoastalWildlifeKind::Deer)
             {
-                UMaterialInstanceDynamic* DeerMaterial = UMaterialInstanceDynamic::Create(Material, Component);
-                DeerMaterial->SetVectorParameterValue(TEXT("Color"), FLinearColor(0.24F, 0.085F, 0.028F, 1.0F));
-                Component->SetMaterial(0, DeerMaterial);
+                Component->SetMaterial(0, DeerCoat);
             }
             return Component;
         };
@@ -317,13 +315,13 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
         const FVector2D DeerXY[] = {{-21800,31500}, {-23500,32200}, {-20200,32900}, {-25100,31000}, {-18700,31800}};
         for (int32 Index = 0; Index < UE_ARRAY_COUNT(DeerXY); ++Index)
         {
-            const FVector Origin(DeerXY[Index].X, DeerXY[Index].Y, GetCoastalLandHeight(DeerXY[Index].X, DeerXY[Index].Y) + 10.0F);
+            const FVector Origin(DeerXY[Index].X, DeerXY[Index].Y, GetCoastalLandHeight(DeerXY[Index].X, DeerXY[Index].Y) + 1.0F);
             AddAssetAnimal(
                 *FString::Printf(TEXT("CoastalDeerAsset%02d"), Index + 1), DeerMesh.Object,
                 DeerIdleAnimation.Object, DeerWalkAnimation.Object, DeerRunAnimation.Object,
                 Origin, FRotator(0, 20.0F + Index * 31.0F, 0), FVector(.58F + (Index % 2) * .035F), Index * .45F,
                 ECoastalWildlifeKind::Deer, FVector2D(620.0F + Index * 28.0F, 360.0F + (Index % 2) * 55.0F),
-                0.13F + Index * 0.006F, 10.0F, 92.0F);
+                0.13F + Index * 0.006F, 1.0F, 92.0F);
         }
 
         const FVector2D EagleXY(-28600.0F, 34600.0F);

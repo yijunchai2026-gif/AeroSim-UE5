@@ -656,7 +656,36 @@ void APacificCoastGraybox::UpdateCoastalWildlifeAnimation(const float DeltaSecon
         }
         else
         {
-            Location.Z = GetCoastalLandHeight(Location.X, Location.Y) + State.GroundOffset;
+            const float BaseGroundZ = GetCoastalLandHeight(Location.X, Location.Y) + State.GroundOffset;
+            Location.Z = BaseGroundZ;
+            if (State.Kind == ECoastalWildlifeKind::Deer)
+            {
+                static const FName DeerFootBones[] = {
+                    TEXT("tyriese_miller_c_deer_idle_toetip_back_l_011"),
+                    TEXT("tyriese_miller_c_deer_idle_toetip_back_r_018"),
+                    TEXT("tyriese_miller_c_deer_idle_toetip_front_l_042"),
+                    TEXT("tyriese_miller_c_deer_idle_toetip_front_r_048")};
+                float GroundingDelta = -TNumericLimits<float>::Max();
+                int32 ValidFootCount = 0;
+                for (const FName FootBone : DeerFootBones)
+                {
+                    if (State.Component->GetBoneIndex(FootBone) == INDEX_NONE)
+                    {
+                        continue;
+                    }
+                    const FVector FootLocation = State.Component->GetBoneLocation(FootBone, EBoneSpaces::WorldSpace);
+                    const float FootGroundZ = GetCoastalLandHeight(FootLocation.X, FootLocation.Y) + 1.0F;
+                    GroundingDelta = FMath::Max(GroundingDelta, FootGroundZ - FootLocation.Z);
+                    ++ValidFootCount;
+                }
+                if (ValidFootCount > 0)
+                {
+                    const float PoseGroundZ = State.Component->GetRelativeLocation().Z + GroundingDelta;
+                    const float ClampedGroundZ = FMath::Clamp(PoseGroundZ, BaseGroundZ - 12.0F, BaseGroundZ + 35.0F);
+                    Location.Z = FMath::FInterpTo(
+                        State.Component->GetRelativeLocation().Z, ClampedGroundZ, StepSeconds, 18.0F);
+                }
+            }
         }
 
         UAnimSequence* DesiredAnimation = State.TravelAnimation;
