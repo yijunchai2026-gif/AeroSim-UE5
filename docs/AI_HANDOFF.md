@@ -34,6 +34,8 @@
 - 第二批免费素材加入 Poly Haven `dry_branches_medium_01`（CC0）的 3 个扫描枯枝变体：仅稀疏分布在 woodland 权重较高、非岩岸、非陡坡的林下地面；采用 HISM、35–50 m cull、无碰撞，并避开起降区、步道、训练走廊和树干根颈。三种原始网格分别为 5,616 / 5,254 / 5,933 triangles，未接入高面数树桩和树根模型。
 - 第三批免费素材加入 Poly Haven `shrub_02`（CC0）的 4 个狭叶灌木形态变体，分别约 5.2K–9.2K triangles。它们作为 generic maritime-scrub morphology proxy，只分布在向阳、排水良好、非岩岸的 coastal grassland 与 woodland feathered edge；不宣称为精确的 coyote brush 或 California sagebrush。采用 HISM、50–75 m cull、无碰撞，并继续避开无人机基础设施和训练走廊。分布逻辑参考 California DFW Coastal Scrub habitat description 与 Golden Gate NRA 植被资料。
 
+**R22 接地光照与效果审计（2026-10-29）**：确认 Mac 路径上 Lumen GI、Lumen Reflections、Nanite 和 mesh distance fields 均因既有性能/兼容性门禁未实际启用，不能把配置文件中的 Lumen 声明当作运行时画质能力。本轮不冒险恢复这些重型路径，而是补齐可控的 screen-space contact shadow 与 world-space SSAO：太阳 contact shadow length 0.025、casting intensity 0.82；AO intensity 0.72、power 1.28、radius 90 cm，并在 90 m 后渐隐。所有会投影的树木和林下 HISM 显式启用 contact shadow；扫描枯木材质关闭 WPO，避免硬质枯枝随风弯曲。该轮提升的是近地接触深度，不宣称已达到最终 3A。
+
 **上一轮 R21**：加入老鹰与动物警觉/逃离/攻击状态，并修复鹿资产没有骨骼 track、动物移动与动画不同步的问题。
 
 - 数量固定为鲸鱼 2、熊 1、鹿 5、老鹰 1；狼和牛均为 0；全部 `NoCollision`。

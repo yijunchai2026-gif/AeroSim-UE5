@@ -1969,6 +1969,7 @@ void APacificCoastGraybox::BuildCoastalTrees(UMaterialInterface* Material)
         Batch->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         Batch->SetCollisionProfileName(TEXT("NoCollision"));
         Batch->SetCastShadow(true);
+        Batch->SetCastContactShadow(true);
         Batch->bAffectDistanceFieldLighting = false;
         // Saplings are understory: culled with a fade beyond 160 m.
         if (A.Species == ESpecies::Sapling) Batch->SetCullDistances(13000, 16000);

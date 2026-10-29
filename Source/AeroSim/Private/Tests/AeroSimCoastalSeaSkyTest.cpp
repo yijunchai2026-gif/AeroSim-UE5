@@ -86,6 +86,8 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
         const auto* Key = SeaSkyTest::FindKey(Coast);
         TestTrue(TEXT("Key light is the atmosphere sun at the computed angle"), Key && Key->IsUsedAsAtmosphereSunLight()
             && Key->GetRelativeRotation().Equals(APacificCoastGraybox::GetCoastalSunRotation(Clear), .01F));
+        TestTrue(TEXT("Sun enables bounded screen-space contact shadows"), Key && Key->ContactShadowLength > 0.0F
+            && Key->ContactShadowLength <= .04F && !Key->GetContactShadowLengthInWS() && Key->ContactShadowCastingIntensity > .7F);
         const auto* Fog = SeaSkyTest::Find<UExponentialHeightFogComponent>(Coast);
         TestTrue(TEXT("Clear fog sits at sea level and keeps the near sea readable"), Fog && FMath::IsNearlyEqual(Fog->GetRelativeLocation().Z, APacificCoastGraybox::SeaLevelCm)
             && Fog->StartDistance > 0 && Fog->SecondFogData.FogDensity > 0);
@@ -121,6 +123,10 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
             TestTrue(TEXT("Reflections stay screen-space under Lumen GI"), Post && Post->Settings.bOverride_ReflectionMethod && Post->Settings.ReflectionMethod == EReflectionMethod::ScreenSpace);
             TestTrue(TEXT("Lumen final gather runs at reduced quality"), Post && Post->Settings.bOverride_LumenFinalGatherQuality && Post->Settings.LumenFinalGatherQuality <= .5F);
             TestTrue(TEXT("Clear bloom avoids a large sun halo"), Post && Post->Settings.bOverride_BloomIntensity && Post->Settings.BloomIntensity <= .3F);
+            TestTrue(TEXT("Screen-space AO restores near-field contact depth without distance fields"), Post
+                && Post->Settings.bOverride_AmbientOcclusionIntensity && Post->Settings.AmbientOcclusionIntensity >= .6F
+                && Post->Settings.bOverride_AmbientOcclusionRadius && Post->Settings.AmbientOcclusionRadius >= 70.0F
+                && Post->Settings.bOverride_AmbientOcclusionRadiusInWS && Post->Settings.AmbientOcclusionRadiusInWS);
             const auto* Sky = SeaSkyTest::Find<USkyLightComponent>(Coast);
             TestTrue(TEXT("Sky light is not recaptured every frame"), Sky && !Sky->bRealTimeCapture);
             TestTrue(TEXT("No distance-field shadows/AO from the sun or sky light"), Sky && !Sky->CastShadows

@@ -158,6 +158,11 @@ APacificCoastGraybox::APacificCoastGraybox()
     KeyLight->SetLightColor(FLinearColor(1.0F, 0.96F, 0.90F));
     KeyLight->SetCastShadows(true);
     KeyLight->bAtmosphereSunLight = true;
+    // Screen-space contact shadows recover branch, foliage and pad contact detail on
+    // platforms where mesh distance fields are intentionally disabled.
+    KeyLight->ContactShadowLength = 0.025F;
+    KeyLight->ContactShadowLengthInWS = false;
+    KeyLight->ContactShadowCastingIntensity = 0.82F;
     KeyLight->bUseRayTracedDistanceFieldShadows = false;
 
     // R10: diffuse-only warm bounce proxy. With GI off (Lumen is inert without distance fields)
@@ -206,6 +211,18 @@ APacificCoastGraybox::APacificCoastGraybox()
     WeatherPostProcess->Settings.bOverride_ColorSaturation = true;
     WeatherPostProcess->Settings.bOverride_SceneColorTint = true;
     WeatherPostProcess->Settings.bOverride_VignetteIntensity = true;
+    WeatherPostProcess->Settings.bOverride_AmbientOcclusionIntensity = true;
+    WeatherPostProcess->Settings.AmbientOcclusionIntensity = 0.72F;
+    WeatherPostProcess->Settings.bOverride_AmbientOcclusionPower = true;
+    WeatherPostProcess->Settings.AmbientOcclusionPower = 1.28F;
+    WeatherPostProcess->Settings.bOverride_AmbientOcclusionRadius = true;
+    WeatherPostProcess->Settings.AmbientOcclusionRadius = 90.0F;
+    WeatherPostProcess->Settings.bOverride_AmbientOcclusionRadiusInWS = true;
+    WeatherPostProcess->Settings.AmbientOcclusionRadiusInWS = true;
+    WeatherPostProcess->Settings.bOverride_AmbientOcclusionFadeDistance = true;
+    WeatherPostProcess->Settings.AmbientOcclusionFadeDistance = 9000.0F;
+    WeatherPostProcess->Settings.bOverride_AmbientOcclusionFadeRadius = true;
+    WeatherPostProcess->Settings.AmbientOcclusionFadeRadius = 3500.0F;
     // DEV-SEASKY: the project sets no dynamic GI, so canopy-shadowed ground received only the
     // blue sky-light term and no bounce (R5a: beige floor rendered slate blue-grey). Lumen GI
     // supplies sky occlusion plus warm bounce from sunlit ground/foliage. Procedural meshes have

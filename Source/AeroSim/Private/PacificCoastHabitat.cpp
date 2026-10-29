@@ -366,6 +366,7 @@ void APacificCoastGraybox::BuildCoastalHabitat()
         Batch->SetCollisionEnabled(ECollisionEnabled::NoCollision);
         Batch->SetCollisionProfileName(TEXT("NoCollision"));
         Batch->SetCastShadow(Kinds[Kind].bShadow);
+        Batch->SetCastContactShadow(Kinds[Kind].bShadow);
         Batch->bAffectDistanceFieldLighting = false;
         Batch->SetCullDistances(Kinds[Kind].CullStart, Kinds[Kind].CullEnd);
         Batch->AddInstances(Instances[Kind], false);

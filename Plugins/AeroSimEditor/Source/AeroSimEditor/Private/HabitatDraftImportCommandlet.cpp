@@ -190,7 +190,7 @@ UMaterial* Foliage(const TCHAR* Name,UTexture2D* Base,UTexture2D* Alpha,UTexture
 }
 /** Opaque bark. UV0 is authored in physical tiles by the runtime generator; vertex colour R
  *  darkens the lowest half metre (soil contact), G carries the shared wind weight. */
-UMaterial* Bark(const TCHAR* Name,UTexture2D* Base,UTexture2D* Normal,UTexture2D* Rough,const FLinearColor& Tint)
+UMaterial* Bark(const TCHAR* Name,UTexture2D* Base,UTexture2D* Normal,UTexture2D* Rough,const FLinearColor& Tint,bool bWind=true)
 {
     bool bNew=false;UMaterial* M=Begin(Name,bNew);
     M->BlendMode=BLEND_Opaque;M->TwoSided=false;M->SetShadingModel(MSM_DefaultLit);
@@ -213,7 +213,7 @@ UMaterial* Bark(const TCHAR* Name,UTexture2D* Base,UTexture2D* Normal,UTexture2D
     bool bOk=UMaterialEditingLibrary::ConnectMaterialProperty(Surface,TEXT(""),MP_BaseColor);
     bOk&=UMaterialEditingLibrary::ConnectMaterialProperty(Blend,TEXT(""),MP_Normal);
     bOk&=UMaterialEditingLibrary::ConnectMaterialProperty(Roughness,TEXT(""),MP_Roughness);
-    bOk&=UMaterialEditingLibrary::ConnectMaterialProperty(Wind,TEXT(""),MP_WorldPositionOffset);
+    if(bWind)bOk&=UMaterialEditingLibrary::ConnectMaterialProperty(Wind,TEXT(""),MP_WorldPositionOffset);
     return bOk?Finish(M,bNew,Name):nullptr;
 }
 /** Opaque-masked ground litter ring: one-sided, no WPO, alpha fades the ring into the terrain. */
@@ -306,7 +306,7 @@ int32 UHabitatDraftImportCommandlet::Main(const FString& Params)
     UMaterial* Shrub=Foliage(TEXT("M_CoastBroadShrubDraft"),T(TEXT("T_CoastBroadShrub_BaseColor")),T(TEXT("T_CoastBroadShrub_Alpha")),T(TEXT("T_CoastBroadShrub_Normal")),T(TEXT("T_CoastBroadShrub_Roughness")),0,.33F,FLinearColor(.78F,.84F,.72F));
     UMaterial* AnnualForb=Foliage(TEXT("M_CoastAnnualForbDraft"),T(TEXT("T_CoastAnnualForb_BaseColor")),T(TEXT("T_CoastAnnualForb_Alpha")),T(TEXT("T_CoastAnnualForb_Normal")),T(TEXT("T_CoastAnnualForb_Roughness")),0,.35F,FLinearColor(.76F,.88F,.68F));
     UMaterial* CoastalScrub=Foliage(TEXT("M_CoastalScrubDraft"),T(TEXT("T_CoastalScrub_BaseColor")),T(TEXT("T_CoastalScrub_Alpha")),T(TEXT("T_CoastalScrub_Normal")),T(TEXT("T_CoastalScrub_Roughness")),0,.34F,FLinearColor(.72F,.80F,.68F));
-    UMaterial* Deadwood=Bark(TEXT("M_CoastDeadwoodDraft"),T(TEXT("T_CoastDeadwood_BaseColor")),T(TEXT("T_CoastDeadwood_Normal")),T(TEXT("T_CoastDeadwood_Roughness")),FLinearColor(.72F,.68F,.62F));
+    UMaterial* Deadwood=Bark(TEXT("M_CoastDeadwoodDraft"),T(TEXT("T_CoastDeadwood_BaseColor")),T(TEXT("T_CoastDeadwood_Normal")),T(TEXT("T_CoastDeadwood_Roughness")),FLinearColor(.72F,.68F,.62F),false);
     UMaterial* Fern=Foliage(TEXT("M_FloraFernDraft"),T(TEXT("T_FloraFern_BaseColor")),T(TEXT("T_FloraFern_Alpha")),T(TEXT("T_FloraFern_Normal")),T(TEXT("T_FloraFern_ARM")),1,.36F,FLinearColor(.85F,.92F,.82F));
     UMaterial* Rooibos=Foliage(TEXT("M_FloraRooibosDraft"),T(TEXT("T_FloraRooibos_BaseColor")),T(TEXT("T_FloraRooibos_Alpha")),T(TEXT("T_FloraRooibos_Normal")),T(TEXT("T_FloraRooibos_ARM")),1,.36F,FLinearColor(.70F,.78F,.62F));
     UMaterial* PineNeedles=Foliage(TEXT("M_FloraPineNeedlesDraft"),T(TEXT("T_FloraPineTwig_BaseColor")),T(TEXT("T_FloraPineTwig_Alpha")),T(TEXT("T_FloraPineTwig_Normal")),T(TEXT("T_FloraPineTwig_Roughness")),0,.36F,FLinearColor(.62F,1.08F,.52F));
