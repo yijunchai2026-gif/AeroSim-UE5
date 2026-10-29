@@ -64,3 +64,29 @@
 - 每帧读取四个 toe-tip 骨骼的世界坐标，分别查询脚下地形高度，按最大穿透量修正骨骼组件 Z；修正使用插值并限制在基准高度 -12 至 +35 cm，避免动画切换时上下跳动。
 - 自动化新增鹿毛 Texture 资产存在性与运行时材质绑定检查；另创建测试 World、推进 90 帧 Walk 动画与 Actor Tick，逐鹿验证四个 toe-tip 的最小离地间隙保持在 -1 至 4 cm。
 - 最新 `wildlife-herd` 8 帧序列显示鹿恢复棕灰毛皮明暗细节，四蹄随坡面与步态保持接地。
+
+## 免费真实鹿资产替换（2026-10-29）
+
+- 鹿身替换为 WildMesh `Realistic Deer 3D Model 2.0 Demo`：80 joints、真实扫描式毛皮 Base Color、眼鼻与蹄部细节，运行时不再覆盖导入的 `Deer_M` 材质。
+- 免费 Demo 仅提供 Idle；为避免鹿群继续滑动，将 DarryleH Deer Animation 的 Walk/Run 局部关节旋转按休止姿态对齐后重定向到新骨架，生成独立 `Blacktail_Walk` 与 `Blacktail_Run` 动画。
+- 毛皮改用源包内 `T_OdocoileusVirginianus_M_BC`，替换 Demo 偏白的 body diffuse；鹿角 normal 恢复为原贴图。
+- 贴地逻辑同步改用新骨架四个 digit-tip end bones，继续按每只脚的动画后世界坐标校正坡面穿透。
+- Automation 同步检查新 body texture、`Deer_M` 材质、Idle/Walk/Run bone tracks 和四蹄运行时离地范围。
+- `wildlife-herd` 连续 8 帧证据：`blacktail-final-01.png` 至 `blacktail-final-08.png`；能够看到棕灰毛皮、关节步态变化和坡面接地。
+
+当前鹿群采用无角个体；近景毛发仍是 PBR 纹理而非 Groom，Walk/Run 为跨骨架旋转重定向，最终运动自然度仍需用户视觉验收。
+
+## 开放世界分层仿真升级（2026-10-29）
+
+本轮在现有骨骼动物基础上加入近似开放世界游戏的分层更新与物种化感知，不引入 Mass/StateTree 等重型依赖，先保持现有 Product Shell 和打包链路稳定。
+
+- Simulation LOD：以无人机为观察者，18,000 cm 内为 Active、18,000–60,000 cm 为 Ambient、60,000 cm 外为 Dormant；更新间隔分别为每帧、0.2 秒、0.5 秒。无观察者的 Automation 世界保持全 Active，保证确定性测试。
+- 感知记忆：动物记录无人机最后位置 5–9 秒，持续反应而不是无人机一越过阈值就立即复位；个体通过确定性 Temperament 产生不同反应强度。
+- 鹿：警觉后按最后刺激位置逃离，逃跑速度按性格变化，保留群体分离、领地约束、恢复和四蹄贴地。
+- 熊：先停步面向无人机并进入防御；胆小个体在持续近距离刺激下退避，刺激消失后返回领地。
+- 鹰：保留巡航/攻击/恢复，攻击目标加入无人机速度预测，刺激丢失后按记忆完成或中止攻击。
+- 鲸鱼：低空无人机进入 75 m 范围时进入 Diving，水平远离并在 4 秒内下潜约 9.5 m，随后 5 秒恢复水面巡游。
+- ControlBridge 新增 `bear_defending`、`whale_diving` 与 Active/Ambient/Dormant 数量，便于动态验收。
+- Composition Automation 使用测试观察者依次验证鹿警觉、熊防御、鹰预测攻击与鲸鱼下潜，并继续验证动画 bone tracks 和鹿蹄离地范围。
+
+该实现是开放世界行为仿真的第一层：已有分层更新、刺激记忆和物种状态，但尚未接入 NavMesh/EQS、StateTree、长期生态持久化、昼夜觅食或大规模 Mass Entity。

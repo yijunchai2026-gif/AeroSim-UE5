@@ -243,6 +243,11 @@ TSharedRef<FJsonObject> UAeroSimControlBridge::Inspect() const
         {
             State->SetBoolField(TEXT("wildlife_alert"), It->IsCoastalWildlifeAlert());
             State->SetBoolField(TEXT("eagle_attacking"), It->IsCoastalEagleAttacking());
+            State->SetBoolField(TEXT("bear_defending"), It->IsCoastalBearDefending());
+            State->SetBoolField(TEXT("whale_diving"), It->IsCoastalWhaleDiving());
+            State->SetNumberField(TEXT("wildlife_active_count"), It->GetCoastalWildlifeActiveCount());
+            State->SetNumberField(TEXT("wildlife_ambient_count"), It->GetCoastalWildlifeAmbientCount());
+            State->SetNumberField(TEXT("wildlife_dormant_count"), It->GetCoastalWildlifeDormantCount());
             State->SetNumberField(TEXT("eagle_count"), It->GetCoastalEagleCount());
         }
     }

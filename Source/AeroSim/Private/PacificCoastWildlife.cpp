@@ -239,21 +239,20 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
     static ConstructorHelpers::FObjectFinder<UAnimSequence> BearIdleAnimation(TEXT("/Game/ThirdParty/Wildlife/Bear/Bear_AnimatedStand_Idle_01.Bear_AnimatedStand_Idle_01"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> BearWalkAnimation(TEXT("/Game/ThirdParty/Wildlife/Bear/Bear_AnimatedWalkSlow.Bear_AnimatedWalkSlow"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> BearRunAnimation(TEXT("/Game/ThirdParty/Wildlife/Bear/Bear_AnimatedRun.Bear_AnimatedRun"));
-    static ConstructorHelpers::FObjectFinder<USkeletalMesh> DeerMesh(TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/Object_119.Object_119"));
-    static ConstructorHelpers::FObjectFinder<UAnimSequence> DeerIdleAnimation(TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalIdleDeer.deer-animation-skeletalIdleDeer"));
-    static ConstructorHelpers::FObjectFinder<UAnimSequence> DeerWalkAnimation(TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalWalkdeer.deer-animation-skeletalWalkdeer"));
-    static ConstructorHelpers::FObjectFinder<UAnimSequence> DeerRunAnimation(TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalRundeer.deer-animation-skeletalRundeer"));
-    static ConstructorHelpers::FObjectFinder<UMaterialInterface> DeerCoatMaterial(TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/Materials/M_DeerCoat.M_DeerCoat"));
+    static ConstructorHelpers::FObjectFinder<USkeletalMesh> DeerMesh(TEXT("/Game/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/Object_93.Object_93"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> DeerIdleAnimation(TEXT("/Game/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/blacktail-deer-animatedDeer_M_Deer_Idle.blacktail-deer-animatedDeer_M_Deer_Idle"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> DeerWalkAnimation(TEXT("/Game/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/blacktail-deer-animatedBlacktail_Walk.blacktail-deer-animatedBlacktail_Walk"));
+    static ConstructorHelpers::FObjectFinder<UAnimSequence> DeerRunAnimation(TEXT("/Game/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/blacktail-deer-animatedBlacktail_Run.blacktail-deer-animatedBlacktail_Run"));
     static ConstructorHelpers::FObjectFinder<USkeletalMesh> EagleMesh(TEXT("/Game/ThirdParty/Wildlife/Eagle/animated-eagle/SkeletalMeshes/animated-eagle.animated-eagle"));
     static ConstructorHelpers::FObjectFinder<UAnimSequence> EagleAnimation(TEXT("/Game/ThirdParty/Wildlife/Eagle/animated-eagle/SkeletalMeshes/animated-eagle_Anim.animated-eagle_Anim"));
 
     if (WhaleMesh.Succeeded() && WhaleAnimation.Succeeded() && BearMesh.Succeeded()
         && BearIdleAnimation.Succeeded() && BearWalkAnimation.Succeeded() && BearRunAnimation.Succeeded()
         && DeerMesh.Succeeded() && DeerIdleAnimation.Succeeded()
-        && DeerWalkAnimation.Succeeded() && DeerRunAnimation.Succeeded() && DeerCoatMaterial.Succeeded()
+        && DeerWalkAnimation.Succeeded() && DeerRunAnimation.Succeeded()
         && EagleMesh.Succeeded() && EagleAnimation.Succeeded())
     {
-        const auto AddAssetAnimal = [this, DeerCoat = DeerCoatMaterial.Object](const FName Name, USkeletalMesh* Mesh,
+        const auto AddAssetAnimal = [this](const FName Name, USkeletalMesh* Mesh,
             UAnimSequence* IdleAnimation, UAnimSequence* TravelAnimation, UAnimSequence* FastAnimation,
             const FVector& Location, const FRotator& Rotation, const FVector& Scale, const float Phase,
             const ECoastalWildlifeKind Kind, const FVector2D& RoamRadius, const float Speed,
@@ -290,11 +289,8 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
             State.YawBias = Rotation.Yaw - FMath::RadiansToDegrees(FMath::Atan2(InitialVelocity.Y, InitialVelocity.X));
             State.Roll = Rotation.Roll;
             State.NominalTravelSpeed = NominalTravelSpeed;
+            State.Temperament = 0.35F + 0.55F * FMath::Frac(Phase * 0.618F + static_cast<float>(Kind) * 0.173F);
             State.Kind = Kind;
-            if (Kind == ECoastalWildlifeKind::Deer)
-            {
-                Component->SetMaterial(0, DeerCoat);
-            }
             return Component;
         };
 
@@ -319,7 +315,7 @@ void APacificCoastGraybox::BuildCoastalWildlife(UMaterialInterface* Material)
             AddAssetAnimal(
                 *FString::Printf(TEXT("CoastalDeerAsset%02d"), Index + 1), DeerMesh.Object,
                 DeerIdleAnimation.Object, DeerWalkAnimation.Object, DeerRunAnimation.Object,
-                Origin, FRotator(0, 20.0F + Index * 31.0F, 0), FVector(.58F + (Index % 2) * .035F), Index * .45F,
+                Origin, FRotator(0, 20.0F + Index * 31.0F, 0), FVector(.0100F + (Index % 2) * .0006F), Index * .45F,
                 ECoastalWildlifeKind::Deer, FVector2D(620.0F + Index * 28.0F, 360.0F + (Index % 2) * 55.0F),
                 0.13F + Index * 0.006F, 1.0F, 92.0F);
         }

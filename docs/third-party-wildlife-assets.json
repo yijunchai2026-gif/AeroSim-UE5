@@ -1,7 +1,7 @@
 {
   "schema": "aerosim.third-party-wildlife.assets/v1",
-  "generated_at": "2026-10-28",
-  "license": "CC-BY-4.0",
+  "generated_at": "2026-10-29",
+  "license": "mixed-see-sources",
   "sources": [
     {
       "species": "bear",
@@ -14,6 +14,16 @@
     },
     {
       "species": "deer",
+      "title": "Realistic Deer 3D Model 2.0 Demo Free Download",
+      "creator": "WildMesh",
+      "model_uid": "30bd8d8458c54b0cb2d66cc12471f1d0",
+      "url": "https://sketchfab.com/3d-models/realistic-deer-3d-model-20-demo-free-download-30bd8d8458c54b0cb2d66cc12471f1d0",
+      "license": "WildMesh Free Demo Terms",
+      "archive_sha256": "e3058f36eb5783aaebced41ff2b85707f8b2c6a771e96ec085136c5fe7a0c9ad",
+      "integration": "Body, skeleton, imported coat textures and idle animation; walk/run rotations retargeted from deer-animation-source."
+    },
+    {
+      "species": "deer-animation-source",
       "title": "Deer Animation",
       "creator": "DarryleH (DarryleH)",
       "model_uid": "347e5d4fbee14e53811c5df2221be8d0",
@@ -388,6 +398,58 @@
     {
       "path": "Content/ThirdParty/Wildlife/Bear/Bear_fur_color.uasset",
       "sha256": "9d0ceb6108226892853414c22da443618b9d29bfbb4656480d9fcef8f662f518"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/Materials/Deer_Antler.uasset",
+      "sha256": "baa03d2966a7ede2e66704fb372936c07d5172eff553c038ce0f07bf93975139"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/Materials/Deer_M.uasset",
+      "sha256": "408f53facd97b66a210d5f9a9751b3b9c9da7893818c1eaba7cd048c939f3294"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/Object_93.uasset",
+      "sha256": "61862d24d6b6bbad9a4926cd8e656a56cf3c1dc3f03e0da27e3e721311463f61"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/Object_93_PhysicsAsset.uasset",
+      "sha256": "88902f32936d8b3a8e51409e373e1d40ca7ba90faa927429c9259634e6636442"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/Object_93_Skeleton.uasset",
+      "sha256": "71287696c92a68fea7aca2ad6de777967ff3b00646b9da67cb3f478724a734dc"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/blacktail-deer-animatedBlacktail_Run.uasset",
+      "sha256": "9cbfa18184dee3b5eba0c54e9864235e7b8245a889ec685aefc83eb05610203b"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/blacktail-deer-animatedBlacktail_Walk.uasset",
+      "sha256": "97e1ba029997c6d44fade5e1d383e3aa2ace9c778407081b2b5120c89aa88c0f"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/blacktail-deer-animatedDeer_M_Deer_Idle.uasset",
+      "sha256": "080056773f64382f51d2ba95a0f0905248e37560fa5dbd6425db8990da459a76"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/StaticMeshes/Deer_Antler_001_Deer_Antler_0.uasset",
+      "sha256": "85e35e8b6acc22d55244dab6c06a2273b66f11e7e17da045092f74b0aa531d5c"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/StaticMeshes/Deer_Antler_Deer_Antler_0.uasset",
+      "sha256": "ec5972a1a0e097fb37a5e85321b711ad59defd2e0c8e3dfff3f17ab09906fabe"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/Textures/realistic-blacktail-deer-animated_texture_0.uasset",
+      "sha256": "95583a29e0beac89f06b4c5b4638d201f360d72997b1e77afdf0695173622e8d"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/Textures/realistic-blacktail-deer-animated_texture_1.uasset",
+      "sha256": "bd28ca6c4b22987f989487767c0bc6124981d6e47945860129be70609cf817cc"
+    },
+    {
+      "path": "Content/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/Textures/realistic-blacktail-deer-animated_texture_2.uasset",
+      "sha256": "1d65dd9a2c3640757b658e39e095ccc4b5d6be44c8d792bad3869c61c6efabe2"
     },
     {
       "path": "Content/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/Materials/M_DeerCoat.uasset",

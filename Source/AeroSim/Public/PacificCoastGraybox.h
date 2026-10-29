@@ -128,6 +128,20 @@ public:
     int32 GetCoastalWildlifeAutonomousCount() const { return CoastalWildlifeAutonomousStates.Num(); }
     bool IsCoastalWildlifeAlert() const { return bCoastalWildlifeAlert; }
     bool IsCoastalEagleAttacking() const { return bCoastalEagleAttacking; }
+    bool IsCoastalBearDefending() const { return bCoastalBearDefending; }
+    bool IsCoastalWhaleDiving() const { return bCoastalWhaleDiving; }
+    int32 GetCoastalWildlifeActiveCount() const { return CoastalWildlifeActiveCount; }
+    int32 GetCoastalWildlifeAmbientCount() const { return CoastalWildlifeAmbientCount; }
+    int32 GetCoastalWildlifeDormantCount() const { return CoastalWildlifeDormantCount; }
+#if WITH_DEV_AUTOMATION_TESTS
+    void SetCoastalWildlifeTestObserver(const FVector& Location, const FVector& Velocity)
+    {
+        bUseCoastalWildlifeTestObserver = true;
+        CoastalWildlifeTestObserverLocation = Location;
+        CoastalWildlifeTestObserverVelocity = Velocity;
+    }
+    void ClearCoastalWildlifeTestObserver() { bUseCoastalWildlifeTestObserver = false; }
+#endif
     int32 GetCoastalWildlifeAnimatedRangeCount() const
     {
         int32 Count = 0;
@@ -158,7 +172,8 @@ private:
     void BuildCoastalWildlife(UMaterialInterface* Material);
     void UpdateCoastalWildlifeAnimation(float DeltaSeconds);
     enum class ECoastalWildlifeKind : uint8 { Whale, Wolf, Bear, Deer, Cattle, Eagle };
-    enum class ECoastalWildlifeBehavior : uint8 { Roaming, Alert, Fleeing, Attacking, Recovering };
+    enum class ECoastalWildlifeBehavior : uint8 { Roaming, Alert, Fleeing, Attacking, Diving, Recovering };
+    enum class ECoastalWildlifeSimulationLevel : uint8 { Dormant, Ambient, Active };
     struct FCoastalWildlifeVertexRange
     {
         int32 StartVertex = 0;
@@ -194,8 +209,13 @@ private:
         float Roll = 0.0F;
         float NominalTravelSpeed = 1.0F;
         FVector Velocity = FVector::ZeroVector;
+        FVector LastKnownDroneLocation = FVector::ZeroVector;
         float BehaviorTime = 0.0F;
         float MotionStartTime = 0.0F;
+        float SimulationAccumulator = 0.0F;
+        float StimulusMemoryTime = 0.0F;
+        float Temperament = 0.5F;
+        ECoastalWildlifeSimulationLevel SimulationLevel = ECoastalWildlifeSimulationLevel::Active;
         ECoastalWildlifeBehavior Behavior = ECoastalWildlifeBehavior::Roaming;
         ECoastalWildlifeKind Kind = ECoastalWildlifeKind::Deer;
     };
@@ -228,6 +248,16 @@ private:
     int32 CoastalEagleCount = 0;
     bool bCoastalWildlifeAlert = false;
     bool bCoastalEagleAttacking = false;
+    bool bCoastalBearDefending = false;
+    bool bCoastalWhaleDiving = false;
+    int32 CoastalWildlifeActiveCount = 0;
+    int32 CoastalWildlifeAmbientCount = 0;
+    int32 CoastalWildlifeDormantCount = 0;
+#if WITH_DEV_AUTOMATION_TESTS
+    bool bUseCoastalWildlifeTestObserver = false;
+    FVector CoastalWildlifeTestObserverLocation = FVector::ZeroVector;
+    FVector CoastalWildlifeTestObserverVelocity = FVector::ZeroVector;
+#endif
 
     UStaticMeshComponent* AddBox(
         const FName Name,

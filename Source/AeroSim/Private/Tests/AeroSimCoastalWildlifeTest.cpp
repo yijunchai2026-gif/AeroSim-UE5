@@ -24,8 +24,8 @@ bool FCoastalWildlifeCompositionTest::RunTest(const FString& Parameters)
     TestEqual(TEXT("Wolves are excluded from the accepted habitat"), Coast->GetCoastalWolfCount(), 0);
     TestEqual(TEXT("One bear inhabits the mountain"), Coast->GetCoastalBearCount(), 1);
     TestEqual(TEXT("Deer herd count"), Coast->GetCoastalDeerCount(), 5);
-    TestNotNull(TEXT("Deer coat texture exists"), LoadObject<UTexture2D>(nullptr,
-        TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/Textures/T_DeerFur_Albedo.T_DeerFur_Albedo")));
+    TestNotNull(TEXT("Blacktail deer coat texture exists"), LoadObject<UTexture2D>(nullptr,
+        TEXT("/Game/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/Textures/realistic-blacktail-deer-animated_texture_2.realistic-blacktail-deer-animated_texture_2")));
     TestEqual(TEXT("Cattle are excluded from the accepted habitat"), Coast->GetCoastalCattleCount(), 0);
     TestEqual(TEXT("One eagle patrols the wildlife habitat"), Coast->GetCoastalEagleCount(), 1);
     TestEqual(TEXT("Procedural wildlife animation is disabled after asset replacement"), Coast->GetCoastalWildlifeAnimatedBatchCount(), 0);
@@ -37,9 +37,9 @@ bool FCoastalWildlifeCompositionTest::RunTest(const FString& Parameters)
         TEXT("/Game/ThirdParty/Wildlife/Bear/Bear_AnimatedStand_Idle_01.Bear_AnimatedStand_Idle_01"),
         TEXT("/Game/ThirdParty/Wildlife/Bear/Bear_AnimatedWalkSlow.Bear_AnimatedWalkSlow"),
         TEXT("/Game/ThirdParty/Wildlife/Bear/Bear_AnimatedRun.Bear_AnimatedRun"),
-        TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalIdleDeer.deer-animation-skeletalIdleDeer"),
-        TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalWalkdeer.deer-animation-skeletalWalkdeer"),
-        TEXT("/Game/ThirdParty/Wildlife/DeerSkeletal/deer-animation-skeletal/SkeletalMeshes/deer-animation-skeletalRundeer.deer-animation-skeletalRundeer"),
+        TEXT("/Game/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/blacktail-deer-animatedDeer_M_Deer_Idle.blacktail-deer-animatedDeer_M_Deer_Idle"),
+        TEXT("/Game/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/blacktail-deer-animatedBlacktail_Walk.blacktail-deer-animatedBlacktail_Walk"),
+        TEXT("/Game/ThirdParty/Wildlife/BlacktailDeerAnimated/realistic-blacktail-deer-animated/SkeletalMeshes/blacktail-deer-animatedBlacktail_Run.blacktail-deer-animatedBlacktail_Run"),
         TEXT("/Game/ThirdParty/Wildlife/Eagle/animated-eagle/SkeletalMeshes/animated-eagle_Anim.animated-eagle_Anim")};
     for (const TCHAR* Path : AnimationPaths)
     {
@@ -73,8 +73,8 @@ bool FCoastalWildlifeCompositionTest::RunTest(const FString& Parameters)
             const double TerrainHeight = APacificCoastGraybox::GetCoastalLandHeight(DeerLocation.X, DeerLocation.Y);
             TestTrue(FString::Printf(TEXT("%s hooves remain above the terrain surface"), Name), DeerLocation.Z >= TerrainHeight);
             const UMaterialInterface* DeerMaterial = Match->GetMaterial(0);
-            TestTrue(FString::Printf(TEXT("%s keeps its imported coat material"), Name),
-                DeerMaterial != nullptr && DeerMaterial->GetPathName().Contains(TEXT("M_DeerCoat")));
+            TestTrue(FString::Printf(TEXT("%s uses the imported blacktail coat material"), Name),
+                DeerMaterial != nullptr && DeerMaterial->GetPathName().Contains(TEXT("Deer_M")));
         }
     }
 
@@ -98,11 +98,19 @@ bool FCoastalWildlifeCompositionTest::RunTest(const FString& Parameters)
                 }
                 LiveCoast->Tick(TickSeconds);
             }
+            TestEqual(TEXT("No-observer test world keeps all wildlife in active simulation"),
+                LiveCoast->GetCoastalWildlifeActiveCount(), 9);
+            TestEqual(TEXT("No-observer test world has no ambient wildlife"),
+                LiveCoast->GetCoastalWildlifeAmbientCount(), 0);
+            TestEqual(TEXT("No-observer test world has no dormant wildlife"),
+                LiveCoast->GetCoastalWildlifeDormantCount(), 0);
+            TestFalse(TEXT("Bear is calm without a drone stimulus"), LiveCoast->IsCoastalBearDefending());
+            TestFalse(TEXT("Whales remain surfaced without a low drone stimulus"), LiveCoast->IsCoastalWhaleDiving());
             static const FName DeerFootBones[] = {
-                TEXT("tyriese_miller_c_deer_idle_toetip_back_l_011"),
-                TEXT("tyriese_miller_c_deer_idle_toetip_back_r_018"),
-                TEXT("tyriese_miller_c_deer_idle_toetip_front_l_042"),
-                TEXT("tyriese_miller_c_deer_idle_toetip_front_r_048")};
+                TEXT("legbldigit11_end_077"),
+                TEXT("legbrdigit11_end_078"),
+                TEXT("legfldigit11_end_075"),
+                TEXT("legfrdigit11_end_074")};
             for (USkeletalMeshComponent* Component : LiveComponents)
             {
                 if (!Component->GetName().StartsWith(TEXT("CoastalDeerAsset")))
@@ -121,6 +129,25 @@ bool FCoastalWildlifeCompositionTest::RunTest(const FString& Parameters)
                 TestTrue(FString::Printf(TEXT("%s animated stance keeps a hoof on terrain"), *Component->GetName()),
                     MinimumClearance <= 4.0F);
             }
+
+            const auto TickWithObserver = [LiveCoast](const FVector& ObserverLocation, const FVector& ObserverVelocity)
+            {
+                LiveCoast->SetCoastalWildlifeTestObserver(ObserverLocation, ObserverVelocity);
+                for (int32 Frame = 0; Frame < 6; ++Frame)
+                {
+                    LiveCoast->Tick(0.1F);
+                }
+            };
+            TickWithObserver(FVector(-21800.0F, 31500.0F, 2600.0F), FVector::ZeroVector);
+            TestTrue(TEXT("Nearby drone alerts the deer herd"), LiveCoast->IsCoastalWildlifeAlert());
+            TickWithObserver(FVector(-35500.0F, 38200.0F, 2600.0F), FVector::ZeroVector);
+            TestTrue(TEXT("Nearby drone triggers bear defense"), LiveCoast->IsCoastalBearDefending());
+            const float EagleGround = APacificCoastGraybox::GetCoastalLandHeight(-28600.0F, 34600.0F);
+            TickWithObserver(FVector(-28600.0F, 34600.0F, EagleGround + 2600.0F), FVector(420.0F, 0.0F, 0.0F));
+            TestTrue(TEXT("Airborne drone triggers predictive eagle attack"), LiveCoast->IsCoastalEagleAttacking());
+            TickWithObserver(FVector(47000.0F, -61000.0F, APacificCoastGraybox::SeaLevelCm + 1000.0F), FVector::ZeroVector);
+            TestTrue(TEXT("Low drone triggers whale dive"), LiveCoast->IsCoastalWhaleDiving());
+            LiveCoast->ClearCoastalWildlifeTestObserver();
         }
         WildlifeWorld->DestroyWorld(false);
     }

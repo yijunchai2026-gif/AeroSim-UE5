@@ -605,3 +605,19 @@ R21 加入老鹰、鹿群警觉/逃离/个体避让、熊警觉和老鹰攻击�
 - 报告：`docs/coast-aaa-qa/R21/qa-wildlife-interaction.md`；本地包：`Artifacts/ProductShell/CoastalPackage/Mac/AeroSim.app`。
 
 R21 证明骨骼动画链路和行为状态切换已工作，但当前仍没有脚底 IK、近景毛发和完整导航行为树；最终视觉与运动自然度仍由用户验收。
+
+### R21 免费真实鹿资产补充（2026-10-29）
+
+- 鹿身和皮毛替换为 WildMesh Realistic Deer 2.0 Demo，使用源包 `T_OdocoileusVirginianus_M_BC` 作为 body Base Color，并保留导入 `Deer_M` 材质。
+- 新骨架包含 80 joints；Idle 使用原资产动画，Walk/Run 由 DarryleH Deer Animation 的局部旋转按休止姿态重定向生成。
+- 运行时鹿资源切到 `Content/ThirdParty/Wildlife/BlacktailDeerAnimated`，实例比例约 0.01；四蹄贴地 bone names 同步切换为新骨架 digit-tip end bones。
+- Composition Automation 检查新 body texture、材质、三套动画 bone tracks，并推进 90 帧检查四蹄离地范围。
+- 最新视觉序列为 `blacktail-final-01.png` 至 `blacktail-final-08.png`；不据此声明最终视觉验收完成。
+
+### R21 开放世界动物仿真升级（2026-10-29）
+
+- `FCoastalWildlifeAutonomousState` 增加 Simulation LOD、刺激记忆、最后无人机位置与确定性 Temperament。
+- Active/Ambient/Dormant 阈值为 180/600 m，更新间隔为每帧/0.2 s/0.5 s；ControlBridge 暴露三级计数。
+- 鹿保留群体逃离与贴地；熊新增防御/退避；鹰按无人机速度预测拦截；鲸鱼新增低空刺激下潜与恢复。
+- `AeroSim.Coastal.Wildlife.Composition` 使用测试观察者覆盖四个物种的反应状态，并继续覆盖动画轨道和鹿蹄接地。
+- 本轮刻意不引入 AIModule、StateTree、MassEntity、ZoneGraph，避免扩大运行时依赖；后续大规模生态仿真再拆独立 `WildlifeDirector`。
