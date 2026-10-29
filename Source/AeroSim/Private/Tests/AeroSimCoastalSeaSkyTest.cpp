@@ -113,7 +113,7 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
             }
             TestTrue(TEXT("Clear cloud layer spans marine stratus through broken cumulus"), Clouds->LayerBottomAltitude >= .5F && Clouds->LayerBottomAltitude <= .9F
                 && Clouds->LayerHeight >= 3.5F && Clouds->LayerHeight <= 4.1F);
-            TestTrue(TEXT("Clear coverage bias keeps a broken cloud field without overcast"), bCoverage && Coverage < -.10F && Coverage > -.25F);
+            TestTrue(TEXT("Clear coverage bias keeps a broken cloud field without overcast"), bCoverage && Coverage < -.10F && Coverage > -.30F);
             const auto* Post = SeaSkyTest::Find<UPostProcessComponent>(Coast);
             // R9: software Lumen is inert without mesh distance fields (removed for the R7c hitch),
             // so GI is explicitly off and the understory is sky-light driven (measured on the bridge).
@@ -139,7 +139,7 @@ bool FCoastalSunTest::RunTest(const FString& Parameters)
                 && !Bounce->CastShadows && !Bounce->IsUsedAsAtmosphereSunLight() && Bounce->GetLightColor().R > Bounce->GetLightColor().G
                 && Bounce->GetLightColor().G > Bounce->GetLightColor().B);
             TestTrue(TEXT("Sky capture stays near-neutral for sea reflections"), Sky && Sky->Intensity < 1.2F && Sky->GetLightColor().B > .85F);
-            TestTrue(TEXT("Cloud evolution frozen for a deterministic baseline"), bWind && Wind == 0.0F);
+            TestTrue(TEXT("Cloud deck uses bounded slow drift instead of a frozen noise pattern"), bWind && Wind > 0.0F && Wind <= .05F);
         }
     }
     if (World) World->DestroyWorld(false);
@@ -152,11 +152,11 @@ bool FCoastalCirrusTest::RunTest(const FString& Parameters)
 {
     const FString Code = APacificCoastGraybox::GetCoastalWaterShaderCode(APacificCoastGraybox::ECoastalWaterShader::Cirrus);
     TestTrue(TEXT("Cirrus field is time-independent (deterministic baseline, no wind)"), !Code.Contains(TEXT("T*"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("*T"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("+T"), ESearchCase::CaseSensitive));
-    TestTrue(TEXT("Cirrus has one prevailing direction (no rotating/swirling streak axis)"), !Code.Contains(TEXT("cos("), ESearchCase::CaseSensitive) && Code.Contains(TEXT("float2 dir=float2(.94,.342)")));
+    TestTrue(TEXT("Cirrus keeps one prevailing direction with broad low-frequency bending"), Code.Contains(TEXT("float bend=(noise.f(q*.23+11.7)-.5)*.28")) && Code.Contains(TEXT("float2 dir=normalize(float2(.94,.342)")));
     TestTrue(TEXT("Cirrus is masked below the horizon and around the sun"), Code.Contains(TEXT("smoothstep(.02,.14,v.z)")) && Code.Contains(TEXT("dot(v,normalize(S))")));
     TestTrue(TEXT("Cirrus breaks azimuth repetition without adding time dependence"), Code.Contains(TEXT("float az=atan2(v.x,v.y)")) && Code.Contains(TEXT("sin(el*2.9+az*.43)*.07")) && Code.Contains(TEXT("az*2.41+warp")) && !Code.Contains(TEXT("atan2(v.x,v.y)*3.0")));
-    TestTrue(TEXT("Cirrus shears and drifts fibre scales instead of stacking parallel bands"), Code.Contains(TEXT("float drift=noise.f(float2(r.x*.22,r.y*.45)+1.9)-.5")) && Code.Contains(TEXT("r2=float2(r.x+r.y*.38,r.y-r.x*.22)")) && Code.Contains(TEXT("r3=float2(r.x-r.y*.46,r.y+r.x*.27)")));
-    TestTrue(TEXT("Cirrus combines a secondary high-altitude filament layer"), Code.Contains(TEXT("float c3=cf.eval")) && Code.Contains(TEXT("az*4.79+5.7+warp*.55")) && Code.Contains(TEXT("el*12.71+az*.14+2.1")) && Code.Contains(TEXT("c=max(c,c3*.35)")));
+    TestTrue(TEXT("Cirrus uses two bounded fibre scales without hairline-frequency streaks"), Code.Contains(TEXT("r2=float2(r.x+r.y*.38,r.y-r.x*.22)")) && Code.Contains(TEXT("r.y*7.6")) && Code.Contains(TEXT("r2.y*15.2")) && !Code.Contains(TEXT("fib3")));
+    TestTrue(TEXT("Cirrus secondary layer is broader and lower contrast"), Code.Contains(TEXT("float c3=cf.eval")) && Code.Contains(TEXT("az*3.87+5.7+warp*.55")) && Code.Contains(TEXT("el*9.8+az*.19+2.1")) && Code.Contains(TEXT("c=max(c,c3*.24)")));
     UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
     APacificCoastGraybox* Coast = World ? World->SpawnActor<APacificCoastGraybox>() : nullptr;
     if (TestNotNull(TEXT("Coast spawns"), Coast))
@@ -171,7 +171,7 @@ bool FCoastalCirrusTest::RunTest(const FString& Parameters)
             const bool bMaterial = Dome->GetMaterial(0) && Dome->GetMaterial(0)->GetScalarParameterValue(FMaterialParameterInfo(TEXT("CirrusOpacity")), Opacity);
             if (TestTrue(TEXT("Cirrus material is imported"), bMaterial))
             {
-                TestTrue(TEXT("Clear cirrus is subtle and visible"), Dome->IsVisible() && Opacity > 0.0F && Opacity <= .4F);
+                TestTrue(TEXT("Clear sky relies on volumetric depth without procedural cirrus scratches"), !Dome->IsVisible() && Opacity == 0.0F);
                 State.SetWeather(EAeroSimWeather::Rain);
                 Coast->ApplyEnvironmentState(State);
                 TestFalse(TEXT("Rain deck hides cirrus"), Dome->IsVisible());

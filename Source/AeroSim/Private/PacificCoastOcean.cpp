@@ -345,20 +345,20 @@ FString APacificCoastGraybox::GetCoastalWaterShaderCode(const ECoastalWaterShade
         return NoiseHelpers()
             + TEXT("struct CirrusField { float eval(float2 q, CoastNoise noise) {")
             + TEXT(" float2 p=q+(float2(noise.f(q*.5+1.3),noise.f(q*.5+8.1))-.5)*.25;")
-            + TEXT(" float2 dir=float2(.94,.342); float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
+            + TEXT(" float bend=(noise.f(q*.23+11.7)-.5)*.28; float2 dir=normalize(float2(.94,.342)+float2(-.342,.94)*bend); float2 r=float2(dot(p,dir),dot(p,float2(-dir.y,dir.x)));")
             + TEXT(" float seg=frac(r.x*.417+noise.f(float2(r.y*1.27,7.7))*.8); float hook=pow(smoothstep(.62,1.0,seg),2.0); r.y+=hook*.18;")
             + TEXT(" float shear=noise.f(q*.31+3.9)-.5; float drift=noise.f(float2(r.x*.22,r.y*.45)+1.9)-.5;")
-            + TEXT(" float2 r2=float2(r.x+r.y*.38,r.y-r.x*.22),r3=float2(r.x-r.y*.46,r.y+r.x*.27);")
-            + TEXT(" float fib=noise.f(float2(r.x*.58+r.y*.09,r.y*10.7+shear*1.4+drift*3.2)); float fib2=noise.f(float2(r2.x*1.29+4.0,r2.y*22.8-drift*4.1)); float fib3=noise.f(float2(r3.x*2.61+9.0,r3.y*46.0+shear*3.7));")
-            + TEXT(" float body=noise.f(float2(r.x*.35,r.y*2.2)+2.7); float clump=smoothstep(.42,.68,noise.f(q*.18+7.3));")
-            + TEXT(" float breaks=smoothstep(.30,.70,noise.f(float2(r.x*2.5,r.y*.8)+5.5));")
-            + TEXT(" return smoothstep(.62,.90,body*.54+fib*.18+fib2*.17+fib3*.11)*clump*breaks*(.75+.25*hook); } };")
+            + TEXT(" float2 r2=float2(r.x+r.y*.38,r.y-r.x*.22);")
+            + TEXT(" float fib=noise.f(float2(r.x*.51+r.y*.11,r.y*7.6+shear*1.8+drift*2.6)); float fib2=noise.f(float2(r2.x*1.13+4.0,r2.y*15.2-drift*3.4));")
+            + TEXT(" float body=noise.f(float2(r.x*.31,r.y*1.7)+2.7); float clump=smoothstep(.45,.72,noise.f(q*.16+7.3));")
+            + TEXT(" float breaks=smoothstep(.36,.74,noise.f(float2(r.x*1.8,r.y*.62)+5.5));")
+            + TEXT(" return smoothstep(.60,.88,body*.63+fib*.21+fib2*.16)*clump*breaks*(.72+.28*hook); } };")
             + TEXT("float3 v=normalize(P-C); float up=smoothstep(.02,.14,v.z); float el=asin(saturate(v.z)); float az=atan2(v.x,v.y); float warp=(v.x*v.y)*.31+sin(az*1.73)*.08+sin(el*2.9+az*.43)*.07;")
             + TEXT("CirrusField cf; float c1=cf.eval(float2(az*2.41+warp,el*8.63),noise);")
             + TEXT("float c2=cf.eval(float2(atan2(-v.x,-v.y)*3.53+11.0-warp*.8,el*9.21+az*.09),noise);")
-            + TEXT("float c=lerp(c2,c1,smoothstep(-.3,.3,v.y)); float c3=cf.eval(float2(az*4.79+5.7+warp*.55,el*12.71+az*.14+2.1),noise); c=max(c,c3*.35);")
+            + TEXT("float c=lerp(c2,c1,smoothstep(-.3,.3,v.y)); float c3=cf.eval(float2(az*3.87+5.7+warp*.55,el*9.8+az*.19+2.1),noise); c=max(c,c3*.24);")
             + TEXT("float sun=1-smoothstep(.975,.995,dot(v,normalize(S)));")
-            + TEXT("return saturate(c*up*sun*.60);");
+            + TEXT("return saturate(c*up*sun*.48);");
     default:
         return TEXT("return 0;");
     }

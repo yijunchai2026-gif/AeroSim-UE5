@@ -1688,8 +1688,8 @@ float NearStandDensity(const float X, const float Y)
     // Habitat shapes only the outer ~40 m of each stand: the dense training core is never erased.
     const float Hostile = (Habitat.Rock + Habitat.Shore + FMath::Max(0.0F, Habitat.ExposedGrass - .55F) * Smooth01(Habitat.SunExposure / .5F))
         * (1.0F - Smooth01(Inside / 4000.0F));
-    // Natural clumping: 0.93-1.0 density modulation at ~25 m scale.
-    const float Clump = .93F + .07F * Smooth01((Fbm(X - 4100, Y + 2600, 2600.0F) - .35F) / .3F);
+    // Natural clumping: substantial 25 m density variation breaks up solid canopy islands.
+    const float Clump = .90F + .10F * Smooth01((Fbm(X - 4100, Y + 2600, 2600.0F) - .35F) / .3F);
     return Feather * Clump * (1.0F - Smooth01((Glade - .60F) / .06F)) * (1.0F - Smooth01((Hostile - .25F) / .35F));
 }
 
@@ -1815,7 +1815,7 @@ const FLayout& GetLayout()
         for (float GY = -48000; GY < 48000; GY += Cell)
         {
             // Full-cell jitter plus up to ~1 m overlap into neighbouring cells hides the lattice.
-            const FVector2D P(GX + Random.FRandRange(-.1F, 1.1F) * Cell, GY + Random.FRandRange(-.1F, 1.1F) * Cell);
+            const FVector2D P(GX + Random.FRandRange(-.25F, 1.25F) * Cell, GY + Random.FRandRange(-.25F, 1.25F) * Cell);
             const float Density = NearStandDensity(P.X, P.Y);
             const float Roll = Random.FRand(), AgeRoll = Random.FRand(), SpeciesRoll = Random.FRand();
             const float Yaw = Random.FRandRange(0, 2 * PI), LeanYaw = Random.FRandRange(0, 2 * PI), LeanRoll = Random.FRand(), ScaleRoll = Random.FRand();
@@ -1847,7 +1847,7 @@ const FLayout& GetLayout()
             }
             const FArchetype& A = Archetypes[Archetype];
             const float Scale = A.Species == ESpecies::CoastLiveOak ? FMath::Lerp(.85F, 1.1F, ScaleRoll) : FMath::Lerp(.86F, 1.14F, ScaleRoll);
-            // Girth varies trunk thickness (and crown spread) independently of height: 0.8-1.3x.
+            // Girth varies trunk thickness (and crown spread) independently of height.
             const float Girth = A.Species == ESpecies::Sapling ? 1.0F : FMath::Lerp(.8F, 1.3F, FMath::Frac(ScaleRoll * 7.31F + Yaw));
             const float TrunkRadius = A.CollarRadius * Scale * Girth;
             // Corridor: no trunk surface inside the clear width plus 30 cm; no oak limbs, no sapling crowns.
@@ -1884,7 +1884,7 @@ const FLayout& GetLayout()
                 }
                 if (High - Low > 35.0F) continue;
             }
-            const float MaxLean = A.Species == ESpecies::MontereyPine ? 7.0F : A.Species == ESpecies::CoastLiveOak ? 0 : 3.5F;
+            const float MaxLean = A.Species == ESpecies::MontereyPine ? 8.0F : A.Species == ESpecies::CoastLiveOak ? 0 : 4.0F;
             NextGirth = Girth;
             Place(P, Archetype, Scale, Yaw, FMath::DegreesToRadians(MaxLean * LeanRoll), LeanYaw, true, false, Spacing);
         }

@@ -143,6 +143,18 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
         TestTrue(TEXT("Distant range perimeter is rooted below sea level"), PerimeterMax < APacificCoastGraybox::SeaLevelCm - 3000);
         TestEqual(TEXT("Distant skyline uses the bounded high-detail Metal fallback budget"), Section->ProcIndexBuffer.Num() / 3, 86400);
         TestTrue(TEXT("Distant range starts behind the playable land"), Box.Max.X < -228000);
+        double DrainageRelief = 0.0;
+        int32 DrainageSamples = 0;
+        for (float X = -130000.0F; X <= -50000.0F; X += 20000.0F)
+        {
+            const float CenterY = -24500.0F + .16F * (X + 60000.0F) + 1700.0F * FMath::Sin(X / 19000.0F + .4F);
+            const float CenterHeight = APacificCoastGraybox::GetCoastalLandHeight(X, CenterY);
+            const float BankHeight = .5F * (APacificCoastGraybox::GetCoastalLandHeight(X, CenterY - 3500.0F)
+                + APacificCoastGraybox::GetCoastalLandHeight(X, CenterY + 3500.0F));
+            DrainageRelief += BankHeight - CenterHeight;
+            ++DrainageSamples;
+        }
+        TestTrue(TEXT("Mountain face retains coherent secondary drainage relief"), DrainageRelief / DrainageSamples > 45.0);
         TestTrue(TEXT("Receding ridgelines rise above the near main summit"), Top > 40000 && Top < 70000);
         AddInfo(FString::Printf(TEXT("Distant range top %.0f cm; perimeter max %.0f cm; %d triangles"), Top, PerimeterMax, Section->ProcIndexBuffer.Num() / 3));
     }

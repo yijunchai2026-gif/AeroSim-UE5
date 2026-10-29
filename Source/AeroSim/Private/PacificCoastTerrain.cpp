@@ -846,7 +846,18 @@ float CoastalTerrain::BaselineLandHeight(const float X, const float Y)
     // Only broad (170 m) coherent undulation; no short-wavelength ripple over the slopes.
     Mountain += Smooth(Mountain / 7000.0F) * 260.0F * Noise(X, Y, 17000.0F);
     const float Hills = 650.0F + 700.0F * Noise(X, Y, 26000.0F) + 60.0F * Noise(X, Y, 9500.0F);
-    const float LandHeight = FMath::Lerp(SubmergedRim, Rise * FMath::Max(0.0F, Hills + Mountain), Interior);
+    const float DrainageWindow = Smooth((-X - 18000.0F) / 24000.0F) * (1.0F - Smooth((-X - 160000.0F) / 26000.0F));
+    auto SecondaryChannel = [X, Y](float OriginY, float Grade, float Width, float Phase)
+    {
+        const float Center = OriginY + Grade * (X + 60000.0F) + 1700.0F * FMath::Sin(X / 19000.0F + Phase)
+            + 650.0F * Noise(X, Phase * 7300.0F, 11000.0F);
+        return 1.0F - Smooth(FMath::Abs(Y - Center) / Width);
+    };
+    const float SecondaryIncision = DrainageWindow * Smooth(Mountain / 6500.0F)
+        * (180.0F * SecondaryChannel(-24500.0F, .16F, 2400.0F, .4F)
+            + 145.0F * SecondaryChannel(3500.0F, -.11F, 1900.0F, 2.1F)
+            + 210.0F * SecondaryChannel(27200.0F, .13F, 2800.0F, 4.3F));
+    const float LandHeight = FMath::Lerp(SubmergedRim, Rise * FMath::Max(0.0F, Hills + Mountain - SecondaryIncision), Interior);
     // Inland worksite, routes and trails (X <= 105 m) keep their existing supported grade.
     // Only the outer coastal apron descends into unequal coves between surviving high sea headlands.
     const float CoastBlend=SteppedCoveBlend(FMath::Clamp((X-10500.0F)/FMath::Max(1000.0F,BaselineCliffEdgeX(Y)-10500.0F),0.0F,1.0F),Y,X);

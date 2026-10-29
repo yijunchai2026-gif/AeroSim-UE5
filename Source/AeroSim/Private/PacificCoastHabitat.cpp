@@ -135,6 +135,7 @@ void APacificCoastGraybox::BuildCoastalHabitat()
         {
             const FVector2D P(GX + Random.FRandRange(0, Cell), GY + Random.FRandRange(0, Cell));
             const float Pick = Random.FRand(), Roll = Random.FRand(), ScaleRoll = Random.FRand(), Yaw = Random.FRandRange(0, 360);
+            const float Community = .5F + .5F * FMath::PerlinNoise2D(FVector2D(P.X / 1400.0F - 2.7F, P.Y / 1400.0F + 4.4F));
             const float Density = NearStandDensity(P.X, P.Y);
             const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(P.X, P.Y);
             // Grassland annual forbs stay on open or feathered, moderately drained ground;
@@ -148,22 +149,22 @@ void APacificCoastGraybox::BuildCoastalHabitat()
             {
                 // Sparse exposed-grass tufts continue across open ground so large fields retain
                 // parallax without turning the whole landscape into a costly dense instance carpet.
-                if (Roll > .04F) continue;
+                if (Roll > FMath::Clamp(.06F + .08F * (Community - .5F), .02F, .10F)) continue;
                 Kind = bForbGround && Pick > .62F ? ForbKind : 7;
             }
             else if (Density <= 0)
             {
-                if (Roll > .55F) continue;
+                if (Roll > FMath::Clamp(.55F + .34F * (Community - .5F), .38F, .72F)) continue;
                 Kind = bForbGround && Pick > .64F ? ForbKind : Pick < .34F ? 6 : 7;
             }
             else if (Density > .75F)
             {   // Closed stand: ferns dominate, scattered broad shrubs, little grass.
-                if (Roll > .92F) continue;
+                if (Roll > FMath::Clamp(.92F + .16F * (Community - .5F), .84F, 1.0F)) continue;
                 Kind = Pick < .62F ? (Pick < .36F ? 0 : 1) : Pick < .80F ? (Pick < .71F ? 4 : 5) : Pick < .88F ? 2 : 7;
             }
             else
             {   // Feathered edge and glades: coyote-brush-like shrubs and dry grass.
-                if (Roll > .95F) continue;
+                if (Roll > FMath::Clamp(.95F + .10F * (Community - .5F), .90F, 1.0F)) continue;
                 Kind = bForbGround && Pick > .82F ? ForbKind
                     : Pick < .40F ? (Pick < .24F ? 2 : 3) : Pick < .55F ? 0 : Pick < .78F ? 6 : 7;
             }

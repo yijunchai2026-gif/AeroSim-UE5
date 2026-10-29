@@ -1054,14 +1054,14 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
 #endif
     WeatherPostProcess->Settings.DynamicGlobalIlluminationMethod = UnderstoryGI == 0 ? EDynamicGlobalIlluminationMethod::None
         : (UnderstoryGI == 2 ? EDynamicGlobalIlluminationMethod::ScreenSpace : EDynamicGlobalIlluminationMethod::Lumen); // Clear: no large halo around the low sun (R6b glint)
-    const float Mie[] = {.0034F, .014F, .024F}, MieG[] = {.80F, .62F, .55F}, Aerial[] = {1.6F, 2.6F, 3.2F};
-    const float FogFalloff[] = {.20F, .18F, .12F}, FogOpacity[] = {.75F, .95F, 1.0F}, FogStart[] = {250000.0F, 0.0F, 0.0F};
+    const float Mie[] = {.0045F, .014F, .024F}, MieG[] = {.80F, .62F, .55F}, Aerial[] = {2.4F, 2.6F, 3.2F};
+    const float FogFalloff[] = {.20F, .18F, .12F}, FogOpacity[] = {.68F, .95F, 1.0F}, FogStart[] = {120000.0F, 0.0F, 0.0F};
     // Clear horizon haze is warm beige-white at 16:30 (dry coastal aerosol), not neutral grey.
     const FLinearColor FogColor[] = {FLinearColor(.80F,.72F,.62F), FLinearColor(.30F,.36F,.41F), FLinearColor(.12F,.20F,.28F)};
     // Clear: thin low haze with a soft top (R8: flat white band), not an opaque bank.
-    const float LayerDensity[] = {.003F, .03F, .05F}, LayerOffset[] = {0.0F, 1500.0F, 2500.0F}, LayerFalloff[] = {.7F, .5F, .35F};
+    const float LayerDensity[] = {.0018F, .03F, .05F}, LayerOffset[] = {0.0F, 1500.0F, 2500.0F}, LayerFalloff[] = {.82F, .5F, .35F};
     const float CloudBottomKm[] = {.75F, .55F, .4F}, CloudHeightKm[] = {3.8F, 3.9F, 4.2F};
-    const float WaterRoughness[] = {.07F, .11F, .16F}, WaveScale[] = {1.0F, 1.2F, 1.45F};
+    const float WaterRoughness[] = {.10F, .12F, .16F}, WaveScale[] = {1.0F, 1.2F, 1.45F};
 
     KeyLight->SetRelativeRotation(GetCoastalSunRotation(State));
     KeyLight->SetIntensity(State.GetLightIntensity());
@@ -1122,8 +1122,8 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
             // as broken cumulus). Clear (-0.33) sits below it for ~10-20% sparse (R5a: -0.43 left none)
             // fair-weather cumulus; Overcast/Rain raise it. Wind frozen so the seed-21630
             // comparison baseline does not evolve between captures.
-            Clouds->SetScalarParameterValue(TEXT("Cloud_GlobalCoverage"), -.24F + .78F * State.GetCloudCover());
-            Clouds->SetScalarParameterValue(TEXT("WindMultiplier"), 0.0F);
+            Clouds->SetScalarParameterValue(TEXT("Cloud_GlobalCoverage"), -.28F + .78F * State.GetCloudCover());
+            Clouds->SetScalarParameterValue(TEXT("WindMultiplier"), 0.025F);
         }
     }
 
@@ -1136,7 +1136,7 @@ void APacificCoastGraybox::ApplyCoastalSky(const FEnvironmentState& State)
         && CoastalCirrusDome->GetMaterial(0)->GetName().Contains(TEXT("M_CoastCirrusDraft")))
     {
         // Sparse high streaks for Clear only; hidden under Overcast/Rain decks.
-        const float CirrusOpacity[] = {.32F, 0.0F, 0.0F};
+        const float CirrusOpacity[] = {0.0F, 0.0F, 0.0F};
         UMaterialInstanceDynamic* Cirrus = Cast<UMaterialInstanceDynamic>(CoastalCirrusDome->GetMaterial(0));
         if (Cirrus == nullptr)
         {
