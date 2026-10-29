@@ -32,6 +32,15 @@
       "info_sha256": "043843159e80175d3650123622c6fe063e14f14236e9321a7994e28c2a96859d",
       "files_sha256": "df40d0d263ecb21f47ff67ccbe93f161ebcba3db186c8d74acbf5165a5557d6b",
       "page": "https://polyhaven.com/a/weed_plant_02"
+    },
+    {
+      "asset": "dry_branches_medium_01",
+      "authors": {
+        "Rico Cilliers": "All"
+      },
+      "info_sha256": "f969b7e2a7e63270f3a98759a016a1d182cb3724f02dfb60ec21c49666dc8173",
+      "files_sha256": "a73992e1dcaa1151693e137b5c530ef109ebc7b2d8ed694595dd3987b28330e7",
+      "page": "https://polyhaven.com/a/dry_branches_medium_01"
     }
   ],
   "sources": [
@@ -389,6 +398,120 @@
         6.098637543618679,
         4.00792183354497
       ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/dry_branches_medium_01.gltf",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/dry_branches_medium_01/dry_branches_medium_01_1k.gltf",
+      "sha256": "23f328ded9be1e151ccd7994b303c70221551544c4857a71474c1c01a14b8a22",
+      "publisher_md5": "bd6d60dff97c59a80d770f94f23b566b",
+      "bytes": 5844,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/dry_branches_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/textures/dry_branches_medium_01_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/dry_branches_medium_01/dry_branches_medium_01_arm_1k.jpg",
+      "sha256": "6d1ba6f4763d2815301a15bf62eaf68c345cecafb107e2681d12f26fbc657f5a",
+      "publisher_md5": "a0c5fface8ffdf81a806fcd5cf05788f",
+      "bytes": 831180,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/dry_branches_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/textures/dry_branches_medium_01_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/dry_branches_medium_01/dry_branches_medium_01_diff_1k.jpg",
+      "sha256": "1fbaf810a9ca29d2faf0a179834e8dce10cf4854bafe13f63af111030b3ec660",
+      "publisher_md5": "2b01d9d1613c88496250f64828566f7c",
+      "bytes": 778799,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/dry_branches_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/textures/dry_branches_medium_01_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/dry_branches_medium_01/dry_branches_medium_01_nor_gl_1k.jpg",
+      "sha256": "62f5205bfec599000bb7a430e003bbada939bc8d7976a7d3ab7709fd5893413c",
+      "publisher_md5": "d374fbbd8c4829310104cce0de7cd826",
+      "bytes": 1170647,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/dry_branches_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/dry_branches_medium_01.bin",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/dry_branches_medium_01/dry_branches_medium_01.bin",
+      "sha256": "969da1e8cbb2d8201e7fa0fc0dac5b19ef354b32c3d8c62dd9faa7cb3833d8ca",
+      "publisher_md5": "10de852c8bf38e3f3ca5fb1d6c8de9d0",
+      "bytes": 465172,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/dry_branches_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/basecolor.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/dry_branches_medium_01/dry_branches_medium_01_diff_1k.jpg",
+      "sha256": "1fbaf810a9ca29d2faf0a179834e8dce10cf4854bafe13f63af111030b3ec660",
+      "publisher_md5": "2b01d9d1613c88496250f64828566f7c",
+      "bytes": 778799,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/dry_branches_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/dry_branches_medium_01/dry_branches_medium_01_nor_dx_1k.jpg",
+      "sha256": "e16b61af1a0ff3c962a40a4628f13ab5694aad3923c1a0c92d187fa58e43300b",
+      "publisher_md5": "80e7aaabfd4e094fea9c4469de1dc9af",
+      "bytes": 1171198,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/dry_branches_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/dry_branches_medium_01/dry_branches_medium_01_rough_1k.jpg",
+      "sha256": "d05c42ee31b05a9dc90b29637d716201b79d64cba64dc963e31dd85cdccc2f5a",
+      "publisher_md5": "984d2804ff180779ec8bd78512e9fe99",
+      "bytes": 566221,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/dry_branches_medium_01"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastDeadwoodADraft.mesh.json",
+      "sha256": "b8b175299a30b7b271396962ee9e375fc9fec3ac335f996bb9a45d210ce389f6",
+      "license": "CC0-1.0",
+      "derived_from": "dry_branches_medium_01",
+      "triangles": 5616,
+      "vertices": 3641,
+      "asset": "SM_CoastDeadwoodADraft",
+      "dimensions_cm": [
+        13.0568977445364,
+        77.71258652210236,
+        14.325982332229614
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastDeadwoodBDraft.mesh.json",
+      "sha256": "b3e2a3550ebd8f13a4f380e57d590a84eecf3783e479065b439aa9118336c96d",
+      "license": "CC0-1.0",
+      "derived_from": "dry_branches_medium_01",
+      "triangles": 5254,
+      "vertices": 3493,
+      "asset": "SM_CoastDeadwoodBDraft",
+      "dimensions_cm": [
+        15.116379410028458,
+        103.85037958621979,
+        14.188739657402039
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastDeadwoodCDraft.mesh.json",
+      "sha256": "1ca763773b248f6d15bb30f03d1cdddd1f4ca29c45032fc6ef97895b42892b10",
+      "license": "CC0-1.0",
+      "derived_from": "dry_branches_medium_01",
+      "triangles": 5933,
+      "vertices": 4252,
+      "asset": "SM_CoastDeadwoodCDraft",
+      "dimensions_cm": [
+        32.30637311935425,
+        129.9152910709381,
+        34.09853130578995
+      ]
     }
   ],
   "meshes": [
@@ -503,9 +626,51 @@
         6.098637543618679,
         4.00792183354497
       ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastDeadwoodADraft.mesh.json",
+      "sha256": "b8b175299a30b7b271396962ee9e375fc9fec3ac335f996bb9a45d210ce389f6",
+      "license": "CC0-1.0",
+      "derived_from": "dry_branches_medium_01",
+      "triangles": 5616,
+      "vertices": 3641,
+      "asset": "SM_CoastDeadwoodADraft",
+      "dimensions_cm": [
+        13.0568977445364,
+        77.71258652210236,
+        14.325982332229614
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastDeadwoodBDraft.mesh.json",
+      "sha256": "b3e2a3550ebd8f13a4f380e57d590a84eecf3783e479065b439aa9118336c96d",
+      "license": "CC0-1.0",
+      "derived_from": "dry_branches_medium_01",
+      "triangles": 5254,
+      "vertices": 3493,
+      "asset": "SM_CoastDeadwoodBDraft",
+      "dimensions_cm": [
+        15.116379410028458,
+        103.85037958621979,
+        14.188739657402039
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastDeadwoodCDraft.mesh.json",
+      "sha256": "1ca763773b248f6d15bb30f03d1cdddd1f4ca29c45032fc6ef97895b42892b10",
+      "license": "CC0-1.0",
+      "derived_from": "dry_branches_medium_01",
+      "triangles": 5933,
+      "vertices": 4252,
+      "asset": "SM_CoastDeadwoodCDraft",
+      "dimensions_cm": [
+        32.30637311935425,
+        129.9152910709381,
+        34.09853130578995
+      ]
     }
   ],
-  "limits": "Generic published dry grass and small oval-leaved plants; no Bay Area oak identity or production acceptance. Original glTF and all linked files preserved; custom DirectX/alpha/roughness maps are explicitly assigned by the isolated importer. Mesh node display offsets discarded; each mesh bottom is grounded at local Z=0.",
+  "limits": "Generic published dry grass, annual forbs, shrubs and deadwood; no exact Bay Area botanical identity or production acceptance. Original glTF and all linked files preserved; custom DirectX/alpha/roughness maps are explicitly assigned by the isolated importer. Mesh node display offsets discarded; each mesh bottom is grounded at local Z=0.",
   "flora_derived": [
     {
       "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_FloraFernADraft.mesh.json",

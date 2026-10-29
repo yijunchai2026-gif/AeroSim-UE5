@@ -332,6 +332,19 @@ bool FCoastalTreeCorridorTest::RunTest(const FString& Parameters)
         TestNotNull(*FString::Printf(TEXT("%s batch exists"), *Name.ToString()), Batch);
         if (Batch) TestTrue(*FString::Printf(TEXT("%s contributes grassland instances"), *Name.ToString()), Batch->GetInstanceCount() > 0);
     }
+    int32 DeadwoodInstances = 0;
+    for (const FName Name : {FName(TEXT("CoastalFloraDeadwoodA")), FName(TEXT("CoastalFloraDeadwoodB")), FName(TEXT("CoastalFloraDeadwoodC"))})
+    {
+        const auto* Batch = CoastalTreeTest::FindBatch(Coast, Name);
+        TestNotNull(*FString::Printf(TEXT("%s batch exists"), *Name.ToString()), Batch);
+        if (Batch)
+        {
+            DeadwoodInstances += Batch->GetInstanceCount();
+            TestTrue(*FString::Printf(TEXT("%s remains a sparse batch"), *Name.ToString()), Batch->GetInstanceCount() < 120);
+            TestEqual(*FString::Printf(TEXT("%s has no drone collision"), *Name.ToString()), Batch->GetCollisionEnabled(), ECollisionEnabled::NoCollision);
+        }
+    }
+    TestTrue(TEXT("Woodland floor receives visible but sparse deadwood"), DeadwoodInstances >= 12 && DeadwoodInstances < 240);
     // Trunk-base litter mask for the ground material (DEV-TERRAIN).
     {
         // A stand fir away from the corridor (lane trees deliberately carry no litter).
@@ -382,7 +395,7 @@ bool FCoastalFloraMaterialCompileTest::RunTest(const FString& Parameters)
             for (int32 Slot = 0; Slot < Batch->GetNumMaterials(); ++Slot)
                 if (UMaterialInterface* Interface = Batch->GetMaterial(Slot))
                     if (UMaterial* Material = Interface->GetMaterial(); Material && Material->GetName().Contains(TEXT("Draft"))) Materials.Add(Material);
-    TestTrue(TEXT("At least eleven flora draft materials are bound"), Materials.Num() >= 11);
+    TestTrue(TEXT("At least twelve flora draft materials are bound"), Materials.Num() >= 12);
     const bool bNullRHI = !GDynamicRHI || FCString::Strcmp(GDynamicRHI->GetName(), TEXT("Null")) == 0;
     AddInfo(FString::Printf(TEXT("FLORA_SHADER_GATE rhi=%s"), GDynamicRHI ? GDynamicRHI->GetName() : TEXT("none")));
     int32 Compiled = 0;

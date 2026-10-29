@@ -77,6 +77,9 @@ void APacificCoastGraybox::BuildCoastalHabitat()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> ForbA(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastAnnualForbADraft.SM_CoastAnnualForbADraft"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> ForbB(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastAnnualForbBDraft.SM_CoastAnnualForbBDraft"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> ForbC(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastAnnualForbCDraft.SM_CoastAnnualForbCDraft"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> DeadwoodA(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastDeadwoodADraft.SM_CoastDeadwoodADraft"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> DeadwoodB(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastDeadwoodBDraft.SM_CoastDeadwoodBDraft"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> DeadwoodC(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastDeadwoodCDraft.SM_CoastDeadwoodCDraft"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassTall(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastGrassTallDraft.SM_CoastGrassTallDraft"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> GrassSmall(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastGrassSmallDraft.SM_CoastGrassSmallDraft"));
     struct FKind { const TCHAR* Name; UStaticMesh* Mesh; float MinScale, MaxScale, CullStart, CullEnd; bool bShadow; float MinClearHalfWidthOffset; };
@@ -91,7 +94,10 @@ void APacificCoastGraybox::BuildCoastalHabitat()
         {TEXT("CoastalFloraGroundGrassSmall"), GrassSmall.Object, 2.0F, 3.4F, 2200, 3000, false, -400},
         {TEXT("CoastalFloraAnnualForbA"), ForbA.Object, 2.0F, 3.0F, 1000, 1600, false, -400},
         {TEXT("CoastalFloraAnnualForbB"), ForbB.Object, 2.2F, 3.2F, 1000, 1600, false, -400},
-        {TEXT("CoastalFloraAnnualForbC"), ForbC.Object, 2.4F, 3.5F, 1000, 1600, false, -400}};
+        {TEXT("CoastalFloraAnnualForbC"), ForbC.Object, 2.4F, 3.5F, 1000, 1600, false, -400},
+        {TEXT("CoastalFloraDeadwoodA"), DeadwoodA.Object, 1.0F, 1.7F, 3500, 5000, true, 180},
+        {TEXT("CoastalFloraDeadwoodB"), DeadwoodB.Object, 1.0F, 1.6F, 3500, 5000, true, 180},
+        {TEXT("CoastalFloraDeadwoodC"), DeadwoodC.Object, .9F, 1.5F, 3500, 5000, true, 180}};
     constexpr int32 KindCount = UE_ARRAY_COUNT(Kinds);
     TArray<FTransform> Instances[KindCount];
     // Trunk exclusion uses the real placed trees.
@@ -162,6 +168,36 @@ void APacificCoastGraybox::BuildCoastalHabitat()
             const float Scale = FMath::Lerp(K.MinScale, K.MaxScale, ScaleRoll);
             const FVector Base(P.X, P.Y, GetCoastalLandHeight(P.X, P.Y) - 3.0F);
             Instances[Kind].Add(FTransform(FRotator(0, Yaw, 0), Base, FVector(Scale)));
+        }
+    // Sparse woody debris breaks up the idealized forest floor. It remains outside protected
+    // flight infrastructure and trunk collars, and follows woodland/moisture rather than a uniform scatter.
+    FRandomStream DeadwoodRandom(60177);
+    constexpr float DeadwoodCell = 1500.0F;
+    for (float GX = -52000; GX < 12500; GX += DeadwoodCell)
+        for (float GY = -48000; GY < 48000; GY += DeadwoodCell)
+        {
+            const FVector2D P(GX + DeadwoodRandom.FRandRange(0, DeadwoodCell), GY + DeadwoodRandom.FRandRange(0, DeadwoodCell));
+            const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(P.X, P.Y);
+            const float Density = NearStandDensity(P.X, P.Y);
+            if (Density < .45F || Habitat.Woodland < .30F || Habitat.Rock + Habitat.Shore > .18F || Habitat.Grade > .48F) continue;
+            if (DeadwoodRandom.FRand() > FMath::Lerp(.16F, .34F, Habitat.Drainage)) continue;
+            if (IsProtected(P, 420) || IsWalkway(P, 260) || NearTrunk(P, 90)) continue;
+            float HalfWidth = 0;
+            if (CorridorDistance(P, &HalfWidth) < HalfWidth + 180.0F) continue;
+            const int32 Kind = 11 + DeadwoodRandom.RandRange(0, 2);
+            const FKind& K = Kinds[Kind];
+            if (!K.Mesh) continue;
+            const float Scale = DeadwoodRandom.FRandRange(K.MinScale, K.MaxScale);
+            const float Yaw = DeadwoodRandom.FRandRange(0, 360);
+            const FVector2D Axis = FVector2D(FMath::Cos(FMath::DegreesToRadians(Yaw)), FMath::Sin(FMath::DegreesToRadians(Yaw)));
+            const float HalfLength = FMath::Clamp(K.Mesh->GetBounds().BoxExtent.X * Scale, 35.0F, 120.0F);
+            const FVector2D EndA = P - Axis * HalfLength;
+            const FVector2D EndB = P + Axis * HalfLength;
+            const float HeightA = GetCoastalLandHeight(EndA.X, EndA.Y);
+            const float HeightB = GetCoastalLandHeight(EndB.X, EndB.Y);
+            const float Pitch = -FMath::RadiansToDegrees(FMath::Atan2(HeightB - HeightA, HalfLength * 2.0F));
+            const float CenterHeight = (HeightA + HeightB) * .5F - 2.0F;
+            Instances[Kind].Add(FTransform(FRotator(Pitch, Yaw, 0), FVector(P.X, P.Y, CenterHeight), FVector(Scale)));
         }
     // Near-camera ground cover around the launch worksite and route plateau (deferred to
     // DEV-FLORA by DEV-TERRAIN): dense tufts within ~25 m thinning out to 60 m, kept off the

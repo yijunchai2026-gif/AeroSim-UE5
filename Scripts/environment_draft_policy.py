@@ -5,9 +5,10 @@ from hero_cove_scan_contract import HERO_NAME, validate_manifest_contract
 MATERIALS={'M_CoastGroundDraft','M_CoastRockDraft','M_CoastNeedlesDraft','M_CoastBarkDraft','M_CoastWaterDraft','M_CoastGravelDraft','M_CoastCirrusDraft'}
 TEXTURES={f'T_Coast{part}_{channel}' for part in ('Ground','Rock','Needles','Bark','Gravel','WitheredGrass','SparseGrass','LeafLitter','StonyGround','EarthTrail','WornRock','RockFace','Foam') for channel in ('BaseColor','Normal','Roughness')}|{'T_CoastNeedles_Alpha','T_CoastDetailDirt_Normal','T_CoastDetailDirt_Roughness','T_CoastMacroGrassRock_BaseColor','T_CoastWitheredGrass_Height','T_CoastSparseGrass_Height','T_CoastLeafLitter_Height','T_CoastStonyGround_Height','T_CoastFoam_Opacity'}
 # DEV-FLORA habitat/tree intake (HabitatDraftImportCommandlet, fixed whitelist).
-MATERIALS|={'M_CoastDryGrassDraft','M_CoastBroadShrubDraft','M_CoastAnnualForbDraft','M_FloraFernDraft','M_FloraRooibosDraft','M_FloraPineNeedlesDraft','M_FloraFirNeedlesDraft',
+MATERIALS|={'M_CoastDryGrassDraft','M_CoastBroadShrubDraft','M_CoastAnnualForbDraft','M_CoastDeadwoodDraft','M_FloraFernDraft','M_FloraRooibosDraft','M_FloraPineNeedlesDraft','M_FloraFirNeedlesDraft',
             'M_FloraOakLeavesDraft','M_FloraPineBarkDraft','M_FloraFirBarkDraft','M_FloraOakBarkDraft','M_FloraTrunkLitterDraft'}
 TEXTURES|={f'T_Coast{part}_{channel}' for part in ('DryGrass','BroadShrub','AnnualForb') for channel in ('BaseColor','Alpha','Normal','Roughness')}
+TEXTURES|={f'T_CoastDeadwood_{channel}' for channel in ('BaseColor','Normal','Roughness')}
 TEXTURES|={f'T_Flora{part}_{channel}' for part in ('PineBark','FirBark','OakBark') for channel in ('BaseColor','Normal','Roughness')}
 TEXTURES|={f'T_Flora{part}_{channel}' for part in ('PineTwig','FirTwig','OakLeaf') for channel in ('BaseColor','Alpha','Normal','Roughness')}
 TEXTURES|={f'T_Flora{part}_{channel}' for part in ('Fern','Rooibos') for channel in ('BaseColor','Alpha','Normal','ARM')}
@@ -20,7 +21,8 @@ WILDLIFE_SOURCE_RECEIPTS={
 }
 TEXTURES|={f'T_FloraTrunkLitter_{channel}' for channel in ('BaseColor','Alpha','Normal','Roughness')}
 MESHES={'SM_CoastGrassSmallDraft','SM_CoastGrassTallDraft','SM_CoastGrassTinyDraft','SM_CoastShrubADraft','SM_CoastShrubBDraft',
-        'SM_CoastAnnualForbADraft','SM_CoastAnnualForbBDraft','SM_CoastAnnualForbCDraft','SM_FloraFernADraft','SM_FloraFernBDraft','SM_FloraRooibosADraft','SM_FloraRooibosBDraft'}
+        'SM_CoastAnnualForbADraft','SM_CoastAnnualForbBDraft','SM_CoastAnnualForbCDraft',
+        'SM_CoastDeadwoodADraft','SM_CoastDeadwoodBDraft','SM_CoastDeadwoodCDraft','SM_FloraFernADraft','SM_FloraFernBDraft','SM_FloraRooibosADraft','SM_FloraRooibosBDraft'}
 MESHES.add(HERO_NAME)
 def _validate_wildlife_assets(root:Path, actual:set[str])->list[str]:
     prefix='Content/ThirdParty/Wildlife/'

@@ -17,6 +17,7 @@
     "https://polyhaven.com/a/grass_medium_01",
     "https://polyhaven.com/a/shrub_03",
     "https://polyhaven.com/a/weed_plant_02",
+    "https://polyhaven.com/a/dry_branches_medium_01",
     "https://polyhaven.com/a/pine_bark",
     "https://polyhaven.com/a/bark_willow_02",
     "https://polyhaven.com/a/jolcham_oak_bark_01",
@@ -52,6 +53,11 @@
       "path": "Content/Development/CoastDraft/Materials/M_CoastCirrusDraft.uasset",
       "sha256": "81e93a3c9fed7225530258d1d9b8507d3c15ca653fb268f639a03f4565b32659",
       "bytes": 10923
+    },
+    {
+      "path": "Content/Development/CoastDraft/Materials/M_CoastDeadwoodDraft.uasset",
+      "sha256": "efcafd307173f055a8e54f56c04b66ca1a6281c5640d8d8fba5834fe55cfee0e",
+      "bytes": 15341
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_CoastDryGrassDraft.uasset",
@@ -142,6 +148,21 @@
       "path": "Content/Development/CoastDraft/Meshes/SM_CoastAnnualForbCDraft.uasset",
       "sha256": "0432497246d55e52b941c9b24f6cfc50b7aa0480103b854923fc7fad6d97ba32",
       "bytes": 102392
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_CoastDeadwoodADraft.uasset",
+      "sha256": "f63d3133eddac45499672592f347306c1c64a4f755401717adf1d03970284e12",
+      "bytes": 267374
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_CoastDeadwoodBDraft.uasset",
+      "sha256": "107ee42ec6c6fad61f5e582304ef863d140ae640c95ca77fa408a93517950665",
+      "bytes": 215623
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_CoastDeadwoodCDraft.uasset",
+      "sha256": "ee2758e8da8eb4b0e37dbfaf9b37727157451ddbd37d6cf0f781e9bc1a426520",
+      "bytes": 225280
     },
     {
       "path": "Content/Development/CoastDraft/Meshes/SM_CoastGrassSmallDraft.uasset",
@@ -247,6 +268,21 @@
       "path": "Content/Development/CoastDraft/Textures/T_CoastBroadShrub_Roughness.uasset",
       "sha256": "71414ff54fc6cd83557d3a67c88e023201599738f3ef99c384477b70d594de1d",
       "bytes": 266989
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastDeadwood_BaseColor.uasset",
+      "sha256": "e159ce3d8d3d703adb625a0bfd9a0bf9798d4eda5bb058638dc5392696bacf75",
+      "bytes": 782956
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastDeadwood_Normal.uasset",
+      "sha256": "201a6cea60198b06e54dd5995ce6c61397adcb176c02ef6134d97b9508c9254c",
+      "bytes": 1175659
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastDeadwood_Roughness.uasset",
+      "sha256": "f63307042d2d47840100cd13f31ca87fca3c39859224f9e7fff917ec217a13bb",
+      "bytes": 570554
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_CoastDetailDirt_Normal.uasset",
@@ -1481,6 +1517,21 @@
       "license": "CC0-1.0"
     },
     {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastDeadwoodADraft.mesh.json",
+      "sha256": "b8b175299a30b7b271396962ee9e375fc9fec3ac335f996bb9a45d210ce389f6",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastDeadwoodBDraft.mesh.json",
+      "sha256": "b3e2a3550ebd8f13a4f380e57d590a84eecf3783e479065b439aa9118336c96d",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastDeadwoodCDraft.mesh.json",
+      "sha256": "1ca763773b248f6d15bb30f03d1cdddd1f4ca29c45032fc6ef97895b42892b10",
+      "license": "CC0-1.0"
+    },
+    {
       "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastGrassSmallDraft.mesh.json",
       "sha256": "48971697ee0357a132114c744c25181b0b53f4ea63899cf81c406ae0d4b2caa3",
       "license": "CC0-1.0"
@@ -1523,6 +1574,46 @@
     {
       "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_FloraRooibosBDraft.mesh.json",
       "sha256": "7f2acd46200c40d4f438204e6b7f7db915497af6f0e6c1edc5550a50924521ca",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/basecolor.jpg",
+      "sha256": "1fbaf810a9ca29d2faf0a179834e8dce10cf4854bafe13f63af111030b3ec660",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/dry_branches_medium_01.bin",
+      "sha256": "969da1e8cbb2d8201e7fa0fc0dac5b19ef354b32c3d8c62dd9faa7cb3833d8ca",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/dry_branches_medium_01.gltf",
+      "sha256": "23f328ded9be1e151ccd7994b303c70221551544c4857a71474c1c01a14b8a22",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/normal.jpg",
+      "sha256": "e16b61af1a0ff3c962a40a4628f13ab5694aad3923c1a0c92d187fa58e43300b",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/roughness.jpg",
+      "sha256": "d05c42ee31b05a9dc90b29637d716201b79d64cba64dc963e31dd85cdccc2f5a",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/textures/dry_branches_medium_01_arm_1k.jpg",
+      "sha256": "6d1ba6f4763d2815301a15bf62eaf68c345cecafb107e2681d12f26fbc657f5a",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/textures/dry_branches_medium_01_diff_1k.jpg",
+      "sha256": "1fbaf810a9ca29d2faf0a179834e8dce10cf4854bafe13f63af111030b3ec660",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/dry_branches_medium_01/textures/dry_branches_medium_01_nor_gl_1k.jpg",
+      "sha256": "62f5205bfec599000bb7a430e003bbada939bc8d7976a7d3ab7709fd5893413c",
       "license": "CC0-1.0"
     },
     {
