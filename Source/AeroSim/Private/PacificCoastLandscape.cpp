@@ -86,7 +86,7 @@ void APacificCoastGraybox::ApplyCoastalMaterials()
     {
         UMeshComponent* Mesh = CoastalColorParts[Index];
         if (Mesh == nullptr || Mesh->GetMaterial(0) == nullptr) continue;
-        const bool bWorkedGround=Mesh->GetFName()==TEXT("CoastalLaunchApron")||Mesh->GetFName()==TEXT("CoastalLaunchAccessTrail")||Mesh->GetFName()==TEXT("CoastalForestTrail");
+        const bool bWorkedGround=Mesh->GetFName()==TEXT("CoastalLaunchApron")||Mesh->GetFName()==TEXT("CoastalLaunchAccessTrail")||Mesh->GetFName()==TEXT("CoastalForestTrail")||Mesh->GetFName()==TEXT("CoastalMountainTrail");
         if(CoastalGravelMaterial && bWorkedGround)
             Mesh->SetMaterial(0,CoastalGravelMaterial);
         if(bWorkedGround)

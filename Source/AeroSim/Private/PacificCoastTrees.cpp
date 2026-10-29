@@ -1601,6 +1601,38 @@ float CorridorDistance(const FVector2D& Point, float* OutHalfWidth, FVector2D* O
     return Best;
 }
 
+FVector2D MountainTrailPoint(const float T)
+{
+    static const FVector2D Points[] = {
+        {-5100.0F, -6400.0F}, {-14000.0F, -7600.0F}, {-22000.0F, -10300.0F},
+        {-28500.0F, -4700.0F}, {-35500.0F, -11200.0F}, {-43000.0F, -7200.0F},
+        {-50500.0F, -15100.0F}, {-59000.0F, -10800.0F}};
+    constexpr int32 PointCount = static_cast<int32>(UE_ARRAY_COUNT(Points));
+    const float Scaled = FMath::Clamp(T, 0.0F, 1.0F) * (PointCount - 1);
+    const int32 Segment = FMath::Min(FMath::FloorToInt(Scaled), PointCount - 2);
+    const float Local = Scaled - Segment;
+    const FVector2D& P0 = Points[FMath::Max(0, Segment - 1)];
+    const FVector2D& P1 = Points[Segment];
+    const FVector2D& P2 = Points[Segment + 1];
+    const FVector2D& P3 = Points[FMath::Min(Segment + 2, PointCount - 1)];
+    return .5F * ((2.0F * P1) + (-P0 + P2) * Local
+        + (2.0F * P0 - 5.0F * P1 + 4.0F * P2 - P3) * Local * Local
+        + (-P0 + 3.0F * P1 - 3.0F * P2 + P3) * Local * Local * Local);
+}
+
+float MountainTrailDistance(const FVector2D& Point)
+{
+    float Best = MAX_flt;
+    FVector2D Previous = MountainTrailPoint(0.0F);
+    for (int32 Index = 1; Index <= 128; ++Index)
+    {
+        const FVector2D Current = MountainTrailPoint(Index / 128.0F);
+        Best = FMath::Min(Best, static_cast<float>(SegmentDistance(Point, Previous, Current)));
+        Previous = Current;
+    }
+    return Best;
+}
+
 float BoardwalkDistance(const FVector2D& Point)
 {
     const FVector2D Relative = Point - WalkCenter;
@@ -1630,6 +1662,7 @@ bool IsProtected(const FVector2D& Point, float Clearance)
 
 bool IsWalkway(const FVector2D& Point, float Clearance)
 {
+    if (MountainTrailDistance(Point) < Clearance) return true;
     for (int32 Index = 1; Index < 4; ++Index)
         if (SegmentDistance(Point, LaunchPath[Index - 1], LaunchPath[Index]) < Clearance) return true;
     if (BoardwalkDistance(Point) < Clearance) return true;
@@ -1886,6 +1919,7 @@ const FLayout& GetLayout()
             }
             const float MaxLean = A.Species == ESpecies::MontereyPine ? 8.0F : A.Species == ESpecies::CoastLiveOak ? 0 : 4.0F;
             NextGirth = Girth;
+            if (MountainTrailDistance(P) < TrunkRadius + 170.0F) continue;
             Place(P, Archetype, Scale, Yaw, FMath::DegreesToRadians(MaxLean * LeanRoll), LeanYaw, true, false, Spacing);
         }
     // 3. Woodland mosaic beyond the near stands, driven by DEV-TERRAIN habitat classes:
@@ -1912,6 +1946,7 @@ const FLayout& GetLayout()
             const bool bOak = Habitat.Drainage > .45F ? Pick < .75F : Habitat.SunExposure > -.1F ? Pick < .55F : Pick < .2F;
             const bool bPine = !bOak && P.X > -25000 && Pick > .5F;
             const int32 Archetype = bOak ? Oaks[Distant.RandRange(0, Oaks.Num() - 1)] : bPine ? Pines[Distant.RandRange(0, Pines.Num() - 1)] : Firs[Distant.RandRange(0, Firs.Num() - 1)];
+            if (MountainTrailDistance(P) < 320.0F) continue;
             Place(P, Archetype, FMath::Lerp(.8F, 1.1F, ScaleRoll), Yaw, 0, 0, false, false, 300);
             ++DistantCount;
         }

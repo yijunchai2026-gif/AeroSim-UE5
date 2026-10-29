@@ -81,6 +81,8 @@ FTransform InstanceTransform(const FPlacedTree& Tree);
 float NearStandDensity(float X, float Y);
 /** Distance (cm) from the training corridor centreline; outputs the local clear half width. */
 float CorridorDistance(const FVector2D& Point, float* OutHalfWidth = nullptr, FVector2D* OutTangent = nullptr);
+FVector2D MountainTrailPoint(float T);
+float MountainTrailDistance(const FVector2D& Point);
 /** True if the point lies within Clearance of the flight route, launch path, boardwalk or trails. */
 bool IsProtected(const FVector2D& Point, float Clearance);
 /** True within Clearance of the launch access path, forest trails or boardwalk (not the flight route). */

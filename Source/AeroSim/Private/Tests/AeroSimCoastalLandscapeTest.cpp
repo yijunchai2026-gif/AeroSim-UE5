@@ -98,6 +98,27 @@ bool FCoastalSceneSupportTest::RunTest(const FString& Parameters)
         }
     }
     TestTrue(TEXT("Bridge connects to an at-grade continuous trail"),TrailFound);
+    bool MountainTrailFound=false;
+    for(auto* Mesh:Meshes)
+    {
+        if(Mesh->GetFName()!=TEXT("CoastalMountainTrail"))continue;
+        MountainTrailFound=true;
+        const FProcMeshSection* Section=Mesh->GetProcMeshSection(0);
+        if(!TestNotNull(TEXT("Mountain trail contains real mesh geometry"),Section))return false;
+        TestEqual(TEXT("Mountain trail bounded tessellation"),Section->ProcVertexBuffer.Num(),189*7);
+        TestFalse(TEXT("Mountain trail does not add flight collision"),Mesh->IsCollisionEnabled());
+        float MaxGrade=0.0F;
+        for(int32 Row=1;Row<189;++Row)
+        {
+            const FVector A=Section->ProcVertexBuffer[(Row-1)*7+3].Position;
+            const FVector B=Section->ProcVertexBuffer[Row*7+3].Position;
+            MaxGrade=FMath::Max(MaxGrade,FMath::Abs(B.Z-A.Z)/FMath::Max(1.0F,FVector2D::Distance(FVector2D(A.X,A.Y),FVector2D(B.X,B.Y))));
+        }
+        const float Gain=Section->ProcVertexBuffer[(189-1)*7+3].Position.Z-Section->ProcVertexBuffer[3].Position.Z;
+        TestTrue(TEXT("Mountain trail climbs at least fifteen metres"),Gain>1500.0F);
+        TestTrue(TEXT("Mountain trail grade stays hikeable"),MaxGrade<.35F);
+    }
+    TestTrue(TEXT("A continuous switchback trail climbs the mountain"),MountainTrailFound);
     // DEV-FLORA: foliage material checks moved to AeroSim.Coastal.Flora.FoliageMaterials (instanced archetypes).
     float Roughness;
     TestTrue(TEXT("Solid coast material exposes physical roughness control"), Material != nullptr && Material->GetScalarParameterValue(FMaterialParameterInfo(TEXT("Roughness")),Roughness));

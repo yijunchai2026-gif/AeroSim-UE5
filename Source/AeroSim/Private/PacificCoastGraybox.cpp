@@ -1,4 +1,5 @@
 #include "PacificCoastGraybox.h"
+#include "PacificCoastFlora.h"
 
 #include "Animation/AnimSequence.h"
 #include "Components/DirectionalLightComponent.h"
@@ -404,6 +405,44 @@ APacificCoastGraybox::APacificCoastGraybox()
     if(GroundMesh)Trail->SetMaterial(0,CoastalGravelMaterial ? CoastalGravelMaterial.Get() : GroundMesh->GetMaterial(0));
     CoastalColorParts.Add(Trail);CoastalPartColors.Add(FLinearColor::White);++GeneratedPrimitiveCount;
     ++GeneratedHeroZoneCount;
+
+    UProceduralMeshComponent* MountainTrail=CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("CoastalMountainTrail"));
+    MountainTrail->SetupAttachment(Root);MountainTrail->SetCollisionProfileName(TEXT("NoCollision"));MountainTrail->SetCastShadow(false);
+    TArray<FVector> MountainVertices,MountainNormals;TArray<FVector2D> MountainUV;TArray<FLinearColor> MountainColors;TArray<int32> MountainIndices;
+    constexpr int32 MountainRows=189,MountainColumns=7;
+    for(int32 Row=0;Row<MountainRows;++Row)
+    {
+        const float T=Row/static_cast<float>(MountainRows-1);
+        const FVector2D Center2D=CoastFlora::MountainTrailPoint(T);
+        const FVector2D Before=CoastFlora::MountainTrailPoint(FMath::Max(0.0F,T-.002F));
+        const FVector2D After=CoastFlora::MountainTrailPoint(FMath::Min(1.0F,T+.002F));
+        const FVector2D Tangent=(After-Before).GetSafeNormal();
+        const FVector2D TrailAcross(-Tangent.Y,Tangent.X);
+        const float Fade=FMath::SmoothStep(0.0F,.02F,T)*(1.0F-FMath::SmoothStep(.97F,1.0F,T));
+        const float HalfWidth=(150.0F+14.0F*FMath::Sin(T*43.0F)+8.0F*FMath::Sin(T*97.0F))*FMath::Max(.04F,Fade);
+        for(int32 Column=0;Column<MountainColumns;++Column)
+        {
+            const float Edge=FMath::Abs(Lateral[Column]);
+            const FVector2D Planar=Center2D+TrailAcross*(Lateral[Column]*HalfWidth);
+            FVector P(Planar,GetCoastalLandHeight(Planar.X,Planar.Y)+FMath::Lerp(2.8F,.2F,Edge*Edge));
+            const float Cover=GetCoastalVegetationCover(P.X,P.Y);
+            FLinearColor C=FMath::Lerp(FLinearColor(.34F,.18F,.07F),FLinearColor(.16F,.22F,.10F),Cover);
+            C.A=(1.0F-FMath::SmoothStep(.62F,1.0F,Edge))*Fade;
+            MountainVertices.Add(P);MountainUV.Add(FVector2D(P.X/4000.0F,P.Y/4000.0F));MountainColors.Add(C);
+            const float DX=(GetCoastalLandHeight(P.X+10,P.Y)-GetCoastalLandHeight(P.X-10,P.Y))/20;
+            const float DY=(GetCoastalLandHeight(P.X,P.Y+10)-GetCoastalLandHeight(P.X,P.Y-10))/20;
+            MountainNormals.Add(FVector(-DX,-DY,1).GetSafeNormal());
+        }
+    }
+    for(int32 Row=0;Row<MountainRows-1;++Row)
+        for(int32 Column=0;Column<MountainColumns-1;++Column)
+        {
+            const int32 A=Row*MountainColumns+Column,B=A+1,C=A+MountainColumns,D=C+1;
+            MountainIndices.Append({A,B,C,B,D,C});
+        }
+    MountainTrail->CreateMeshSection_LinearColor(0,MountainVertices,MountainIndices,MountainNormals,MountainUV,MountainColors,TArray<FProcMeshTangent>(),false);
+    if(GroundMesh)MountainTrail->SetMaterial(0,CoastalGravelMaterial ? CoastalGravelMaterial.Get() : GroundMesh->GetMaterial(0));
+    CoastalColorParts.Add(MountainTrail);CoastalPartColors.Add(FLinearColor::White);++GeneratedPrimitiveCount;
 
     for (int32 Index = 0; Index < 4; ++Index)
     {
