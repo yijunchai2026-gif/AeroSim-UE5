@@ -76,8 +76,8 @@ void APacificCoastGraybox::BuildCoastalLandscape()
     CoastalClouds->SetMaterial(CloudFinder.Object);
     CoastalClouds->SetLayerBottomAltitude(1.2F);
     CoastalClouds->SetLayerHeight(3.0F);
-    CoastalClouds->SetViewSampleCountScale(.5F);
-    CoastalClouds->SetShadowViewSampleCountScale(.25F);
+    CoastalClouds->SetViewSampleCountScale(.8F);
+    CoastalClouds->SetShadowViewSampleCountScale(.5F);
 }
 
 void APacificCoastGraybox::ApplyCoastalMaterials()

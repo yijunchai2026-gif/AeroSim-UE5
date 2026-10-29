@@ -141,6 +141,7 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
                 PerimeterMax = FMath::Max(PerimeterMax, static_cast<float>(V.Position.Z));
         }
         TestTrue(TEXT("Distant range perimeter is rooted below sea level"), PerimeterMax < APacificCoastGraybox::SeaLevelCm - 3000);
+        TestEqual(TEXT("Distant skyline uses the bounded high-detail Metal fallback budget"), Section->ProcIndexBuffer.Num() / 3, 86400);
         TestTrue(TEXT("Distant range starts behind the playable land"), Box.Max.X < -228000);
         TestTrue(TEXT("Receding ridgelines rise above the near main summit"), Top > 40000 && Top < 70000);
         AddInfo(FString::Printf(TEXT("Distant range top %.0f cm; perimeter max %.0f cm; %d triangles"), Top, PerimeterMax, Section->ProcIndexBuffer.Num() / 3));
@@ -161,7 +162,11 @@ bool FCoastalHabitatTest::RunTest(const FString& Parameters)
             if (Top.Z > APacificCoastGraybox::SeaLevelCm + 100) ++Emergent;
             if (FMath::Abs(Top.X - APacificCoastGraybox::GetCoastalShoreX(Top.Y)) < 2500) ++NearWaterline;
         }
+        int32 TexturedVertices = 0;
+        for (const FProcMeshVertex& Vertex : Section->ProcVertexBuffer)
+            if (!Vertex.UV0.IsNearlyZero()) ++TexturedVertices;
         TestEqual(TEXT("64 coast blocks plus 24 hero-cove rocks"), Blocks, 88);
+        TestTrue(TEXT("Talus carries non-degenerate metric UVs for fallback materials"), TexturedVertices * 10 >= Section->ProcVertexBuffer.Num() * 9);
         TestTrue(TEXT("At least a quarter of the talus blocks break the sea surface"), Emergent * 4 >= Blocks);
         TestTrue(TEXT("Talus blocks sit at the actual waterline, not buried behind the cliff"), NearWaterline * 10 >= Blocks * 9);
         int32 CoveRocks = 0;

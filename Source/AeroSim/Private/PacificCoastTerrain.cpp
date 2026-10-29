@@ -1160,7 +1160,7 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
     // Distant receding ridgelines (3–9 km): a separate low-density shell that starts below sea level
     // under the west collar and rises westward, giving layered skylines for atmospheric haze.
     {
-        constexpr int32 RangeColumns = 141, RangeRows = 161;
+        constexpr int32 RangeColumns = 181, RangeRows = 241;
         TArray<FVector> RangeVertices, RangeNormals;
         TArray<FVector2D> RangeUV;
         TArray<FLinearColor> RangeColors;
@@ -1179,7 +1179,8 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
                 // Same aspect rule as the land habitat: dry grass on sun-facing slopes, dark cover on shaded ones.
                 const float Grade = FMath::Sqrt(GX * GX + GY * GY);
                 const float Facing = Grade > 1e-4F ? (-GX * .45F + GY * .89F) / Grade : 0.0F;
-                const float Shade = Smooth(.42F + .30F * Facing + .16F * Noise(X, Y, 52000.0F)) * Smooth(Grade / .18F);
+                const float Shade = Smooth(.40F + .28F * Facing + .15F * Noise(X, Y, 52000.0F)
+                    + .10F * Noise(X + 1700.0F, Y - 2300.0F, 14000.0F)) * Smooth(Grade / .18F);
                 const float Rock = Smooth((Grade - .65F) / .3F);
                 RangeColors.Add(FLinearColor(.55F - .18F * Shade, .28F + .18F * Shade, .12F + .22F * Rock, 1.0F));
             }
@@ -1228,6 +1229,7 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
     // Angular fallen buttresses intersect the supported cliff foot, with submerged bases.
     // Unequal spacing, rotation and proportions avoid the former row of identical cubes.
     TArray<FVector> TalusVertices, TalusNormals;
+    TArray<FVector2D> TalusUV;
     TArray<int32> TalusIndices;
     FRandomStream RockRandom(914823);
     // R3: 64 unequal blocks; half gather at the eroded cove centres as a supported talus/rubble
@@ -1288,6 +1290,8 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
             TalusIndices.Append({BaseIndex + 1 + (Rings - 1) * Corners + Corner, Crown, BaseIndex + 1 + (Rings - 1) * Corners + Next});
         }
     }
+    TalusUV.Reserve(TalusVertices.Num());
+    for (const FVector& TalusVertex : TalusVertices) TalusUV.Add(FVector2D(TalusVertex.X, TalusVertex.Y) / 1000.0F);
     TalusNormals.Init(FVector::ZeroVector, TalusVertices.Num());
     for (int32 Index = 0; Index < TalusIndices.Num(); Index += 3)
     {
@@ -1299,7 +1303,7 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
     UProceduralMeshComponent* Talus = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("CoastalTalusButtresses"));
     Talus->SetupAttachment(Root); Talus->bUseAsyncCooking = true;
     Talus->SetCollisionProfileName(TEXT("BlockAll"));
-    Talus->CreateMeshSection_LinearColor(0, TalusVertices, TalusIndices, TalusNormals, TArray<FVector2D>(), TArray<FLinearColor>(), TArray<FProcMeshTangent>(), true);
+    Talus->CreateMeshSection_LinearColor(0, TalusVertices, TalusIndices, TalusNormals, TalusUV, TArray<FLinearColor>(), TArray<FProcMeshTangent>(), true);
     Talus->SetMaterial(0, Material);
     CoastalColorParts.Add(Talus); CoastalPartColors.Add(FLinearColor(.18F,.18F,.15F));
     ++GeneratedPrimitiveCount;
