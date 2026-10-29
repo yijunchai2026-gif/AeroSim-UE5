@@ -148,7 +148,9 @@ bool FCoastalCirrusTest::RunTest(const FString& Parameters)
     TestTrue(TEXT("Cirrus field is time-independent (deterministic baseline, no wind)"), !Code.Contains(TEXT("T*"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("*T"), ESearchCase::CaseSensitive) && !Code.Contains(TEXT("+T"), ESearchCase::CaseSensitive));
     TestTrue(TEXT("Cirrus has one prevailing direction (no rotating/swirling streak axis)"), !Code.Contains(TEXT("cos("), ESearchCase::CaseSensitive) && Code.Contains(TEXT("float2 dir=float2(.94,.342)")));
     TestTrue(TEXT("Cirrus is masked below the horizon and around the sun"), Code.Contains(TEXT("smoothstep(.02,.14,v.z)")) && Code.Contains(TEXT("dot(v,normalize(S))")));
-    TestTrue(TEXT("Cirrus combines a secondary high-altitude filament layer"), Code.Contains(TEXT("float c3=cf.eval")) && Code.Contains(TEXT("c=max(c,c3*.35)")));
+    TestTrue(TEXT("Cirrus breaks azimuth repetition without adding time dependence"), Code.Contains(TEXT("float az=atan2(v.x,v.y)")) && Code.Contains(TEXT("sin(el*2.9+az*.43)*.07")) && Code.Contains(TEXT("az*2.41+warp")) && !Code.Contains(TEXT("atan2(v.x,v.y)*3.0")));
+    TestTrue(TEXT("Cirrus shears and drifts fibre scales instead of stacking parallel bands"), Code.Contains(TEXT("float drift=noise.f(float2(r.x*.22,r.y*.45)+1.9)-.5")) && Code.Contains(TEXT("r2=float2(r.x+r.y*.38,r.y-r.x*.22)")) && Code.Contains(TEXT("r3=float2(r.x-r.y*.46,r.y+r.x*.27)")));
+    TestTrue(TEXT("Cirrus combines a secondary high-altitude filament layer"), Code.Contains(TEXT("float c3=cf.eval")) && Code.Contains(TEXT("az*4.79+5.7+warp*.55")) && Code.Contains(TEXT("el*12.71+az*.14+2.1")) && Code.Contains(TEXT("c=max(c,c3*.35)")));
     UWorld* World = UWorld::CreateWorld(EWorldType::Game, false);
     APacificCoastGraybox* Coast = World ? World->SpawnActor<APacificCoastGraybox>() : nullptr;
     if (TestNotNull(TEXT("Coast spawns"), Coast))

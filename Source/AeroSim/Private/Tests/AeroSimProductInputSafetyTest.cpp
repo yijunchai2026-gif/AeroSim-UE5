@@ -323,4 +323,18 @@ bool FAeroSimControlFlightRollbackTest::RunTest(const FString& Parameters)
     }
     return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FAeroSimControlIntentStartsFlightTest,
+    "AeroSim.ProductUX.Input.ControlIntentStartsFlight",
+    EAutomationTestFlags::EditorContext|EAutomationTestFlags::EngineFilter)
+bool FAeroSimControlIntentStartsFlightTest::RunTest(const FString& Parameters)
+{
+    AeroSimInputSafetyTests::FTestWorld Fixture(true);
+    if (!Fixture.IsValid() || !TestNotNull(TEXT("Actual product GameMode"), Fixture.GameMode)) return false;
+    Fixture.GameMode->StartFlightFromControlIntent();
+    TestEqual(TEXT("Flight control intent leaves menu focus immediately"), Fixture.GameMode->GetProductPage(), EProductPage::Flight);
+    TestEqual(TEXT("Flight control intent starts mission"), Fixture.GameMode->GetPhase4Mission().Stage, EPhase4MissionStage::Takeoff);
+    TestTrue(TEXT("Flight control intent releases safe pause"), Fixture.Pawn->GetFlightModel().Phase != EFlightPhase::Paused);
+    return true;
+}
 #endif

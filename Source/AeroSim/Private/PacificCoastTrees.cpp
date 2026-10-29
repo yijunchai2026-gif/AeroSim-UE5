@@ -1063,7 +1063,7 @@ void EmitHeroFoliage(const FSkeleton& K, int32 Lod, FLod& Out)
 void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrossed = true)
 {
     const bool bOak = K.Species == ESpecies::CoastLiveOak;
-    const int32 TrunkSides = Lod == 0 ? 14 : Lod == 1 ? 8 : Lod == 2 ? 5 : 3;
+    const int32 TrunkSides = Lod == 0 ? 14 : Lod <= 2 ? 8 : 3;
     TArray<TPair<float, float>> Lobes;
     FRandomStream LobeRandom(Seed);
     const int32 LobeCount = LobeRandom.RandRange(K.Species == ESpecies::CoastLiveOak ? 4 : 3, 5);
@@ -1082,10 +1082,10 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
             const float Base = K.TrunkRadius[Ring];
             if (K.Species != ESpecies::CoastLiveOak && K.Height < 500) return Base; // seedlings: no collar
             const float Section = K.bHeroShape ? 1.0F + .035F * Smooth01((Z - 450.0F) / 350.0F) * FMath::Sin(Theta * 2 + Z * .001F) : 1.0F;
-            // LOD2+ keep the smooth flare (no buttress lobes) so mid-distance bases never read as cylinders.
+            // LOD2 keeps low collar lobes without separate surface-root geometry; LOD3 stays smooth.
             // Far trunks are thinned (LOD2 x0.8, LOD3 x0.55) so from 300 m+ the crowns, not poles, dominate.
             const float Far = Lod == 2 ? .8F : Lod == 3 ? .55F : 1.0F;
-            return Section * Far * (Lod >= 2 ? Base * (1.0F + .18F * FMath::Exp(-FMath::Max(Z, 0.0F) / 30.0F)) : CollarRadius(Z, Theta, Base, Lobes));
+            return Section * Far * (Lod == 2 ? CollarRadius(Z, Theta, Base, Lobes) : Lod >= 3 ? Base * (1.0F + .18F * FMath::Exp(-FMath::Max(Z, 0.0F) / 30.0F)) : CollarRadius(Z, Theta, Base, Lobes));
         }, TrunkSides, URepeats, K.TileV,
         [&](int32 Ring)
         {
@@ -1096,9 +1096,9 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
             return FVector4f(FMath::Min(FMath::Clamp(Z / 90.0F, 0.0F, 1.0F), Shade), FMath::Square(FMath::Max(Z, 0.0F) / Height) * .12F, 0, 1);
         });
     // R9 surface root swells: low, mostly buried ridges along each buttress lobe that run out and
-    // down into the soil (LOD0/1). They read as a rooted base, never as legs (they start inside
+    // down into the soil (LOD0/1, plus a simplified LOD2 profile). They read as a rooted base, never as legs (they start inside
     // the collar at <=15 cm height and end 15 cm below grade).
-    if (Lod <= 1 && K.Height >= 500)
+    if (Lod <= 2 && K.Height >= 500)
     {
         const float R0 = K.TrunkRadius.IsValidIndex(1) ? K.TrunkRadius[1] : K.Breast;
         for (const auto& Lobe : Lobes)
@@ -1114,7 +1114,7 @@ void EmitLod(const FSkeleton& K, int32 Lod, FLod& Out, uint32 Seed, bool bCrosse
                 RootDir * Reach * .68F + Side * Bend * .52F + FVector(0, 0, -8),
                 RootDir * Reach + Side * Bend * .35F + FVector(0, 0, -22)};
             Sweep(Out.Bark, Path, [&](int32 Ring, float) { return R0 * FMath::Lerp(.28F, .025F, Ring / 3.0F); },
-                Lod == 0 ? 6 : 4, 1.0F, K.TileV, [](int32) { return FVector4f(.1F, 0, 0, 1); });
+                Lod == 0 ? 6 : Lod == 1 ? 4 : 3, 1.0F, K.TileV, [](int32) { return FVector4f(.1F, 0, 0, 1); });
         }
     }
     for (const FLimb& Limb : K.Limbs)
@@ -1659,14 +1659,14 @@ float NearStandDensity(const float X, const float Y)
     const float Erosion = 3200.0F * (Fbm(X + 11000.0F, Y - 3000.0F, 3600.0F) - .25F) + 1400.0F * (Fbm(X - 2700.0F, Y + 5100.0F, 1500.0F) - .4F);
     // R11: the review poses' stand edge (south, around the corridor entry) is exempt, so the
     // forest view keeps a closed crown ceiling; the north grove also gets a 150-300 m outline shape.
-    const float NorthShape = Y > 0 ? 7000.0F * (Fbm(X - 15000.0F, 2100.0F, 22000.0F) - .45F) + 4000.0F * (Fbm(X + 8000.0F, 900.0F, 11000.0F) - .5F) + 3200.0F * (Fbm(X * 1.5F, Y * 1.5F, 2800.0F) - .48F) : 0.0F;
+    const float NorthShape = Y > 0 ? 11000.0F * (Fbm(X - 15000.0F, Y + 2100.0F, 22000.0F) - .45F) + 7000.0F * (Fbm(X + 8000.0F, Y + 900.0F, 11000.0F) - .5F) + 4500.0F * (Fbm(X * 1.5F, Y * 1.5F, 2800.0F) - .48F) : 0.0F;
     const float Inside = FMath::Min(FMath::Min(AbsY - FieldEdge, OuterEdge - AbsY - NorthShape), FMath::Min(X - WestEdge, EastEdge - X))
         - (Y > 0 ? 2.6F : EntryKeep) * Erosion;
     if (Inside <= 0)
     {
         // Outside the core stands, woodland-class ground (DEV-TERRAIN habitat) carries a looser
         // forest out along shaded slopes and gullies, so stands have no drawn outline.
-        if (AbsY < FieldEdge || AbsY > 40000.0F || X < -44000.0F || X > EastEdge) return 0;
+        if (AbsY < FieldEdge || AbsY > 48000.0F || X < -52000.0F || X > EastEdge) return 0;
         const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(X, Y);
         const float Woodland = Habitat.Woodland + .5F * Habitat.ShelteredGrass - .6F * Habitat.Rock;
         const float Reach = 1.0F - Smooth01(-Inside / 9000.0F);
@@ -1811,8 +1811,8 @@ const FLayout& GetLayout()
     }
     // 2. Fixed-density stand fill: jittered 5.0 m lattice with Poisson-style rejection.
     constexpr float Cell = 400.0F;
-    for (float GX = -45000; GX < 12500; GX += Cell)
-        for (float GY = -41000; GY < 41000; GY += Cell)
+    for (float GX = -52000; GX < 12500; GX += Cell)
+        for (float GY = -48000; GY < 48000; GY += Cell)
         {
             // Full-cell jitter plus up to ~1 m overlap into neighbouring cells hides the lattice.
             const FVector2D P(GX + Random.FRandRange(-.1F, 1.1F) * Cell, GY + Random.FRandRange(-.1F, 1.1F) * Cell);
@@ -1821,17 +1821,25 @@ const FLayout& GetLayout()
             const float Yaw = Random.FRandRange(0, 2 * PI), LeanYaw = Random.FRandRange(0, 2 * PI), LeanRoll = Random.FRand(), ScaleRoll = Random.FRand();
             if (Density <= 0 || Roll > Density * .97F) continue;
             if (IsProtected(P, 330)) continue;
-            // Live oak patches occupy sheltered low ground and parts of the field edge.
-            const float Oakness = Fbm(P.X - 2300, P.Y + 7700, 7800.0F) + (FMath::Abs(P.Y) < 11000 ? .08F : 0) - (P.X < -24000 ? .1F : 0);
-            const bool bOakPatch = Oakness > .60F;
+            // Species follow Bay Area coastal gradients instead of noise alone: coast live oak
+            // occupies warm, moderately drained sheltered pockets; Douglas-fir takes moist shaded
+            // gullies; Monterey pine is concentrated on exposed maritime shoulders.
+            const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(P.X, P.Y);
+            const float ModerateDrainage = 1.0F - FMath::Clamp(FMath::Abs(Habitat.Drainage - .42F) / .42F, 0.0F, 1.0F);
+            const float Oakness = .55F * Fbm(P.X - 2300, P.Y + 7700, 7800.0F)
+                + .25F * ModerateDrainage + .14F * Habitat.ShelteredGrass - .12F * Habitat.Grade
+                + (FMath::Abs(P.Y) < 11000 ? .05F : 0) - (P.X < -24000 ? .08F : 0);
+            const bool bOakPatch = Oakness > .50F;
             int32 Archetype;
             EAge Age = AgeRoll < .62F ? EAge::Mature : AgeRoll < .85F ? EAge::Pole : EAge::Sapling;
             if (Age == EAge::Sapling) Archetype = Saplings[Random.RandRange(0, Saplings.Num() - 1)];
             else if (bOakPatch && Age == EAge::Mature && SpeciesRoll < .55F) Archetype = Oaks[Random.RandRange(0, Oaks.Num() - 1)];
             else
             {
-                // Monterey pine favours the seaward (east) side, Douglas-fir the inland slopes.
-                const bool bPine = SpeciesRoll < (P.X > -6000 ? .62F : .30F);
+                const float MaritimeBase = P.X > -6000 ? .62F : .30F;
+                const float PineChance = FMath::Clamp(MaritimeBase + .10F * FMath::Max(0.0F, Habitat.SunExposure)
+                    - .08F * (Habitat.Drainage - .5F) - .04F * Habitat.Grade, .20F, .74F);
+                const bool bPine = SpeciesRoll < PineChance;
                 const TArray<int32>& Poles = bPine ? PinePoles : FirPoles;
                 Archetype = Age == EAge::Pole ? Poles[Random.RandRange(0, Poles.Num() - 1)]
                     : ScaleRoll < .12F ? Veterans[bPine ? 1 : 0]
@@ -1893,8 +1901,8 @@ const FLayout& GetLayout()
             const float Roll = Distant.FRand(), Pick = Distant.FRand(), Yaw = Distant.FRandRange(0, 2 * PI), ScaleRoll = Distant.FRand();
             if (DistantCount >= 6000 || NearStandDensity(P.X, P.Y) > 0) continue;
             const bool bMid = P.X > -70000 && FMath::Abs(P.Y) < 70000;
-            // Far ridge: coarser 18 m sampling keeps the instance count bounded.
-            if (!bMid && (FMath::FloorToInt(GX / 900) % 2 || FMath::FloorToInt(GY / 900) % 2)) continue;
+            // Far ridge: stochastic 25% acceptance keeps the count bounded without visible rows.
+            if (!bMid && Distant.FRand() > .25F) continue;
             const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(P.X, P.Y);
             const float Woodland = Habitat.Woodland + .25F * Habitat.ShelteredGrass;
             if (Woodland < .30F || Roll > Smooth01((Woodland - .30F) / .45F) * .85F) continue;

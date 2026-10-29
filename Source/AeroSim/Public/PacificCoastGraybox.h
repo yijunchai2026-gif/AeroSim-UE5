@@ -5,6 +5,7 @@
 #include "Phase2Systems.h"
 #include "PacificCoastGraybox.generated.h"
 
+class UProceduralMeshComponent;
 class USkyAtmosphereComponent;
 class UMeshComponent;
 class UMaterialInterface;
@@ -17,6 +18,8 @@ class USceneComponent;
 class USkyLightComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
+class UAnimSequence;
+class USkeletalMeshComponent;
 enum class EFlightPhase : uint8;
 
 // DEV-TERRAIN begin (RD-08 terrain owner): habitat classification shared with DEV-FLORA / materials.
@@ -100,6 +103,7 @@ class AEROSIM_API APacificCoastGraybox final : public AActor
 public:
     APacificCoastGraybox();
     virtual void BeginPlay() override;
+    virtual void Tick(float DeltaSeconds) override;
 
     void SetCoastalQuality(bool bHigh);
     static float GetCliffEdgeX(float Y);
@@ -114,6 +118,36 @@ public:
     // DEV-FLORA end
     static constexpr float SeaLevelCm = -6500.0F;
     int32 GetCoastalTreeCount() const { return CoastalTreeCount; }
+    int32 GetCoastalWhaleCount() const { return CoastalWhaleCount; }
+    int32 GetCoastalWolfCount() const { return CoastalWolfCount; }
+    int32 GetCoastalBearCount() const { return CoastalBearCount; }
+    int32 GetCoastalDeerCount() const { return CoastalDeerCount; }
+    int32 GetCoastalCattleCount() const { return CoastalCattleCount; }
+    int32 GetCoastalEagleCount() const { return CoastalEagleCount; }
+    int32 GetCoastalWildlifeAnimatedBatchCount() const { return CoastalWildlifeAnimatedBatches.Num(); }
+    int32 GetCoastalWildlifeAutonomousCount() const { return CoastalWildlifeAutonomousStates.Num(); }
+    bool IsCoastalWildlifeAlert() const { return bCoastalWildlifeAlert; }
+    bool IsCoastalEagleAttacking() const { return bCoastalEagleAttacking; }
+    bool IsCoastalBearDefending() const { return bCoastalBearDefending; }
+    bool IsCoastalWhaleDiving() const { return bCoastalWhaleDiving; }
+    int32 GetCoastalWildlifeActiveCount() const { return CoastalWildlifeActiveCount; }
+    int32 GetCoastalWildlifeAmbientCount() const { return CoastalWildlifeAmbientCount; }
+    int32 GetCoastalWildlifeDormantCount() const { return CoastalWildlifeDormantCount; }
+#if WITH_DEV_AUTOMATION_TESTS
+    void SetCoastalWildlifeTestObserver(const FVector& Location, const FVector& Velocity)
+    {
+        bUseCoastalWildlifeTestObserver = true;
+        CoastalWildlifeTestObserverLocation = Location;
+        CoastalWildlifeTestObserverVelocity = Velocity;
+    }
+    void ClearCoastalWildlifeTestObserver() { bUseCoastalWildlifeTestObserver = false; }
+#endif
+    int32 GetCoastalWildlifeAnimatedRangeCount() const
+    {
+        int32 Count = 0;
+        for (const FCoastalWildlifeAnimatedBatch& Batch : CoastalWildlifeAnimatedBatches) Count += Batch.Ranges.Num();
+        return Count;
+    }
 
     int32 GetGeneratedPrimitiveCount() const { return GeneratedPrimitiveCount; }
     int32 GetGeneratedGateCount() const { return GeneratedGateCount; }
@@ -134,12 +168,68 @@ private:
     void BuildCoastalTerrain(UMaterialInterface* Material);
     void BuildCoastalTrees(UMaterialInterface* Material);
     void BuildCoastalOcean(UMaterialInterface* Material);
+    // Lightweight deterministic wildlife batches: ocean whales and habitat-placed land animals.
+    void BuildCoastalWildlife(UMaterialInterface* Material);
+    void UpdateCoastalWildlifeAnimation(float DeltaSeconds);
+    enum class ECoastalWildlifeKind : uint8 { Whale, Wolf, Bear, Deer, Cattle, Eagle };
+    enum class ECoastalWildlifeBehavior : uint8 { Roaming, Alert, Fleeing, Attacking, Diving, Recovering };
+    enum class ECoastalWildlifeSimulationLevel : uint8 { Dormant, Ambient, Active };
+    struct FCoastalWildlifeVertexRange
+    {
+        int32 StartVertex = 0;
+        int32 EndVertex = 0;
+        FVector Origin = FVector::ZeroVector;
+        float Yaw = 0.0F;
+        float Scale = 1.0F;
+        float Phase = 0.0F;
+        ECoastalWildlifeKind Kind = ECoastalWildlifeKind::Deer;
+    };
+    struct FCoastalWildlifeAnimatedBatch
+    {
+        TObjectPtr<UProceduralMeshComponent> Component;
+        TArray<FVector> BaseVertices;
+        TArray<FVector> Normals;
+        TArray<FVector2D> UV;
+        TArray<FLinearColor> Colors;
+        TArray<FCoastalWildlifeVertexRange> Ranges;
+    };
+    struct FCoastalWildlifeAutonomousState
+    {
+        TObjectPtr<USkeletalMeshComponent> Component;
+        TObjectPtr<UAnimSequence> IdleAnimation;
+        TObjectPtr<UAnimSequence> TravelAnimation;
+        TObjectPtr<UAnimSequence> FastAnimation;
+        TObjectPtr<UAnimSequence> CurrentAnimation;
+        FVector Anchor = FVector::ZeroVector;
+        FVector2D RoamRadius = FVector2D::ZeroVector;
+        float Speed = 0.0F;
+        float Phase = 0.0F;
+        float GroundOffset = 0.0F;
+        float YawBias = 0.0F;
+        float Roll = 0.0F;
+        float NominalTravelSpeed = 1.0F;
+        FVector Velocity = FVector::ZeroVector;
+        FVector LastKnownDroneLocation = FVector::ZeroVector;
+        float BehaviorTime = 0.0F;
+        float MotionStartTime = 0.0F;
+        float SimulationAccumulator = 0.0F;
+        float StimulusMemoryTime = 0.0F;
+        float Temperament = 0.5F;
+        ECoastalWildlifeSimulationLevel SimulationLevel = ECoastalWildlifeSimulationLevel::Active;
+        ECoastalWildlifeBehavior Behavior = ECoastalWildlifeBehavior::Roaming;
+        ECoastalWildlifeKind Kind = ECoastalWildlifeKind::Deer;
+    };
     // DEV-FLORA: instanced forest-floor understory (ferns, shrubs, edge grass) for the near stands.
     void BuildCoastalHabitat();
     // DEV-FLORA end
     void ApplyCoastalMaterials();
     UPROPERTY(Transient)
     TArray<TObjectPtr<UMeshComponent>> CoastalColorParts;
+    UPROPERTY(Transient)
+    TArray<TObjectPtr<UProceduralMeshComponent>> CoastalWhaleAnimatedParts;
+    TArray<FCoastalWildlifeAnimatedBatch> CoastalWildlifeAnimatedBatches;
+    TArray<FCoastalWildlifeAutonomousState> CoastalWildlifeAutonomousStates;
+    float CoastalWildlifeAnimationTime = 0.0F;
     TArray<FLinearColor> CoastalPartColors;
     UPROPERTY(VisibleAnywhere, Category = "Environment")
     TObjectPtr<UVolumetricCloudComponent> CoastalClouds;
@@ -150,6 +240,24 @@ private:
     UPROPERTY(Transient)
     TObjectPtr<UMaterialInterface> CoastalGravelMaterial;
     int32 CoastalTreeCount = 0;
+    int32 CoastalWhaleCount = 0;
+    int32 CoastalWolfCount = 0;
+    int32 CoastalBearCount = 0;
+    int32 CoastalDeerCount = 0;
+    int32 CoastalCattleCount = 0;
+    int32 CoastalEagleCount = 0;
+    bool bCoastalWildlifeAlert = false;
+    bool bCoastalEagleAttacking = false;
+    bool bCoastalBearDefending = false;
+    bool bCoastalWhaleDiving = false;
+    int32 CoastalWildlifeActiveCount = 0;
+    int32 CoastalWildlifeAmbientCount = 0;
+    int32 CoastalWildlifeDormantCount = 0;
+#if WITH_DEV_AUTOMATION_TESTS
+    bool bUseCoastalWildlifeTestObserver = false;
+    FVector CoastalWildlifeTestObserverLocation = FVector::ZeroVector;
+    FVector CoastalWildlifeTestObserverVelocity = FVector::ZeroVector;
+#endif
 
     UStaticMeshComponent* AddBox(
         const FName Name,

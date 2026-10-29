@@ -31,6 +31,8 @@ public:
     void SetProductInputKind(EProductInputKind Kind);
     bool NavigateProductPage(EProductPage Page);
     void ActivatePrimaryAction();
+    /** Direct control intent from a menu starts flight without making that same held key fail neutral gating. */
+    void StartFlightFromControlIntent();
     void HandleProductBack();
     void SetSettingsCategory(EProductSettingsCategory Category);
     bool StageProductSetting(EProductSettingField Field, int32 Delta);
@@ -79,10 +81,12 @@ public:
     void CancelDisplaySettings();
 
 private:
-    void ApplyDisplayConfiguration(const FPhase7Settings& Settings, bool bSaveEngineSettings);
+    void ApplyDisplayConfiguration(const FPhase7Settings& Settings, bool bSaveEngineSettings,
+        bool bCheckForCommandLineOverrides = false);
     bool SaveProductSettings();
     void LoadProductSettings();
-    void ApplyProductConfiguration(const FPhase7Settings& Settings, bool bSaveEngineSettings);
+    void ApplyProductConfiguration(const FPhase7Settings& Settings, bool bSaveEngineSettings,
+        bool bCheckForCommandLineOverrides = false);
     void ConfigureProductInputMode();
     bool IsMissionActive() const;
     void CloseLabWorkspace();

@@ -55,6 +55,18 @@ const FHabitatTextureSource Textures[] = {
     {TEXT("HabitatDraft/shrub_03/alpha.jpg"), TEXT("T_CoastBroadShrub_Alpha"), ERole::Alpha},
     {TEXT("HabitatDraft/shrub_03/normal.jpg"), TEXT("T_CoastBroadShrub_Normal"), ERole::Normal},
     {TEXT("HabitatDraft/shrub_03/roughness.jpg"), TEXT("T_CoastBroadShrub_Roughness"), ERole::Gray},
+    // Low annual-forb proxy for open coastal grassland; CC0 Poly Haven weed_plant_02.
+    {TEXT("HabitatDraft/weed_plant_02/basecolor.jpg"), TEXT("T_CoastAnnualForb_BaseColor"), ERole::Color},
+    {TEXT("HabitatDraft/weed_plant_02/alpha.jpg"), TEXT("T_CoastAnnualForb_Alpha"), ERole::Alpha},
+    {TEXT("HabitatDraft/weed_plant_02/normal.jpg"), TEXT("T_CoastAnnualForb_Normal"), ERole::Normal},
+    {TEXT("HabitatDraft/weed_plant_02/roughness.jpg"), TEXT("T_CoastAnnualForb_Roughness"), ERole::Gray},
+    {TEXT("HabitatDraft/dry_branches_medium_01/basecolor.jpg"), TEXT("T_CoastDeadwood_BaseColor"), ERole::Color},
+    {TEXT("HabitatDraft/dry_branches_medium_01/normal.jpg"), TEXT("T_CoastDeadwood_Normal"), ERole::Normal},
+    {TEXT("HabitatDraft/dry_branches_medium_01/roughness.jpg"), TEXT("T_CoastDeadwood_Roughness"), ERole::Gray},
+    {TEXT("HabitatDraft/shrub_02/basecolor.jpg"), TEXT("T_CoastalScrub_BaseColor"), ERole::Color},
+    {TEXT("HabitatDraft/shrub_02/alpha.jpg"), TEXT("T_CoastalScrub_Alpha"), ERole::Alpha},
+    {TEXT("HabitatDraft/shrub_02/normal.jpg"), TEXT("T_CoastalScrub_Normal"), ERole::Normal},
+    {TEXT("HabitatDraft/shrub_02/roughness.jpg"), TEXT("T_CoastalScrub_Roughness"), ERole::Gray},
     {TEXT("FloraDraft/pine_bark/pine_bark_diff_2k.jpg"), TEXT("T_FloraPineBark_BaseColor"), ERole::Color},
     {TEXT("FloraDraft/pine_bark/pine_bark_nor_dx_2k.jpg"), TEXT("T_FloraPineBark_Normal"), ERole::Normal},
     {TEXT("FloraDraft/pine_bark/pine_bark_rough_2k.jpg"), TEXT("T_FloraPineBark_Roughness"), ERole::Gray},
@@ -292,6 +304,9 @@ int32 UHabitatDraftImportCommandlet::Main(const FString& Params)
     auto T=[&Imported](const TCHAR* Name){return Imported.FindRef(Name);};
     UMaterial* Grass=Foliage(TEXT("M_CoastDryGrassDraft"),T(TEXT("T_CoastDryGrass_BaseColor")),T(TEXT("T_CoastDryGrass_Alpha")),T(TEXT("T_CoastDryGrass_Normal")),T(TEXT("T_CoastDryGrass_Roughness")),0,.33F,FLinearColor::White);
     UMaterial* Shrub=Foliage(TEXT("M_CoastBroadShrubDraft"),T(TEXT("T_CoastBroadShrub_BaseColor")),T(TEXT("T_CoastBroadShrub_Alpha")),T(TEXT("T_CoastBroadShrub_Normal")),T(TEXT("T_CoastBroadShrub_Roughness")),0,.33F,FLinearColor(.78F,.84F,.72F));
+    UMaterial* AnnualForb=Foliage(TEXT("M_CoastAnnualForbDraft"),T(TEXT("T_CoastAnnualForb_BaseColor")),T(TEXT("T_CoastAnnualForb_Alpha")),T(TEXT("T_CoastAnnualForb_Normal")),T(TEXT("T_CoastAnnualForb_Roughness")),0,.35F,FLinearColor(.76F,.88F,.68F));
+    UMaterial* CoastalScrub=Foliage(TEXT("M_CoastalScrubDraft"),T(TEXT("T_CoastalScrub_BaseColor")),T(TEXT("T_CoastalScrub_Alpha")),T(TEXT("T_CoastalScrub_Normal")),T(TEXT("T_CoastalScrub_Roughness")),0,.34F,FLinearColor(.72F,.80F,.68F));
+    UMaterial* Deadwood=Bark(TEXT("M_CoastDeadwoodDraft"),T(TEXT("T_CoastDeadwood_BaseColor")),T(TEXT("T_CoastDeadwood_Normal")),T(TEXT("T_CoastDeadwood_Roughness")),FLinearColor(.72F,.68F,.62F));
     UMaterial* Fern=Foliage(TEXT("M_FloraFernDraft"),T(TEXT("T_FloraFern_BaseColor")),T(TEXT("T_FloraFern_Alpha")),T(TEXT("T_FloraFern_Normal")),T(TEXT("T_FloraFern_ARM")),1,.36F,FLinearColor(.85F,.92F,.82F));
     UMaterial* Rooibos=Foliage(TEXT("M_FloraRooibosDraft"),T(TEXT("T_FloraRooibos_BaseColor")),T(TEXT("T_FloraRooibos_Alpha")),T(TEXT("T_FloraRooibos_Normal")),T(TEXT("T_FloraRooibos_ARM")),1,.36F,FLinearColor(.70F,.78F,.62F));
     UMaterial* PineNeedles=Foliage(TEXT("M_FloraPineNeedlesDraft"),T(TEXT("T_FloraPineTwig_BaseColor")),T(TEXT("T_FloraPineTwig_Alpha")),T(TEXT("T_FloraPineTwig_Normal")),T(TEXT("T_FloraPineTwig_Roughness")),0,.36F,FLinearColor(.62F,1.08F,.52F));
@@ -303,10 +318,14 @@ int32 UHabitatDraftImportCommandlet::Main(const FString& Params)
     UMaterial* FirBark=Bark(TEXT("M_FloraFirBarkDraft"),T(TEXT("T_FloraFirBark_BaseColor")),T(TEXT("T_FloraFirBark_Normal")),T(TEXT("T_FloraFirBark_Roughness")),FLinearColor(.45F,.42F,.40F));
     UMaterial* OakBark=Bark(TEXT("M_FloraOakBarkDraft"),T(TEXT("T_FloraOakBark_BaseColor")),T(TEXT("T_FloraOakBark_Normal")),T(TEXT("T_FloraOakBark_Roughness")),FLinearColor(.70F,.68F,.66F));
     UMaterial* Litter=GroundLitter(TEXT("M_FloraTrunkLitterDraft"),T(TEXT("T_FloraTrunkLitter_BaseColor")),T(TEXT("T_FloraTrunkLitter_Alpha")),T(TEXT("T_FloraTrunkLitter_Normal")),T(TEXT("T_FloraTrunkLitter_Roughness")));
-    if(!(Grass&&Shrub&&Fern&&Rooibos&&PineNeedles&&FirNeedles&&OakLeaves&&PineBark&&FirBark&&OakBark&&Litter))return 5;
+    if(!(Grass&&Shrub&&AnnualForb&&CoastalScrub&&Deadwood&&Fern&&Rooibos&&PineNeedles&&FirNeedles&&OakLeaves&&PineBark&&FirBark&&OakBark&&Litter))return 5;
     const TPair<const TCHAR*,UMaterial*> Meshes[]={{TEXT("SM_CoastGrassSmallDraft"),Grass},{TEXT("SM_CoastGrassTallDraft"),Grass},{TEXT("SM_CoastGrassTinyDraft"),Grass},
-        {TEXT("SM_CoastShrubADraft"),Shrub},{TEXT("SM_CoastShrubBDraft"),Shrub},{TEXT("SM_FloraFernADraft"),Fern},{TEXT("SM_FloraFernBDraft"),Fern},
+        {TEXT("SM_CoastShrubADraft"),Shrub},{TEXT("SM_CoastShrubBDraft"),Shrub},
+        {TEXT("SM_CoastAnnualForbADraft"),AnnualForb},{TEXT("SM_CoastAnnualForbBDraft"),AnnualForb},{TEXT("SM_CoastAnnualForbCDraft"),AnnualForb},
+        {TEXT("SM_CoastDeadwoodADraft"),Deadwood},{TEXT("SM_CoastDeadwoodBDraft"),Deadwood},{TEXT("SM_CoastDeadwoodCDraft"),Deadwood},
+        {TEXT("SM_CoastalScrubADraft"),CoastalScrub},{TEXT("SM_CoastalScrubBDraft"),CoastalScrub},{TEXT("SM_CoastalScrubCDraft"),CoastalScrub},{TEXT("SM_CoastalScrubDDraft"),CoastalScrub},
+        {TEXT("SM_FloraFernADraft"),Fern},{TEXT("SM_FloraFernBDraft"),Fern},
         {TEXT("SM_FloraRooibosADraft"),Rooibos},{TEXT("SM_FloraRooibosBDraft"),Rooibos}};
     for(const auto& Entry:Meshes)if(!Mesh(Entry.Key,Entry.Value)){UE_LOG(LogTemp,Error,TEXT("HABITAT_MESH_FAILED %s"),Entry.Key);return 6;}
-    UE_LOG(LogTemp,Display,TEXT("HABITAT_IMPORT_COMPLETE textures=%d materials=11 meshes=%d state=DRAFT_NOT_USER_CONFIRMED"),UE_ARRAY_COUNT(Textures),UE_ARRAY_COUNT(Meshes));return 0;
+    UE_LOG(LogTemp,Display,TEXT("HABITAT_IMPORT_COMPLETE textures=%d materials=14 meshes=%d state=DRAFT_NOT_USER_CONFIRMED"),UE_ARRAY_COUNT(Textures),UE_ARRAY_COUNT(Meshes));return 0;
 }

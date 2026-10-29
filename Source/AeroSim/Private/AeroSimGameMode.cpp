@@ -29,6 +29,7 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/GameUserSettings.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Framework/Application/SlateApplication.h"
 #include "HAL/PlatformMisc.h"
 #include "Misc/CommandLine.h"
 #include "Misc/FileHelper.h"
@@ -304,6 +305,12 @@ void AAeroSimGameMode::StartPlay()
             }
         }
 
+        // Packaged play opens in a ready-to-control flight instead of hiding controls behind four
+        // menu confirmations. Explicit product-view captures and -AeroSimStartMenu retain the shell.
+        if (!GIsAutomationTesting && !FApp::IsUnattended() && ProductUxView.IsEmpty()
+            && !FParse::Param(FCommandLine::Get(), TEXT("AeroSimStartMenu")))
+            StartFlightFromControlIntent();
+
         if (APlayerController* Controller = World->GetFirstPlayerController())
         {
             ProductWidget = CreateWidget<UAeroSimProductWidget>(Controller, UAeroSimProductWidget::StaticClass());
@@ -315,7 +322,7 @@ void AAeroSimGameMode::StartPlay()
             }
             ConfigureProductInputMode();
         }
-        ApplyProductConfiguration(AppliedSettings, false);
+        ApplyProductConfiguration(AppliedSettings, false, true);
 
         FString ScreenshotPath;
         if (FParse::Value(FCommandLine::Get(), TEXT("AeroSimScreenshot="), ScreenshotPath))
@@ -436,16 +443,41 @@ EAeroSimProductSurface AAeroSimGameMode::GetProductSurface() const
     return EAeroSimProductSurface::Flight;
 }
 
-void AAeroSimGameMode::ApplyDisplayConfiguration(const FPhase7Settings& Settings, const bool bSaveEngineSettings)
+void AAeroSimGameMode::ApplyDisplayConfiguration(const FPhase7Settings& Settings, const bool bSaveEngineSettings,
+    const bool bCheckForCommandLineOverrides)
 {
     if (!Settings.IsValid() || GEngine == nullptr || GEngine->GetGameUserSettings() == nullptr) return;
     UGameUserSettings* UserSettings = GEngine->GetGameUserSettings();
     EWindowMode::Type Mode = EWindowMode::Windowed;
-    if (Settings.WindowMode == EPhase7WindowMode::Borderless) Mode = EWindowMode::WindowedFullscreen;
-    else if (Settings.WindowMode == EPhase7WindowMode::Fullscreen) Mode = EWindowMode::Fullscreen;
-    UserSettings->SetScreenResolution(FIntPoint(Settings.ResolutionWidth, Settings.ResolutionHeight));
+    if (Settings.WindowMode == EPhase7WindowMode::Borderless)
+    {
+#if PLATFORM_MAC
+        Mode = EWindowMode::Windowed;
+#else
+        Mode = EWindowMode::WindowedFullscreen;
+#endif
+    }
+    else if (Settings.WindowMode == EPhase7WindowMode::Fullscreen)
+    {
+#if PLATFORM_MAC
+        Mode = EWindowMode::Windowed;
+#else
+        Mode = EWindowMode::Fullscreen;
+#endif
+    }
+    FIntPoint Resolution(Settings.ResolutionWidth, Settings.ResolutionHeight);
+    bool bUseDesktopResolution = Mode == EWindowMode::WindowedFullscreen;
+#if PLATFORM_MAC
+    bUseDesktopResolution |= Settings.WindowMode != EPhase7WindowMode::Windowed;
+#endif
+    if (bUseDesktopResolution)
+    {
+        const FIntPoint DesktopResolution = UserSettings->GetDesktopResolution();
+        if (DesktopResolution.X > 0 && DesktopResolution.Y > 0) Resolution = DesktopResolution;
+    }
+    UserSettings->SetScreenResolution(Resolution);
     UserSettings->SetFullscreenMode(Mode);
-    UserSettings->ApplyResolutionSettings(false);
+    UserSettings->ApplyResolutionSettings(bCheckForCommandLineOverrides);
     if (bSaveEngineSettings)
     {
         UserSettings->ConfirmVideoMode();
@@ -475,7 +507,7 @@ void AAeroSimGameMode::LoadProductSettings()
         bLoaded = FFileHelper::LoadFileToString(Payload, *(Path + TEXT(".bak"))) && FPhase7SaveCodec::DecodeAndMigrate(Payload, Loaded, Error);
     }
     AppliedSettings = bLoaded ? Loaded : FPhase7Settings();
-    ApplyDisplayConfiguration(AppliedSettings, false);
+    ApplyDisplayConfiguration(AppliedSettings, false, true);
 }
 
 void AAeroSimGameMode::ToggleDisplaySettings()
@@ -553,10 +585,14 @@ void AAeroSimGameMode::ConfigureProductInputMode()
     Controller->bEnableClickEvents = !bFlight;
     if (bFlight)
     {
+        if (ProductWidget != nullptr && ProductWidget->IsActivated()) ProductWidget->DeactivateWidget();
         Controller->SetInputMode(FInputModeGameOnly());
+        if (FSlateApplication::IsInitialized())
+            FSlateApplication::Get().SetAllUserFocusToGameViewport(EFocusCause::SetDirectly);
     }
     else
     {
+        if (ProductWidget != nullptr && !ProductWidget->IsActivated()) ProductWidget->ActivateWidget();
         FInputModeGameAndUI Mode;
         Mode.SetHideCursorDuringCapture(false);
         Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
@@ -641,6 +677,33 @@ void AAeroSimGameMode::ActivatePrimaryAction()
         break;
     default: break;
     }
+    RefreshProductWidget();
+    ConfigureProductInputMode();
+}
+
+void AAeroSimGameMode::StartFlightFromControlIntent()
+{
+    if (Shell.Page == EProductPage::Flight) return;
+    if (Shell.Page == EProductPage::Result || Shell.Page == EProductPage::Replay
+        || Shell.Page == EProductPage::Settings || Shell.Page == EProductPage::VisualLab) return;
+
+    if (Phase4Mission.Stage == EPhase4MissionStage::Hangar)
+    {
+        Phase4Mission.EnterPreflight();
+        MissionFlow.Transition(EAeroSimMissionState::Preflight);
+    }
+    if (Phase4Mission.Stage == EPhase4MissionStage::Preflight)
+    {
+        // This path is entered by a deliberate flight-control key. Treat that key as intent rather
+        // than a stuck device; subsequent runtime neutral/resume checks remain unchanged.
+        Phase4Mission.SetPreflightComplete(true);
+        if (!Phase4Mission.BeginMission() || !MissionFlow.Transition(EAeroSimMissionState::Flight)) return;
+    }
+    Shell.Page = EProductPage::Flight;
+    Shell.Status = TEXT("FLIGHT CONTROLS ACTIVE");
+    if (AFlightPawn* Pawn = GetWorld() != nullptr && GetWorld()->GetFirstPlayerController() != nullptr
+        ? Cast<AFlightPawn>(GetWorld()->GetFirstPlayerController()->GetPawn()) : nullptr)
+        Pawn->SetSafePaused(false);
     RefreshProductWidget();
     ConfigureProductInputMode();
 }
@@ -733,10 +796,11 @@ bool AAeroSimGameMode::StageProductSetting(const EProductSettingField Field, con
     return true;
 }
 
-void AAeroSimGameMode::ApplyProductConfiguration(const FPhase7Settings& Settings, const bool bSaveEngineSettings)
+void AAeroSimGameMode::ApplyProductConfiguration(const FPhase7Settings& Settings, const bool bSaveEngineSettings,
+    const bool bCheckForCommandLineOverrides)
 {
     if (!Settings.IsValid()) return;
-    ApplyDisplayConfiguration(Settings, bSaveEngineSettings);
+    ApplyDisplayConfiguration(Settings, bSaveEngineSettings, bCheckForCommandLineOverrides);
     if (Graybox != nullptr) Graybox->SetCoastalQuality(Settings.QualityTier == EPhase7QualityTier::DesktopHigh);
     if (GEngine != nullptr && GEngine->GetGameUserSettings() != nullptr)
     {
@@ -962,6 +1026,10 @@ bool AAeroSimGameMode::ResolveReviewView(const FString& Name, const int32 Step, 
     else if (Name == TEXT("glint")) { Location = FVector(26000 + Step*60, -8000 - Step*40, APacificCoastGraybox::SeaLevelCm + 600); Rotation = FRotator(-4,-35,0); }
     else if (Name == TEXT("corridor")) { Location = FVector(-15609 - Step*18, -6895 - Step*36, 250); Rotation = FRotator(-3,-117.3F,0); }
     else if (Name == TEXT("cliff")) { Location = FVector(33000 + Step*120, -25000 + Step*120, -1500); Rotation = FRotator(-3,160,0); }
+    else if (Name == TEXT("wildlife-whale")) { Location = FVector(52000 + Step*10, -65000 + Step*15, APacificCoastGraybox::SeaLevelCm + 520); Rotation = FRotator(2, 141, 0); }
+    else if (Name == TEXT("wildlife-predators")) { Location = FVector(-34400 + Step*8, 37100 + Step*7, APacificCoastGraybox::GetCoastalLandHeight(-34400,37100) + 210); Rotation = FRotator(-5, 132, 0); }
+    else if (Name == TEXT("wildlife-herd")) { Location = FVector(-20500 + Step*8, 30200 + Step*8, APacificCoastGraybox::GetCoastalLandHeight(-20500,30200) + 220); Rotation = FRotator(-6, 135, 0); }
+    else if (Name == TEXT("wildlife-eagle")) { Location = FVector(-27750 + Step*5, 33800 + Step*5, APacificCoastGraybox::GetCoastalLandHeight(-27750,33800) + 2050); Rotation = FRotator(-4, 137, 0); }
     else return false;
     return true;
 }

@@ -449,7 +449,10 @@ float CliffOutcrop(const float Y, const float Depth)
         const float Far = 1.0F - RowDetail(Y);
         const float Dip = .055F * Noise(Y + Bed * 4300.0F, 13000.0F + Bed * 3700.0F, 6800.0F + 12000.0F * Far) + .07F * RowDetail(Y) * Noise(Y, Bed * 2700.0F - 5000.0F, 2400.0F);
         const float BedHeight = Thickness[Bed] * (1.0F + .25F * Noise(Y, Bed * 9100.0F, 4700.0F + 12000.0F * Far));
-        Outcrop += BedHeight * Smooth((Depth - Thresholds[Bed] - Dip) / Widths[Bed]);
+        const float FineJitter = .018F * RowDetail(Y) * Noise(Y, 800.0F, 1500.0F)
+            + .012F * (1.0F - RowDetail(Y)) * Noise(Y, -2400.0F, 14000.0F);
+        Outcrop += BedHeight * Smooth((Depth - (Thresholds[Bed] + FineJitter) - Dip)
+            / (Widths[Bed] * (1.0F + 3.0F * FMath::Abs(FineJitter))));
     }
     // Every term is non-decreasing with depth, so the face never overhangs: blocks vary along the
     // coast only and ramp in once below the rim.
@@ -780,7 +783,8 @@ const FRidgeNode RangeFar[] = {{FVector2D(-640000,-700000),38000,150000},{FVecto
 float DistantRangeHeight(const float X, const float Y)
 {
     const float Edge = FMath::Min(FMath::Min(RangeEast - X, X - RangeWest), RangeHalfY - FMath::Abs(Y));
-    const float Interior = Smooth(Edge / 90000.0F);
+    const float EdgeJitter = Edge + 18000.0F * Noise(X - 7000.0F, Y + 11000.0F, 70000.0F);
+    const float Interior = Smooth(EdgeJitter / 90000.0F);
     const FVector2D Point(X + 9000.0F * Noise(X, Y, 120000.0F), Y + 12000.0F * Noise(X + 5000.0F, Y, 140000.0F));
     float Range = 0;
     for (const FRidgeNode* Chain : {RangeNear, RangeMid, RangeFar})
@@ -791,8 +795,9 @@ float DistantRangeHeight(const float X, const float Y)
             const float H = FMath::Clamp(.5F + .5F * (Range - Ridge) / Seam, 0.0F, 1.0F);
             Range = FMath::Lerp(Ridge, Range, H) + Seam * H * (1.0F - H);
         }
-    Range = Range * (1.0F + .12F * Noise(X, Y, 60000.0F)) + 900.0F * Noise(X, Y, 33000.0F);
-    return FMath::Lerp(SubmergedRim, FMath::Max(Range, 0.0F), Interior);
+    Range = Range * (1.0F + .09F * Noise(X, Y, 73000.0F)) + 700.0F * Noise(X + 13000.0F, Y - 9000.0F, 29000.0F);
+    const float RootedRange = APacificCoastGraybox::SeaLevelCm - 7000.0F + Range;
+    return FMath::Lerp(SubmergedRim, RootedRange, Interior);
 }
 }
 
@@ -1053,14 +1058,11 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
             }
         }
     }
-    auto LandTriangle = [&Vertices, &Triangle](int32 A, int32 B, int32 C)
+    auto LandTriangle = [&Triangle](int32 A, int32 B, int32 C)
     {
-        const FVector Normal = FVector::CrossProduct(Vertices[C] - Vertices[A], Vertices[B] - Vertices[A]).GetSafeNormal();
-        const FVector Center = (Vertices[A] + Vertices[B] + Vertices[C]) / 3.0F;
-        // Surface zones follow localized slope/exposure rather than drawing a height contour across the range.
-        const int32 Group = Normal.Z < .80F ? 1 :
-            (Normal.Z < .91F && Noise(Center.X, Center.Y, 29000.0F) > .12F ? 2 : 0);
-        Triangle(A, B, C, Group);
+        // Keep the continuous upland surface in one section. Per-triangle material sections created
+        // kilometer-scale sawtooth patches at grazing angles; the ground material owns variation.
+        Triangle(A, B, C, 0);
     };
     for(int32 Row=0;Row<Rows-1;++Row)
     {
@@ -1177,9 +1179,9 @@ void APacificCoastGraybox::BuildCoastalTerrain(UMaterialInterface* Material)
                 // Same aspect rule as the land habitat: dry grass on sun-facing slopes, dark cover on shaded ones.
                 const float Grade = FMath::Sqrt(GX * GX + GY * GY);
                 const float Facing = Grade > 1e-4F ? (-GX * .45F + GY * .89F) / Grade : 0.0F;
-                const float Shade = Smooth(.5F + .5F * Facing + .2F * Noise(X, Y, 40000.0F)) * Smooth(Grade / .1F);
+                const float Shade = Smooth(.42F + .30F * Facing + .16F * Noise(X, Y, 52000.0F)) * Smooth(Grade / .18F);
                 const float Rock = Smooth((Grade - .65F) / .3F);
-                RangeColors.Add(FLinearColor((1.0F - Shade) * (1.0F - Rock), .35F * Shade * (1.0F - Rock), .65F * Shade * (1.0F - Rock), 1.0F));
+                RangeColors.Add(FLinearColor(.55F - .18F * Shade, .28F + .18F * Shade, .12F + .22F * Rock, 1.0F));
             }
         for (int32 Row = 0; Row < RangeRows - 1; ++Row)
             for (int32 Column = 0; Column < RangeColumns - 1; ++Column)

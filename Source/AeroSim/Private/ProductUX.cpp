@@ -16,7 +16,10 @@ bool FAeroSimProductUxContract::IsValid()
 
 TArray<FIntPoint> FProductDisplaySettings::SupportedResolutions()
 {
-    return { FIntPoint(1280, 720), FIntPoint(1440, 900), FIntPoint(1920, 1080) };
+    return {
+        FIntPoint(1280, 720), FIntPoint(1440, 900), FIntPoint(1920, 1080),
+        FIntPoint(2560, 1440), FIntPoint(3840, 2160)
+    };
 }
 
 TArray<EPhase7WindowMode> FProductDisplaySettings::SupportedWindowModes()

@@ -102,6 +102,14 @@ bool FProductSettingsFiniteValidationTest::RunTest(const FString& Parameters)
         Candidate.WindowMode = static_cast<EPhase7WindowMode>(InvalidEnum);
         TestFalse(TEXT("Unknown window mode fails"), Candidate.IsValid());
     }
+    for (const FIntPoint Resolution : { FIntPoint(2560, 1440), FIntPoint(3840, 2160) })
+    {
+        FPhase7Settings HighResolution = Defaults;
+        HighResolution.ResolutionWidth = Resolution.X;
+        HighResolution.ResolutionHeight = Resolution.Y;
+        TestTrue(FString::Printf(TEXT("%dx%d is a valid desktop resolution"), Resolution.X, Resolution.Y),
+            HighResolution.IsValid());
+    }
     FPhase7Settings Invalid = Defaults;
     Invalid.ResolutionHeight = 1080;
     TestFalse(TEXT("Resolution components must be a supported pair"), Invalid.IsValid());
@@ -418,9 +426,11 @@ bool FProductSettingsFocusWrappingTest::RunTest(const FString& Parameters)
 
             Display.FocusedRow = 0;
             Display.ChangeFocusedValue(Delta);
+            const TArray<FIntPoint> Resolutions = FProductDisplaySettings::SupportedResolutions();
+            const int32 ResolutionCount = Resolutions.Num();
             const int64 ValuePosition = int64(1) + Delta;
-            const int32 ValueIndex = static_cast<int32>((ValuePosition % 3 + 3) % 3);
-            const FIntPoint Resolution = FProductDisplaySettings::SupportedResolutions()[ValueIndex];
+            const int32 ValueIndex = static_cast<int32>((ValuePosition % ResolutionCount + ResolutionCount) % ResolutionCount);
+            const FIntPoint Resolution = Resolutions[ValueIndex];
             TestEqual(TEXT("Resolution wraps large signed delta"), Display.Transaction.Preview.ResolutionWidth, Resolution.X);
             TestEqual(TEXT("Wrapped resolution retains valid pair"), Display.Transaction.Preview.ResolutionHeight, Resolution.Y);
             Display.Cancel();

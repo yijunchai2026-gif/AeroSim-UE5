@@ -252,8 +252,8 @@ void AFlightHUD::DrawHUD()
             FLinearColor(0.94F, 1.0F, 0.96F), Right + 14.0F, Top + 146.0F, GEngine->GetSmallFont(), 1.0F, false);
     }
 
-    const float HintWidth = FMath::Min(720.0F, Canvas->ClipX - Margin.X * 2.0F);
-    DrawRect(FLinearColor(0.0F, 0.02F, 0.03F, 0.84F), Margin.X, Canvas->ClipY - Margin.Y - 52.0F, HintWidth, 52.0F);
+    const float HintWidth = FMath::Min(980.0F, Canvas->ClipX - Margin.X * 2.0F);
+    DrawRect(FLinearColor(0.0F, 0.02F, 0.03F, 0.88F), Margin.X, Canvas->ClipY - Margin.Y - 72.0F, HintWidth, 72.0F);
     FString NextAction = Mission.GetProgressiveHint();
     if (Mission.Stage == EPhase4MissionStage::Takeoff && Data.Phase == EFlightPhase::Grounded)
     {
@@ -263,8 +263,24 @@ void AFlightHUD::DrawHUD()
     {
         NextAction = FString::Printf(TEXT("NEXT ACTION: %s"), *Mission.GetProgressiveHint());
     }
-    DrawText(FString::Printf(TEXT("%s   |   H RTH   ESC/F10 SETTINGS   C CAMERA   R RESET"), *NextAction),
-        FLinearColor::White, Margin.X + 12.0F, Canvas->ClipY - Margin.Y - 37.0F, GEngine->GetSmallFont(), 1.0F, false);
+    const FVector PawnLocation = Pawn->GetActorLocation();
+    struct FWildlifeCue { const TCHAR* Label; FVector Location; };
+    const FWildlifeCue Wildlife[] = {
+        {TEXT("WHALES OFFSHORE"), FVector(47000,-61000,APacificCoastGraybox::SeaLevelCm)},
+        {TEXT("BEAR HABITAT"), FVector(-35500,38200,0)},
+        {TEXT("DEER HERD"), FVector(-21800,31500,0)}};
+    const FWildlifeCue* Nearest = &Wildlife[0];
+    float NearestDistance = FVector::Dist2D(PawnLocation, Nearest->Location);
+    for (int32 Index = 1; Index < UE_ARRAY_COUNT(Wildlife); ++Index)
+    {
+        const float Distance = FVector::Dist2D(PawnLocation, Wildlife[Index].Location);
+        if (Distance < NearestDistance) { NearestDistance = Distance; Nearest = &Wildlife[Index]; }
+    }
+    const FString WildlifeStatus = NearestDistance < 20000.0F
+        ? FString::Printf(TEXT("LIVING HABITAT: %s / %.0f M / OBSERVE QUIETLY"), Nearest->Label, NearestDistance / 100.0F)
+        : FString::Printf(TEXT("WILDLIFE: NEAREST %s / %.0f M"), Nearest->Label, NearestDistance / 100.0F);
+    DrawText(FString::Printf(TEXT("%s   |   H RTH   ESC/F10 SETTINGS   C CAMERA   R RESET\nCONTROLS  W/S PITCH  A/D ROLL  Q/E YAW  SHIFT/CTRL THROTTLE  ARROWS THROTTLE/YAW   |   %s"), *NextAction, *WildlifeStatus),
+        FLinearColor::White, Margin.X + 12.0F, Canvas->ClipY - Margin.Y - 57.0F, GEngine->GetSmallFont(), 1.0F, false);
 
     if (Pawn->IsResumeCountdownActive())
     {

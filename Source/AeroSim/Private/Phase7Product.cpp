@@ -177,7 +177,9 @@ bool FPhase7Settings::IsValid() const
 {
     const bool bSupportedResolution = (ResolutionWidth == 1280 && ResolutionHeight == 720)
         || (ResolutionWidth == 1440 && ResolutionHeight == 900)
-        || (ResolutionWidth == 1920 && ResolutionHeight == 1080);
+        || (ResolutionWidth == 1920 && ResolutionHeight == 1080)
+        || (ResolutionWidth == 2560 && ResolutionHeight == 1440)
+        || (ResolutionWidth == 3840 && ResolutionHeight == 2160);
     const bool bSupportedWindowMode = static_cast<uint8>(WindowMode) <= static_cast<uint8>(EPhase7WindowMode::Fullscreen);
     const bool bSupportedQuality = static_cast<uint8>(QualityTier) <= static_cast<uint8>(EPhase7QualityTier::Tablet);
     return Version == CurrentVersion && FMath::IsFinite(VerticalFov) && VerticalFov >= 35.0F && VerticalFov <= 100.0F

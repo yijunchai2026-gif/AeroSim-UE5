@@ -5,11 +5,13 @@
 #include "AeroSimPlayerController.h"
 #include "AeroSimRuntimeContract.h"
 #include "FlightPawn.h"
+#include "PacificCoastGraybox.h"
 #include "ProductEvidence.h"
 #include "Dom/JsonObject.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedPlayerInput.h"
 #include "Engine/GameViewportClient.h"
+#include "EngineUtils.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "Framework/Application/SlateApplication.h"
@@ -232,6 +234,21 @@ TSharedRef<FJsonObject> UAeroSimControlBridge::Inspect() const
             State->SetNumberField(TEXT("guide_point_planar_distance_cm"),FVector::Dist2D(World,Guide.GuidePoint));
             State->SetNumberField(TEXT("guide_point_height_delta_cm"),World.Z-Guide.GuidePoint.Z);
             State->SetNumberField(TEXT("guide_target_distance_cm"),FVector::Distance(World,Guide.Position));
+        }
+    }
+    if (GetWorld() != nullptr)
+    {
+        TActorIterator<APacificCoastGraybox> It(GetWorld());
+        if (It)
+        {
+            State->SetBoolField(TEXT("wildlife_alert"), It->IsCoastalWildlifeAlert());
+            State->SetBoolField(TEXT("eagle_attacking"), It->IsCoastalEagleAttacking());
+            State->SetBoolField(TEXT("bear_defending"), It->IsCoastalBearDefending());
+            State->SetBoolField(TEXT("whale_diving"), It->IsCoastalWhaleDiving());
+            State->SetNumberField(TEXT("wildlife_active_count"), It->GetCoastalWildlifeActiveCount());
+            State->SetNumberField(TEXT("wildlife_ambient_count"), It->GetCoastalWildlifeAmbientCount());
+            State->SetNumberField(TEXT("wildlife_dormant_count"), It->GetCoastalWildlifeDormantCount());
+            State->SetNumberField(TEXT("eagle_count"), It->GetCoastalEagleCount());
         }
     }
     if(FSlateApplication::IsInitialized())

@@ -10,6 +10,8 @@ class DraftContentPolicyTests(unittest.TestCase):
         f=root/'docs/environment-draft-assets.json';f.parent.mkdir();f.write_text(json.dumps(m));return p,s,m,f
     def test_empty_cpp_slice_stays_valid(self):
         with tempfile.TemporaryDirectory() as d:self.assertEqual(validate_environment_draft(Path(d)),[])
+    def test_repository_wildlife_receipts_stay_valid(self):
+        self.assertEqual(validate_environment_draft(Path(__file__).resolve().parents[2]),[])
     def test_exact_hashed_draft_is_allowed(self):
         with tempfile.TemporaryDirectory() as d:
             r=Path(d);self.fixture(r);self.assertEqual(validate_environment_draft(r),[])

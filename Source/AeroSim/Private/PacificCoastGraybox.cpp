@@ -1,16 +1,19 @@
 #include "PacificCoastGraybox.h"
 
+#include "Animation/AnimSequence.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/PostProcessComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Components/VolumetricCloudComponent.h"
 #include "Engine/StaticMesh.h"
 #include "FlightPawn.h"
+#include "GameFramework/PlayerController.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Misc/CommandLine.h"
 #include "Misc/Parse.h"
@@ -140,7 +143,8 @@ bool FPacificCoastRouteProgress::IsComplete() const
 
 APacificCoastGraybox::APacificCoastGraybox()
 {
-    PrimaryActorTick.bCanEverTick = false;
+    PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.TickInterval = 1.0F / 30.0F;
     Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
     SetRootComponent(Root);
 
@@ -460,6 +464,450 @@ void APacificCoastGraybox::BeginPlay()
     }
     ApplyCoastalMaterials();
     ApplyEnvironmentState(AppliedEnvironmentState);
+}
+
+void APacificCoastGraybox::Tick(const float DeltaSeconds)
+{
+    Super::Tick(DeltaSeconds);
+    UpdateCoastalWildlifeAnimation(DeltaSeconds);
+}
+
+void APacificCoastGraybox::UpdateCoastalWildlifeAnimation(const float DeltaSeconds)
+{
+    const float FrameStepSeconds = FMath::Min(DeltaSeconds, 0.1F);
+    CoastalWildlifeAnimationTime += FrameStepSeconds;
+    const APlayerController* PlayerController = GetWorld() != nullptr ? GetWorld()->GetFirstPlayerController() : nullptr;
+    const AFlightPawn* FlightPawn = PlayerController != nullptr ? Cast<AFlightPawn>(PlayerController->GetPawn()) : nullptr;
+    bool bHasDrone = FlightPawn != nullptr;
+    FVector DroneLocation = bHasDrone ? FlightPawn->GetActorLocation() : FVector::ZeroVector;
+    FVector DroneVelocity = bHasDrone ? FlightPawn->GetVelocity() : FVector::ZeroVector;
+#if WITH_DEV_AUTOMATION_TESTS
+    if (bUseCoastalWildlifeTestObserver)
+    {
+        bHasDrone = true;
+        DroneLocation = CoastalWildlifeTestObserverLocation;
+        DroneVelocity = CoastalWildlifeTestObserverVelocity;
+    }
+#endif
+    bCoastalWildlifeAlert = false;
+    bCoastalEagleAttacking = false;
+    bCoastalBearDefending = false;
+    bCoastalWhaleDiving = false;
+    CoastalWildlifeActiveCount = 0;
+    CoastalWildlifeAmbientCount = 0;
+    CoastalWildlifeDormantCount = 0;
+
+    for (FCoastalWildlifeAutonomousState& State : CoastalWildlifeAutonomousStates)
+    {
+        if (State.Component == nullptr) continue;
+        const float Time = CoastalWildlifeAnimationTime;
+        FVector Location = State.Component->GetRelativeLocation();
+        const float DroneDistance = bHasDrone ? FVector::Dist(Location, DroneLocation) : 0.0F;
+        const float ObserverDistance = bHasDrone ? DroneDistance : 0.0F;
+        State.SimulationLevel = ObserverDistance <= 18000.0F ? ECoastalWildlifeSimulationLevel::Active
+            : ObserverDistance <= 60000.0F ? ECoastalWildlifeSimulationLevel::Ambient
+            : ECoastalWildlifeSimulationLevel::Dormant;
+        const float UpdateInterval = State.SimulationLevel == ECoastalWildlifeSimulationLevel::Active ? 0.0F
+            : State.SimulationLevel == ECoastalWildlifeSimulationLevel::Ambient ? 0.2F : 0.5F;
+        ++(State.SimulationLevel == ECoastalWildlifeSimulationLevel::Active ? CoastalWildlifeActiveCount
+            : State.SimulationLevel == ECoastalWildlifeSimulationLevel::Ambient ? CoastalWildlifeAmbientCount
+            : CoastalWildlifeDormantCount);
+        const float MaxAccumulatedStep = UpdateInterval > 0.0F ? UpdateInterval : 0.1F;
+        State.SimulationAccumulator = FMath::Min(
+            State.SimulationAccumulator + FMath::Max(DeltaSeconds, 0.0F), MaxAccumulatedStep);
+        if (State.Kind == ECoastalWildlifeKind::Deer
+            && (State.Behavior == ECoastalWildlifeBehavior::Alert || State.Behavior == ECoastalWildlifeBehavior::Fleeing))
+        {
+            bCoastalWildlifeAlert = true;
+        }
+        else if (State.Kind == ECoastalWildlifeKind::Bear
+            && (State.Behavior == ECoastalWildlifeBehavior::Alert || State.Behavior == ECoastalWildlifeBehavior::Fleeing))
+        {
+            bCoastalWildlifeAlert = true;
+            bCoastalBearDefending = State.Behavior == ECoastalWildlifeBehavior::Alert;
+        }
+        else if (State.Kind == ECoastalWildlifeKind::Eagle && State.Behavior == ECoastalWildlifeBehavior::Attacking)
+        {
+            bCoastalEagleAttacking = true;
+        }
+        else if (State.Kind == ECoastalWildlifeKind::Whale && State.Behavior == ECoastalWildlifeBehavior::Diving)
+        {
+            bCoastalWhaleDiving = true;
+        }
+        if (State.SimulationAccumulator + KINDA_SMALL_NUMBER < UpdateInterval)
+        {
+            continue;
+        }
+        const float StateStepSeconds = State.SimulationAccumulator;
+        const float StepSeconds = StateStepSeconds;
+        State.SimulationAccumulator = 0.0F;
+        State.BehaviorTime += StateStepSeconds;
+        if (bHasDrone && DroneDistance < 14000.0F)
+        {
+            State.LastKnownDroneLocation = DroneLocation;
+            State.StimulusMemoryTime = 5.0F + State.Temperament * 4.0F;
+        }
+        else
+        {
+            State.StimulusMemoryTime = FMath::Max(0.0F, State.StimulusMemoryTime - StateStepSeconds);
+        }
+        const bool bRemembersDrone = State.StimulusMemoryTime > 0.0F;
+        const FVector ReactionLocation = bRemembersDrone ? State.LastKnownDroneLocation : DroneLocation;
+        FVector DesiredVelocity = FVector::ZeroVector;
+        const auto AccelerateTowards = [&State, StepSeconds](const FVector& TargetVelocity, const float Acceleration)
+        {
+            const FVector VelocityDelta = (TargetVelocity - State.Velocity).GetClampedToMaxSize(Acceleration * StepSeconds);
+            State.Velocity += VelocityDelta;
+        };
+
+        if (State.Kind == ECoastalWildlifeKind::Deer)
+        {
+            if (bRemembersDrone && FVector::Dist(Location, ReactionLocation) < 6000.0F
+                && State.Behavior == ECoastalWildlifeBehavior::Roaming)
+            {
+                State.Behavior = ECoastalWildlifeBehavior::Alert;
+                State.BehaviorTime = 0.0F;
+                State.Velocity = FVector::ZeroVector;
+            }
+            if (State.Behavior == ECoastalWildlifeBehavior::Alert)
+            {
+                bCoastalWildlifeAlert = true;
+                const FVector2D ToDrone(ReactionLocation.X - Location.X, ReactionLocation.Y - Location.Y);
+                const float DroneYaw = FMath::RadiansToDegrees(FMath::Atan2(ToDrone.Y, ToDrone.X));
+                const FRotator AlertRotation(0.0F, DroneYaw + State.YawBias, State.Roll);
+                State.Component->SetRelativeRotation(FMath::RInterpTo(
+                    State.Component->GetRelativeRotation(), AlertRotation, StepSeconds, 2.0F));
+                AccelerateTowards(FVector::ZeroVector, 520.0F);
+                if (State.BehaviorTime >= 0.9F)
+                {
+                    State.Behavior = ECoastalWildlifeBehavior::Fleeing;
+                    State.BehaviorTime = 0.0F;
+                }
+            }
+            if (State.Behavior == ECoastalWildlifeBehavior::Fleeing)
+            {
+                bCoastalWildlifeAlert = true;
+                FVector2D Escape(Location.X - ReactionLocation.X, Location.Y - ReactionLocation.Y);
+                Escape = Escape.GetSafeNormal() * FMath::Lerp(500.0F, 620.0F, State.Temperament);
+                FVector2D Separation = FVector2D::ZeroVector;
+                for (const FCoastalWildlifeAutonomousState& Other : CoastalWildlifeAutonomousStates)
+                {
+                    if (&Other == &State || Other.Kind != ECoastalWildlifeKind::Deer || Other.Component == nullptr) continue;
+                    const FVector2D Delta(Location.X - Other.Component->GetRelativeLocation().X, Location.Y - Other.Component->GetRelativeLocation().Y);
+                    const float Distance = Delta.Size();
+                    if (Distance > 1.0F && Distance < 720.0F)
+                    {
+                        Separation += Delta / Distance * (720.0F - Distance) * 0.38F;
+                    }
+                }
+                const FVector2D FleeVelocity = (Escape + Separation.GetClampedToMaxSize(220.0F)).GetClampedToMaxSize(620.0F);
+                DesiredVelocity = FVector(FleeVelocity.X, FleeVelocity.Y, 0.0F);
+                AccelerateTowards(DesiredVelocity, 460.0F);
+                Location += State.Velocity * StepSeconds;
+                const FVector2D FromHabitat(Location.X - State.Anchor.X, Location.Y - State.Anchor.Y);
+                if (FromHabitat.Size() > 9000.0F)
+                {
+                    const FVector2D Clamped = FromHabitat.GetSafeNormal() * 9000.0F;
+                    Location.X = State.Anchor.X + Clamped.X;
+                    Location.Y = State.Anchor.Y + Clamped.Y;
+                }
+                if (!bRemembersDrone && State.BehaviorTime > 2.0F)
+                {
+                    State.Behavior = ECoastalWildlifeBehavior::Recovering;
+                    State.BehaviorTime = 0.0F;
+                }
+            }
+            else if (State.Behavior == ECoastalWildlifeBehavior::Recovering)
+            {
+                const FVector2D Home(State.Anchor.X - Location.X, State.Anchor.Y - Location.Y);
+                const FVector2D HomeVelocity = Home.GetSafeNormal() * 175.0F;
+                AccelerateTowards(FVector(HomeVelocity.X, HomeVelocity.Y, 0.0F), 220.0F);
+                Location += State.Velocity * StepSeconds;
+                if (Home.Size() < 220.0F)
+                {
+                    State.Behavior = ECoastalWildlifeBehavior::Roaming;
+                    State.BehaviorTime = 0.0F;
+                    State.MotionStartTime = Time;
+                    State.Anchor = Location;
+                    State.Velocity = FVector::ZeroVector;
+                }
+            }
+        }
+        else if (State.Kind == ECoastalWildlifeKind::Bear)
+        {
+            const float RememberedDistance = FVector::Dist(Location, ReactionLocation);
+            if (bRemembersDrone && RememberedDistance < 4800.0F
+                && State.Behavior != ECoastalWildlifeBehavior::Fleeing)
+            {
+                bCoastalWildlifeAlert = true;
+                bCoastalBearDefending = true;
+                if (State.Behavior != ECoastalWildlifeBehavior::Alert)
+                {
+                    State.BehaviorTime = 0.0F;
+                }
+                State.Behavior = ECoastalWildlifeBehavior::Alert;
+                const FVector2D ToDrone(ReactionLocation.X - Location.X, ReactionLocation.Y - Location.Y);
+                const float DroneYaw = FMath::RadiansToDegrees(FMath::Atan2(ToDrone.Y, ToDrone.X));
+                const FRotator AlertRotation(0.0F, DroneYaw + State.YawBias, State.Roll);
+                State.Component->SetRelativeRotation(FMath::RInterpTo(
+                    State.Component->GetRelativeRotation(), AlertRotation, StepSeconds, 1.2F));
+                AccelerateTowards(FVector::ZeroVector, 180.0F);
+                Location += State.Velocity * StepSeconds;
+                if (RememberedDistance < 2600.0F && State.Temperament < 0.62F && State.BehaviorTime > 1.2F)
+                {
+                    State.Behavior = ECoastalWildlifeBehavior::Fleeing;
+                    State.BehaviorTime = 0.0F;
+                }
+            }
+            if (State.Behavior == ECoastalWildlifeBehavior::Fleeing)
+            {
+                bCoastalWildlifeAlert = true;
+                FVector2D Retreat(Location.X - ReactionLocation.X, Location.Y - ReactionLocation.Y);
+                Retreat = Retreat.GetSafeNormal() * FMath::Lerp(330.0F, 430.0F, 1.0F - State.Temperament);
+                AccelerateTowards(FVector(Retreat.X, Retreat.Y, 0.0F), 280.0F);
+                Location += State.Velocity * StepSeconds;
+                if (!bRemembersDrone && State.BehaviorTime > 2.5F)
+                {
+                    State.Behavior = ECoastalWildlifeBehavior::Recovering;
+                    State.BehaviorTime = 0.0F;
+                }
+            }
+            else if ((State.Behavior == ECoastalWildlifeBehavior::Alert && !bRemembersDrone)
+                || State.Behavior == ECoastalWildlifeBehavior::Recovering)
+            {
+                const FVector2D Home(State.Anchor.X - Location.X, State.Anchor.Y - Location.Y);
+                AccelerateTowards(FVector(Home.GetSafeNormal() * 145.0F, 0.0F), 180.0F);
+                Location += State.Velocity * StepSeconds;
+                if (Home.Size() < 240.0F)
+                {
+                    State.Behavior = ECoastalWildlifeBehavior::Roaming;
+                    State.BehaviorTime = 0.0F;
+                    State.MotionStartTime = Time;
+                    State.Anchor = Location;
+                }
+            }
+        }
+        else if (State.Kind == ECoastalWildlifeKind::Eagle)
+        {
+            const float GroundHeight = bHasDrone ? GetCoastalLandHeight(DroneLocation.X, DroneLocation.Y) : 0.0F;
+            const bool bDroneAirborne = bHasDrone && DroneLocation.Z > GroundHeight + 250.0F;
+            if (State.Behavior == ECoastalWildlifeBehavior::Roaming && bDroneAirborne && DroneDistance < 10000.0F)
+            {
+                State.Behavior = ECoastalWildlifeBehavior::Attacking;
+                State.BehaviorTime = 0.0F;
+            }
+            if (State.Behavior == ECoastalWildlifeBehavior::Attacking)
+            {
+                bCoastalEagleAttacking = true;
+                const FVector PredictedTarget = ReactionLocation + DroneVelocity * 0.55F + FVector(0.0F, 0.0F, 120.0F);
+                DesiredVelocity = (PredictedTarget - Location).GetSafeNormal() * 900.0F;
+                AccelerateTowards(DesiredVelocity, 680.0F);
+                Location += State.Velocity * StepSeconds;
+                if ((!bRemembersDrone && State.BehaviorTime > 1.0F)
+                    || FVector::Dist(Location, PredictedTarget) < 520.0F || State.BehaviorTime > 7.0F)
+                {
+                    State.Behavior = ECoastalWildlifeBehavior::Recovering;
+                    State.BehaviorTime = 0.0F;
+                }
+            }
+            else if (State.Behavior == ECoastalWildlifeBehavior::Recovering)
+            {
+                DesiredVelocity = (State.Anchor - Location).GetSafeNormal() * 620.0F;
+                AccelerateTowards(DesiredVelocity, 480.0F);
+                Location += State.Velocity * StepSeconds;
+                if (FVector::Dist(Location, State.Anchor) < 350.0F)
+                {
+                    State.Behavior = ECoastalWildlifeBehavior::Roaming;
+                    State.BehaviorTime = 0.0F;
+                    State.MotionStartTime = Time;
+                    State.Anchor = Location;
+                    State.Velocity = FVector::ZeroVector;
+                }
+            }
+        }
+        else if (State.Kind == ECoastalWildlifeKind::Whale)
+        {
+            const bool bLowDrone = bHasDrone && DroneLocation.Z < SeaLevelCm + 3000.0F;
+            if (State.Behavior == ECoastalWildlifeBehavior::Roaming && bLowDrone && DroneDistance < 7500.0F)
+            {
+                State.Behavior = ECoastalWildlifeBehavior::Diving;
+                State.BehaviorTime = 0.0F;
+            }
+            if (State.Behavior == ECoastalWildlifeBehavior::Diving)
+            {
+                bCoastalWhaleDiving = true;
+                const FVector2D Away(Location.X - ReactionLocation.X, Location.Y - ReactionLocation.Y);
+                AccelerateTowards(FVector(Away.GetSafeNormal() * 240.0F, -120.0F), 140.0F);
+                Location += State.Velocity * StepSeconds;
+                if (!bRemembersDrone || State.BehaviorTime > 8.0F)
+                {
+                    State.Behavior = ECoastalWildlifeBehavior::Recovering;
+                    State.BehaviorTime = 0.0F;
+                }
+            }
+            else if (State.Behavior == ECoastalWildlifeBehavior::Recovering && State.BehaviorTime > 5.0F)
+            {
+                State.Behavior = ECoastalWildlifeBehavior::Roaming;
+                State.BehaviorTime = 0.0F;
+                State.MotionStartTime = Time;
+                State.Anchor = Location;
+                State.Velocity = FVector::ZeroVector;
+            }
+        }
+
+        if (State.Behavior == ECoastalWildlifeBehavior::Roaming)
+        {
+            const float LocalTime = Time - State.MotionStartTime;
+            const float Theta = State.Phase + LocalTime * State.Speed;
+            Location = State.Anchor;
+            Location.X += State.RoamRadius.X * (FMath::Sin(Theta) - FMath::Sin(State.Phase));
+            Location.Y += State.RoamRadius.Y * (FMath::Cos(Theta) - FMath::Cos(State.Phase));
+            State.Velocity = FVector(
+                State.RoamRadius.X * State.Speed * FMath::Cos(Theta),
+                -State.RoamRadius.Y * State.Speed * FMath::Sin(Theta), 0.0F);
+        }
+
+        if (State.Kind == ECoastalWildlifeKind::Whale)
+        {
+            const float DiveAlpha = State.Behavior == ECoastalWildlifeBehavior::Diving
+                ? FMath::Clamp(State.BehaviorTime / 4.0F, 0.0F, 1.0F)
+                : State.Behavior == ECoastalWildlifeBehavior::Recovering
+                    ? 1.0F - FMath::Clamp(State.BehaviorTime / 5.0F, 0.0F, 1.0F) : 0.0F;
+            Location.Z = SeaLevelCm + State.GroundOffset - 950.0F * DiveAlpha
+                + 55.0F * (FMath::Sin(Time * 0.24F + State.Phase) - FMath::Sin(State.Phase));
+        }
+        else if (State.Kind == ECoastalWildlifeKind::Eagle)
+        {
+            if (State.Behavior == ECoastalWildlifeBehavior::Roaming)
+            {
+                Location.Z = State.Anchor.Z + 260.0F * FMath::Sin(Time * 0.31F + State.Phase);
+            }
+            Location.Z = FMath::Max(Location.Z, GetCoastalLandHeight(Location.X, Location.Y) + 420.0F);
+        }
+        else
+        {
+            const float BaseGroundZ = GetCoastalLandHeight(Location.X, Location.Y) + State.GroundOffset;
+            Location.Z = BaseGroundZ;
+            if (State.Kind == ECoastalWildlifeKind::Deer)
+            {
+                static const FName DeerFootBones[] = {
+                    TEXT("legbldigit11_end_077"),
+                    TEXT("legbrdigit11_end_078"),
+                    TEXT("legfldigit11_end_075"),
+                    TEXT("legfrdigit11_end_074")};
+                float GroundingDelta = -TNumericLimits<float>::Max();
+                int32 ValidFootCount = 0;
+                for (const FName FootBone : DeerFootBones)
+                {
+                    if (State.Component->GetBoneIndex(FootBone) == INDEX_NONE)
+                    {
+                        continue;
+                    }
+                    const FVector FootLocation = State.Component->GetBoneLocation(FootBone, EBoneSpaces::WorldSpace);
+                    const float FootGroundZ = GetCoastalLandHeight(FootLocation.X, FootLocation.Y) + 1.0F;
+                    GroundingDelta = FMath::Max(GroundingDelta, FootGroundZ - FootLocation.Z);
+                    ++ValidFootCount;
+                }
+                if (ValidFootCount > 0)
+                {
+                    const float PoseGroundZ = State.Component->GetRelativeLocation().Z + GroundingDelta;
+                    const float ClampedGroundZ = FMath::Clamp(PoseGroundZ, BaseGroundZ - 12.0F, BaseGroundZ + 35.0F);
+                    Location.Z = FMath::FInterpTo(
+                        State.Component->GetRelativeLocation().Z, ClampedGroundZ, StepSeconds, 18.0F);
+                }
+            }
+        }
+
+        UAnimSequence* DesiredAnimation = State.TravelAnimation;
+        if ((State.Kind == ECoastalWildlifeKind::Deer || State.Kind == ECoastalWildlifeKind::Bear)
+            && State.Behavior == ECoastalWildlifeBehavior::Alert)
+        {
+            DesiredAnimation = State.IdleAnimation;
+        }
+        else if (State.Kind == ECoastalWildlifeKind::Deer && State.Behavior == ECoastalWildlifeBehavior::Fleeing)
+        {
+            DesiredAnimation = State.FastAnimation;
+        }
+        if (DesiredAnimation != nullptr && DesiredAnimation != State.CurrentAnimation)
+        {
+            State.Component->PlayAnimation(DesiredAnimation, true);
+            State.Component->SetPosition(FMath::Fmod(State.Phase, DesiredAnimation->GetPlayLength()), false);
+            State.CurrentAnimation = DesiredAnimation;
+        }
+        const float HorizontalSpeed = FVector2D(State.Velocity.X, State.Velocity.Y).Size();
+        float PlayRate = FMath::Clamp(HorizontalSpeed / FMath::Max(State.NominalTravelSpeed, 1.0F), 0.72F, 1.28F);
+        if (DesiredAnimation == State.IdleAnimation) PlayRate = 0.88F;
+        if (DesiredAnimation == State.FastAnimation && State.FastAnimation != State.TravelAnimation)
+        {
+            PlayRate = FMath::Clamp(HorizontalSpeed / 620.0F, 0.82F, 1.18F);
+        }
+        State.Component->SetPlayRate(PlayRate);
+
+        const bool bBehaviorControlsRotation = State.Kind == ECoastalWildlifeKind::Bear
+            && State.Behavior == ECoastalWildlifeBehavior::Alert;
+        if (!State.Velocity.IsNearlyZero() && !bBehaviorControlsRotation)
+        {
+            const float Heading = FMath::RadiansToDegrees(FMath::Atan2(State.Velocity.Y, State.Velocity.X)) + State.YawBias;
+            const float Pitch = State.Kind == ECoastalWildlifeKind::Eagle
+                ? FMath::Clamp(-FMath::RadiansToDegrees(FMath::Atan2(State.Velocity.Z, FVector2D(State.Velocity.X, State.Velocity.Y).Size())), -35.0F, 35.0F)
+                : 0.0F;
+            const float TurnSpeed = State.Kind == ECoastalWildlifeKind::Whale ? 0.55F
+                : State.Kind == ECoastalWildlifeKind::Bear ? 1.15F
+                : State.Kind == ECoastalWildlifeKind::Eagle ? 1.8F : 2.35F;
+            const FRotator TargetRotation(Pitch, Heading, State.Roll);
+            const FRotator SmoothedRotation = FMath::RInterpTo(
+                State.Component->GetRelativeRotation(), TargetRotation, StepSeconds, TurnSpeed);
+            State.Component->SetRelativeLocationAndRotation(Location, SmoothedRotation);
+        }
+        else
+        {
+            State.Component->SetRelativeLocation(Location);
+        }
+    }
+    for (FCoastalWildlifeAnimatedBatch& Batch : CoastalWildlifeAnimatedBatches)
+    {
+        if (Batch.Component == nullptr || Batch.BaseVertices.IsEmpty()) continue;
+        TArray<FVector> Vertices = Batch.BaseVertices;
+        for (const FCoastalWildlifeVertexRange& Range : Batch.Ranges)
+        {
+            const float Time = CoastalWildlifeAnimationTime;
+            const float Scale = FMath::Max(Range.Scale, 0.01F);
+            const FRotator Rotation(0.0F, Range.Yaw, 0.0F);
+            const FRotator InverseRotation(0.0F, -Range.Yaw, 0.0F);
+            const float BreathRate = Range.Kind == ECoastalWildlifeKind::Bear ? 0.72F : 1.08F;
+            const float GaitRate = 0.88F;
+            const float Breath = FMath::Sin(Time * BreathRate + Range.Phase);
+            const float Gait = FMath::Sin(Time * GaitRate + Range.Phase);
+            for (int32 Index = Range.StartVertex; Index < Range.EndVertex && Vertices.IsValidIndex(Index); ++Index)
+            {
+                FVector Local = InverseRotation.RotateVector(Batch.BaseVertices[Index] - Range.Origin) / Scale;
+                if (Range.Kind == ECoastalWildlifeKind::Whale)
+                {
+                    const float TailWeight = FMath::SmoothStep<double>(0.0F, 1.0F, FMath::Clamp((-Local.X - 430.0F) / 720.0F, 0.0F, 1.0F));
+                    Local.Y += TailWeight * 48.0F * FMath::Sin(Time * 1.05F + Range.Phase);
+                    Local.Z += 24.0F * FMath::Sin(Time * .58F + Range.Phase);
+                    Local.X += 22.0F * FMath::Sin(Time * .18F + Range.Phase);
+                }
+                else
+                {
+                    const float HeadStart = Range.Kind == ECoastalWildlifeKind::Bear ? 150.0F : 95.0F;
+                    const float TailStart = Range.Kind == ECoastalWildlifeKind::Bear ? -150.0F : -90.0F;
+                    const float HeadWeight = FMath::SmoothStep<double>(0.0F, 1.0F, FMath::Clamp((Local.X - HeadStart) / 150.0F, 0.0F, 1.0F));
+                    const float TailWeight = FMath::SmoothStep<double>(0.0F, 1.0F, FMath::Clamp((TailStart - Local.X) / 170.0F, 0.0F, 1.0F));
+                    const float LegWeight = 1.0F - FMath::SmoothStep<double>(45.0F, 125.0F, Local.Z);
+                    const float TorsoWeight = FMath::SmoothStep<double>(55.0F, 150.0F, Local.Z) * (1.0F - HeadWeight * .65F);
+                    const float SidePhase = Local.Y >= 0.0F ? 1.0F : -1.0F;
+                    Local.Z += TorsoWeight * Breath * (Range.Kind == ECoastalWildlifeKind::Bear ? 7.0F : 4.5F);
+                    Local.Z += HeadWeight * 7.0F * FMath::Sin(Time * .46F + Range.Phase);
+                    Local.Y += TailWeight * 12.0F * FMath::Sin(Time * 1.32F + Range.Phase);
+                    Local.X += LegWeight * SidePhase * Gait * 4.5F;
+                    Local.Z += LegWeight * FMath::Max(0.0F, Gait * SidePhase) * 2.5F;
+                }
+                Vertices[Index] = Range.Origin + Rotation.RotateVector(Local * Scale);
+            }
+        }
+        Batch.Component->UpdateMeshSection_LinearColor(0, Vertices, Batch.Normals, Batch.UV, Batch.Colors, {});
+    }
 }
 
 void APacificCoastGraybox::ApplyEnvironmentState(const FEnvironmentState& State)

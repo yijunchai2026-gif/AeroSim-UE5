@@ -1,6 +1,6 @@
 # AeroSim 海岸场景 3A 迭代：给后续 AI 的完整交接指令
 
-- **最后更新：** 2026-10-25。交接人是 Claude（PMO / 集成）。
+- **最后更新：** 2026-10-27。交接人是 Claude（PMO / 集成）。
 - **仓库内副本：** `docs/AI_HANDOFF.md`，随 `main` 推送。
 - **本机工作副本：** `/Users/bytedance/Downloads/AeroSim-worktrees/HANDOFF-FROM-CLAUDE/AI-HANDOFF.md`。这份不在 git 里，可能比仓库内副本新。
 - **用户沟通：** 用中文。结论先行，数字要真实，不夸大。
@@ -20,34 +20,40 @@
 
 另外，无人机必须能用**真实按键**飞完约 2 分钟（100–130 s）的任务航线，并降落在停机坪上。
 
-**当前结论（2026-10-25，R13）：** 还没有达到 3A。
+**当前结论（2026-10-27，R19）：** 还没有达到 3A。
 
-- R0–R11 共十余轮视觉 QA，每轮 U1–U6 都是 FAIL，但每轮都有可量化的改进。
-- **验收只由用户本人签字。** 任何 AI 都不得写「3A 已达成」或「验收通过」。
+- R0–R21 已完成多轮视觉 QA，每轮都有可量化改进，但最终验收只由用户本人签字。
+- **任何 AI 都不得写「3A 已达成」或「验收通过」。**
 
-**最新完成的一轮是 R13**（集成提交 `ceb31d7`，源码指纹 `26bc063ce077`）：
+**R21 后的植被升级（2026-10-29，当前 worktree）**：按湾区海岸梯度重构树种布局，并增加一组免费 CC0 林下植被。
 
-- Python 92/92、静态 10/10、Build、81 项 Automation、Package 与 cooked shader 检查全部通过。
-- 真实按键闭环航线到达 Result / `nav-15-land-on-mat`：538.75 s，未使用 teleport，`mission_incident=0`；耗时仍明显高于 100–130 s 产品目标。
-- shore / cliff 已完成 600 ms × 8 动态序列，实际跨度 4.288 / 4.262 s。
-- 用户本轮提出的地表、湾区云层和树根均有改善：近地草/低灌木尺度更可读，晴天形成 marine layer + broken cumulus + cirrus 层次，根瓣与根脊改为不对称、弯曲并埋地。
-- 仍不能关闭的问题：开阔地宏观覆盖偏稀、卷云存在程序化长直线、树基中景仍偏圆柱；north grove、岸壁锈带和远山条纹也未解决。
-- 详细证据见 `docs/coast-aaa-qa/R13/qa-hero.md` 与 `qa-motion.md`。U1–U6 仍不得写 PASS。
+- 树种不再只按坐标与噪声分配：Coast live oak 偏向温暖、适度排水的 sheltered pockets；Douglas-fir 偏向湿润背阴沟谷；Monterey pine 偏向向海、较暴露的山肩。地形输入来自 `FPacificCoastHabitat::Sample` 的坡度、坡向日照、排水与生境权重。
+- 新增 Poly Haven `weed_plant_02`（CC0）三种低矮 annual-forb 变体，只在开阔/林缘且非岩岸、非积水地面以 HISM 短视距实例化；保留飞行路线、起降区和树干碰撞净空。
+- 湾区生境依据采用 USDA Forest Service Central Coast vegetation descriptions 与 California DFW coastal oak woodland description；资产来源与逐文件 hash 冻结在 `SourceAssets/EnvironmentDraft/HabitatDraft/source.json` 和 `docs/environment-draft-assets.json`。
+- 不把通用 annual-forb proxy 宣称为精确本地物种；它只用于增加无人机低空视角的地被形态和视差。
+- 第二批免费素材加入 Poly Haven `dry_branches_medium_01`（CC0）的 3 个扫描枯枝变体：仅稀疏分布在 woodland 权重较高、非岩岸、非陡坡的林下地面；采用 HISM、35–50 m cull、无碰撞，并避开起降区、步道、训练走廊和树干根颈。三种原始网格分别为 5,616 / 5,254 / 5,933 triangles，未接入高面数树桩和树根模型。
+- 第三批免费素材加入 Poly Haven `shrub_02`（CC0）的 4 个狭叶灌木形态变体，分别约 5.2K–9.2K triangles。它们作为 generic maritime-scrub morphology proxy，只分布在向阳、排水良好、非岩岸的 coastal grassland 与 woodland feathered edge；不宣称为精确的 coyote brush 或 California sagebrush。采用 HISM、50–75 m cull、无碰撞，并继续避开无人机基础设施和训练走廊。分布逻辑参考 California DFW Coastal Scrub habitat description 与 Golden Gate NRA 植被资料。
 
-**上一轮 R12**（集成提交 `cb3c4e8`，源码指纹 `410838f7b176`）：
+**上一轮 R21**：加入老鹰与动物警觉/逃离/攻击状态，并修复鹿资产没有骨骼 track、动物移动与动画不同步的问题。
 
-- 门禁全部通过，真实按键闭环航线到达 Result / `nav-15-land-on-mat`：361.62 s。
-- 完整报告在 `docs/coast-aaa-qa/R12/`。
+- 数量固定为鲸鱼 2、熊 1、鹿 5、老鹰 1；狼和牛均为 0；全部 `NoCollision`。
+- 来源、作者、CC BY 4.0 attribution 和归档 hash 见 `THIRD_PARTY_ASSETS.md`；导入资产的逐文件 hash 见 `docs/third-party-wildlife-assets.json`。
+- UE 5.8.3 Mac Development Build、Automation 87/87（0 failed）、Package 通过；相关 Python 测试 27/27、静态检查 966/966。
+- 详细证据见 `docs/coast-aaa-qa/R21/qa-wildlife-interaction.md`；最新本地包在 `Artifacts/ProductShell/CoastalPackage/Mac/AeroSim.app`。
+- 这些结果只构成技术验收，不替代用户最终视觉验收。
+
+**上一轮 R13**（集成提交 `47a652a`）：
+
+- 用户明确要求后已推送到 `origin/aime/coast-aaa-integration`。
+- 完整报告在 `docs/coast-aaa-qa/R13/`。
 
 **远端 `main`：** 2026-10-24 经用户同意，R11、方向键操控补丁（`4aa1be9`）和本文档已推送到 `origin/main`。以后再推送仍要先征得用户同意，推送前用 `git ls-remote origin refs/heads/main` 核对远端当前在哪个提交。
 
 **快速运行最新包（给人看）：**
 
 ```bash
-# 最新包：R13 集成包（包含方向键操控）
-open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/ProductShell/AAA/R13/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
-# 纯 R11 包（没有方向键）
-open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/ProductShell/AAA/R11/Package/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
+# 最新本地包：R21 worktree（真实骨骼动画与状态化运动）
+open -n "/Users/bytedance/Downloads/AeroSim-worktrees/r14/Artifacts/ProductShell/CoastalPackage/Mac/AeroSim.app" --args -windowed -ResX=1920 -ResY=1080
 ```
 
 - 在首页一直按 Enter 进入 Flight，然后按 Left Shift 或 ↑ 起飞。
@@ -89,15 +95,11 @@ open -n "/Users/bytedance/Downloads/AeroSim-worktrees/integration/Artifacts/Prod
 | 路径 | 分支 | 负责人 / 用途 |
 |---|---|---|
 | `/Users/bytedance/Downloads/AeroSim` | `aime/20261016-1435-product-shell` | **用户主检出，禁止触碰** |
-| `AeroSim-worktrees/integration` | `aime/coast-aaa-integration` | PMO：合并、打包、真实按键验证、转录 QA 报告 |
-| `AeroSim-worktrees/terrain` | `aime/coast-aaa-terrain` | DEV-TERRAIN：地形、悬崖、岩石、海湾礁石、地面材质（U5、U6） |
-| `AeroSim-worktrees/flora` | `aime/coast-aaa-flora` | DEV-FLORA：树形、树根、树皮、密度、走廊、落叶、林缘（U1、U2） |
-| `AeroSim-worktrees/seasky` | `aime/coast-aaa-seasky` | DEV-SEASKY：海面、泡沫、浪花、天空、云、整体光照和林下补光（U3、U4） |
-| `AeroSim-worktrees/flight` | `aime/coast-aaa-flight` | DEV-FLIGHT：飞行模型、15 段导航、任务判定、HUD |
-| `AeroSim-worktrees/art-flora` | `aime/coast-aaa-art-flora` | 素材泳道（CC0 调研与导入建议），目前空闲 |
-| `AeroSim-worktrees/art-surface` | `aime/coast-aaa-art-surface` | 素材泳道，目前空闲 |
-| `AeroSim-worktrees/r6-hero-cove` | `aime/20261019-0047-r6-hero-cove` | Codex 的，**不要动** |
+| `AeroSim-worktrees/integration` | `aime/coast-aaa-integration` | R13 集成分支；已按用户要求推送到 `47a652a` |
+| `AeroSim-worktrees/r14` | `aime/1792907214-r14-visual-fixes` | R14 开发、打包、视觉 QA 与真实输入航线 |
 | `AeroSim-worktrees/HANDOFF-FROM-CLAUDE/` | 不在 git 里 | 交接文档工作副本、`pmo-tools/` 脚本备份、旧 diff |
+
+旧 terrain / flora / seasky / flight / art worktree 已在 R14 开工前按用户要求删除；有 dirty 内容的旧 worktree 先 stash 保存后再删除。
 
 **远端：** `origin = https://github.com/yijunchai2026-gif/AeroSim-UE5.git`，使用 Git LFS，`.git/lfs/objects` 约 7 GB。
 
@@ -506,3 +508,125 @@ MOTION：
 | `docs/tasks/AAA-R5-NAVIGATION-GAP.md` | 飞行和导航的历次根因分析（含 R8 悬停） |
 | `docs/coast-aaa-qa/R*/qa-hero.md`、`qa-motion.md` | 历轮 QA 报告归档 |
 | `Artifacts/ProductShell/AAA/R*/` | 本机产物：包、日志、路线日志、证据帧（gitignored） |
+
+
+---
+
+## 13. R15 连续视觉优化（2026-10-25）
+
+R15 在 R14 分辨率修复之后继续处理六项残留，工作分支仍为 `aime/1792907214-r14-visual-fixes`，未经用户要求不 push。
+
+- 地形：岸壁层理阈值加入近/远空间扰动；远山边界加入低频 jitter，根部从海平面下 50 m 调到 70 m，并降低规则噪声。
+- 树木：LOD2 树干从 5 边提升到 8 边；LOD2 增加低成本三边地表根；north grove 生境和生成范围扩展。
+- 地被：开放地以 4% 接受率布置低成本 exposed-grass tufts，避免恢复 R13 曾触发预算的高密度实例方案。
+- 天空：卷云三层纤维使用不同 shear / rotated coordinates / low-frequency drift，方位和仰角 warp 进一步分离，并提高稀疏阈值。
+- 门禁：Python 92/92；Mac Development Build 通过；全量 Automation 92 项 0 failed；最终 SeaSky 定向 Automation 7 项 0 failed；Package ExitCode 0。
+- 证据：`Artifacts/ProductShell/AAA/R15/qa-final/` 24 张；`docs/coast-aaa-qa/R15/qa-hero.md`、`qa-motion.md`。
+- 最终包：`Artifacts/ProductShell/AAA/R15/Package/Mac/AeroSim.app`。
+
+当前仍不能声明 3A 或用户验收通过。主要残留是远山低模轮廓、卷云顶部弱平行节奏、开阔地缺少真正近景碎石/decal，以及 cliff / shore 前景大平面。
+
+
+---
+
+## 14. R16 Pacific Coast 动物（2026-10-25）
+
+R16 在 R15 环境基础上加入确定性程序化动物，不引入外部资产，也不改变飞行碰撞与任务逻辑。
+
+- `PacificCoastWildlife.cpp`：2 条鲸鱼、3 只狼、1 只熊、5 只鹿、4 头牛；每个物种合并为一个程序化网格批次，鹿角单独批次。
+- 鲸鱼位于外海，狼/熊和鹿/牛位于北侧相邻的山地草坡。动物使用可辨识的静态动作姿态，不开启 Tick。
+- 动物组件全部 `NoCollision`，总三角形预算由 `AeroSim.Coastal.Wildlife.Composition` 自动化测试限制在 20,000 以下。
+- 新增控制桥评审视角：`wildlife-whale`、`wildlife-predators`、`wildlife-herd`。
+- 验证：Python 92/92；Mac Development Build 通过；Wildlife 定向 Automation 1/1；全量 Automation 93 项 0 failed；Package ExitCode 0。
+- 证据：`Artifacts/ProductShell/AAA/R16/qa-wildlife/`；报告：`docs/coast-aaa-qa/R16/qa-wildlife.md`。
+- 最终包：`Artifacts/ProductShell/AAA/R16/Package/Mac/AeroSim.app`。
+
+当前没有骨骼动画、AI 漫游、毛发或音效；这些属于后续独立范围。最终视觉验收仍由用户决定。
+
+## 15. R17 输入焦点、动物细节与飞行 HUD（2026-10-25）
+
+R17 修复打包应用进入 Flight 后仍由 CommonUI Widget 持有焦点、导致 Enhanced Input 收不到键盘输入的问题，并完成动物模型与 HUD 的一轮增量。
+
+- 输入：普通打包启动默认直接进入 Flight；`-AeroSimStartMenu` 和显式产品视图仍保留菜单。Flight 会停用 ProductWidget、使用 GameOnly input mode，并把 Slate 焦点交给 `SViewport`；非 Flight 页面重新启用 Widget。
+- 实机：`slate_focus=SViewport`、`viewport_focus=true`、`mouse_captured=true`、`mapping_active=true`。12 个键位 `W/S/A/D/Q/E/LeftShift/LeftControl/Up/Down/Left/Right` 的 mapped/semantic peak 均为 1。
+- 航线：真实按键闭环覆盖 15/15 航段，437.3 s 到达 Result，0 press error、0 capture error、0 safe pause。
+- 动物：新增鲸鱼腹部/眼/口线与海面起伏；狼、熊、鹿、牛新增眼鼻、耳、蹄/掌、胸腹、斑点等细节批次。仍为 NoCollision 的程序化低多边形模型。
+- UI：Flight HUD 底部新增完整键盘控制提示和最近动物/距离提示，使用 Canvas 绘制，不创建抢焦点的交互控件。
+- 门禁：Python 92/92；Mac Development Build 通过；全量 Automation 94/94、0 failed；Package ExitCode 0。
+- 报告：`docs/coast-aaa-qa/R17/qa-input-wildlife-ui.md`；包：`Artifacts/ProductShell/AAA/R17/Package/Mac/AeroSim.app`。
+
+R17 仍没有骨骼蒙皮、毛发、复杂步态、AI 漫游或音效，不能声明达到 3A，也不代表用户视觉验收通过。下一轮优先将物种拆为独立实例/骨骼结构，引入不同相位动画和近景高质量材质。
+
+## 16. R18 动物独立生命感与曲面细化（2026-10-26）
+
+R18 将 R17 的整批动物起伏改为逐只动物、跨材质层同步的确定性动画，并提高主要躯干和头部曲面细分。
+
+- 动画组织：10 个程序化材质批次、47 个实例范围；身体、深色/浅色细节与鹿角按同一动物相位同步。
+- 动作：鲸鱼独立起伏、游移和尾摆；陆地动物具备物种差异化呼吸、头尾微动及交替承重。
+- 形体：提高鲸鱼、狼、熊、鹿、牛主要躯干和头部的环向/纵向细分，减少近景多面体轮廓。
+- UI：接近动物栖息地时显示 `LIVING HABITAT / OBSERVE QUIETLY`，保持 Canvas 非交互绘制。
+- 预算：动物总计 21,850 triangles，自动化上限 30,000；全部保持 NoCollision。
+- 门禁：Python 92/92；全量 Automation 94/94、0 failed；Package ExitCode 0；最终包 12 键映射全部 mapped/semantic peak=1。
+- 报告：`docs/coast-aaa-qa/R18/qa-wildlife-motion.md`；包：`Artifacts/ProductShell/AAA/R18/Package/Mac/AeroSim.app`。
+
+当前仍是程序化网格与 CPU 顶点形变，没有真实扫描资产、骨骼蒙皮、毛发、完整行为树或实录音效，不能声明已经与真实一致。下一轮应优先升级关节/骨骼结构、脚底 IK、行为状态机和近景材质。
+
+
+## 17. R19 熊、鹿、鲸鱼第三方资产替换（2026-10-27）
+
+R19 按用户确认的物种范围只保留熊、鹿和鲸鱼，移除狼与牛，并用可追溯的第三方骨骼资产替换 R18 程序化动物。
+
+- 数量：2 条鲸鱼、1 只熊、5 只鹿；狼与牛为 0。
+- 实现：`USkeletalMeshComponent` + 循环 `AnimSequence`；全部 `NoCollision`，资产缺失时保留程序化安全回退。
+- 资产：三套 Sketchfab CC BY 4.0 资产；作者、来源、归档 hash 见 `THIRD_PARTY_ASSETS.md`，105 个导入 `.uasset` 的逐文件 hash 见 `docs/third-party-wildlife-assets.json`。
+- 鲸鱼：重建 BaseColor / Roughness / Normal / AO PBR 材质，并修正翻滚方向与海面高度，使深色背部朝上。
+- 门禁：Python 92/92；静态 10/10；Automation 94/94、0 failed；Mac Development Build、Package、Shader 检查通过；打包实机输入焦点正常。
+- 报告：`docs/coast-aaa-qa/R19/qa-third-party-wildlife.md`；包：`Artifacts/ProductShell/AAA/R19/Package/Mac/AeroSim.app`。
+
+R19 的自动化与截图是技术证据，不构成最终视觉验收，也不能据此声明达到 3A。
+
+
+## 18. R20 动物自主巡游（2026-10-28）
+
+R20 在 R19 的熊、鹿和鲸鱼骨骼资产上加入确定性的领地活动，使动物像即时战略游戏中的环境单位一样持续移动。
+
+- 8 个实例全部注册自主活动状态：鲸鱼 2、熊 1、鹿 5；狼和牛仍为 0。
+- 鹿群在出生区域附近以不同相位和速度结伴巡游，每帧重新采样地形高度并保持 42 cm 蹄部偏移。
+- 熊切换为慢走动画，在山地领地内巡游并贴合地表。
+- 鲸鱼在各自海域执行大半径低速巡游与低幅升沉，保持海平面约束。
+- 所有运动由固定锚点、半径、速度和相位驱动；运动切线控制朝向，重复运行结果一致。
+- 门禁：Python 92/92；静态 10/10；Automation 94/94、0 failed；Mac Development Build、Package、Shader 检查通过；打包实机焦点和 Enhanced Input 正常。
+- 15 秒前后对照截图确认三类动物均发生位置或朝向变化；鹿与熊贴地、鲸鱼水位合理，无明显穿模、悬空、翻转或镜头丢失。
+- 报告：`docs/coast-aaa-qa/R20/qa-wildlife-autonomy.md`；包：`Artifacts/ProductShell/AAA/R20/Package/Mac/AeroSim.app`。
+
+R20 实现的是领地巡游与朝向变化，尚未加入无人机接近后的警觉/逃离、个体避让、捕食或复杂行为树；最终行为自然度仍由用户验收。
+
+## 19. R21 动物骨骼运动与交互（2026-10-28）
+
+R21 加入老鹰、鹿群警觉/逃离/个体避让、熊警觉和老鹰攻击，并针对用户指出的“不是骨骼动画、只是乱移动”完成资产与运行时修复。
+
+- 根因：R19 鹿源 GLB 没有 skin，UE `AnimSequence` 的 bone track 数为 0；现已替换为带 50 个 joints、Idle/Walk/Run 三套骨骼动画的 Deer Animation 资产。
+- 状态动画：鹿按 Alert/Walk/Flee 切换 Idle/Walk/Run；熊按警觉/巡游切换 Idle/Walk；鲸鱼使用 Forward Swim；老鹰保持骨骼拍翼。
+- 运动同步：用加速度限制和平滑旋转替代瞬时速度/朝向变化，并按实际水平速度调节动画 PlayRate，降低滑步与漂移。
+- 贴地与纹理补丁：按四个 toe-tip 骨骼逐帧校正鹿的组件高度；补充独立 `M_DeerCoat` 与可重导入鹿毛 Albedo，修复白模/统一色覆盖。
+- 门禁：关键动物动画必须存在、时长有效，并在 Editor Automation 中包含 bone tracks；鹿贴地测试会创建运行时 World、推进 90 帧并验证 toe-tip 最小离地间隙为 -1 至 4 cm。
+- 验证：Mac Development Build 通过；Product Package ExitCode 0；UE 全量 Automation 87 succeeded、0 failed；Python 相关测试 27/27；静态检查 966/966。
+- 报告：`docs/coast-aaa-qa/R21/qa-wildlife-interaction.md`；本地包：`Artifacts/ProductShell/CoastalPackage/Mac/AeroSim.app`。
+
+R21 证明骨骼动画链路和行为状态切换已工作，但当前仍没有脚底 IK、近景毛发和完整导航行为树；最终视觉与运动自然度仍由用户验收。
+
+### R21 免费真实鹿资产补充（2026-10-29）
+
+- 鹿身和皮毛替换为 WildMesh Realistic Deer 2.0 Demo，使用源包 `T_OdocoileusVirginianus_M_BC` 作为 body Base Color，并保留导入 `Deer_M` 材质。
+- 新骨架包含 80 joints；Idle 使用原资产动画，Walk/Run 由 DarryleH Deer Animation 的局部旋转按休止姿态重定向生成。
+- 运行时鹿资源切到 `Content/ThirdParty/Wildlife/BlacktailDeerAnimated`，实例比例约 0.01；四蹄贴地 bone names 同步切换为新骨架 digit-tip end bones。
+- Composition Automation 检查新 body texture、材质、三套动画 bone tracks，并推进 90 帧检查四蹄离地范围。
+- 最新视觉序列为 `blacktail-final-01.png` 至 `blacktail-final-08.png`；不据此声明最终视觉验收完成。
+
+### R21 开放世界动物仿真升级（2026-10-29）
+
+- `FCoastalWildlifeAutonomousState` 增加 Simulation LOD、刺激记忆、最后无人机位置与确定性 Temperament。
+- Active/Ambient/Dormant 阈值为 180/600 m，更新间隔为每帧/0.2 s/0.5 s；ControlBridge 暴露三级计数。
+- 鹿保留群体逃离与贴地；熊新增防御/退避；鹰按无人机速度预测拦截；鲸鱼新增低空刺激下潜与恢复。
+- `AeroSim.Coastal.Wildlife.Composition` 使用测试观察者覆盖四个物种的反应状态，并继续覆盖动画轨道和鹿蹄接地。
+- 本轮刻意不引入 AIModule、StateTree、MassEntity、ZoneGraph，避免扩大运行时依赖；后续大规模生态仿真再拆独立 `WildlifeDirector`。
