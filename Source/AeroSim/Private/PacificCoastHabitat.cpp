@@ -77,6 +77,10 @@ void APacificCoastGraybox::BuildCoastalHabitat()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> ForbA(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastAnnualForbADraft.SM_CoastAnnualForbADraft"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> ForbB(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastAnnualForbBDraft.SM_CoastAnnualForbBDraft"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> ForbC(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastAnnualForbCDraft.SM_CoastAnnualForbCDraft"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CoastalScrubA(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastalScrubADraft.SM_CoastalScrubADraft"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CoastalScrubB(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastalScrubBDraft.SM_CoastalScrubBDraft"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CoastalScrubC(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastalScrubCDraft.SM_CoastalScrubCDraft"));
+    static ConstructorHelpers::FObjectFinder<UStaticMesh> CoastalScrubD(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastalScrubDDraft.SM_CoastalScrubDDraft"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> DeadwoodA(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastDeadwoodADraft.SM_CoastDeadwoodADraft"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> DeadwoodB(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastDeadwoodBDraft.SM_CoastDeadwoodBDraft"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> DeadwoodC(TEXT("/Game/Development/CoastDraft/Meshes/SM_CoastDeadwoodCDraft.SM_CoastDeadwoodCDraft"));
@@ -97,7 +101,11 @@ void APacificCoastGraybox::BuildCoastalHabitat()
         {TEXT("CoastalFloraAnnualForbC"), ForbC.Object, 2.4F, 3.5F, 1000, 1600, false, -400},
         {TEXT("CoastalFloraDeadwoodA"), DeadwoodA.Object, 1.0F, 1.7F, 3500, 5000, true, 180},
         {TEXT("CoastalFloraDeadwoodB"), DeadwoodB.Object, 1.0F, 1.6F, 3500, 5000, true, 180},
-        {TEXT("CoastalFloraDeadwoodC"), DeadwoodC.Object, .9F, 1.5F, 3500, 5000, true, 180}};
+        {TEXT("CoastalFloraDeadwoodC"), DeadwoodC.Object, .9F, 1.5F, 3500, 5000, true, 180},
+        {TEXT("CoastalFloraMaritimeScrubA"), CoastalScrubA.Object, .62F, 1.02F, 5000, 7500, true, 260},
+        {TEXT("CoastalFloraMaritimeScrubB"), CoastalScrubB.Object, .68F, 1.08F, 5000, 7500, true, 260},
+        {TEXT("CoastalFloraMaritimeScrubC"), CoastalScrubC.Object, .58F, .92F, 5000, 7500, true, 260},
+        {TEXT("CoastalFloraMaritimeScrubD"), CoastalScrubD.Object, .66F, 1.06F, 5000, 7500, true, 260}};
     constexpr int32 KindCount = UE_ARRAY_COUNT(Kinds);
     TArray<FTransform> Instances[KindCount];
     // Trunk exclusion uses the real placed trees.
@@ -168,6 +176,31 @@ void APacificCoastGraybox::BuildCoastalHabitat()
             const float Scale = FMath::Lerp(K.MinScale, K.MaxScale, ScaleRoll);
             const FVector Base(P.X, P.Y, GetCoastalLandHeight(P.X, P.Y) - 3.0F);
             Instances[Kind].Add(FTransform(FRotator(0, Yaw, 0), Base, FVector(Scale)));
+        }
+    // Maritime scrub occupies sunny coastal grassland and feathered woodland edges. These are
+    // generic morphology proxies, not an exact claim of coyote-brush or California-sage identity.
+    FRandomStream MaritimeScrubRandom(72291);
+    constexpr float MaritimeScrubCell = 2200.0F;
+    for (float GX = -50000; GX < 11000; GX += MaritimeScrubCell)
+        for (float GY = -47000; GY < 47000; GY += MaritimeScrubCell)
+        {
+            const FVector2D P(GX + MaritimeScrubRandom.FRandRange(0, MaritimeScrubCell), GY + MaritimeScrubRandom.FRandRange(0, MaritimeScrubCell));
+            const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(P.X, P.Y);
+            const float Density = NearStandDensity(P.X, P.Y);
+            const float Grassland = Habitat.ExposedGrass + Habitat.ShelteredGrass;
+            if (Grassland < .42F || Habitat.Rock + Habitat.Shore > .16F || Habitat.Grade > .42F || Habitat.Drainage > .68F) continue;
+            if (Density > .62F || Habitat.SunExposure < -.25F) continue;
+            const float ScrubChance = FMath::Clamp(.12F + .24F * Grassland + .10F * FMath::Max(0.0F, Habitat.SunExposure), .12F, .40F);
+            if (MaritimeScrubRandom.FRand() > ScrubChance) continue;
+            if (IsProtected(P, 520) || IsWalkway(P, 360) || NearTrunk(P, 170)) continue;
+            float HalfWidth = 0;
+            if (CorridorDistance(P, &HalfWidth) < HalfWidth + 300.0F) continue;
+            const int32 Kind = 14 + MaritimeScrubRandom.RandRange(0, 3);
+            const FKind& K = Kinds[Kind];
+            if (!K.Mesh) continue;
+            const float Scale = MaritimeScrubRandom.FRandRange(K.MinScale, K.MaxScale);
+            const float Yaw = MaritimeScrubRandom.FRandRange(0, 360);
+            Instances[Kind].Add(FTransform(FRotator(0, Yaw, 0), FVector(P.X, P.Y, GetCoastalLandHeight(P.X, P.Y) - 3.0F), FVector(Scale)));
         }
     // Sparse woody debris breaks up the idealized forest floor. It remains outside protected
     // flight infrastructure and trunk collars, and follows woodland/moisture rather than a uniform scatter.

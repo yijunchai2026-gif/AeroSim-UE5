@@ -32,6 +32,7 @@
 - 湾区生境依据采用 USDA Forest Service Central Coast vegetation descriptions 与 California DFW coastal oak woodland description；资产来源与逐文件 hash 冻结在 `SourceAssets/EnvironmentDraft/HabitatDraft/source.json` 和 `docs/environment-draft-assets.json`。
 - 不把通用 annual-forb proxy 宣称为精确本地物种；它只用于增加无人机低空视角的地被形态和视差。
 - 第二批免费素材加入 Poly Haven `dry_branches_medium_01`（CC0）的 3 个扫描枯枝变体：仅稀疏分布在 woodland 权重较高、非岩岸、非陡坡的林下地面；采用 HISM、35–50 m cull、无碰撞，并避开起降区、步道、训练走廊和树干根颈。三种原始网格分别为 5,616 / 5,254 / 5,933 triangles，未接入高面数树桩和树根模型。
+- 第三批免费素材加入 Poly Haven `shrub_02`（CC0）的 4 个狭叶灌木形态变体，分别约 5.2K–9.2K triangles。它们作为 generic maritime-scrub morphology proxy，只分布在向阳、排水良好、非岩岸的 coastal grassland 与 woodland feathered edge；不宣称为精确的 coyote brush 或 California sagebrush。采用 HISM、50–75 m cull、无碰撞，并继续避开无人机基础设施和训练走廊。分布逻辑参考 California DFW Coastal Scrub habitat description 与 Golden Gate NRA 植被资料。
 
 **上一轮 R21**：加入老鹰与动物警觉/逃离/攻击状态，并修复鹿资产没有骨骼 track、动物移动与动画不同步的问题。
 

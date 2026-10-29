@@ -18,6 +18,7 @@
     "https://polyhaven.com/a/shrub_03",
     "https://polyhaven.com/a/weed_plant_02",
     "https://polyhaven.com/a/dry_branches_medium_01",
+    "https://polyhaven.com/a/shrub_02",
     "https://polyhaven.com/a/pine_bark",
     "https://polyhaven.com/a/bark_willow_02",
     "https://polyhaven.com/a/jolcham_oak_bark_01",
@@ -88,6 +89,11 @@
       "path": "Content/Development/CoastDraft/Materials/M_CoastWaterDraft.uasset",
       "sha256": "89c25b1acdc01e82b4dd8fb5f4cf96a613526759f39537ead208d6242d66ce6a",
       "bytes": 40308
+    },
+    {
+      "path": "Content/Development/CoastDraft/Materials/M_CoastalScrubDraft.uasset",
+      "sha256": "5553c226b5c7a18d599ae6f8808a8d47a0a5fe896b281e42b146beb896dcb81d",
+      "bytes": 17236
     },
     {
       "path": "Content/Development/CoastDraft/Materials/M_FloraFernDraft.uasset",
@@ -193,6 +199,26 @@
       "path": "Content/Development/CoastDraft/Meshes/SM_CoastShrubBDraft.uasset",
       "sha256": "5a2792e56cf18648faccb76eb53bf535f93e249fc48cc2619401025f4822d4f8",
       "bytes": 86332
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_CoastalScrubADraft.uasset",
+      "sha256": "0e423ba8c6181c385f7b33b519a660480a98bd47df53aca29b877d9020cb4859",
+      "bytes": 273335
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_CoastalScrubBDraft.uasset",
+      "sha256": "3caab922fed61bc6f1cd47a7720f572a0c2348b40f28b079159a603f5b16bb12",
+      "bytes": 188952
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_CoastalScrubCDraft.uasset",
+      "sha256": "6ec841814ac43a59dd10b5c52451413e09182abc364861d5b4ab3f13603dee24",
+      "bytes": 318049
+    },
+    {
+      "path": "Content/Development/CoastDraft/Meshes/SM_CoastalScrubDDraft.uasset",
+      "sha256": "6e3bbed9be9b20dd6fb03afe2b22b8f362c4c43c5b8a0f0fe48f3a8e212601de",
+      "bytes": 188823
     },
     {
       "path": "Content/Development/CoastDraft/Meshes/SM_FloraFernADraft.uasset",
@@ -528,6 +554,26 @@
       "path": "Content/Development/CoastDraft/Textures/T_CoastWornRock_Roughness.uasset",
       "sha256": "12aef6b0fd659b2c47b90256bca2ab885b8abd6a37499a3740b205b250058312",
       "bytes": 2170721
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastalScrub_Alpha.uasset",
+      "sha256": "54323e5b847f7c84d2421184a870f36d3f1b8f112816966385338e70ba73c9c8",
+      "bytes": 120931
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastalScrub_BaseColor.uasset",
+      "sha256": "417074629ba7c080b9b6bf3f0659459c101147b62235cb34ca8178144b54023c",
+      "bytes": 399245
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastalScrub_Normal.uasset",
+      "sha256": "3cf76bfd891877f2511c324565732b66c96906f657c17269d913bae7d15deaf0",
+      "bytes": 481553
+    },
+    {
+      "path": "Content/Development/CoastDraft/Textures/T_CoastalScrub_Roughness.uasset",
+      "sha256": "b0d892da0abb90c76fcb182e378db4b36ce87fad220007ba470099ad41c0819c",
+      "bytes": 256385
     },
     {
       "path": "Content/Development/CoastDraft/Textures/T_FloraFern_ARM.uasset",
@@ -1557,6 +1603,26 @@
       "license": "CC0-1.0"
     },
     {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastalScrubADraft.mesh.json",
+      "sha256": "34e8fe2f01dfc239defc0ae5a5c0b70735b892669cea38e54eae683e4a43c90f",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastalScrubBDraft.mesh.json",
+      "sha256": "fe356065c0745e7c5129f94acb944f90e50d82877a7c5f764dedff5e51be30f3",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastalScrubCDraft.mesh.json",
+      "sha256": "d56515dea67dbdf5f4d08b27e5a0963225b3148eb6625166fb175dcc6f9272ad",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastalScrubDDraft.mesh.json",
+      "sha256": "4687dd6db952d6e658697fa984625fb248485a8597f80162fa73a41b28fb3592",
+      "license": "CC0-1.0"
+    },
+    {
       "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_FloraFernADraft.mesh.json",
       "sha256": "8ea6a839da64ae79a60b47446515d933474b0a05047a2333e29afec19e88699f",
       "license": "CC0-1.0"
@@ -1659,6 +1725,51 @@
     {
       "path": "SourceAssets/EnvironmentDraft/HabitatDraft/grass_medium_01/textures/grass_medium_01_nor_gl_1k.jpg",
       "sha256": "cae298d3d1d7ff7c7e210ad8ac772b96706e356f9315a6b04fde373ce01ccf1e",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_02/alpha.jpg",
+      "sha256": "b506f2e34bd9ed974050c30308e77ec5b5d391b110fad394e806d9889e0450f1",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_02/basecolor.jpg",
+      "sha256": "9956eff294034d70516d867e9668428a23d782feb3d4c34061dce5e44bacd5a8",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_02/normal.jpg",
+      "sha256": "31034173472fee3b3dd46d49c4729b90fee7456eadb0ab8574a88abc180db04e",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_02/roughness.jpg",
+      "sha256": "32729396b3de22f35434260149975319d23897fef498f84782e9e5be61dd6dac",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_02/shrub_02.bin",
+      "sha256": "5c1b79da1cfdbac90599542ccd1f75ba433a3a4d356b1ea03655adb39b0e2c96",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_02/shrub_02.gltf",
+      "sha256": "99de0a70fe88ad414615cc8d8e020617c8512e2abfe08b911b153a6fcc40d93e",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_02/textures/shrub_02_arm_1k.jpg",
+      "sha256": "7186bf604d5c02f873aef6de2346cc06b6fa48f47d054edbef36d2c3772c0890",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_02/textures/shrub_02_diff_1k.jpg",
+      "sha256": "9956eff294034d70516d867e9668428a23d782feb3d4c34061dce5e44bacd5a8",
+      "license": "CC0-1.0"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/shrub_02/textures/shrub_02_nor_gl_1k.jpg",
+      "sha256": "54c24e433365d5410223b7ebd2b33042b80831f80976e10768114db5ef6911d7",
       "license": "CC0-1.0"
     },
     {
