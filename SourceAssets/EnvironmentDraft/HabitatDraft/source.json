@@ -10,7 +10,7 @@
         "Rob Tuytel": "Photography",
         "Rico Cilliers": "Modeling"
       },
-      "info_sha256": "b4ab105f5b429e0407e1a2b8ef50a12b2bcc6bf197e880e89cc42f41b958fbb2",
+      "info_sha256": "b5c349162dcecc5800e45919936c50a738544d1abb2a5a15415100a647dc6f49",
       "files_sha256": "daa882bd7a3925042501536763269b064f66c736779dd90fd9bd1cb405cb4d53",
       "page": "https://polyhaven.com/a/grass_medium_01"
     },
@@ -19,9 +19,19 @@
       "authors": {
         "Rico Cilliers": "All"
       },
-      "info_sha256": "98737d49530a2308e1956423bf984eeb5822ab020c7e0b5a2298ef0df7634a08",
+      "info_sha256": "60c8c73e18c5f63d8ff108fe5b75a882ad19aa1ff7ad43d6b3fa366386b2f417",
       "files_sha256": "01c34bcc8da5e97b9a84350254de868016d348f067df98782a368e7fca088a03",
       "page": "https://polyhaven.com/a/shrub_03"
+    },
+    {
+      "asset": "weed_plant_02",
+      "authors": {
+        "Rob Tuytel": "Photography",
+        "Rico Cilliers": "Modeling"
+      },
+      "info_sha256": "043843159e80175d3650123622c6fe063e14f14236e9321a7994e28c2a96859d",
+      "files_sha256": "df40d0d263ecb21f47ff67ccbe93f161ebcba3db186c8d74acbf5165a5557d6b",
+      "page": "https://polyhaven.com/a/weed_plant_02"
     }
   ],
   "sources": [
@@ -256,6 +266,129 @@
         11.315583810210228,
         30.439479101914912
       ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/weed_plant_02/weed_plant_02.gltf",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/weed_plant_02/weed_plant_02_1k.gltf",
+      "sha256": "20fe9aa14ec8160de54d8027422ce6db93bcc6211299509067ee3edbceff218b",
+      "publisher_md5": "7716ffcf325cbec5c433085a0c0e5f1f",
+      "bytes": 9128,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/weed_plant_02"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/weed_plant_02/textures/weed_plant_02_nor_gl_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/weed_plant_02/weed_plant_02_nor_gl_1k.jpg",
+      "sha256": "53e277362656eaea87a59bc7c5b551e73d2cdb5b852b21d0ffb84becfc7b941d",
+      "publisher_md5": "1f58acb112882c7d0eb7b7d8e58d65c0",
+      "bytes": 679362,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/weed_plant_02"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/weed_plant_02/textures/weed_plant_02_diff_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/weed_plant_02/weed_plant_02_diff_1k.jpg",
+      "sha256": "6bcbf7f0b8eaf5156b9021f998dd9233ba4b095aa590f3621b94f47550e21eb9",
+      "publisher_md5": "147c346358cf123ca50473cf05df7b86",
+      "bytes": 457595,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/weed_plant_02"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/weed_plant_02/textures/weed_plant_02_arm_1k.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/weed_plant_02/weed_plant_02_arm_1k.jpg",
+      "sha256": "82dd00b135a605aecf09d46bdaa6e71cdfc221d7b53e20e6f446da6e9e5bf942",
+      "publisher_md5": "ef589b514bd7515ded97f81466e27dd8",
+      "bytes": 571490,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/weed_plant_02"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/weed_plant_02/weed_plant_02.bin",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/8k/weed_plant_02/weed_plant_02.bin",
+      "sha256": "2b77b91a881055365a56156e8a131277187f72b82c1d55806bb5b0a5053e5e9d",
+      "publisher_md5": "31440e5d2ad17eff90fcf83f3dbe989e",
+      "bytes": 330884,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/weed_plant_02"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/weed_plant_02/basecolor.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/weed_plant_02/weed_plant_02_diff_1k.jpg",
+      "sha256": "6bcbf7f0b8eaf5156b9021f998dd9233ba4b095aa590f3621b94f47550e21eb9",
+      "publisher_md5": "147c346358cf123ca50473cf05df7b86",
+      "bytes": 457595,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/weed_plant_02"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/weed_plant_02/alpha.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/weed_plant_02/weed_plant_02_alpha_1k.jpg",
+      "sha256": "633011d816d3b3edef56b71be6799c170d158772a82a6edc4c498b6204e4fae7",
+      "publisher_md5": "fccaf4b8b9eaa9783ed0a8eea88b571a",
+      "bytes": 168644,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/weed_plant_02"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/weed_plant_02/normal.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/weed_plant_02/weed_plant_02_nor_dx_1k.jpg",
+      "sha256": "4ab0589cdf7b8968d1b6150898f5a11f20613992d52d5674c72a0478dfa7b51a",
+      "publisher_md5": "523ab90c61b2525a8661a33cbeefa743",
+      "bytes": 682754,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/weed_plant_02"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/weed_plant_02/roughness.jpg",
+      "url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/weed_plant_02/weed_plant_02_rough_1k.jpg",
+      "sha256": "de2f8807846897e0b218628b8d268866b6e5daef5deeedfe66fad7b7f6b45894",
+      "publisher_md5": "d9925d6bbe42b636108fc9f367379ae7",
+      "bytes": 468543,
+      "license": "CC0-1.0",
+      "asset": "https://polyhaven.com/a/weed_plant_02"
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastAnnualForbADraft.mesh.json",
+      "sha256": "c34780348f41f503e357912267b43cc75fca789dc163a59eaa73709755cc1ce6",
+      "license": "CC0-1.0",
+      "derived_from": "weed_plant_02",
+      "triangles": 2967,
+      "vertices": 2059,
+      "asset": "SM_CoastAnnualForbADraft",
+      "dimensions_cm": [
+        21.94003313779831,
+        29.091940820217133,
+        7.24576385691762
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastAnnualForbBDraft.mesh.json",
+      "sha256": "d9481fc1e993630f2a81fdc36216008863e2a287696357ac5e1945f5f785ee4c",
+      "license": "CC0-1.0",
+      "derived_from": "weed_plant_02",
+      "triangles": 1766,
+      "vertices": 1199,
+      "asset": "SM_CoastAnnualForbBDraft",
+      "dimensions_cm": [
+        14.237632602453232,
+        14.345147460699081,
+        5.492379714269191
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastAnnualForbCDraft.mesh.json",
+      "sha256": "3f4ab7dab65583b428b1ea134508035d9c9001460beacbf3a0e146b7dbf5cc05",
+      "license": "CC0-1.0",
+      "derived_from": "weed_plant_02",
+      "triangles": 2182,
+      "vertices": 1614,
+      "asset": "SM_CoastAnnualForbCDraft",
+      "dimensions_cm": [
+        11.92498654127121,
+        6.098637543618679,
+        4.00792183354497
+      ]
     }
   ],
   "meshes": [
@@ -328,6 +461,48 @@
         11.315583810210228,
         30.439479101914912
       ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastAnnualForbADraft.mesh.json",
+      "sha256": "c34780348f41f503e357912267b43cc75fca789dc163a59eaa73709755cc1ce6",
+      "license": "CC0-1.0",
+      "derived_from": "weed_plant_02",
+      "triangles": 2967,
+      "vertices": 2059,
+      "asset": "SM_CoastAnnualForbADraft",
+      "dimensions_cm": [
+        21.94003313779831,
+        29.091940820217133,
+        7.24576385691762
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastAnnualForbBDraft.mesh.json",
+      "sha256": "d9481fc1e993630f2a81fdc36216008863e2a287696357ac5e1945f5f785ee4c",
+      "license": "CC0-1.0",
+      "derived_from": "weed_plant_02",
+      "triangles": 1766,
+      "vertices": 1199,
+      "asset": "SM_CoastAnnualForbBDraft",
+      "dimensions_cm": [
+        14.237632602453232,
+        14.345147460699081,
+        5.492379714269191
+      ]
+    },
+    {
+      "path": "SourceAssets/EnvironmentDraft/HabitatDraft/SM_CoastAnnualForbCDraft.mesh.json",
+      "sha256": "3f4ab7dab65583b428b1ea134508035d9c9001460beacbf3a0e146b7dbf5cc05",
+      "license": "CC0-1.0",
+      "derived_from": "weed_plant_02",
+      "triangles": 2182,
+      "vertices": 1614,
+      "asset": "SM_CoastAnnualForbCDraft",
+      "dimensions_cm": [
+        11.92498654127121,
+        6.098637543618679,
+        4.00792183354497
+      ]
     }
   ],
   "limits": "Generic published dry grass and small oval-leaved plants; no Bay Area oak identity or production acceptance. Original glTF and all linked files preserved; custom DirectX/alpha/roughness maps are explicitly assigned by the isolated importer. Mesh node display offsets discarded; each mesh bottom is grounded at local Z=0.",
@@ -388,6 +563,5 @@
         41.99
       ]
     }
-  ],
-  "retired": "OakTwigCards (--derive-oak) retired in R3; replaced by ART-FLORA FloraDraft/Derived/T_LiveOakTwigCards"
+  ]
 }

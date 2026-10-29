@@ -25,7 +25,14 @@
 - R0–R21 已完成多轮视觉 QA，每轮都有可量化改进，但最终验收只由用户本人签字。
 - **任何 AI 都不得写「3A 已达成」或「验收通过」。**
 
-**最新完成的一轮是 R21**：加入老鹰与动物警觉/逃离/攻击状态，并修复鹿资产没有骨骼 track、动物移动与动画不同步的问题。
+**R21 后的植被升级（2026-10-29，当前 worktree）**：按湾区海岸梯度重构树种布局，并增加一组免费 CC0 林下植被。
+
+- 树种不再只按坐标与噪声分配：Coast live oak 偏向温暖、适度排水的 sheltered pockets；Douglas-fir 偏向湿润背阴沟谷；Monterey pine 偏向向海、较暴露的山肩。地形输入来自 `FPacificCoastHabitat::Sample` 的坡度、坡向日照、排水与生境权重。
+- 新增 Poly Haven `weed_plant_02`（CC0）三种低矮 annual-forb 变体，只在开阔/林缘且非岩岸、非积水地面以 HISM 短视距实例化；保留飞行路线、起降区和树干碰撞净空。
+- 湾区生境依据采用 USDA Forest Service Central Coast vegetation descriptions 与 California DFW coastal oak woodland description；资产来源与逐文件 hash 冻结在 `SourceAssets/EnvironmentDraft/HabitatDraft/source.json` 和 `docs/environment-draft-assets.json`。
+- 不把通用 annual-forb proxy 宣称为精确本地物种；它只用于增加无人机低空视角的地被形态和视差。
+
+**上一轮 R21**：加入老鹰与动物警觉/逃离/攻击状态，并修复鹿资产没有骨骼 track、动物移动与动画不同步的问题。
 
 - 数量固定为鲸鱼 2、熊 1、鹿 5、老鹰 1；狼和牛均为 0；全部 `NoCollision`。
 - 来源、作者、CC BY 4.0 attribution 和归档 hash 见 `THIRD_PARTY_ASSETS.md`；导入资产的逐文件 hash 见 `docs/third-party-wildlife-assets.json`。

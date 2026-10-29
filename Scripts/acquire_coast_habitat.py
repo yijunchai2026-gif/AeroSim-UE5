@@ -7,7 +7,8 @@ ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'SourceAssets/EnvironmentDraft/HabitatDraft'
 UA='AeroSim-asset-research/1.0 (development CC0 attribution audit)'
 SELECTIONS={'grass_medium_01': [('SM_CoastGrassSmallDraft',0),('SM_CoastGrassTallDraft',4),('SM_CoastGrassTinyDraft',13)],
-            'shrub_03': [('SM_CoastShrubADraft',0),('SM_CoastShrubBDraft',2)]}
+            'shrub_03': [('SM_CoastShrubADraft',0),('SM_CoastShrubBDraft',2)],
+            'weed_plant_02': [('SM_CoastAnnualForbADraft',0),('SM_CoastAnnualForbBDraft',2),('SM_CoastAnnualForbCDraft',4)]}
 def fetch(url,cap=8_000_000):
     if not url.startswith(('https://api.polyhaven.com/','https://dl.polyhaven.org/')):raise ValueError('Unexpected provider host')
     with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':UA}),timeout=60) as r:data=r.read(cap+1)
@@ -85,4 +86,6 @@ if __name__=='__main__':
     import sys
     args=sys.argv[1:]
     if args==['--derive-flora']:derive_flora()
-    else:acquire()
+    else:
+        acquire()
+        derive_flora()

@@ -1821,17 +1821,25 @@ const FLayout& GetLayout()
             const float Yaw = Random.FRandRange(0, 2 * PI), LeanYaw = Random.FRandRange(0, 2 * PI), LeanRoll = Random.FRand(), ScaleRoll = Random.FRand();
             if (Density <= 0 || Roll > Density * .97F) continue;
             if (IsProtected(P, 330)) continue;
-            // Live oak patches occupy sheltered low ground and parts of the field edge.
-            const float Oakness = Fbm(P.X - 2300, P.Y + 7700, 7800.0F) + (FMath::Abs(P.Y) < 11000 ? .08F : 0) - (P.X < -24000 ? .1F : 0);
-            const bool bOakPatch = Oakness > .60F;
+            // Species follow Bay Area coastal gradients instead of noise alone: coast live oak
+            // occupies warm, moderately drained sheltered pockets; Douglas-fir takes moist shaded
+            // gullies; Monterey pine is concentrated on exposed maritime shoulders.
+            const FCoastHabitatSample Habitat = FPacificCoastHabitat::Sample(P.X, P.Y);
+            const float ModerateDrainage = 1.0F - FMath::Clamp(FMath::Abs(Habitat.Drainage - .42F) / .42F, 0.0F, 1.0F);
+            const float Oakness = .55F * Fbm(P.X - 2300, P.Y + 7700, 7800.0F)
+                + .25F * ModerateDrainage + .14F * Habitat.ShelteredGrass - .12F * Habitat.Grade
+                + (FMath::Abs(P.Y) < 11000 ? .05F : 0) - (P.X < -24000 ? .08F : 0);
+            const bool bOakPatch = Oakness > .50F;
             int32 Archetype;
             EAge Age = AgeRoll < .62F ? EAge::Mature : AgeRoll < .85F ? EAge::Pole : EAge::Sapling;
             if (Age == EAge::Sapling) Archetype = Saplings[Random.RandRange(0, Saplings.Num() - 1)];
             else if (bOakPatch && Age == EAge::Mature && SpeciesRoll < .55F) Archetype = Oaks[Random.RandRange(0, Oaks.Num() - 1)];
             else
             {
-                // Monterey pine favours the seaward (east) side, Douglas-fir the inland slopes.
-                const bool bPine = SpeciesRoll < (P.X > -6000 ? .62F : .30F);
+                const float MaritimeBase = P.X > -6000 ? .62F : .30F;
+                const float PineChance = FMath::Clamp(MaritimeBase + .10F * FMath::Max(0.0F, Habitat.SunExposure)
+                    - .08F * (Habitat.Drainage - .5F) - .04F * Habitat.Grade, .20F, .74F);
+                const bool bPine = SpeciesRoll < PineChance;
                 const TArray<int32>& Poles = bPine ? PinePoles : FirPoles;
                 Archetype = Age == EAge::Pole ? Poles[Random.RandRange(0, Poles.Num() - 1)]
                     : ScaleRoll < .12F ? Veterans[bPine ? 1 : 0]
